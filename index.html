@@ -702,31 +702,35 @@
         }
 
         function updateEnemySpawning(currentTime) {
-            if (spawnIndex < gameState.enemyQueue.length && currentTime - lastSpawnTime > 800) {
-                const type = gameState.enemyQueue[spawnIndex];
-                const config = enemyTypes[type];
-                
-                gameState.enemies.push({
-                    type: type,
-                    hp: config.hp,
-                    maxHp: config.hp,
-                    speed: config.speed,
-                    color: config.color,
-                    size: config.size,
-                    reward: config.reward,
-                    pathIndex: 0,
-                    progress: 0,
-                    x: path[0].x,
-                    y: path[0].y,
-                    poisoned: false,
-                    poisonDamage: 0,
-                    poisonTimer: 0
-                });
-                
-                spawnIndex++;
-                lastSpawnTime = currentTime;
-            }
-        }
+    if (spawnIndex < gameState.enemyQueue.length && currentTime - lastSpawnTime > 800) {
+        const type = gameState.enemyQueue[spawnIndex];
+        const config = enemyTypes[type];
+        
+        // Calculate health scaling: 5% increase per wave (wave 1 = 1.0x, wave 2 = 1.05x, wave 3 = 1.1025x, etc.)
+        const healthMultiplier = Math.pow(1.05, gameState.currentWave - 1);
+        const scaledHp = Math.round(config.hp * healthMultiplier);
+        
+        gameState.enemies.push({
+            type: type,
+            hp: scaledHp,
+            maxHp: scaledHp,
+            speed: config.speed,
+            color: config.color,
+            size: config.size,
+            reward: config.reward,
+            pathIndex: 0,
+            progress: 0,
+            x: path[0].x,
+            y: path[0].y,
+            poisoned: false,
+            poisonDamage: 0,
+            poisonTimer: 0
+        });
+        
+        spawnIndex++;
+        lastSpawnTime = currentTime;
+    }
+}
 
         function gameLoop() {
             if (gameState.phase !== 'wave') return;
