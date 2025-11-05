@@ -900,7 +900,7 @@
             }
             
             // Increase attacker budget by 25% of current gold
-            gameState.attackerGold = Math.floor(gameState.attackerGold * 1.25);
+            gameState.attackerGold = Math.floor(gameState.attackerGold + (gameState.wave*1.25)*200);
             
             // Reset for next wave
             enemyCounts = { basic: 0, fast: 0, tanky: 0 };
