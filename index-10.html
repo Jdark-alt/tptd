@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Defense Battle</title>
+    <!-- Socket.io client loaded from CDN -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root {
+            --bg: #1f2121;
+            --surface: #262828;
+            --text: #f5f5f5;
+            --text2: rgba(167,169,169,0.7);
+            --primary: #32b8c6;
+            --primary-h: #2da6b2;
+            --border: rgba(119,124,124,0.3);
+            --danger: #ff5459;
+            --warn: #e68161;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+        /* ── Lobby ─────────────────────────────── */
+        #lobbyScreen {
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            min-height:100vh; gap:24px; padding:20px;
+        }
+        #lobbyScreen h1 { font-size:32px; text-align:center; }
+        #lobbyScreen p  { color:var(--text2); text-align:center; max-width:400px; }
+        .lobby-card {
+            background:var(--surface); border:1px solid var(--border); border-radius:16px;
+            padding:32px; width:100%; max-width:420px; display:flex; flex-direction:column; gap:16px;
+        }
+        .lobby-card h2 { font-size:18px; margin-bottom:4px; }
+        .lobby-input {
+            background:#1a1c1c; border:1px solid var(--border); border-radius:8px;
+            padding:12px 16px; color:var(--text); font-size:16px; width:100%;
+            text-transform:uppercase; letter-spacing:2px;
+        }
+        .lobby-input:focus { outline:none; border-color:var(--primary); }
+        .role-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .role-btn {
+            padding:16px; border:2px solid var(--border); border-radius:10px; background:transparent;
+            color:var(--text); font-size:14px; font-weight:600; cursor:pointer; transition:all .2s;
+            display:flex; flex-direction:column; align-items:center; gap:6px;
+        }
+        .role-btn .role-icon { font-size:28px; }
+        .role-btn:hover { border-color:var(--primary); background:rgba(50,184,198,.1); }
+        .role-btn.selected { border-color:var(--primary); background:rgba(50,184,198,.2); box-shadow:0 0 0 2px rgba(50,184,198,.3); }
+        .role-btn small { color:var(--text2); font-weight:400; font-size:11px; }
+
+        /* ── Waiting ───────────────────────────── */
+        #waitingScreen {
+            display:none; flex-direction:column; align-items:center; justify-content:center;
+            min-height:100vh; gap:20px; text-align:center; padding:20px;
+        }
+        .pulse { font-size:48px; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        .room-code-display {
+            background:var(--surface); border:1px solid var(--border); border-radius:10px;
+            padding:12px 24px; font-size:22px; font-weight:700; letter-spacing:4px; color:var(--primary);
+        }
+
+        /* ── Game ──────────────────────────────── */
+        #gameScreen {
+            display:none; max-width:1200px; margin:0 auto; padding:20px; flex-direction:column; gap:20px;
+        }
+        .header {
+            background:var(--surface); padding:16px 20px; border-radius:12px;
+            border:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+        }
+        .header h1 { font-size:20px; }
+        .game-stats { display:flex; gap:24px; flex-wrap:wrap; }
+        .stat { display:flex; flex-direction:column; gap:3px; }
+        .stat-label { font-size:11px; color:var(--text2); text-transform:uppercase; }
+        .stat-value { font-size:18px; font-weight:600; }
+        .phase-badge {
+            background:var(--primary); color:#1f2121; padding:6px 14px;
+            border-radius:20px; font-size:13px; font-weight:700;
+        }
+        .role-badge {
+            padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700;
+        }
+        .role-attacker { background:var(--warn); color:#1f2121; }
+        .role-defender { background:#60a5fa; color:#1f2121; }
+
+        .main-content { display:grid; grid-template-columns:1fr 300px; gap:20px; }
+        .game-board { background:var(--surface); padding:16px; border-radius:12px; border:1px solid var(--border); }
+        .canvas-wrapper { background:#0a0a0a; border-radius:8px; overflow:hidden; position:relative; }
+        #gameCanvas { display:block; width:100%; height:auto; }
+
+        .controls { background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border); display:flex; flex-direction:column; gap:12px; }
+        .controls h2 { font-size:16px; }
+
+        .shop-item, .enemy-item {
+            background:rgba(50,184,198,.08); border:1px solid var(--primary);
+            border-radius:8px; padding:12px; cursor:pointer; transition:all .2s;
+        }
+        .shop-item:hover, .enemy-item:hover { background:rgba(50,184,198,.18); transform:translateY(-1px); }
+        .shop-item.disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+        .item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+        .item-name { font-weight:600; font-size:14px; }
+        .item-cost { font-size:13px; color:var(--warn); }
+        .item-stats { font-size:11px; color:var(--text2); }
+
+        .enemy-count { margin-top:8px; display:flex; align-items:center; gap:10px; }
+        .count-btn {
+            background:var(--primary); border:none; color:#1f2121; width:28px; height:28px;
+            border-radius:6px; cursor:pointer; font-size:16px; font-weight:700;
+        }
+        .count-btn:hover { background:var(--primary-h); }
+        .count-display { font-size:15px; font-weight:600; min-width:28px; text-align:center; }
+
+        .btn {
+            width:100%; padding:12px; border:none; border-radius:8px;
+            font-size:14px; font-weight:600; cursor:pointer; transition:all .2s;
+        }
+        .btn-primary { background:var(--primary); color:#1f2121; }
+        .btn-primary:hover { background:var(--primary-h); }
+        .btn-danger { background:var(--danger); color:#fff; }
+        .btn-danger:hover { background:#e04048; }
+        .btn:disabled { opacity:.4; cursor:not-allowed; }
+
+        .tower-info { background:rgba(50,184,198,.1); padding:10px 12px; border-radius:8px; }
+        .info-row { display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
+        .info-row:last-child { margin-bottom:0; }
+
+        .ready-status {
+            background:rgba(50,184,198,.08); border:1px solid var(--border);
+            border-radius:8px; padding:10px 12px; font-size:12px;
+        }
+        .ready-row { display:flex; justify-content:space-between; margin-bottom:4px; }
+        .ready-row:last-child { margin-bottom:0; }
+        .ready-yes { color:#4ade80; font-weight:600; }
+        .ready-no  { color:var(--text2); }
+
+        .spectator-msg {
+            background:rgba(50,184,198,.08); border:1px solid var(--border);
+            border-radius:8px; padding:16px; text-align:center; font-size:13px; color:var(--text2);
+        }
+        .spectator-msg strong { display:block; font-size:15px; color:var(--text); margin-bottom:4px; }
+
+        /* ── Overlay modals ────────────────────── */
+        .overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,.85);
+            display:none; align-items:center; justify-content:center; z-index:100;
+        }
+        .overlay.show { display:flex; }
+        .modal {
+            background:var(--surface); border:2px solid var(--primary); border-radius:16px;
+            padding:40px; text-align:center; max-width:400px; width:90%;
+        }
+        .modal h2 { font-size:28px; margin-bottom:12px; }
+        .modal p  { color:var(--text2); margin-bottom:24px; }
+
+        @media(max-width:900px) { .main-content { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     LOBBY SCREEN
+════════════════════════════════════════════════ -->
+<div id="lobbyScreen">
+    <h1>🎮 Tower Defense Battle</h1>
+    <p>Enter a room code and pick your role. Share the same room code with your opponent to start a match.</p>
+    <div class="lobby-card">
+        <div>
+            <h2>Room Code</h2>
+            <input id="roomCodeInput" class="lobby-input" maxlength="6" placeholder="e.g. ABC123" />
+        </div>
+        <div>
+            <h2 style="margin-bottom:10px;">Your Role</h2>
+            <div class="role-row">
+                <button class="role-btn" id="btnAttacker" onclick="selectRole('attacker')">
+                    <span class="role-icon">⚔️</span>
+                    Attacker
+                    <small>Send enemies</small>
+                </button>
+                <button class="role-btn" id="btnDefender" onclick="selectRole('defender')">
+                    <span class="role-icon">🏰</span>
+                    Defender
+                    <small>Place towers</small>
+                </button>
+            </div>
+        </div>
+        <button class="btn btn-primary" id="joinBtn" onclick="joinGame()" disabled>Join Game</button>
+        <div id="lobbyError" style="color:var(--danger);font-size:13px;text-align:center;display:none;"></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     WAITING SCREEN
+════════════════════════════════════════════════ -->
+<div id="waitingScreen">
+    <div class="pulse">⏳</div>
+    <h2>Waiting for opponent…</h2>
+    <p style="color:var(--text2)">Share this room code with your opponent:</p>
+    <div class="room-code-display" id="waitingRoomCode"></div>
+    <p style="color:var(--text2);font-size:13px;">You are the <strong id="waitingRole" style="color:var(--primary)"></strong></p>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     GAME SCREEN
+════════════════════════════════════════════════ -->
+<div id="gameScreen">
+    <div class="header">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <h1>🎮 Tower Defense Battle</h1>
+            <span class="role-badge" id="myRoleBadge"></span>
+        </div>
+        <div class="game-stats">
+            <div class="stat">
+                <div class="stat-label">Wave</div>
+                <div class="stat-value" id="waveNum">1 / 10</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Leaked</div>
+                <div class="stat-value" id="enemiesThrough">0 / 15</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">⚔️ Gold</div>
+                <div class="stat-value" id="attackerGold">200</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">🏰 Gold</div>
+                <div class="stat-value" id="defenderGold">350</div>
+            </div>
+        </div>
+        <span class="phase-badge" id="phaseIndicator">Waiting</span>
+    </div>
+
+    <div class="main-content">
+        <div class="game-board">
+            <div class="canvas-wrapper">
+                <canvas id="gameCanvas" width="800" height="600"></canvas>
+            </div>
+        </div>
+
+        <div class="controls" id="controlsPanel">
+            <!-- populated dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     GAME OVER OVERLAY
+════════════════════════════════════════════════ -->
+<div class="overlay" id="gameOverOverlay">
+    <div class="modal">
+        <h2 id="gameOverTitle"></h2>
+        <p  id="gameOverMsg"></p>
+        <button class="btn btn-primary" onclick="location.reload()">Play Again</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     DISCONNECT OVERLAY
+════════════════════════════════════════════════ -->
+<div class="overlay" id="disconnectOverlay">
+    <div class="modal">
+        <h2>😔 Opponent Left</h2>
+        <p>Your opponent disconnected from the game.</p>
+        <button class="btn btn-primary" onclick="location.reload()">Back to Lobby</button>
+    </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG — change SERVER_URL to your deployed server address
+// ─────────────────────────────────────────────────────────────────────────────
+const SERVER_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://tptd.onrender.com';
+
+// ─── Canvas setup ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+
+const PATH = [
+    { x: 0,   y: 200 }, { x: 200, y: 200 }, { x: 200, y: 400 },
+    { x: 400, y: 400 }, { x: 400, y: 100 }, { x: 600, y: 100 },
+    { x: 600, y: 500 }, { x: 800, y: 500 }
+];
+
+const towerTypes = {
+    basic:  { cost: 50,  label: '🗼 Basic Tower',  stats: 'Damage: 20 | Range: 100 | Speed: 1.0s', upgradeCost: 40 },
+    poison: { cost: 75,  label: '☣️ Poison Tower', stats: 'Damage: 10 + 5/s | Range: 90 | Speed: 1.5s', upgradeCost: 60 },
+    aoe:    { cost: 100, label: '💥 AoE Tower',    stats: 'Damage: 15 | Range: 80 | AoE: 60',    upgradeCost: 80 }
+};
+
+const enemyTypes = {
+    basic: { cost: 20, label: '🟢 Basic',  stats: 'HP: 100 | Speed: 1.5' },
+    fast:  { cost: 30, label: '⚡ Fast',   stats: 'HP: 60  | Speed: 3.0' },
+    tanky: { cost: 40, label: '🛡️ Tanky', stats: 'HP: 250 | Speed: 0.8' }
+};
+
+// ─── Client state ─────────────────────────────────────────────────────────────
+let socket;
+let myRole = null;        // 'attacker' | 'defender'
+let selectedRole = null;
+let gameState = null;
+let selectedTowerType = null;
+let selectedTowerIndex = null;
+let enemyCounts = { basic: 0, fast: 0, tanky: 0 };
+
+// ─── Lobby logic ─────────────────────────────────────────────────────────────
+function selectRole(role) {
+    selectedRole = role;
+    document.getElementById('btnAttacker').classList.toggle('selected', role === 'attacker');
+    document.getElementById('btnDefender').classList.toggle('selected', role === 'defender');
+    updateJoinBtn();
+}
+
+document.getElementById('roomCodeInput').addEventListener('input', updateJoinBtn);
+
+function updateJoinBtn() {
+    const code = document.getElementById('roomCodeInput').value.trim();
+    document.getElementById('joinBtn').disabled = !(code.length >= 2 && selectedRole);
+}
+
+function joinGame() {
+    const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+    if (!roomCode || !selectedRole) return;
+
+    socket = io(SERVER_URL);
+    myRole = selectedRole;
+
+    socket.on('connect', () => {
+        socket.emit('joinRoom', { roomCode, role: selectedRole });
+    });
+
+    socket.on('joinError', msg => {
+        showLobbyError(msg);
+        socket.disconnect();
+    });
+
+    socket.on('waitingForOpponent', ({ role }) => {
+        showScreen('waiting');
+        document.getElementById('waitingRoomCode').textContent = roomCode;
+        document.getElementById('waitingRole').textContent = role === 'attacker' ? '⚔️ Attacker' : '🏰 Defender';
+    });
+
+    socket.on('opponentJoined', () => {
+        // If waiting screen is visible, game will start imminently
+    });
+
+    socket.on('gameStart', ({ gameState: gs }) => {
+        gameState = gs;
+        showScreen('game');
+        setupRoleBadge();
+        renderControls();
+        drawGame();
+    });
+
+    socket.on('phaseChange', ({ phase, gameState: gs }) => {
+        gameState = gs;
+        selectedTowerType = null;
+        selectedTowerIndex = null;
+        renderControls();
+        drawGame();
+    });
+
+    socket.on('tick', gs => {
+        gameState = gs;
+        drawGame();
+        updateStats();
+        // Re-render controls only if not in wave (avoid flickering)
+        if (gs.phase !== 'wave') renderControls();
+    });
+
+    socket.on('readyStatus', ({ attackerReady, defenderReady }) => {
+        if (gameState) { gameState.attackerReady = attackerReady; gameState.defenderReady = defenderReady; }
+        renderControls();
+    });
+
+    socket.on('waveStart', ({ gameState: gs }) => {
+        gameState = gs;
+        renderControls();
+        drawGame();
+    });
+
+    socket.on('gameOver', ({ defenderWon, wave, enemiesThrough, maxEnemiesThrough, maxWaves }) => {
+        const title = document.getElementById('gameOverTitle');
+        const msg   = document.getElementById('gameOverMsg');
+        if (defenderWon) {
+            title.textContent = '🎉 Defender Wins!';
+            msg.textContent   = `All ${maxWaves} waves defended! Only ${enemiesThrough} enemies got through.`;
+        } else {
+            title.textContent = '💀 Attacker Wins!';
+            msg.textContent   = `${enemiesThrough} enemies broke through on wave ${wave}!`;
+        }
+        document.getElementById('gameOverOverlay').classList.add('show');
+    });
+
+    socket.on('opponentDisconnected', () => {
+        document.getElementById('disconnectOverlay').classList.add('show');
+    });
+
+    socket.on('connect_error', () => {
+        showLobbyError('Could not connect to server. Is the server running?');
+        showScreen('lobby');
+    });
+}
+
+function showLobbyError(msg) {
+    const el = document.getElementById('lobbyError');
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function showScreen(name) {
+    document.getElementById('lobbyScreen').style.display    = name === 'lobby'   ? 'flex'  : 'none';
+    document.getElementById('waitingScreen').style.display  = name === 'waiting' ? 'flex'  : 'none';
+    document.getElementById('gameScreen').style.display     = name === 'game'    ? 'flex'  : 'none';
+}
+
+function setupRoleBadge() {
+    const badge = document.getElementById('myRoleBadge');
+    if (myRole === 'attacker') { badge.textContent = '⚔️ You: Attacker'; badge.className = 'role-badge role-attacker'; }
+    else                       { badge.textContent = '🏰 You: Defender'; badge.className = 'role-badge role-defender'; }
+}
+
+// ─── Controls renderer ────────────────────────────────────────────────────────
+function renderControls() {
+    if (!gameState) return;
+    const panel = document.getElementById('controlsPanel');
+    const phase = gameState.phase;
+    const phaseLabel = document.getElementById('phaseIndicator');
+
+    if (phase === 'attacker') {
+        phaseLabel.textContent = 'Attacker Phase';
+        if (myRole === 'attacker') {
+            panel.innerHTML = attackerUI();
+        } else {
+            panel.innerHTML = spectatorUI('⏳ Attacker is choosing enemies…');
+        }
+    } else if (phase === 'defender') {
+        phaseLabel.textContent = 'Defender Phase';
+        if (myRole === 'defender') {
+            panel.innerHTML = defenderUI();
+            attachDefenderEvents();
+        } else {
+            panel.innerHTML = attackerWaitUI();
+        }
+    } else if (phase === 'wave') {
+        phaseLabel.textContent = 'Wave in Progress';
+        panel.innerHTML = spectatorUI('⚔️ Wave is running! Watch the battle…');
+    }
+    updateStats();
+}
+
+function spectatorUI(msg) {
+    return `<div class="spectator-msg"><strong>${msg}</strong>Both players can watch the canvas.</div>`;
+}
+
+function attackerWaitUI() {
+    const gs = gameState;
+    const ar = gs.attackerReady, dr = gs.defenderReady;
+    return `
+    <div class="spectator-msg" style="margin-bottom:12px;">
+        <strong>⏳ Defender is placing towers…</strong>
+        Get ready to start the wave when they're done.
+    </div>
+    <div class="ready-status" style="margin-bottom:10px;">
+        <div class="ready-row"><span>⚔️ Attacker</span><span class="${ar ? 'ready-yes' : 'ready-no'}">${ar ? '✓ Ready' : 'Not ready'}</span></div>
+        <div class="ready-row"><span>🏰 Defender</span><span class="${dr ? 'ready-yes' : 'ready-no'}">${dr ? '✓ Ready' : 'Not ready'}</span></div>
+    </div>
+    <button class="btn btn-primary" onclick="sendReady()" ${ar ? 'disabled' : ''}>
+        ${ar ? '✅ You are Ready!' : '🚀 Ready to Start Wave'}
+    </button>`;
+}
+
+function attackerUI() {
+    const gs = gameState;
+    return `
+    <h2>⚔️ Choose Enemies</h2>
+    <p style="font-size:12px;color:var(--text2);">Budget: 💰 ${gs.attackerGold}</p>
+    ${Object.entries(enemyTypes).map(([type, cfg]) => `
+    <div class="enemy-item">
+        <div class="item-header">
+            <span class="item-name">${cfg.label}</span>
+            <span class="item-cost">💰 ${cfg.cost}</span>
+        </div>
+        <div class="item-stats">${cfg.stats}</div>
+        <div class="enemy-count">
+            <button class="count-btn" onclick="changeEnemyCount('${type}',-1)">−</button>
+            <span class="count-display" id="cnt-${type}">${enemyCounts[type]}</span>
+            <button class="count-btn" onclick="changeEnemyCount('${type}',1)">+</button>
+        </div>
+    </div>`).join('')}
+    <button class="btn btn-primary" onclick="confirmEnemies()">✅ Confirm Selection</button>`;
+}
+
+function defenderUI() {
+    const gs = gameState;
+    const ar = gs.attackerReady, dr = gs.defenderReady;
+
+    let towerActionsHTML = '';
+    if (selectedTowerIndex !== null && gs.towers[selectedTowerIndex]) {
+        const t = gs.towers[selectedTowerIndex];
+        const upgCost = Math.floor(towerTypes[t.type].upgradeCost * Math.pow(1.5, t.level - 1));
+        const sellVal = Math.floor(towerTypes[t.type].cost * 0.7 * t.level);
+        towerActionsHTML = `
+        <div class="tower-info">
+            <div class="info-row"><span>Type</span><span>${t.type.toUpperCase()}</span></div>
+            <div class="info-row"><span>Level</span><span>${t.level}</span></div>
+            <div class="info-row"><span>Damage</span><span>${t.damage}</span></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:8px" onclick="sendUpgrade()">Upgrade (💰 ${upgCost})</button>
+        <button class="btn btn-danger"  style="margin-top:6px"  onclick="sendSell()">Sell (💰 ${sellVal})</button>`;
+    }
+
+    return `
+    <h2>🏰 Build Towers</h2>
+    <p style="font-size:12px;color:var(--text2);">Gold: 💰 ${gs.defenderGold}</p>
+    ${Object.entries(towerTypes).map(([type, cfg]) => {
+        const canAfford = gs.defenderGold >= cfg.cost;
+        return `<div class="shop-item ${!canAfford ? 'disabled' : ''}" data-tower="${type}"
+            onclick="${canAfford ? `selectTowerType('${type}')` : ''}">
+            <div class="item-header">
+                <span class="item-name">${cfg.label}</span>
+                <span class="item-cost">💰 ${cfg.cost}</span>
+            </div>
+            <div class="item-stats">${cfg.stats}</div>
+        </div>`;
+    }).join('')}
+    ${towerActionsHTML}
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px;">
+        <div class="ready-status">
+            <div class="ready-row"><span>⚔️ Attacker</span><span class="${ar ? 'ready-yes' : 'ready-no'}">${ar ? '✓ Ready' : 'Not ready'}</span></div>
+            <div class="ready-row"><span>🏰 Defender</span><span class="${dr ? 'ready-yes' : 'ready-no'}">${dr ? '✓ Ready' : 'Not ready'}</span></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:10px" onclick="sendReady()" ${dr ? 'disabled' : ''}>
+            ${dr ? '✅ You are Ready!' : '🚀 Start Wave'}
+        </button>
+    </div>`;
+}
+
+function attachDefenderEvents() {
+    canvas.onclick = handleCanvasClick;
+}
+
+function selectTowerType(type) {
+    selectedTowerType = type;
+    selectedTowerIndex = null;
+    document.querySelectorAll('.shop-item').forEach(el => {
+        el.style.boxShadow = el.dataset.tower === type ? '0 0 0 2px var(--primary)' : '';
+    });
+}
+
+function handleCanvasClick(e) {
+    if (!gameState || gameState.phase !== 'defender' || myRole !== 'defender') return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width  / rect.width);
+    const y = (e.clientY - rect.top)  * (canvas.height / rect.height);
+
+    // Check if clicking existing tower
+    let clicked = null;
+    gameState.towers.forEach((t, i) => {
+        if (Math.sqrt((x - t.x) ** 2 + (y - t.y) ** 2) < 22) clicked = i;
+    });
+
+    if (clicked !== null) {
+        selectedTowerIndex = clicked;
+        selectedTowerType  = null;
+        renderControls();
+        attachDefenderEvents();
+        drawGame();
+        return;
+    }
+
+    if (selectedTowerType) {
+        socket.emit('placeTower', { x, y, type: selectedTowerType });
+    }
+}
+
+function sendUpgrade() {
+    if (selectedTowerIndex !== null) socket.emit('upgradeTower', { index: selectedTowerIndex });
+}
+
+function sendSell() {
+    if (selectedTowerIndex !== null) {
+        socket.emit('sellTower', { index: selectedTowerIndex });
+        selectedTowerIndex = null;
+        renderControls();
+        attachDefenderEvents();
+        drawGame();
+    }
+}
+
+// ─── Attacker actions ────────────────────────────────────────────────────────
+function changeEnemyCount(type, delta) {
+    if (!gameState) return;
+    const cost = enemyTypes[type].cost;
+    const newCount = enemyCounts[type] + delta;
+    if (newCount < 0) return;
+    const goldChange = delta * cost;
+    if (gameState.attackerGold - goldChange < 0) return;
+    enemyCounts[type] = newCount;
+    gameState.attackerGold -= goldChange;
+    const el = document.getElementById(`cnt-${type}`);
+    if (el) el.textContent = newCount;
+    updateStats();
+}
+
+function confirmEnemies() {
+    const total = Object.values(enemyCounts).reduce((a, b) => a + b, 0);
+    if (total === 0) { alert('Select at least one enemy!'); return; }
+    socket.emit('confirmEnemies', { counts: { ...enemyCounts } });
+    enemyCounts = { basic: 0, fast: 0, tanky: 0 };
+}
+
+function sendReady() {
+    socket.emit('playerReady');
+}
+
+// ─── Stats update ─────────────────────────────────────────────────────────────
+function updateStats() {
+    if (!gameState) return;
+    document.getElementById('waveNum').textContent       = `${gameState.wave} / ${gameState.maxWaves}`;
+    document.getElementById('enemiesThrough').textContent = `${gameState.enemiesThrough} / ${gameState.maxEnemiesThrough}`;
+    document.getElementById('attackerGold').textContent  = Math.floor(gameState.attackerGold);
+    document.getElementById('defenderGold').textContent  = Math.floor(gameState.defenderGold);
+}
+
+// ─── Renderer ────────────────────────────────────────────────────────────────
+function drawGame() {
+    if (!gameState) return;
+    const gs = gameState;
+
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Path border then fill
+    [{ w: 64, c: '#555' }, { w: 60, c: '#333' }].forEach(({ w, c }) => {
+        ctx.strokeStyle = c; ctx.lineWidth = w;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(PATH[0].x, PATH[0].y);
+        PATH.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.stroke();
+    });
+
+    // Towers
+    gs.towers.forEach((t, i) => {
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.beginPath(); ctx.arc(t.x, t.y, t.range, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = t.color;
+        ctx.beginPath(); ctx.arc(t.x, t.y, 20, 0, Math.PI * 2); ctx.fill();
+
+        if (i === selectedTowerIndex) {
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(t.x, t.y, 24, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(t.level, t.x, t.y);
+    });
+
+    // Projectiles
+    gs.projectiles.forEach(p => {
+        if (p.type === 'aoe') {
+            ctx.strokeStyle = p.color; ctx.globalAlpha = p.alpha; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 1;
+        } else {
+            const x = p.x + (p.targetX - p.x) * p.progress;
+            const y = p.y + (p.targetY - p.y) * p.progress;
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+
+    // Enemies
+    gs.enemies.forEach(e => {
+        ctx.fillStyle = e.color;
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2); ctx.fill();
+
+        const bw = e.size * 2, bh = 4, hp = e.hp / e.maxHp;
+        ctx.fillStyle = '#333';
+        ctx.fillRect(e.x - bw / 2, e.y - e.size - 8, bw, bh);
+        ctx.fillStyle = hp > 0.5 ? '#4ade80' : hp > 0.25 ? '#fbbf24' : '#f87171';
+        ctx.fillRect(e.x - bw / 2, e.y - e.size - 8, bw * hp, bh);
+
+        if (e.poisoned) {
+            ctx.fillStyle = '#a78bfa';
+            ctx.beginPath(); ctx.arc(e.x, e.y - e.size - 12, 3, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+}
+
+// Initial draw
+drawGame();
+</script>
+</body>
+</html>
