@@ -147,7 +147,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .tcost{font:600 13px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
 .ico{width:30px;height:30px;display:block;flex:none}
 .ico svg{width:100%;height:100%;display:block}
-.ico.wall{color:#6d93b1}.ico.tower{color:var(--cool)}.ico.remove{color:var(--muted)}.ico.charge{color:var(--warm)}.ico.add{color:var(--warm)}
+.ico.wall{color:#6d93b1}.ico.tower{color:var(--cool)}.ico.remove{color:var(--muted)}.ico.charge{color:var(--warm)}.ico.add{color:var(--warm)}.ico.replay{color:var(--side)}
 .bigstat{display:flex;align-items:baseline;gap:8px;padding:10px 12px;border-radius:10px;background:var(--slate);border:1px solid var(--line);font:600 13px/1 var(--f-ui);color:var(--muted);letter-spacing:.04em}
 .bigstat .lbl{letter-spacing:.12em;text-transform:uppercase;font-size:12px;margin-right:auto}
 .bigstat b{font:800 32px/1 var(--f-display);color:var(--side);font-variant-numeric:tabular-nums}
@@ -216,6 +216,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .smult.up{color:var(--side);background:var(--side-wash)}
 .smult.down{color:#9ad0a0}
 .smult.free{color:#cfe9a9;background:rgba(160,220,120,.1);letter-spacing:.06em;text-transform:uppercase}
+/* what one more step costs; red when there aren't enough free coins */
+.snext{flex:none;font:700 13px/1 var(--f-ui);padding:3px 6px;border-radius:5px;background:var(--slate-2);color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
+.snext.poor{color:#ffb0b0;background:rgba(255,93,93,.16)}
+.snext.max{color:var(--muted);background:none;padding-inline:0}
 .srow input[type=range]{width:100%;margin:2px 0;height:26px;accent-color:var(--side);cursor:pointer;touch-action:pan-y}
 .shint{font:500 12.5px/1.35 var(--f-body);color:var(--muted)}
 .shint.show{display:block!important}
@@ -227,7 +231,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .fxrow[aria-pressed=true] .box{border-color:var(--fx);background:var(--fx)}
 .fxrow[aria-pressed=true] .box::after{content:"";width:8px;height:4px;border:2.5px solid var(--ink);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
 .fxrow .rname{font-size:15px}
-.fxrow .smult{margin-left:0;align-self:flex-start}
+.fxcost{display:flex;gap:5px;align-items:center}
+.fxrow .smult{margin-left:0}
 .fx-slow{--fx:var(--frost)} .fx-poison{--fx:var(--poison)} .fx-chain{--fx:var(--chain)}
 .segrow{display:flex;flex-direction:column;gap:6px;background:var(--slate);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
 .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
@@ -382,7 +387,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .led .big{font:800 34px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .led ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font:500 13px/1.35 var(--f-body);color:var(--soft);font-variant-numeric:tabular-nums}
 .led li{display:flex;justify-content:space-between;gap:6px}
-.sum-foot{padding:14px 22px 18px;display:flex}
+.sum-foot{padding:14px 22px 18px;display:flex;gap:10px}
 .sum-foot .ready{flex:1}
 .end-title.d{color:var(--cool)} .end-title.a{color:var(--warm)}
 
@@ -417,7 +422,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .waitcard p{margin:0;font:500 15px/1.45 var(--f-body);color:var(--soft)}
 .waitcard p.fine{font-size:13px;color:var(--muted)}
 .waitcard .ready{flex:none;min-height:48px;font-size:19px}
-#ov-end .sum-foot{gap:10px}
 .dots::after{content:"";animation:dots 1.4s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 #tip{position:fixed;z-index:80;max-width:280px;padding:8px 11px;border-radius:8px;background:#060a0e;border:1px solid var(--line);
@@ -488,6 +492,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
   .key{grid-template-columns:1fr}
   .ledger{grid-template-columns:1fr}
   .sum-title{font-size:36px}
+  /* online end screen: three buttons don't fit one row, so Replay takes its own */
+  #ov-end .sum-foot:has(#end-swap:not([hidden])),#ov-end .sum-foot:has(#end-menu:not([hidden])){flex-wrap:wrap}
+  #ov-end .sum-foot:has(#end-swap:not([hidden])) #end-replay,#ov-end .sum-foot:has(#end-menu:not([hidden])) #end-replay{flex-basis:100%;min-height:44px}
   .logo{font-size:38px}
   .fxgrid{grid-template-columns:1fr}
   .sheet-head{padding:16px 16px 12px} .sheet-body{padding:0 16px 18px} .howto{margin:0 -16px;padding:16px 16px 4px!important}
@@ -604,6 +611,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <div class="browse"><p class="note" id="wave-note">Tap any unit or tower to see how the other side built it.</p></div>
           <div class="ctx" id="wave-ctx"></div>
         </div>
+        <div class="navrow" id="replay-bar" hidden><button class="back" id="rp-again">Restart</button><button class="ready neutral" id="rp-close">Close replay</button></div>
       </section>
     </aside>
   </main>
@@ -615,7 +623,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><span class="w">Siege</span><span class="c">line</span></h1>
-        <p class="tagline">Asymmetric 1v1 tower defense · prototype v8</p>
+        <p class="tagline">Asymmetric 1v1 tower defense · prototype v9</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -631,10 +639,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
         <ol>
           <li><strong>The Defender builds in secret, in three steps.</strong> Maze: walls (5 coins) bend the route. Towers: place them and tap one to tune it. Ready: check the build and what attacked last time.</li>
           <li><strong>The Attacker plans in secret, in four steps.</strong> Army: pick units and how many. Wave: arrange when each one leaves the breach on a 20-second timeline. Charges: plant them on walls and towers you've seen. Ready: check and send.</li>
-          <li><strong>The wave.</strong> Everything is revealed. Charges go off, units take the cheapest route to the keep, towers fire. Tap any unit or tower to inspect it.</li>
+          <li><strong>The wave.</strong> Everything is revealed. Charges go off, units take the cheapest route to the keep, towers fire. Tap any unit or tower to inspect it. Afterwards either side can replay it, from the round summary or from the Ready step while planning.</li>
           <li><strong>The split.</strong> Every round adds a 200-coin pot. The more of the army's strength gets through, the bigger the defender's share, from 30% up to 70%. The side that's losing gets more to recover with.</li>
         </ol>
-        <p><strong>Controls.</strong> Tap or click to build, and drag to draw a line of walls. On touch screens a tower needs a second tap to place, so you can check its range first. On the wave timeline, drag the handles or the dots.</p>
+        <p><strong>Controls.</strong> Tap or click to build, and drag to draw a line of walls. On touch screens a tower needs a second tap to place, so you can check its range first. On the wave timeline, drag the handles or the dots. When tuning a tower or a unit, the <strong>+</strong> next to each slider is what the next step up costs; it turns red when you can’t afford it.</p>
       </section>
 
       <section>
@@ -673,7 +681,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
         <p>Units take the cheapest route to the keep. Every cell costs one step, and every working tower that can hit a cell adds half a step more. So units walk around tower range whenever the detour is short, and towers standing on open ground mostly get bypassed. Walls are how the Defender forces the route through the kill zones. The dashed line always shows the route the units will take, and it updates as you build.</p>
         <div class="callout"><p><code>cell cost = 1 step + ½ step × towers in range</code></p></div>
         <h3>Charges and the staged rule</h3>
-        <p>A charge on a wall (60 coins) destroys that wall plus every wall directly next to it, and the Defender loses those coins for good. A charge on a tower knocks it offline for one to three waves (25, 55 or 90 coins). An offline tower can't shoot, can't be removed and can't be retuned, but it still blocks its cell. The Defender sees that it's offline, never for how long.</p>
+        <p>A charge on a wall (60 coins) destroys that one wall, and the Defender loses its coins for good. If the Defender has taken the wall down or swapped it for a tower by the time the wave starts, the charge goes off on nothing. A charge on a tower knocks it offline for one to three waves (25, 55 or 90 coins). An offline tower can't shoot, can't be removed and can't be retuned, but it still blocks its cell. The Defender sees that it's offline, never for how long.</p>
         <p>No more than half the towers the Attacker has seen, rounded up, can be offline in the same wave, counting towers still offline from earlier charges. There are no charges at all in the final wave: the last round is the army against the defense as built.</p>
         <p>Charges only work on things the Attacker has seen, which means things built before this round. New defenses always get one round of value. Tearing something down and rebuilding it on the same cell doesn't count as new.</p>
         <h3>Breach, the keep and the shared pot</h3>
@@ -700,7 +708,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
               <tr><td class="d">Wall</td><td class="n">5</td><td>Refundable unless blown up</td></tr>
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower owned</td></tr>
               <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Health, speed and traits multiply; surcharge above 60</td></tr>
-              <tr><td class="a">Wall charge</td><td class="n">60</td><td>Destroys a wall and its neighbours</td></tr>
+              <tr><td class="a">Wall charge</td><td class="n">60</td><td>Destroys the one wall it’s planted on</td></tr>
               <tr><td class="a">Tower charge</td><td class="n">25 / 55 / 90</td><td>Offline for 1 / 2 / 3 waves; at most half the towers (rounded up) per wave; none in the final wave</td></tr>
               <tr><td class="a">Wave length</td><td class="n">20 s</td><td>Width of the timeline</td></tr>
             </tbody>
@@ -725,7 +733,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <li>Monetization that is fair to the community: cosmetic only, never pay-to-win.</li>
         </ul>
         <p>The guiding rule: a fun game first, a business second.</p>
-        <p class="colophon">Siegeline is a working title. Prototype v8, single file, Canvas 2D.</p>
+        <p class="colophon">Siegeline is a working title. Prototype v9, single file, Canvas 2D.</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -746,7 +754,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 <div class="overlay" id="ov-sum" hidden role="dialog" aria-modal="true" aria-labelledby="sum-title">
   <div class="sheet small">
     <div class="sum-body" id="sum-body"></div>
-    <div class="sum-foot"><button class="ready def" id="sum-next">Next round</button></div>
+    <div class="sum-foot"><button class="back" id="sum-replay">Replay</button><button class="ready def" id="sum-next">Next round</button></div>
   </div>
 </div>
 
@@ -754,7 +762,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 <div class="overlay" id="ov-end" hidden role="dialog" aria-modal="true" aria-labelledby="end-title">
   <div class="sheet small">
     <div class="sum-body" id="end-body"></div>
-    <div class="sum-foot"><button class="ready ghost" id="end-swap" hidden>Swap sides</button><button class="ready ghost" id="end-menu" hidden>Menu</button><button class="ready neutral" id="end-again">Rematch</button></div>
+    <div class="sum-foot"><button class="back" id="end-replay">Replay</button><button class="ready ghost" id="end-swap" hidden>Swap sides</button><button class="ready ghost" id="end-menu" hidden>Menu</button><button class="ready neutral" id="end-again">Rematch</button></div>
   </div>
 </div>
 
@@ -829,6 +837,7 @@ const RULES = {
   shareMin: 0.3, shareMax: 0.7, breachCap: 0.5,
   wall: 5, towerBase: 40, towerFee: 10, unitBase: 15, maxDesigns: 4,
   wallCharge: 60, towerCharge: [25, 55, 90], waveLen: 20,
+  wallBlast: 0, // how far a wall charge reaches: 0 = only the wall it's planted on, 1 = that wall and the four next to it
   danger: 5, // extra route cost (in tenths of a step) for each working tower that can hit a cell
 };
 const DET0 = 0.45, DETGAP = 0.32;
@@ -957,6 +966,7 @@ const ICON = {
   charge: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="13.5" cy="19" r="9" fill="currentColor"/><path d="M19.5 12.5l4-4" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><path d="M26 3l1.1 3 3 1.1-3 1.1L26 11.2l-1.1-3-3-1.1 3-1.1z" fill="#ffd27a"/></svg>',
   jam: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M17.5 6.5L10 17.5h6l-1.5 8 7.5-11h-6z" fill="currentColor"/></svg>',
   add: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-dasharray="4 3"/><path d="M16 10v12M10 16h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+  replay: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7.5 10.5A11 11 0 1 1 5 17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M3.5 5.5l1 7.5 7.4-1.6z" fill="currentColor"/><path d="M13 11.5v9l7.5-4.5z" fill="currentColor"/></svg>',
   keep: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 29V12h4v3h3v-3h4v3h2v-3h4v3h3v-3h4v17z" fill="currentColor"/><path d="M13 29v-6a3 3 0 0 1 6 0v6z" fill="#0b1219"/><rect x="7" y="17" width="3" height="4" rx="1" fill="#0b1219"/><rect x="22" y="17" width="3" height="4" rx="1" fill="#0b1219"/></svg>',
 };
 function unitSVG(d) {
@@ -986,7 +996,7 @@ const el = {
   paneDef: $('#pane-def'), paneAtk: $('#pane-atk'), paneWave: $('#pane-wave'),
   defSteps: $('#def-steps'), defBody: $('#def-body'), defCtx: $('#def-ctx'), defBack: $('#def-back'), defNext: $('#def-next'),
   atkSteps: $('#atk-steps'), atkBody: $('#atk-body'), atkCtx: $('#atk-ctx'), atkBack: $('#atk-back'), atkNext: $('#atk-next'),
-  waveTitle: $('#wave-title'), waveCtx: $('#wave-ctx'),
+  waveTitle: $('#wave-title'), waveCtx: $('#wave-ctx'), rpBar: $('#replay-bar'),
   toast: $('#toast'), tip: $('#tip'),
   ovInfo: $('#ov-info'), ovHand: $('#ov-hand'), ovSum: $('#ov-sum'), ovEnd: $('#ov-end'),
 };
@@ -999,6 +1009,9 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let S = null, uid = 0, tipsOn = false;
 // Versus computer: the player's side, the difficulty, and the computer's plan for this round.
 const SOLO = { on: false, side: 'def', level: 'easy', plan: null, pending: '', note: '', fallback: null, think: null, timer: 0, locked: false, rng: Math.random, mem: { atk: {}, def: {} }, seed: null };
+// While a replay runs, S is a scratch copy of the match and the real state waits in replay.live.
+let replay = null;
+const real = () => (replay ? replay.live : S);
 const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, walls: 0, wallCoins: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0 });
 function newState() {
   return {
@@ -1012,7 +1025,7 @@ function newState() {
     tool: 'wall', sel: null,
     units: [], shots: [], spawnList: [], spawnIdx: 0, detQueue: [], detIdx: 0, waveT: 0, spawnStart: 0, endDelay: 0,
     wave: blankWave(), totals: { kills: 0, leaks: 0, walls: 0, charges: 0, through: 0, jammed: 0 },
-    path: null, pathFlash: 0, over: false, overT: 0, winner: null, scorches: [], confirmEmpty: false, last: null, preWave: null,
+    path: null, pathFlash: 0, over: false, overT: 0, winner: null, scorches: [], confirmEmpty: false, last: null, preWave: null, lastWave: null,
   };
 }
 const cloneTower = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, n: g.n, fresh: false, cd: 0, ang: g.ang ?? Math.PI, kick: 0, dealt: 0 });
@@ -1134,18 +1147,19 @@ function pathWithBlock(cell, kind) {
   }
   return hypCache.path;
 }
-function plus(i) {
-  const c = i % COLS, r = (i / COLS) | 0, out = [i];
-  if (c > 0) out.push(i - 1);
-  if (c < COLS - 1) out.push(i + 1);
-  if (r > 0) out.push(i - COLS);
-  if (r < ROWS - 1) out.push(i + COLS);
+// The cells a wall charge reaches: the one it's planted on, plus any within RULES.wallBlast steps.
+function blastCells(i) {
+  const c0 = i % COLS, r0 = (i / COLS) | 0, k = RULES.wallBlast, out = [];
+  for (let r = Math.max(0, r0 - k); r <= Math.min(ROWS - 1, r0 + k); r++)
+    for (let c = Math.max(0, c0 - k); c <= Math.min(COLS - 1, c0 + k); c++)
+      if (Math.abs(c - c0) + Math.abs(r - r0) <= k) out.push(r * COLS + c);
   return out;
 }
+const blastWhat = w => (RULES.wallBlast ? `${w} and every wall within ${plural(RULES.wallBlast, 'step')} of it` : w);
 // Every wall the attacker has seen was standing before this round, so all of them are chargeable.
 function seenBlast(list) {
   const set = new Set();
-  for (const i of list) for (const j of plus(i)) { const g = S.seenGrid[j]; if (g && g.t === 'wall') set.add(j); }
+  for (const i of list) for (const j of blastCells(i)) { const g = S.seenGrid[j]; if (g && g.t === 'wall') set.add(j); }
   return set;
 }
 const wallChargeCells = () => [...S.charges].filter(([, c]) => c.kind === 'wall').map(([i]) => i);
@@ -1516,8 +1530,10 @@ function detonate(i) {
     else floatText(cx, cy - 0.5, 'MISSED · TOWER GONE', '#ffd27a', 11);
     return;
   }
-  const destroyed = [];
-  for (const j of plus(i)) {
+  const destroyed = [], tg = S.grid[i];
+  // A wall that was swapped for a tower or taken down is out of reach: the attacker only ever charged a wall.
+  if (!tg || tg.t !== 'wall') floatText(cx, cy - 0.5, tg ? 'MISSED · NOW A TOWER' : 'MISSED · WALL GONE', '#ffd27a', 11);
+  for (const j of blastCells(i)) {
     const g = S.grid[j];
     if (g && g.t === 'wall') {
       if (g.fresh) { const [x, y] = center(j); fx.push({ k: 'ring', x, y, r0: 0.25, r1: 0.6, life: 0.6, max: 0.6, w: 0.06, color: '217,246,255' }); floatText(x, y - 0.3, 'NEW · SAFE', '#d9f6ff', 11); }
@@ -1590,7 +1606,8 @@ function setPhase(p) {
   clearTimeout(toastTimer); el.toast.className = '';
   const ui = PHASE_UI[p];
   document.body.dataset.side = ui.side;
-  el.who.textContent = ui.who;
+  el.who.textContent = replay ? 'Replay' : ui.who;
+  el.rpBar.hidden = !replay;
   el.paneDef.hidden = p !== 'defend';
   el.paneAtk.hidden = p !== 'attack';
   el.paneWave.hidden = p !== 'wave';
@@ -1640,10 +1657,12 @@ function attackerReady() {
     `Both players watch. ${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${plural(c, 'charge')}` : ''} against the defense. Tap anything on the board to inspect it.`, 'Start the wave', startWave);
 }
 function startWave(seed) {
+  const sd = seed == null ? (Math.random() * 4294967296) >>> 0 : seed;
   simAcc = 0;
   S.preWave = coreSnapshot('attack');
+  S.lastWave = { seed: sd, snap: S.preWave }; // everything needed to play this wave again
   S.next = null;
-  prepWave(seed);
+  prepWave(sd);
   setPhase('wave');
 }
 // Everything the wave simulation needs to begin. The computer's hidden test runs (trial) use it too.
@@ -1660,7 +1679,8 @@ function prepWave(seed) {
   for (const g of S.grid) if (g && g.t === 'tower') { g.cd = 0.2; g.kick = 0; g.dealt = 0; }
 }
 function endRound() {
-  if (QUIET) { S.trialDone = true; return; }
+  if (QUIET) { S.trialDone = true; return; } // a hidden test wave (checked first: one can run while a replay is open)
+  if (replay) { replay.done = true; refreshUI(); return; }
   const X = S.wave.x, Y = S.wave.y, sp = splitFor(X, Y);
   const dGain = Math.round(RULES.pot * sp.share), aGain = RULES.pot - dGain;
   S.dFree += dGain; S.aFree += aGain;
@@ -1681,6 +1701,7 @@ function nextRound() {
   startRound();
 }
 function newMatch() {
+  replay = null;
   S = newState(); uid = 0;
   soloStop();
   SOLO.rng = mulberry32(SOLO.seed != null ? SOLO.seed : (Math.random() * 4294967296) >>> 0);
@@ -1688,6 +1709,32 @@ function newMatch() {
   fx.length = 0; floaters.length = 0;
   recompute(); drawTerrain();
 }
+
+/* ---------- replay: waves are deterministic, so the saved start and seed play the same wave again ---------- */
+const waveRunning = () => S.phase === 'wave' && !S.over && !(replay && replay.done);
+function startReplay() {
+  const live = real(), L = live.lastWave;
+  if (!L) return;
+  replay = { live, done: false };
+  hide(el.ovSum); hide(el.ovEnd);
+  S = stateFrom(L.snap);
+  fx.length = 0; floaters.length = 0;
+  recompute(); drawTerrain();
+  startWave(L.seed);
+}
+function exitReplay() {
+  if (!replay) return;
+  S = replay.live; replay = null;
+  fx.length = 0; floaters.length = 0; shake = 0; keepHit = 0;
+  hypCache.key = ''; seenCache.ver = -1; projCache.key = '';
+  recompute(); drawTerrain();
+  const { phase, step, tool } = S;
+  setPhase(phase); S.step = step; S.tool = tool; refreshUI();
+  if (phase === 'summary') showSummary(); else if (phase === 'over') showEnd();
+  // anything the other device sent while the replay ran
+  if (online()) { netCheck(); if (NET.role === 'atk' && NET.peer) adoptResult(NET.peer.res); }
+}
+const replayRow = () => (S.lastWave ? `<button class="irow" data-act="replay"><span class="ico replay">${ICON.replay}</span><span class="rmain"><span class="rname">Replay wave ${S.lastWave.snap.round}</span><span class="rsub">Watch the last wave again. Nothing in the match changes.</span></span></button>` : '');
 
 /* =====================================================================
    Overlays
@@ -1750,6 +1797,7 @@ function showSummary() {
     </div>
     <p class="fml">The army comes back at full strength next wave. Both sides now spend their new coins in secret.</p>`;
   $('#sum-next').textContent = `Start round ${S.round + 1}`;
+  $('#sum-replay').hidden = !S.lastWave;
   show(el.ovSum);
   setTimeout(() => $('#sum-next').focus({ preventScroll: true }), 30);
 }
@@ -1769,6 +1817,7 @@ function showEnd() {
       : SOLO.on ? 'Rematch plays the same side again. Open the menu to switch sides or difficulty.' : 'Swap seats for the rematch to try the other side.'}</p>`;
   $('#end-swap').hidden = !online();
   $('#end-menu').hidden = !SOLO.on;
+  $('#end-replay').hidden = !S.lastWave;
   show(el.ovEnd);
   setTimeout(() => $('#end-again').focus({ preventScroll: true }), 30);
 }
@@ -1807,7 +1856,7 @@ const roleName = r => (r === 'def' ? 'Defender' : 'Attacker');
 const otherRole = r => (r === 'def' ? 'atk' : 'def');
 const ovMode = $('#ov-mode'), ovWait = $('#ov-wait'), restartBtn = $('#mode-restart');
 const modeStatus = $('#mode-status'), modeBtn = $('#mode-online'), codeIn = $('#mode-code'), netpill = $('#netpill');
-const peerReadyNow = () => { const P = NET.peer; return !!(P && S && P.ep === NET.ep && (P.lk === S.round || P.go === S.round)); };
+const peerReadyNow = () => { const P = NET.peer, s = real(); return !!(P && s && P.ep === NET.ep && (P.lk === s.round || P.go === s.round)); };
 
 /* ---------- plan and result encoding (compact, and validated on the way in) ---------- */
 const q36 = x => clamp(Math.round(x * 1295), 0, 1295).toString(36).padStart(2, '0');
@@ -1881,7 +1930,7 @@ function makeResult() {
   return { r: S.round, ep: NET.ep, keep: S.keep, dFree: S.dFree, aFree: S.aFree, g: encodeGrid(S.grid), L, T: { ...S.totals }, over: S.over ? 1 : 0, win: S.winner || '' };
 }
 function netState() {
-  return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, rd: S ? S.round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
+  return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
 }
 const bytes = o => new TextEncoder().encode(JSON.stringify(o)).length;
 function publish() { if (NET.link && NET.on) NET.link.send(netState()); }
@@ -1913,7 +1962,7 @@ function unlock() {
   publish(); refreshUI(); updateNetUI();
 }
 function netCheck() {
-  if (!NET.on || NET.st !== 'play' || !S) return;
+  if (!NET.on || NET.st !== 'play' || !S || replay) return; // exitReplay checks again
   const P = NET.peer, r = S.round;
   const live = P && P.ep === NET.ep && P.role !== NET.role && P.st === 'play';
   if (live && S.phase === myPhase() && NET.lk === r && NET.go < r && (P.lk === r || P.go === r)) {
@@ -1945,11 +1994,13 @@ function netAfterWave() {
   else S.aFreeAtEnd = S.aFree;
 }
 function finishOver() {
+  if (replay) { replay.done = true; refreshUI(); return; }
   if (online()) netAfterWave();
   setPhase('over'); showEnd();
   if (online() && NET.role === 'atk' && NET.peer) adoptResult(NET.peer.res);
 }
 function adoptResult(res) {
+  if (replay) return; // exitReplay adopts it afterwards
   if (!res || typeof res !== 'object' || res.ep !== NET.ep || res.r !== S.doneRound || NET.adopted === res.r) return;
   NET.adopted = res.r;
   const sig = g => JSON.stringify(g);
@@ -2374,7 +2425,8 @@ function routeCost(G, open, off) {
   flow(tmpB, i => !G[i] || open.has(i), dangerField(G, off));
   return tmpB[ENTRY];
 }
-// Walls to charge, best first: each pick is the chargeable wall whose blast shortens the route the most.
+// Walls to charge, best first: each pick is the chargeable wall whose blast (blastCells, RULES.wallBlast)
+// shortens the route the most.
 function wallPicks(G, chargeable, n) {
   const open = new Set(), picks = [], cells = [];
   for (let i = 0; i < N; i++) if (chargeable(i)) cells.push(i);
@@ -2383,7 +2435,7 @@ function wallPicks(G, chargeable, n) {
     let best = -1, bestCost = base, bestBlast = null;
     for (const i of cells) {
       if (open.has(i)) continue;
-      const blast = plus(i).filter(j => chargeable(j) && !open.has(j));
+      const blast = blastCells(i).filter(j => chargeable(j) && !open.has(j));
       const c = routeCost(G, new Set([...open, ...blast]), null);
       if (c >= 0 && c < bestCost) { bestCost = c; best = i; bestBlast = blast; }
     }
@@ -2515,7 +2567,9 @@ function attackNote(K, D, c, designs, tried) {
    towers or damage upgrades (always the weakest tower first, so no single tower carries the defense). It
    tries every maze, tower mix and spending style against the last army it saw, then tests the best few
    against the armies that would counter them. It keeps its maze unless another is clearly better, and
-   rebuilding on a cell the attacker saw doesn't hide it again (seenAs). Offline towers stay put. */
+   rebuilding on a cell the attacker saw doesn't hide it again (seenAs). Offline towers stay put.
+   A wall charge misses if its wall has become a tower, so at Normal and Hard each finalist also comes in a
+   guarded version, with a tower on the wall it would charge itself in the attacker's place. */
 const AI_MAZES = { four: [3, 6, 9, 12], three: [4, 8, 12], five: [2, 5, 8, 11, 14] }; // wall columns
 const AI_MIXES = { // tower k's tuning
   damage: () => ({}),
@@ -2547,7 +2601,7 @@ function aiSlots(maze) {
   for (let p = 0; p < 3; p++) picked.forEach(list => { if (list[p] != null) slots.push(list[p]); });
   return (slotCache[maze] = slots);
 }
-function buildDefense(K, maze, mix, spend) {
+function buildDefense(K, maze, mix, spend, guard = -1) {
   const G = K.grid.map(g => (g && g.t === 'tower' && g.off > 0 ? cloneCell(g) : null));
   let worth = K.worth, seq = K.towerSeq, placed = 0, cols = 0;
   const seen = (i, t) => !!(K.seenGrid[i] && K.seenGrid[i].t === t);
@@ -2560,9 +2614,11 @@ function buildDefense(K, maze, mix, spend) {
     G[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seen(i, 'tower'), n: ++seq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
     worth -= cost; return true;
   };
-  const C = AI_MAZES[maze], slots = aiSlots(maze), order = [];
-  C.forEach((c, k) => order.push(['col', k], ['tower', slots[k]]));
-  for (const i of slots.slice(C.length)) order.push(['tower', i]);
+  const C = AI_MAZES[maze], slots = aiSlots(maze), order = []; // slots[k] is column k's best cell for k < C.length
+  const gk = guard >= 0 ? C.indexOf(guard % COLS) : -1;
+  if (guard >= 0 && (gk < 0 || !mazeCells(C[gk], gk).includes(guard))) return null; // not a wall of this maze
+  C.forEach((c, k) => { order.push(['col', k]); if (k === gk) order.push(['tower', guard]); if (slots[k] !== guard) order.push(['tower', slots[k]]); });
+  for (const i of slots.slice(C.length)) if (i !== guard) order.push(['tower', i]);
   for (const [kind, x] of order) {
     if (kind === 'col') {
       const cells = mazeCells(C[x], x);
@@ -2577,7 +2633,7 @@ function buildDefense(K, maze, mix, spend) {
   for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
   bfs(tmpA, i => !G[i]);
   if (tmpA[ENTRY] < 0) return null;
-  return { G, left: worth, seq, maze, mix, spend, cols, towers: towerCount(G) };
+  return { G, left: worth, seq, maze, mix, spend, guard, cols, towers: towerCount(G) };
 }
 // Raises the weakest tower's damage one step if that buys more damage per coin than another tower would
 // (or whenever it's affordable, with force). Returns the coins spent.
@@ -2627,6 +2683,15 @@ function* thinkDefend(K, L, rng, mem) {
   if (!builds.length) return fallback;
   builds.sort((a, b) => a.score - b.score);
   const fin = builds.slice(0, L.finalists);
+  // the guarded versions: a tower on the seen wall a charge would most likely hit (charges come in rounds 2-7)
+  const target = K.round > 1 && K.round < RULES.rounds ? wallPicks(K.seenGrid, i => !!(K.seenGrid[i] && K.seenGrid[i].t === 'wall'), 1)[0] : undefined;
+  if (L.foresight && target != null) for (const f of fin.slice()) {
+    const b = buildDefense(K, f.maze, f.mix, f.spend, target);
+    if (!b) continue;
+    b.Y = run(b, threats[0], [], 0); yield;
+    b.score = scored(b, b.Y);
+    fin.push(b);
+  }
   // 2. the best few against the armies that could beat them
   if (L.foresight) for (const b of fin) {
     const ys = [];
@@ -2655,7 +2720,8 @@ function defendNote(K, L, b, tried) {
   const kinds = [[count(g => g.cfg.splash), 'splash'], [count(g => !g.cfg.splash && g.cfg.rate >= 4), 'heavy-shot'],
     [count(g => g.cfg.slow), 'frost'], [count(g => g.cfg.poison), 'poison'], [count(g => g.cfg.range >= 3 && g.cfg.rate <= 1), 'long-range']].filter(([k]) => k);
   const towers = !T.length ? 'no towers' : `${plural(T.length, 'tower')}${kinds.length ? ` (${kinds.map(([k, w]) => `${k} ${w}`).join(', ')})` : ', all single-target'}`;
-  return `${saw} I tried ${plural(tried, 'defense')} ${against}. ${b.best ? 'What held best' : 'I went with'}: ${b.cols ? `a ${b.cols}-column maze` : 'open ground'} with ${towers}.${repaired ? ` I rebuilt the ${plural(repaired, 'wall')} you blew.` : ''}`;
+  const guarded = b.guard >= 0 ? ' I also put a tower on the wall I’d have charged in your place, so a charge there would miss.' : '';
+  return `${saw} I tried ${plural(tried, 'defense')} ${against}. ${b.best ? 'What held best' : 'I went with'}: ${b.cols ? `a ${b.cols}-column maze` : 'open ground'} with ${towers}.${guarded}${repaired ? ` I rebuilt the ${plural(repaired, 'wall')} you blew.` : ''}`;
 }
 
 /* ---------- hidden test runs ----------
@@ -2727,6 +2793,7 @@ function soloReady() {
   show(ovWait);
 }
 function soloBeginWave() {
+  if (replay) exitReplay(); // the wave starts on the live match
   const p = SOLO.plan || SOLO.fallback;
   SOLO.plan = null; SOLO.note = SOLO.pending || '';
   if (SOLO.side === 'def') {
@@ -2824,6 +2891,7 @@ function buildPanels() {
 
   // defender body
   el.defBody.addEventListener('click', e => {
+    if (e.target.closest('[data-act=replay]')) { startReplay(); return; }
     const t = e.target.closest('.tool');
     if (t) { S.tool = S.tool === t.dataset.tool && t.dataset.tool === 'remove' ? DEF_STEPS[S.step].tool : t.dataset.tool; pending = -1; pendingRemove = -1; if (S.tool === 'remove') S.sel = null; refreshUI(); return; }
     const r = e.target.closest('.irow');
@@ -2853,6 +2921,7 @@ function buildPanels() {
     if (t.classList.contains('step')) { changeCount(+t.dataset.i, t.dataset.act === 'plus' ? 1 : -1); return; }
     if (t.classList.contains('rpick')) { const i = +t.dataset.i; S.sel = S.sel && S.sel.k === 'design' && S.sel.i === i ? null : { k: 'design', i }; refreshUI(); return; }
     if (t.id === 'add-design') { addDesign(); return; }
+    if (t.dataset.act === 'replay') { startReplay(); return; }
     if (t.dataset.rm) { removeCharge(+t.dataset.rm); return; }
     if (t.dataset.act === 'even' || t.dataset.act === 'rush' || t.dataset.act === 'stagger') {
       S.designs.forEach((d, k) => {
@@ -2900,21 +2969,28 @@ function buildPanels() {
 /* ---------- shared card pieces ---------- */
 function sliderHTML(prefix, key, def, idx) {
   return `<div class="srow">
-    <div class="shead"><label class="sname" for="${prefix}-${key}">${def.name}</label><span class="sval" id="${prefix}-${key}-v"></span><span class="smult" id="${prefix}-${key}-m"></span></div>
+    <div class="shead"><label class="sname" for="${prefix}-${key}">${def.name}</label><span class="sval" id="${prefix}-${key}-v"></span><span class="smult" id="${prefix}-${key}-m"></span><span class="snext" id="${prefix}-${key}-n"></span></div>
     <input type="range" id="${prefix}-${key}" min="0" max="${def.steps.length - 1}" step="1" value="${idx}" data-key="${key}">
     <div class="shint">${def.hint}</div>
   </div>`;
 }
-function setSlider(root, prefix, key, def, idx, valText) {
+// next: what one more step costs, as { text, poor }, or null at the top of the slider.
+function setSlider(root, prefix, key, def, idx, valText, next) {
   const inp = root.querySelector(`#${prefix}-${key}`);
   if (!inp) return;
   if (+inp.value !== idx) inp.value = idx;
   root.querySelector(`#${prefix}-${key}-v`).textContent = valText;
-  const m = root.querySelector(`#${prefix}-${key}-m`);
+  const m = root.querySelector(`#${prefix}-${key}-m`), n = root.querySelector(`#${prefix}-${key}-n`);
+  n.hidden = !!def.free;
   if (def.free) { m.textContent = 'Free'; m.className = 'smult free'; return; }
   const mv = def.mult(idx);
   m.textContent = '×' + mv.toFixed(2);
   m.className = 'smult' + (mv > 1.004 ? ' up' : mv < 0.996 ? ' down' : '');
+  setNext(n, next);
+}
+function setNext(n, next) {
+  n.textContent = next ? next.text : 'Max';
+  n.className = 'snext' + (!next ? ' max' : next.poor ? ' poor' : '');
 }
 function formulaHTML(base, parts, total, suffix, fee, raw) {
   const shown = parts.filter(p => Math.abs(p.m - 1) > 0.004);
@@ -2960,7 +3036,7 @@ function defBodyHTML(step) {
     <div class="tools">${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span> coins')}${toolBtn('remove', 'Remove', 'full refund')}</div>
     <p class="note show" id="d-fee"></p>
     <div class="list" id="d-tlist"></div>`;
-  return `<div class="sumgrid" id="d-sum"></div><div class="list" id="def-intel"></div>`;
+  return `<div class="sumgrid" id="d-sum"></div>${replayRow()}<div class="list" id="def-intel"></div>`;
 }
 function towerRows() {
   const rows = [];
@@ -3033,10 +3109,10 @@ function towerEditorHTML(cell) {
       <span class="ed-title">Tower ${g.n}</span>
       <span class="ed-price"><b id="te-price"></b><small>coins</small></span>
     </div>
-    <p class="ed-sub"><span><b id="te-free"></b> coins free. Lowering anything refunds the difference.</span>${tipBtn()}</p>
+    <p class="ed-sub"><span><b id="te-free"></b> coins free. The <b>+</b> on each slider is what one more step costs. Lowering anything refunds the difference.</span>${tipBtn()}</p>
     <div class="presets"><span class="plabel">Start from</span>${Object.keys(TPRESETS).map(k => `<button class="pre" data-pre="${k}" aria-pressed="false">${k}<small>${towerCost(presetTower(k))}</small></button>`).join('')}</div>
     ${TKEYS.map(k => sliderHTML('te', k, TS[k], c[k])).join('')}
-    <div class="fxgrid">${FXK.map(k => `<button class="fxrow fx-${k}" data-fx="${k}" aria-pressed="false"><span class="fxtop"><span class="box"></span><span class="rname">${TFX[k].name}</span></span><span class="smult">×${TFX[k].mult.toFixed(2)}</span><span class="shint">${TFX[k].hint}</span></button>`).join('')}</div>
+    <div class="fxgrid">${FXK.map(k => `<button class="fxrow fx-${k}" data-fx="${k}" aria-pressed="false"><span class="fxtop"><span class="box"></span><span class="rname">${TFX[k].name}</span></span><span class="fxcost"><span class="smult">×${TFX[k].mult.toFixed(2)}</span><span class="snext" id="te-${k}-n"></span></span><span class="shint">${TFX[k].hint}</span></button>`).join('')}</div>
     <div class="formula" id="te-formula"></div>
     <button class="ed-remove" data-act="remove">Remove tower · refund <b id="te-refund"></b></button>
   </div>`;
@@ -3045,8 +3121,14 @@ function updateTowerEditor(cell) {
   const g = S.grid[cell], root = el.defCtx;
   if (!g || g.t !== 'tower' || !root.querySelector('#te-price')) return;
   const c = g.cfg, cost = towerCost(c);
-  for (const k of TKEYS) setSlider(root, 'te', k, TS[k], c[k], TS[k].val(TS[k].steps[c[k]], c));
-  for (const b of root.querySelectorAll('[data-fx]')) b.setAttribute('aria-pressed', !!c[b.dataset.fx]);
+  const up = patch => { const v = towerCost({ ...c, ...patch }) - cost; return { text: '+' + v, poor: v > S.dFree }; };
+  for (const k of TKEYS) setSlider(root, 'te', k, TS[k], c[k], TS[k].val(TS[k].steps[c[k]], c), c[k] < TS[k].steps.length - 1 ? up({ [k]: c[k] + 1 }) : null);
+  for (const b of root.querySelectorAll('[data-fx]')) {
+    const k = b.dataset.fx, n = root.querySelector(`#te-${k}-n`);
+    b.setAttribute('aria-pressed', !!c[k]);
+    n.hidden = !!c[k];
+    if (!c[k]) setNext(n, up({ [k]: true }));
+  }
   for (const b of root.querySelectorAll('[data-pre]')) {
     const p = presetTower(b.dataset.pre);
     b.setAttribute('aria-pressed', sameCfg(c, p));
@@ -3099,7 +3181,7 @@ function atkBodyHTML(step) {
     <p class="note" id="atk-note"></p>`;
   if (step === 1) return `<div class="tl" id="tl">${timelineHTML()}</div>`;
   if (step === 2) return `<div class="callout2" id="a-chg-note"></div><div class="list" id="a-charges"></div>`;
-  return `<div class="sumgrid" id="a-sum"></div><p class="note show" id="a-seen-note"></p>`;
+  return `<div class="sumgrid" id="a-sum"></div><p class="note show" id="a-seen-note"></p>${replayRow()}`;
 }
 function rosterHTML() {
   return S.designs.map((d, i) => {
@@ -3179,7 +3261,7 @@ function chargeRows() {
   for (const [cell, c] of S.charges) {
     const g = S.seenGrid[cell];
     const label = c.kind === 'wall' ? 'Wall charge' : `Tower charge · ${plural(c.waves, 'wave')}`;
-    const sub = c.kind === 'wall' ? 'Destroys this wall and every wall next to it' : `Knocks out a ${g ? towerValue(g) : '?'}-coin tower`;
+    const sub = c.kind === 'wall' ? `Destroys ${blastWhat('this wall')}` : `Knocks out a ${g ? towerValue(g) : '?'}-coin tower`;
     rows.push(`<div class="rrow"><span class="rpick" style="cursor:default"><span class="ico ${c.kind === 'wall' ? 'charge' : 'charge'}">${c.kind === 'wall' ? ICON.charge : ICON.jam}</span><span class="rmain"><span class="rname">${label} · ${c.cost}</span><span class="rsub">${sub}</span></span></span><button class="xbtn" data-rm="${cell}" aria-label="Remove charge">×</button></div>`);
   }
   return rows.length ? `<div class="lhd"><span>Planted</span><span>tap × to refund</span></div>${rows.join('')}` : '';
@@ -3203,7 +3285,7 @@ function renderAtk() {
     const cs = chargeStatus();
     $('#a-chg-note').className = 'callout2' + (cs.ok ? '' : ' locked');
     $('#a-chg-note').innerHTML = cs.ok
-      ? `<b>Tap a wall</b> to blow it and its neighbours (${RULES.wallCharge} coins). <b>Tap a tower</b> to knock it offline for 1–3 waves (${RULES.towerCharge.join(' / ')}). Up to <b>${towerCap()} of ${seenTowers()}</b> towers can be offline in one wave${offlineNext().size ? ` (${offlineNext().size} used)` : ''}. You’re seeing the defense as it stood after wave ${S.seenRound}.`
+      ? `<b>Tap a wall</b> to blow up ${blastWhat('that wall')} (${RULES.wallCharge} coins). <b>Tap a tower</b> to knock it offline for 1–3 waves (${RULES.towerCharge.join(' / ')}). Up to <b>${towerCap()} of ${seenTowers()}</b> towers can be offline in one wave${offlineNext().size ? ` (${offlineNext().size} used)` : ''}. You’re seeing the defense as it stood after wave ${S.seenRound}.`
       : `<b>Locked this round.</b> ${cs.reason}`;
     $('#a-charges').innerHTML = chargeRows();
   }
@@ -3255,12 +3337,12 @@ function designerHTML(i) {
       <span class="ed-title">${d.name}</span>
       <span class="ed-price"><b id="ue-price"></b><small>each</small></span>
     </div>
-    <p class="ed-sub"><span><b id="ue-free"></b> coins free. Changes re-price every ${d.name}.</span>${tipBtn()}</p>
+    <p class="ed-sub"><span><b id="ue-free"></b> coins free. Changes re-price every ${d.name}, so the <b>+</b> on each slider is one more step for all of them.</span>${tipBtn()}</p>
     <div class="presets"><span class="plabel">Start from</span>${Object.keys(UPRESETS).map(k => `<button class="pre" data-pre="${k}" aria-pressed="false">${k}<small></small></button>`).join('')}</div>
     <div class="countrow"><span class="rmain"><span class="rname">In the army</span><span class="rsub" id="ue-total"></span></span>
       <span class="stepper"><button class="step minus" data-act="minus" aria-label="Remove one">−</button><output class="count" id="ue-count"></output><button class="step plus" data-act="plus" aria-label="Add one">+</button></span></div>
     ${UKEYS.map(k => sliderHTML('ue', k, US[k], d[k])).join('')}
-    <div class="segrow"><div class="shead"><span class="sname">Resist</span><span class="sval" id="ue-resist-v"></span><span class="smult" id="ue-resist-m"></span></div>
+    <div class="segrow"><div class="shead"><span class="sname">Resist</span><span class="sval" id="ue-resist-v"></span><span class="smult" id="ue-resist-m"></span><span class="snext" id="ue-resist-n"></span></div>
       <div class="seg">${Object.keys(RESIST).map(k => `<button data-resist="${k}" aria-pressed="false">${RESIST[k].name}</button>`).join('')}</div>
       <div class="shint">Cuts one kind of damage by 60%. Never a full immunity.</div></div>
     <div class="formula" id="ue-formula"></div>
@@ -3271,7 +3353,13 @@ function updateDesigner(i) {
   const d = S.designs[i], root = el.atkCtx;
   if (!d || !root.querySelector('#ue-price')) return;
   const cost = unitCost(d);
-  for (const k of UKEYS) setSlider(root, 'ue', k, US[k], d[k], US[k].val(US[k].steps[d[k]]));
+  // Upgrades re-price every unit of the design, so the step costs the difference times the count.
+  // With none in the army it costs nothing yet, so show the price per unit.
+  const up = patch => {
+    const v = unitCost({ ...d, ...patch }) - cost;
+    return d.count ? { text: '+' + v * d.count, poor: v * d.count > S.aFree } : { text: `+${v} each`, poor: false };
+  };
+  for (const k of UKEYS) setSlider(root, 'ue', k, US[k], d[k], US[k].val(US[k].steps[d[k]]), d[k] < US[k].steps.length - 1 ? up({ [k]: d[k] + 1 }) : null);
   root.querySelector('#ue-ico').innerHTML = unitSVG(d);
   root.querySelector('#ue-price').textContent = cost;
   root.querySelector('#ue-free').textContent = S.aFree;
@@ -3281,6 +3369,9 @@ function updateDesigner(i) {
   for (const b of root.querySelectorAll('[data-resist]')) b.setAttribute('aria-pressed', d.resist === b.dataset.resist);
   root.querySelector('#ue-resist-v').textContent = d.resist === 'none' ? 'None' : RESIST[d.resist].text;
   const rm = root.querySelector('#ue-resist-m'); rm.textContent = '×' + RESIST[d.resist].mult.toFixed(2); rm.className = 'smult' + (d.resist !== 'none' ? ' up' : '');
+  const rn = root.querySelector('#ue-resist-n');
+  rn.hidden = d.resist !== 'none';
+  if (d.resist === 'none') setNext(rn, up({ resist: RES_KEYS.find(k => k !== 'none') }));
   for (const b of root.querySelectorAll('[data-pre]')) {
     const p = { ...d, ...UPRESETS[b.dataset.pre] };
     b.setAttribute('aria-pressed', UKEYS.every(k => p[k] === d[k]) && p.resist === d.resist);
@@ -3323,8 +3414,8 @@ function unitCardHTML(u) {
   </div>`;
 }
 function renderWave() {
-  el.hint.textContent = PHASE_UI.wave.hint;
-  el.waveTitle.textContent = 'Wave ' + S.round;
+  el.hint.textContent = replay ? `Replay of wave ${S.round}. ${replay.done ? 'It’s over: restart it or close the replay.' : 'Nothing here changes the match.'}` : PHASE_UI.wave.hint;
+  el.waveTitle.textContent = (replay ? 'Replay · wave ' : 'Wave ') + S.round;
   el.panel.classList.remove('wide');
   let key = '';
   if (S.sel && S.sel.k === 'unit') key = 'unit:' + S.sel.u.id;
@@ -3910,7 +4001,7 @@ function drawLabels(c, G) {
     defend: ['YOUR LIVE BUILD · HIDDEN FROM THE ATTACKER', 'LIVE BUILD · HIDDEN', '#5fd0f0'],
     attack: S.seenRound ? [`DEFENSE AS LAST SEEN AFTER WAVE ${S.seenRound}`, `LAST SEEN · WAVE ${S.seenRound}`, '#ff9142']
       : ['DEFENSE NOT SEEN YET · REVEALED WHEN YOUR WAVE STARTS', 'DEFENSE NOT SEEN YET', '#ff9142'],
-    wave: [`WAVE ${S.round} · EVERYTHING REVEALED`, `WAVE ${S.round} · REVEALED`, '#e2e9ee'],
+    wave: replay ? [`REPLAY OF WAVE ${S.round}`, `REPLAY · WAVE ${S.round}`, '#e2e9ee'] : [`WAVE ${S.round} · EVERYTHING REVEALED`, `WAVE ${S.round} · REVEALED`, '#e2e9ee'],
   }[S.phase];
   if (tags && view.cs >= 14) {
     c.font = '700 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
@@ -4031,11 +4122,14 @@ $('#info-go').addEventListener('click', closeInfo);
 el.ovInfo.addEventListener('click', e => { if (e.target === el.ovInfo) closeInfo(); });
 el.ovHand.addEventListener('click', handContinue);
 $('#sum-next').addEventListener('click', nextRound);
+for (const id of ['#sum-replay', '#end-replay', '#rp-again']) $(id).addEventListener('click', startReplay);
+$('#rp-close').addEventListener('click', exitReplay);
 $('#end-again').addEventListener('click', () => { hide(el.ovEnd); if (online()) { rematchOnline(); return; } newMatch(); startRound(); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!el.ovInfo.hidden) closeInfo();
   else if (S.sel && (S.phase === 'defend' || S.phase === 'attack' || S.phase === 'wave')) { S.sel = null; refreshUI(); }
+  else if (replay) exitReplay();
 });
 
 /* =====================================================================
@@ -4050,14 +4144,14 @@ for (const b of document.querySelectorAll('.speed button')) b.addEventListener('
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (!paused()) {
-    if (S.phase === 'wave' && !S.over) {
+    if (waveRunning()) {
       simAcc += dt * waveSpeed;
       let n = 0;
       const most = 4 * waveSpeed;
-      while (simAcc >= STEP && n < most && S.phase === 'wave' && !S.over) { waveStep(STEP); simAcc -= STEP; n++; }
+      while (simAcc >= STEP && n < most && waveRunning()) { waveStep(STEP); simAcc -= STEP; n++; }
       if (n === most) simAcc = 0;
     }
-    if (S.over && S.phase === 'wave') {
+    if (S.over && S.phase === 'wave' && !(replay && replay.done)) {
       S.overT -= dt;
       if (S.overT <= 0) finishOver();
     }
@@ -4082,6 +4176,7 @@ function coreSnapshot(phase) {
   };
 }
 function snapshotData() {
+  if (replay) { const R = S, rp = replay; S = rp.live; replay = null; try { return snapshotData(); } finally { S = R; replay = rp; } } // snapshot the match, not the replay
   if (!S || S.phase === 'over' || online()) return null;
   let d;
   if (S.phase === 'wave') d = S.preWave;
@@ -4091,14 +4186,20 @@ function snapshotData() {
   // Against the computer the match resumes in the player's own phase, and the computer plans the round again.
   return SOLO.on ? { ...d, phase: SOLO.side === 'def' ? 'defend' : 'attack', solo: { side: SOLO.side, level: SOLO.level } } : d;
 }
+// A fresh state from a snapshot. Everything is copied, so one snapshot can be replayed again and again.
+function stateFrom(d) {
+  const R = newState();
+  Object.assign(R, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, towerSeq: d.towerSeq || 0, scorches: (d.scorches || []).slice(), totals: { ...R.totals, ...d.totals } });
+  const tw = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n, cd: 0, ang: Math.PI, kick: 0, dealt: 0 });
+  R.grid = d.grid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: !!g.fresh } : tw(g)) : null));
+  R.seenGrid = d.seenGrid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: false } : { ...tw(g), fresh: false }) : null));
+  R.designs = d.designs.map(x => ({ ...x, tl: { ...x.tl, pos: x.tl.pos ? x.tl.pos.slice() : null } }));
+  R.seenArmy = d.seenArmy; R.charges = new Map((d.charges || []).map(([cell, c]) => [cell, { ...c }]));
+  return R;
+}
 function restore(d) {
   if (!d || d.v !== 3) throw new Error('old snapshot');
-  S = newState();
-  Object.assign(S, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, towerSeq: d.towerSeq || 0, scorches: d.scorches || [], totals: d.totals || S.totals });
-  const tw = g => ({ t: 'tower', cfg: g.cfg, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n, cd: 0, ang: Math.PI, kick: 0, dealt: 0 });
-  S.grid = d.grid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: !!g.fresh } : tw(g)) : null));
-  S.seenGrid = d.seenGrid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: false } : { ...tw(g), fresh: false }) : null));
-  S.designs = d.designs; S.seenArmy = d.seenArmy; S.charges = new Map(d.charges || []);
+  S = stateFrom(d);
   recompute(); drawTerrain();
   if (d.solo) {
     Object.assign(SOLO, { on: true, side: d.solo.side === 'atk' ? 'atk' : 'def', level: SOLO_LEVELS[d.solo.level] ? d.solo.level : 'easy' });
@@ -4128,7 +4229,8 @@ window.siegeline = {
   cellToClient(i) { const [x, y] = center(i), [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   unitToClient(u) { const [sx, sy] = w2s(u.x + u.ox, u.y + u.oy), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   get speed() { return waveSpeed; },
-  advance(sec) { const n = Math.round(sec * 60); for (let k = 0; k < n && S.phase === 'wave' && !S.over; k++) waveStep(1 / 60); },
+  advance(sec) { const n = Math.round(sec * 60); for (let k = 0; k < n && waveRunning(); k++) waveStep(1 / 60); },
+  get replaying() { return !!replay; },
   view,
 };
 

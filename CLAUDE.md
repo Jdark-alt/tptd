@@ -1,6 +1,6 @@
 # Siegeline: notes for Claude Code
 
-Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v8.**
+Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v9.**
 
 ## Working with the user
 
@@ -30,12 +30,14 @@ Search for these names; the file is long.
 - **Rules:** `RULES` (all tunable numbers), `TS` (tower sliders), `US` (unit sliders), `RESIST`, `TPRESETS`/`UPRESETS`, `towerCost`, `unitCost`/`unitRaw`.
 - **Pathing:** `flow` (Dijkstra cost field from the exit), `dangerField`, `nextStep`, `tracePath`, `recompute`, `routeOpenWithout` (connectivity check for "path must stay open").
 - **Defender actions:** `canBuild`, `tryBuild`, `removeAt`, `setTowerCfg`, `seenAs`.
-- **Attacker actions:** `setDesign`, `changeCount`, `plantWall`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`.
+- **Attacker actions:** `setDesign`, `changeCount`, `plantWall`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`, `blastCells` (what a wall charge reaches).
 - **Wave simulation:** `startWave` (UI) and `prepWave` (setup), `buildSpawns`, `makeUnit`, `waveStep`, `moveUnit`, `updateTowers`, `strike`, `damage`, `leak`, `detonate`, `endRound`.
 - **Flow and UI:** `setPhase`, `startRound`, `defenderReady`, `attackerReady`, `nextRound`, `renderDef`, `renderAtk`, `renderWave`, the overlays (`#ov-info`, `#ov-mode`, `#ov-wait`, `#ov-hand`, `#ov-sum`, `#ov-end`), and `frame` (main loop with the 1×/5×/10× wave speed).
+- **Slider prices:** `setSlider`/`setNext` show each slider's multiplier and what one more step costs (red when unaffordable). For units the step is priced for every unit of the design.
+- **Replay:** `startReplay`, `exitReplay`, `stateFrom`. `startWave` saves `S.lastWave = { seed, snap }`. A replay swaps `S` for a scratch state built from that snapshot and plays it with the same seed; the real match waits in `replay.live` (`real()` returns it). `endRound`/`finishOver` only mark a replay done, and `netCheck`/`adoptResult` wait until it closes.
 - **Online:** `NET`, `netState`, `lockIn`, `unlock`, `netCheck`, `beginOnlineWave`, `netAfterWave`, `adoptResult`, `encodeGrid`/`decodeGrid`, `encodeArmy`/`decodeArmy`, `decodeCharges`. Transports: `roomLink` (claude.ai), `relayLink` (server.js), `peerLink` (PeerJS), chosen in `connect()` in that order.
 - **Versus computer:** `SOLO`, `SOLO_LEVELS`, `soloKnows`, `thinkAttack`, `thinkDefend`, `trial` (hidden test waves, `QUIET`), `aiArmy`/`AI_ARMIES`, `buildDefense`/`AI_MAZES`/`AI_MIXES`, `wallPicks`, `towerPicks`, `retuneAgainst`, `threatsFor`, the notes (`attackNote`, `defendNote`), and the flow (`soloStartRound`, `pumpThink`, `soloReady`, `soloBeginWave`, `brainPlan` for the sims). See "Single-player" below.
-- **Handle:** `window.siegeline` is a small handle for the console and tests: `state`, `net`, `solo`, `rules`, `cellToClient`, `advance(sec)`. The tools inject extra internals into their own copy only.
+- **Handle:** `window.siegeline` is a small handle for the console and tests: `state`, `net`, `solo`, `replaying`, `rules`, `cellToClient`, `advance(sec)`. The tools inject extra internals into their own copy only.
 
 ### Determinism (do not break)
 
@@ -47,6 +49,7 @@ Online play sends only plans. Both devices then run the same wave and must get b
 - Keep path costs integers. Rebuild state on both sides from the encoded plans (`beginOnlineWave` decodes both players' plans, its own included).
 - After any change to wave logic, run `tools/tests/test_online.py`. It checks that both devices end identical, including with one device at 10× speed.
 - The computer opponent runs waves out of sight (`trial`) with `QUIET` set. Anything new in the wave code that touches the DOM, redraws the terrain or ends the round must be skipped while `QUIET` is true, the way `leak`, `detonate` and `endRound` do it. Effects pushed to `fx`/`floaters` are trimmed by `trial` itself.
+- The replay relies on the same determinism: `test_local.py` checks that a replay ends with exactly the real wave's numbers.
 
 ### Online protocol (presence-style, absolute state)
 
@@ -73,13 +76,14 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
 - **Attacker** (`thinkAttack`):
   - Army ideas (`AI_ARMIES`: swarm, rush, ghost, plated, bruiser, hulk, brutes screening a swarm, runners with ghosts), each bunched and spread, against the seen defense.
   - The best few against that defense retuned to counter them (`retuneAgainst`), then with charge options:
-    - wall picks that shorten the seen route most (`wallPicks`)
+    - wall picks that shorten the seen route most (`wallPicks`, using `blastCells`, so it follows `RULES.wallBlast`; with one-wall charges it opens holes in the maze, up to three walls)
     - towers that cover the route (`towerPicks`)
     - within the cap; none in round 1 or 8
   - A charge must pay for itself: it is scored at cost × breach × later rounds that matter, capped by how long the keep would last at this pace. So it charges against strong defenses and late in the match, and not when the army already walks through.
   - Round 1 is a random opening from `AI_OPENERS`.
 - **Defender** (`thinkDefend`): every maze (`AI_MAZES`: 3, 4 or 5 serpentine columns, towers in the cells covering the most route), tower mix (`AI_MIXES`) and spending style (`AI_SPEND`), against the last army scaled to the attacker's coins now. Then the best few against a panel of armies that could beat them (`threatsFor`).
   - It keeps its maze unless another is clearly better (15% margin), and repairs blown walls.
+  - **Guard towers (Normal and Hard):** a charge misses if its wall has become a tower, so each finalist also comes in a guarded version, with a tower on the wall the computer would charge itself in the attacker's place (`wallPicks` on `seenGrid`). Its tests decide whether that pays. Hard's charge test then aims at the next-best wall. The note says when it did this.
   - Upgrades always go to the weakest tower, so no single tower carries the defense.
 - **Levels** (`SOLO_LEVELS`):
   - Easy: 3 random ideas from the lighter armies, or 3 tower mixes on its current maze, no foresight; picks at random among its top 3; at most one charge a wave.
@@ -93,14 +97,19 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
 - The plan uses the online plan format (`{dFree, ts, g}` or `{aFree, a, c}`). `soloBeginWave` applies it with the online decoders.
 - So nothing the computer does shows while the player plans, and its plan can't depend on the player's.
 - `online()` stays false in solo, so online determinism is untouched. A snapshot restores the player's own phase, and the computer thinks again.
+- **Replay and thinking:** both swap `S`. A test wave can run while a replay is open: `trial` restores whatever `S` was, and `endRound` checks `QUIET` before `replay`, so a test wave never ends the replay. `soloBeginWave` closes an open replay before the computer's wave starts.
 
-**Measured (match.py, 2–3 seeds; bots, not humans):**
+**Measured on v9 (one-wall charges; match.py, 2 seeds; bots, not humans):**
 - **As defender**, attacker wins out of 34 across the 17 sim strategies:
-  - `basic` bot 34, Easy 31, `counter` bot 19, Normal 12, Hard 10.
+  - `basic` bot 34, `counter` bot 18, Normal 12, Hard 10. Easy measured 31 on v8 (wall blast 1); not re-run.
   - Runner rush, maxed tanks, mini-tanks, regen bruisers and slow fat regen still beat every defender, the computer at Hard included.
+  - Guard towers: against attackers that charge walls, Normal and Hard put a tower on the likely target in 1–5 rounds of every match.
+- **Sim strategies with charges** (attacker bot now picks walls with `wallPicks`), against the `counter` bot:
+  - "counter + wall charges" 0/2 (keep left 28). It was 2/2 with the old 5-cell blast, and 0/3 with one-wall charges and the old naive picks.
+  - "counter + both charges" and "alternate + both charges" now win 2/2 in round 7 (v8: 0/2 and 1/2).
 - **As attacker**, it wins every match against both bots:
-  - Against the `counter` bot: Easy takes the keep in round 7 (about 4 charges a match), Normal and Hard in round 4 (2–3 charges).
-  - Against the computer's own Normal and Hard defenders: Normal and Hard attackers win every match by round 4–5; Easy wins half.
+  - Against the `counter` bot: Easy takes the keep in round 7 (about 4 charges a match), Normal and Hard in round 4 (1–2 charges).
+  - Against the computer's own Normal and Hard defenders: Normal and Hard attackers win every match by round 5–6 (v8: 4–5; the one-wall charge and guard towers buy the defender about a round). Easy wins half.
   - Read with the balance notes below: played well, the attacker side still looks favoured.
 
 **Roadmap the user chose (hybrid: principles for how it plays, templates for who it is):**
@@ -110,9 +119,9 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - All missions open, nothing saved (no localStorage).
 - **Never:** the computer never peeks at the player's current plan, at any difficulty.
 
-## The game as it stands (v8)
+## The game as it stands (v9)
 
-- **Modes:** pass-and-play on one device, online on two, or versus the computer on either side. The rules are identical in all three; v7 and v8 changed no numbers from v6.
+- **Modes:** pass-and-play on one device, online on two, or versus the computer on either side. The rules are identical in all three. Since v6 the only rule change is the one-wall charge (`wallBlast` 0).
 
 - **Board and route:** 16×11 grid, entry at the left middle, keep at the right middle. Building may never close the route. Units follow the cheapest route: each cell costs 10, plus `RULES.danger = 5` for every working tower that can hit it. So units steer around tower range when the detour is short, and walls are what force them through fire.
 - **Rounds:** 8. Each round the defender builds while the attacker plans, in secret. The wave then plays out with everything revealed.
@@ -136,7 +145,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - Resist: 60% less splash, 60% less poison, or 60% weaker frost.
 - **Wave timeline:** each design is a track and each unit a dot on a 20 s timeline. Spacing between dots is time between spawns. It decides bunching versus spreading.
 - **Charges:**
-  - Wall charge (`wallCharge = 60`): destroys the wall and its four neighbours that the attacker saw. The defender loses those coins.
+  - Wall charge (`wallCharge = 60`): destroys only the wall it's planted on (`wallBlast = 0`; 1 brings back the v6 blast that also took the four neighbours). The defender loses that wall's coins. If the defender took the wall down or replaced it with a tower, the charge goes off on nothing ("MISSED"); a tower there is not affected, because it's new.
   - Tower charge (25/55/90 coins): knocks a tower offline for 1/2/3 waves. The defender sees that it's offline, never for how long.
   - At most half the seen towers, rounded up, can be offline in a wave, including ones still offline from earlier charges.
   - No charges in the first wave (nothing seen yet) or the final wave.
@@ -166,10 +175,18 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - Wall charge 40 → 60.
   - Big-unit surcharge added.
   - The design scan then found regeneration was the worst offender. A unit healing 6% per second fully recovered between towers, and about two-thirds of high-health regen designs beat every defense. Regen was reworked to the rules above.
-- **v7:** single-player versus the computer (Easy and Normal, either side), using the sim bots. No rule changes.
+- **v7:** two builds made in parallel from v6, both labelled v7, merged in v9:
+  - **Single-player:** versus the computer (Easy and Normal, either side), using the sim bots. No rule changes.
+  - **One-wall charges:** at the user's request a wall charge breaks one wall, not the wall and its neighbours (`wallBlast` 1 → 0). Price unchanged at 60.
+    - Same-budget test on the bot maze (`wallCharge` at its best wall vs more units): one wall opens the same shortcut as the old blast, because units pass a 1-cell gap single file. A 60-coin wall charge still adds 60–150 keep damage against 4–6 towers, more than a 25-coin tower charge on the best tower. Swarms gain little from either.
+    - Full matches: "counter + wall charges" went from 3/3 attacker wins to 0/3, but only because the bot charged the wall right beside a tower, and a 1-cell hole leaves the route no room to dodge it. A human picks better walls. (v9 fixed the bot; see below.)
+    - What really changes: double-thick walls now need two charges, so thickening key walls (5 coins a cell) counters wall charges. So does turning the wall into a tower before the wave: the charge then misses.
+  - Sliders show what the next step costs, in red when unaffordable.
+  - Replay of the last wave, from the round summary, the end screen and both sides' Ready step.
 - **v8:** the computer thinks: propose, test, pick (see "Single-player"). Hard added, charges at every level, the computer's notes after each wave. No rule changes.
+- **v9:** merged the two v7 builds. The computer and the sim bots now plan for one-wall charges (see "Single-player" and `ai.js`), and the computer's defender can put a tower on the wall it expects you to charge. No new rule changes.
 
-**Where it stands (v6, measured with the tools below):**
+**Where it stands (measured on v6 with the tools below; since then only wall charges changed, see v7 and the single-player measurements):**
 
 - Against the defender bot that retunes towers, roughly half the attacker strategies win. These include runner rush, mid-size armored units, regen bruisers, and wall or tower charges. Single-type swarms, ghosts, mixed armies and counter-picking lose. Against a defender bot that never retunes, the attacker wins everything.
 - The full v6 design scan ran 256 design-and-wave combinations, each against four defenses of about 750 coins. In 34 of them (13%) even the best defense let more than 30% through, and in 10 (4%) more than half. All the strongest are high-health designs (900 HP marked as 9):
@@ -189,12 +206,13 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - dodge or regen pricing on high-health units
 
   Re-run `scan.py` after changes; results go to `tools/.build/`, which isn't committed.
-- The user's last stance: a small attacker nerf was warranted, delivered as v6. Get their playtest feedback on v6 before the next round of changes.
+- The user's last stance: a small attacker nerf was warranted, delivered as v6. v7 added the one-wall charge on their request. They asked whether wall and tower charges should cost the same; the answer given was no (see v7 above), leaving the wall charge at 60 until playtests show whether players start thickening walls.
 
 **Known open issues and ideas (not done):**
 
 - **The pot rewards losing waves.** The attacker gets 70% when a wave fails, so sandbagging and saving up is paid for. It was flagged to the user and not changed. One option is to base the comeback share on the keep instead of the last wave.
 - **The sim's defender bot is crude.** It only counters by rule: splash against cheap or dodging armies, slow heavy shots against armor. It has no answer to regen or high-health bunches. The game's own computer defender (`--defenders game:hard`) is stronger and makes a better baseline, though regen bruisers and high-health designs still beat it.
+- **The sim attacker bot's wall charges were naive** (fixed in v9). It charged a wall beside the middle of each column, next to a tower, which with one-wall charges badly undersold them. It now uses the game's `wallPicks`, the wall whose blast shortens the seen route most.
 - **Possible features, not built:**
   - Tower targeting modes and a decoy unit trait (postponed by the user).
   - Single-player phase C (campaign). Phases A (v7) and B (v8, the thinking computer) are done.

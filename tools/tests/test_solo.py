@@ -1,7 +1,7 @@
 """Versus-computer suite: the mode card, both sides at every level, the computer thinking in the background
 without touching the live game, its plan staying fixed whatever the player does, its coins adding up, charges
 at every level under the game's rules, the computer's notes, the wait card when the player locks in first,
-full matches to the end screen, and phone layout.
+replays against the computer (also while it thinks), full matches to the end screen, and phone layout.
    python tools/tests/test_solo.py   (screenshots land in tools/.build/shots/solo)"""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -198,6 +198,30 @@ with sync_playwright() as p:
     if page.is_visible('#ov-hand'): page.click('#ov-hand')
     run_wave(page)
 
+    # ---------- replay against the computer: from the summary, and from the Ready step while it is still thinking
+    live0 = S(page, LIVE)
+    page.click('#sum-replay'); page.wait_for_timeout(100)
+    check(page.evaluate('() => window.siegeline.replaying') and S(page, 'S.phase') == 'wave', 'solo: summary Replay plays the wave again')
+    page.evaluate('() => window.siegeline.advance(300)'); page.wait_for_timeout(60)
+    page.click('#rp-close')
+    check(S(page, LIVE) == live0 and page.is_visible('#ov-sum') and not page.evaluate('() => window.siegeline.replaying'), 'solo: closing the replay returns to the summary, match untouched')
+    cdp.send('Emulation.setCPUThrottlingRate', {'rate': 8})
+    page.click('#sum-next'); page.wait_for_timeout(30)
+    thinking, live1 = S(page, '!!SOLO.think'), S(page, LIVE)
+    page.evaluate('() => { for (let k = 0; k < 3; k++) document.querySelector("#atk-next").click(); }')  # to the Ready step
+    page.click('#atk-body [data-act=replay]')
+    check(thinking and page.evaluate('() => window.siegeline.replaying'), 'solo: the Ready step replays the last wave while the computer is still thinking')
+    page.evaluate('() => window.siegeline.advance(300)')
+    thought(page)  # the computer finishes its plan while the replay is open
+    page.click('#rp-close')
+    cdp.send('Emulation.setCPUThrottlingRate', {'rate': 1})
+    check(S(page, LIVE) == live1 and S(page, 'S.phase') == 'attack' and S(page, 'SOLO.plan && Array.isArray(SOLO.plan.g.w)'),
+          'solo: a replay during thinking leaves the match and the computer\'s plan intact')
+    page.click('#atk-next'); page.wait_for_timeout(30)
+    if S(page, 'S.phase') == 'attack': page.click('#atk-next')  # an empty army takes a second Ready
+    hand(page); run_wave(page)
+    check(S(page, 'S.round') == 2 and (page.is_visible('#ov-sum') or page.is_visible('#ov-end')), 'solo: the next wave plays normally after the replay')
+
     # ---------- pass-and-play never shows a computer note
     page.evaluate('() => { window.siegeline.solo.on = false; }')
     page.evaluate('() => { document.querySelector("#ov-sum").hidden = true; document.querySelector("#ov-mode").hidden = false; }')
@@ -236,6 +260,14 @@ with sync_playwright() as p:
     nb = page.locator('#ov-sum .ainote').bounding_box()
     check(nb and nb['x'] >= 0 and nb['x'] + nb['width'] <= 390, f'phone: the computer\'s note fits on the summary {nb}')
     page.locator('#ov-sum .ainote').scroll_into_view_if_needed(); page.screenshot(path=f'{OUT}/m3_note.png')
+    page.tap('#sum-next'); page.wait_for_timeout(200)
+    page.evaluate('() => { window.siegeline.state.keep = 1; }')
+    for _ in range(4): page.tap('#atk-next'); page.wait_for_timeout(80)
+    page.wait_for_selector('#ov-hand', state='visible', timeout=30000); page.wait_for_timeout(500); page.tap('#ov-hand')
+    page.evaluate('() => window.siegeline.advance(300)'); page.wait_for_selector('#ov-end', state='visible', timeout=5000)
+    boxes = [page.locator(sel).bounding_box() for sel in ('#end-replay', '#end-menu', '#end-again')]
+    check(all(bx and bx['x'] >= 0 and bx['x'] + bx['width'] <= 390 and bx['y'] + bx['height'] <= 844 for bx in boxes), f'phone: solo end screen buttons (Replay, Menu, Rematch) fit {boxes}')
+    page.screenshot(path=f'{OUT}/m4_end.png')
     check(not errors, f'phone: no errors {errors[:3]}')
     ctx.close()
     b.close()

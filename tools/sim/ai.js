@@ -100,7 +100,8 @@
      Also re-buys its whole army from its worth every round (units refund in full).
      opt.army: a strategy name below, or opt.armySpec = [[stats or preset name, share, start, end], ...]
        stats are slider indexes, e.g. { hp: 6, speed: 4, regen: 3 }; start/end are the wave-timeline window (0..1).
-     opt.charges: 'walls' | 'towers' | 'both' (with opt.chargeShare = share of worth spent on charges)
+     opt.charges: 'walls' | 'towers' | 'both' (with opt.chargeShare = share of worth spent on charges). Wall charges go
+       on the walls that shorten the seen route most (the game's wallPicks); tower charges on the most valuable towers.
      opt.cap: respect the "half the seen towers offline per wave" cap; opt.noLastCharges: none in the final wave.
      opt.game: 'easy' | 'normal' | 'hard' plays the game's own computer attacker (brainPlan in index.html) instead. */
   const DESIGNS = {
@@ -164,15 +165,10 @@
         }
       }
       if (opt.charges === 'walls' || opt.charges === 'both') {
-        for (let c = 0; c < COLS; c++) { // one hole per wall column, beside its middle, to cut the maze short
-          let walls = 0; for (let r = 0; r < ROWS; r++) { const g = S.seenGrid[at(c, r)]; if (g && g.t === 'wall') walls++; }
-          if (walls < 7) continue;
-          for (const r of [4, 6, 3, 7]) {
-            const g = S.seenGrid[at(c, r)];
-            if (!g || g.t !== 'wall') continue;
-            if (spent + I.RULES.wallCharge <= budget) { S.charges.set(at(c, r), { kind: 'wall', waves: 0, cost: I.RULES.wallCharge }); spent += I.RULES.wallCharge; }
-            break;
-          }
+        // the walls whose blast (RULES.wallBlast) shortens the seen route most, picked like the game's computer does
+        for (const i of I.wallPicks(S.seenGrid, j => !!(S.seenGrid[j] && S.seenGrid[j].t === 'wall'), 4)) {
+          if (spent + I.RULES.wallCharge > budget) break;
+          S.charges.set(i, { kind: 'wall', waves: 0, cost: I.RULES.wallCharge }); spent += I.RULES.wallCharge;
         }
       }
     }
