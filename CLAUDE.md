@@ -1,6 +1,6 @@
 # Siegeline: notes for Claude Code
 
-Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v7.**
+Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v8.**
 
 ## Working with the user
 
@@ -31,10 +31,10 @@ Search for these names; the file is long.
 - **Pathing:** `flow` (Dijkstra cost field from the exit), `dangerField`, `nextStep`, `tracePath`, `recompute`, `routeOpenWithout` (connectivity check for "path must stay open").
 - **Defender actions:** `canBuild`, `tryBuild`, `removeAt`, `setTowerCfg`, `seenAs`.
 - **Attacker actions:** `setDesign`, `changeCount`, `plantWall`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`.
-- **Wave simulation:** `startWave`, `buildSpawns`, `makeUnit`, `waveStep`, `moveUnit`, `updateTowers`, `strike`, `damage`, `leak`, `detonate`, `endRound`.
+- **Wave simulation:** `startWave` (UI) and `prepWave` (setup), `buildSpawns`, `makeUnit`, `waveStep`, `moveUnit`, `updateTowers`, `strike`, `damage`, `leak`, `detonate`, `endRound`.
 - **Flow and UI:** `setPhase`, `startRound`, `defenderReady`, `attackerReady`, `nextRound`, `renderDef`, `renderAtk`, `renderWave`, the overlays (`#ov-info`, `#ov-mode`, `#ov-wait`, `#ov-hand`, `#ov-sum`, `#ov-end`), and `frame` (main loop with the 1×/5×/10× wave speed).
 - **Online:** `NET`, `netState`, `lockIn`, `unlock`, `netCheck`, `beginOnlineWave`, `netAfterWave`, `adoptResult`, `encodeGrid`/`decodeGrid`, `encodeArmy`/`decodeArmy`, `decodeCharges`. Transports: `roomLink` (claude.ai), `relayLink` (server.js), `peerLink` (PeerJS), chosen in `connect()` in that order.
-- **Versus computer:** `SOLO` (on, side, level, plan), `SOLO_LEVELS`, `aiDefend`, `aiAttack`, `soloPlan`, `soloStartRound`, `soloBeginWave`. See "Single-player" below.
+- **Versus computer:** `SOLO`, `SOLO_LEVELS`, `soloKnows`, `thinkAttack`, `thinkDefend`, `trial` (hidden test waves, `QUIET`), `aiArmy`/`AI_ARMIES`, `buildDefense`/`AI_MAZES`/`AI_MIXES`, `wallPicks`, `towerPicks`, `retuneAgainst`, `threatsFor`, the notes (`attackNote`, `defendNote`), and the flow (`soloStartRound`, `pumpThink`, `soloReady`, `soloBeginWave`, `brainPlan` for the sims). See "Single-player" below.
 - **Handle:** `window.siegeline` is a small handle for the console and tests: `state`, `net`, `solo`, `rules`, `cellToClient`, `advance(sec)`. The tools inject extra internals into their own copy only.
 
 ### Determinism (do not break)
@@ -46,6 +46,7 @@ Online play sends only plans. Both devices then run the same wave and must get b
 - Step in fixed 1/60 s increments (`STEP`). The speed buttons run more steps per frame; they never change the step size.
 - Keep path costs integers. Rebuild state on both sides from the encoded plans (`beginOnlineWave` decodes both players' plans, its own included).
 - After any change to wave logic, run `tools/tests/test_online.py`. It checks that both devices end identical, including with one device at 10× speed.
+- The computer opponent runs waves out of sight (`trial`) with `QUIET` set. Anything new in the wave code that touches the DOM, redraws the terrain or ends the round must be skipped while `QUIET` is true, the way `leak`, `detonate` and `endRound` do it. Effects pushed to `fx`/`floaters` are trimmed by `trial` itself.
 
 ### Online protocol (presence-style, absolute state)
 
@@ -59,34 +60,59 @@ Each side publishes `{v, id, role, code, ep, st, rd, lk, go, at, plan, res}`. Th
 
 ### Single-player (versus computer)
 
-The mode screen has a third card, **Versus computer**. The player picks a side and a level (Easy or Normal), and the computer takes the other seat. There are no pass-the-device screens.
+The mode screen has a third card, **Versus computer**. The player picks a side and a level (Easy, Normal or Hard), and the computer takes the other seat. There are no pass-the-device screens.
 
-- **Fair play:** the computer knows only what a human in its seat would. As attacker it reads `seenGrid`. As defender it reads `seenArmy` and its own grid.
-- **Timing:** `soloStartRound` makes the computer's whole plan at the start of the round, before the player does anything. The plan uses the online plan format (`{dFree, ts, g}` or `{aFree, a, c}`). `soloBeginWave` applies it with the online decoders only once the player presses Ready. So nothing the computer does shows on the board or in the HUD while the player plans, and its plan can't depend on the player's.
-- **The computer players** started as copies of the balance-test bots in `tools/sim/ai.js`. Keep the two in step until the in-game brain replaces the sim bots.
-  - Defender: the same 4-column serpentine every round, rebuilt from its whole worth.
-    - `basic` (Easy) never retunes.
-    - `counter` (Normal) adds splash against cheap or dodging armies and slow heavy shots against armor.
-  - Attacker:
-    - `mixed` (Easy), no charges.
-    - Normal counter-picks swarm or brutes, and spends 25% of its worth on tower and wall charges under the game's charge rules.
-- **Wave code:** single-player doesn't touch it. `online()` stays false, so determinism is unaffected.
-- **Restore:** a snapshot restores the player's own phase, and the computer re-plans the round.
+**Fair play:** the computer knows only what a human in its seat would.
+- As attacker: `seenGrid`.
+- As defender: its own grid, `seenArmy`, and the attacker's coins (the HUD shows those to both players).
+- `soloKnows` copies that at the start of the round, before the player does anything, and the computer never reads the live state again that round.
+
+**Propose, test, pick:** principles generate candidate plans, each is played out in a hidden copy of the real wave (`trial`), and the best one is played.
+- `trial` swaps in a scratch state and runs the real `waveStep` with `QUIET` set, then restores `S`, `srand`, `uid`, the effects and the route field.
+- One trial costs about 6–15 ms on a desktop, and 16–22 ms with the CPU throttled 4×. A round's thinking is 50–70 trials at Normal and Hard, about 0.3–0.8 s of wall time.
+- **Attacker** (`thinkAttack`):
+  - Army ideas (`AI_ARMIES`: swarm, rush, ghost, plated, bruiser, hulk, brutes screening a swarm, runners with ghosts), each bunched and spread, against the seen defense.
+  - The best few against that defense retuned to counter them (`retuneAgainst`), then with charge options:
+    - wall picks that shorten the seen route most (`wallPicks`)
+    - towers that cover the route (`towerPicks`)
+    - within the cap; none in round 1 or 8
+  - A charge must pay for itself: it is scored at cost × breach × later rounds that matter, capped by how long the keep would last at this pace. So it charges against strong defenses and late in the match, and not when the army already walks through.
+  - Round 1 is a random opening from `AI_OPENERS`.
+- **Defender** (`thinkDefend`): every maze (`AI_MAZES`: 3, 4 or 5 serpentine columns, towers in the cells covering the most route), tower mix (`AI_MIXES`) and spending style (`AI_SPEND`), against the last army scaled to the attacker's coins now. Then the best few against a panel of armies that could beat them (`threatsFor`).
+  - It keeps its maze unless another is clearly better (15% margin), and repairs blown walls.
+  - Upgrades always go to the weakest tower, so no single tower carries the defense.
+- **Levels** (`SOLO_LEVELS`):
+  - Easy: 3 random ideas from the lighter armies, or 3 tower mixes on its current maze, no foresight; picks at random among its top 3; at most one charge a wave.
+  - Normal: everything, averaged with the likely counters; takes the second best 10% of the time.
+  - Hard: everything, weighing the worst counter too; the defender also tests the last army with a wall charge; never blunders. No coin bonus at any level.
+- **Variety:** a per-match seeded stream (`SOLO.rng`; tests set `SOLO.seed`).
+- **Notes:** after each wave the summary shows "The computer's thinking", which says what it saw, how many plans it tried and what it chose. A note says "What held best" or "got the most through" only when it really played its best plan.
+
+**Timing:** `soloStartRound` starts the thinking. `pumpThink` runs it in slices of about 12 ms between frames, with a 3 s cap (`THINK_MS`) on looking for better plans.
+- If the player presses Ready first, `soloReady` shows the `#ov-wait` card ("Keep planning" unlocks).
+- The plan uses the online plan format (`{dFree, ts, g}` or `{aFree, a, c}`). `soloBeginWave` applies it with the online decoders.
+- So nothing the computer does shows while the player plans, and its plan can't depend on the player's.
+- `online()` stays false in solo, so online determinism is untouched. A snapshot restores the player's own phase, and the computer thinks again.
+
+**Measured (match.py, 2–3 seeds; bots, not humans):**
+- **As defender**, attacker wins out of 34 across the 17 sim strategies:
+  - `basic` bot 34, Easy 31, `counter` bot 19, Normal 12, Hard 10.
+  - Runner rush, maxed tanks, mini-tanks, regen bruisers and slow fat regen still beat every defender, the computer at Hard included.
+- **As attacker**, it wins every match against both bots:
+  - Against the `counter` bot: Easy takes the keep in round 7 (about 4 charges a match), Normal and Hard in round 4 (2–3 charges).
+  - Against the computer's own Normal and Hard defenders: Normal and Hard attackers win every match by round 4–5; Easy wins half.
+  - Read with the balance notes below: played well, the attacker side still looks favoured.
 
 **Roadmap the user chose (hybrid: principles for how it plays, templates for who it is):**
-- **Phase B, the smart brain:** "propose, test, pick".
-  - Principles generate a handful of candidate plans.
-  - Each is test-run in a hidden copy of the real wave simulation against only what the computer may know (`trial()`, a swapped-in scratch state with a `QUIET` flag on effects and `endRound`).
-  - The best one is played.
-  - Adds Hard, a commander's note on the summary explaining its last move, and `match.py --defenders game:…` to measure it.
+- **Phase B, the smart brain:** done in v8 (above).
 - **Phase C, the campaign:** two tracks of about 6 missions (Hold the Keep, Break the Siege).
-  - Each mission is data: a commander personality, an opening, rule tweaks (`RULES` overrides restored afterwards), limits such as no charges, and a lesson. Missions never script tower positions per wave.
+  - Each mission is data: a commander personality (army ideas, mazes and mixes it favours, foresight, blunders), an opening, rule tweaks (`RULES` overrides restored afterwards), limits such as no charges, and a lesson. Missions never script tower positions per wave.
   - All missions open, nothing saved (no localStorage).
-- **Never:** the computer never peeks at the player's current plan, at any difficulty. Harder levels think more, blunder less and may get a coin bonus.
+- **Never:** the computer never peeks at the player's current plan, at any difficulty.
 
-## The game as it stands (v7)
+## The game as it stands (v8)
 
-- **Modes:** pass-and-play on one device, online on two, or versus the computer on either side. The rules are identical in all three; v7 changed no numbers from v6.
+- **Modes:** pass-and-play on one device, online on two, or versus the computer on either side. The rules are identical in all three; v7 and v8 changed no numbers from v6.
 
 - **Board and route:** 16×11 grid, entry at the left middle, keep at the right middle. Building may never close the route. Units follow the cheapest route: each cell costs 10, plus `RULES.danger = 5` for every working tower that can hit it. So units steer around tower range when the detour is short, and walls are what force them through fire.
 - **Rounds:** 8. Each round the defender builds while the attacker plans, in secret. The wave then plays out with everything revealed.
@@ -135,12 +161,13 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - No charges in the final wave, at the user's request. Their reasoning: coins spent on charges in wave 7 aren't in the army for wave 8.
   - The rebuild-on-the-same-cell loophole closed.
   - 1×/5×/10× wave speed added.
-- **v7:** single-player versus the computer (Easy and Normal, either side). No rule changes.
 - **v6:**
   - The user reported attackers always win with charges, and that one unit with maxed health, speed and armor couldn't be stopped. Simulations confirmed both.
   - Wall charge 40 → 60.
   - Big-unit surcharge added.
   - The design scan then found regeneration was the worst offender. A unit healing 6% per second fully recovered between towers, and about two-thirds of high-health regen designs beat every defense. Regen was reworked to the rules above.
+- **v7:** single-player versus the computer (Easy and Normal, either side), using the sim bots. No rule changes.
+- **v8:** the computer thinks: propose, test, pick (see "Single-player"). Hard added, charges at every level, the computer's notes after each wave. No rule changes.
 
 **Where it stands (v6, measured with the tools below):**
 
@@ -167,10 +194,10 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
 **Known open issues and ideas (not done):**
 
 - **The pot rewards losing waves.** The attacker gets 70% when a wave fails, so sandbagging and saving up is paid for. It was flagged to the user and not changed. One option is to base the comeback share on the keep instead of the last wave.
-- **The defender bot is crude.** It only counters by rule: splash against cheap or dodging armies, slow heavy shots against armor. It has no answer to regen or high-health bunches. Improving it would make the simulations more trustworthy.
+- **The sim's defender bot is crude.** It only counters by rule: splash against cheap or dodging armies, slow heavy shots against armor. It has no answer to regen or high-health bunches. The game's own computer defender (`--defenders game:hard`) is stronger and makes a better baseline, though regen bruisers and high-health designs still beat it.
 - **Possible features, not built:**
   - Tower targeting modes and a decoy unit trait (postponed by the user).
-  - Single-player phases B (smart brain, Hard) and C (campaign). Phase A, versus computer with the sim bots, shipped in v7.
+  - Single-player phase C (campaign). Phases A (v7) and B (v8, the thinking computer) are done.
   - Waking the Render server as soon as the page opens rather than on Connect.
   - From the info screen's "Future directions": Elo per role, matchmaking, more traits each with a counter, real-time charge detonation, and cosmetic-only monetisation.
 
@@ -187,11 +214,11 @@ npm install                      # repo root: ws, for server.js and the relay te
 
 **Simulators (`tools/sim/`):**
 
-- `match.py`: full 8-round games between the defender bot (`counter` or `basic`) and 17 attacker strategies (swarm, rush, maxed tanks, regen bruisers, charges and more). Prints attacker wins, keep left, breach and the round the keep fell. `--rules '{...}'` overrides any `RULES` key or slider table, and `--log` prints round-by-round. For example:
+- `match.py`: full 8-round games between the defender bot (`counter` or `basic`, or the game's own computer defender `game:easy|normal|hard`) and 17 attacker strategies (swarm, rush, maxed tanks, regen bruisers, charges and more; `--attackers computer` runs the game's own computer attacker instead). Each line also shows charges used per match. Prints attacker wins, keep left, breach and the round the keep fell. `--rules '{...}'` overrides any `RULES` key or slider table, and `--log` prints round-by-round. For example:
   `python tools/sim/match.py --defenders counter --rules '{"wallCharge": 80}'`
 - `scan.py`: the exploit search. It sends every unit design on a grid, with all coins in that design, bunched and spread, against four defenses of equal cost, and records the breach against the best of them. Split it across CPUs with `--part 0/2` and `--part 1/2`, then run `--summary <file>`.
 - `wave.py`: one wave against a fixed maze, for quick questions like "do 4 heavy towers stop one maxed unit?"
-- `ai.js`: the bots. Add strategies to `ARMIES`/`DESIGNS`, or pass `--opts '{"armySpec": [[{"hp":6,"speed":4}, 1, 0, 0.15]]}'`.
+- `ai.js`: the bots. Add strategies to `ARMIES`/`DESIGNS`, or pass `--opts '{"armySpec": [[{"hp":6,"speed":4}, 1, 0, 0.15]]}'`. The option `{game: 'normal'}` on either side plays the game's own computer instead (`brainPlan`, exposed only in the tools' copy). The old bots stay as fixed reference opponents.
 - Knobs in `tools/common.py` (`dmgScale`, `spdScale`, `hpScale`, `armorFloor`) scale things without editing the game. Use them to explore, then make the real change in `RULES` or the slider tables.
 
 **How to use the results:** always run the current rules and the variant with the same bots and seeds, and compare them. The absolute numbers say more about the bots than about human play. Check both sides: a nerf should hit the dominant strategy without moving the others.
@@ -200,7 +227,12 @@ npm install                      # repo root: ws, for server.js and the relay te
 
 - `test_local.py`: pass-and-play. Covers building, pricing, tuning, the charge cap, offline towers, the timeline, win and loss, and phone layout.
 - `test_online.py`: online play. Covers the lobby, ready gating, hidden plans, identical waves on both devices (also at 10×), desync adoption, rematch with swap, drop and rejoin, and peer-to-peer. It uses a stand-in for the claude.ai room (`mockroom.js`) and a local PeerJS server.
-- `test_solo.py`: versus computer. Covers the mode card, both sides at both levels, and that the computer's plan stays hidden and fixed while the player plans. Also that its coins add up, it never charges in round 1 or the final round, it only charges what it saw, matches reach the end screen, Rematch and Menu work, and phone layout.
+- `test_solo.py`: versus computer. Covers:
+  - the mode card, and both sides at every level
+  - that thinking leaves the live game untouched, and that the plan is identical whatever the player does while it thinks (same seed)
+  - that its coins add up, and that it charges at every level against a strong maze: only what it saw, within the cap, never in round 1 or 8, at most once a wave on Easy
+  - the notes every wave (never in pass-and-play), and the wait card with Keep planning
+  - matches to the end screen, Rematch, Menu, and phone layout
 - `test_relay.py`: `server.js` end to end. Covers server restart mid-match, a 65 s idle stretch, a page hosted elsewhere, and a sleeping server.
 - Tests hardcode some current numbers (preset prices, charge prices). Update them when you change rules on purpose.
 

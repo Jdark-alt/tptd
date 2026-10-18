@@ -4,6 +4,8 @@
   python tools/sim/match.py --rules '{"wallCharge": 80}'      # try a rule change (any RULES key, plus knobs)
   python tools/sim/match.py --defenders counter --attackers swarm,rush,counter --seeds 3 --log
   python tools/sim/match.py --rules '{"US": {"hp": {"steps": [50,75,112,150,200,275,375,450,550,650]}}}'
+  python tools/sim/match.py --defenders game:normal,game:hard                # the game's computer defender
+  python tools/sim/match.py --defenders counter,basic --attackers computer   # the game's computer attacker
 
 Read results relatively: run the current rules and the variant with the same bots, and compare.
 Two CPUs make a full run take a few minutes; split strategies across processes with --attackers if needed.
@@ -31,8 +33,11 @@ ATTACKERS = {  # name -> attacker options for ai.js
     'counter + tower charges': {'army': 'counter', 'charges': 'towers', 'chargeShare': 0.25},
     'counter + both charges': {'army': 'counter', 'charges': 'both', 'chargeShare': 0.3},
     'alternate + both charges': {'army': 'alternate', 'charges': 'both', 'chargeShare': 0.3},
+    # the game's own computer attacker (Versus computer), not run unless named: --attackers computer
+    'computer easy': {'game': 'easy'}, 'computer normal': {'game': 'normal'}, 'computer hard': {'game': 'hard'},
 }
-DEFENDERS = {'counter': {'style': 'counter'}, 'basic': {'style': 'basic'}}
+DEFENDERS = {'counter': {'style': 'counter'}, 'basic': {'style': 'basic'},
+             'game:easy': {'game': 'easy'}, 'game:normal': {'game': 'normal'}, 'game:hard': {'game': 'hard'}}
 # The game's current charge rules, applied to every attacker unless --opts overrides them.
 GAME_RULES_OPTS = {'cap': True, 'noLastCharges': True}
 
@@ -45,7 +50,8 @@ ap.add_argument('--seeds', type=int, default=2)
 ap.add_argument('--log', action='store_true', help='print the round-by-round log of the first seed')
 a = ap.parse_args()
 rules, extra = json.loads(a.rules), json.loads(a.opts)
-atk = ATTACKERS if a.attackers == 'all' else {k: v for k, v in ATTACKERS.items() if any(s.strip() in k for s in a.attackers.split(','))}
+atk = ({k: v for k, v in ATTACKERS.items() if not k.startswith('computer')} if a.attackers == 'all'
+       else {k: v for k, v in ATTACKERS.items() if any(s.strip() in k for s in a.attackers.split(','))})
 
 page_path = sim_page()
 with sync_playwright() as p:
@@ -60,8 +66,9 @@ with sync_playwright() as p:
             w = sum(r['winner'] == 'attacker' for r in res); wins += w; total += len(res)
             fell = [r['round'] for r in res if r['winner'] == 'attacker']
             br = [x['breach'] for r in res for x in r['log'] if 'breach' in x]
-            print(f'  defender {dn:8s} vs {an:26s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
-                  f'  avg breach {sum(br)/max(1, len(br)):4.1f}%' + (f'  fell in rounds {fell}' if fell else ''), flush=True)
+            ch = sum(x.get('charges') or 0 for r in res for x in r['log']) / len(res)
+            print(f'  defender {dn:11s} vs {an:26s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
+                  f'  avg breach {sum(br)/max(1, len(br)):4.1f}%  charges/match {ch:4.1f}' + (f'  fell in rounds {fell}' if fell else ''), flush=True)
             if a.log:
                 for x in res[0]['log']: print('      ', x)
     print(f'ATTACKER WINS {wins}/{total} = {100 * wins / max(1, total):.0f}%')

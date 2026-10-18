@@ -16,7 +16,8 @@
      towers and damage upgrades. Locked (offline) towers stay put.
      style 'counter': retunes towers against the last army it saw (splash on half the towers vs cheap or
                       dodging units, slow heavy shots vs armor). This is the "competent defender" baseline.
-     style 'basic':   never retunes (default towers + damage upgrades). A weak defender. */
+     style 'basic':   never retunes (default towers + damage upgrades). A weak defender.
+     game: 'easy' | 'normal' | 'hard' plays the game's own computer defender (brainPlan in index.html) instead. */
   const WCOLS = [3, 6, 9, 12];
   const SLOTS = [[3, 5], [6, 5], [9, 5], [12, 5], [3, 8], [6, 2], [9, 8], [12, 2], [3, 2], [6, 8], [9, 2], [12, 8]];
   const colCells = k => { const c = WCOLS[k], gap = k % 2 ? 10 : 0, out = []; for (let r = 0; r < ROWS; r++) if (r !== gap) out.push(at(c, r)); return out; };
@@ -47,7 +48,13 @@
     }
     best.cfg = next; spend(delta); return true;
   }
-  function defend(S, opt) {
+  function defend(S, opt, seed) {
+    if (opt.game) {
+      const p = I.brainPlan('def', opt.game, seed).plan;
+      S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; I.recompute();
+      if (!S.path) throw new Error('game defender blocked the path');
+      return;
+    }
     let worth = S.dFree;
     for (let i = 0; i < N; i++) {
       const g = S.grid[i]; if (!g) continue;
@@ -94,7 +101,8 @@
      opt.army: a strategy name below, or opt.armySpec = [[stats or preset name, share, start, end], ...]
        stats are slider indexes, e.g. { hp: 6, speed: 4, regen: 3 }; start/end are the wave-timeline window (0..1).
      opt.charges: 'walls' | 'towers' | 'both' (with opt.chargeShare = share of worth spent on charges)
-     opt.cap: respect the "half the seen towers offline per wave" cap; opt.noLastCharges: none in the final wave. */
+     opt.cap: respect the "half the seen towers offline per wave" cap; opt.noLastCharges: none in the final wave.
+     opt.game: 'easy' | 'normal' | 'hard' plays the game's own computer attacker (brainPlan in index.html) instead. */
   const DESIGNS = {
     Tank: { hp: 9, speed: 7, armor: 3 },          // everything maxed
     MiniTank: { hp: 5, speed: 5, armor: 2 },
@@ -130,7 +138,12 @@
     Object.assign(d, typeof p === 'string' ? (DESIGNS[p] || {}) : p);
     return d;
   }
-  function attack(S, opt) {
+  function attack(S, opt, seed) {
+    if (opt.game) {
+      const p = I.brainPlan('atk', opt.game, seed).plan;
+      S.designs = I.decodeArmy(p.a); S.aFree = p.aFree; S.charges = I.decodeCharges(p.c);
+      return 'game';
+    }
     let worth = S.aFree;
     for (const d of S.designs) worth += d.count * I.unitCost(d);
     S.charges = new Map();
@@ -187,8 +200,8 @@
     I.recompute();
     const log = [];
     for (;;) {
-      defend(S, dOpt);
-      const army = attack(S, aOpt);
+      defend(S, dOpt, seed * 7919 + S.round);
+      const army = attack(S, aOpt, seed * 104729 + S.round);
       I.startWave(seed * 101 + S.round);
       window.siegeline.advance(900);
       if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: S.wave.x, Y: Math.round(S.wave.y), keep: 0 }); return { winner: 'attacker', round: S.round, keep: 0, log }; }

@@ -357,6 +357,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .sum-title{margin:0;font:800 44px/.95 var(--f-display);text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
 .bx{display:flex;flex-direction:column;gap:6px;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .bx-row{display:flex;align-items:baseline;gap:8px;font:600 14px/1.2 var(--f-ui);color:var(--muted)}
+.ainote h3{margin:0;font:700 11.5px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ainote p{margin:0;font:500 14px/1.45 var(--f-body);color:var(--soft)}
 .bx-row b{margin-left:auto;font:800 22px/1 var(--f-display);color:var(--paper);font-variant-numeric:tabular-nums}
 .bx-row.big b{font-size:30px;color:var(--warm)}
 .bx-row.keep b{color:var(--keep)}
@@ -395,6 +397,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .mode .ready:disabled{opacity:.4;cursor:not-allowed}
 .modecol{display:flex;flex-direction:column;gap:12px;min-width:0}
 .rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pick.lv{grid-template-columns:repeat(3,minmax(0,1fr))}
 .rolepick button,.pick button{min-height:46px;border-radius:9px;border:1px solid var(--line);background:var(--slate-2);font:800 17px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
 .rolepick button[data-role=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink);border-color:var(--cool)}
 .rolepick button[data-role=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink);border-color:var(--warm)}
@@ -612,7 +615,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><span class="w">Siege</span><span class="c">line</span></h1>
-        <p class="tagline">Asymmetric 1v1 tower defense · prototype v7</p>
+        <p class="tagline">Asymmetric 1v1 tower defense · prototype v8</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -685,7 +688,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 
       <section>
         <h2>What this demo is</h2>
-        <p>A prototype that proves the core loop, on one screen, across two devices or against the computer. The computer opponent is a simple rule-based player that only knows what a human in its seat would know. The Attacker always sees the defense as it stood after the last wave, and the Defender sees only the army from the last wave. Online, each side's plan stays private until both lock in; then both devices play the same wave, and the Defender's device settles the result. There is no server and nothing is saved, so reloading the page ends the match. Every number is a rough placeholder, not a balanced value.</p>
+        <p>A prototype that proves the core loop, on one screen, across two devices or against the computer. The computer opponent only knows what a human in its seat would know. Each round it tries out dozens of plans in a hidden copy of the wave and plays the one that did best, then explains its choice after the wave. The Attacker always sees the defense as it stood after the last wave, and the Defender sees only the army from the last wave. Online, each side's plan stays private until both lock in; then both devices play the same wave, and the Defender's device settles the result. There is no server and nothing is saved, so reloading the page ends the match. Every number is a rough placeholder, not a balanced value.</p>
         <div class="tablewrap">
           <table>
             <thead><tr><th>Rule</th><th>Value</th><th>Note</th></tr></thead>
@@ -722,7 +725,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <li>Monetization that is fair to the community: cosmetic only, never pay-to-win.</li>
         </ul>
         <p>The guiding rule: a fun game first, a business second.</p>
-        <p class="colophon">Siegeline is a working title. Prototype v7, single file, Canvas 2D.</p>
+        <p class="colophon">Siegeline is a working title. Prototype v8, single file, Canvas 2D.</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -768,9 +771,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
         </div>
         <div class="mode">
           <h3>Versus computer</h3>
-          <p>Play alone against the computer. Like a human opponent, it only sees the defense or the army from the last wave.</p>
+          <p>Play alone against the computer. Like a human opponent, it only sees the defense or the army from the last wave. It tests plans before it commits, and tells you its thinking after each wave.</p>
           <div class="pick" role="group" aria-label="Your side against the computer"><button data-side="def" aria-pressed="true">Defender</button><button data-side="atk" aria-pressed="false">Attacker</button></div>
-          <div class="pick" role="group" aria-label="Difficulty"><button data-level="easy" aria-pressed="true">Easy</button><button data-level="normal" aria-pressed="false">Normal</button></div>
+          <div class="pick lv" role="group" aria-label="Difficulty"><button data-level="easy" aria-pressed="true">Easy</button><button data-level="normal" aria-pressed="false">Normal</button><button data-level="hard" aria-pressed="false">Hard</button></div>
           <button class="ready neutral" id="mode-solo">Play the computer</button>
         </div>
       </div>
@@ -839,6 +842,7 @@ const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const hyp = (x, y) => Math.sqrt(x * x + y * y);
 let srand = Math.random;
 const STEP = 1 / 60;
+let QUIET = false; // true while the computer test-runs a wave out of sight (see trial)
 
 /* ---------- the tower: one type, tuned with sliders (stored as step indexes) ---------- */
 const TS = {
@@ -994,7 +998,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
    ===================================================================== */
 let S = null, uid = 0, tipsOn = false;
 // Versus computer: the player's side, the difficulty, and the computer's plan for this round.
-const SOLO = { on: false, side: 'def', level: 'easy', plan: null };
+const SOLO = { on: false, side: 'def', level: 'easy', plan: null, pending: '', note: '', fallback: null, think: null, timer: 0, locked: false, rng: Math.random, mem: { atk: {}, def: {} }, seed: null };
 const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, walls: 0, wallCoins: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0 });
 function newState() {
   return {
@@ -1438,7 +1442,7 @@ function leak(u) {
   floatText(COLS + 0.25, MID + 0.5 - 0.45, '−' + fmtNum(carried), '#ffd27a', carried >= 15 ? 16 : 13);
   keepHit = 1;
   addShake(Math.min(8, 2 + carried / 8));
-  el.keepbox.classList.remove('hit'); void el.keepbox.offsetWidth; el.keepbox.classList.add('hit');
+  if (!QUIET) { el.keepbox.classList.remove('hit'); void el.keepbox.offsetWidth; el.keepbox.classList.add('hit'); }
   if (S.keep <= 0 && !S.over) { S.over = true; S.winner = 'attacker'; S.overT = 1.6; }
 }
 function updateTowers(dt) {
@@ -1526,7 +1530,7 @@ function detonate(i) {
   if (destroyed.length) floatText(cx, cy - 0.7, `−${destroyed.length * RULES.wall} defender coins`, '#ffb07a', 12);
   S.scorches.push({ x: cx, y: cy, r: 1.15 });
   for (const j of destroyed) if (j !== i) { const [x, y] = center(j); S.scorches.push({ x, y, r: 0.65 }); }
-  drawTerrain();
+  if (!QUIET) drawTerrain();
 }
 function waveStep(dt) {
   S.waveT += dt;
@@ -1616,7 +1620,7 @@ function startRound() {
 function startDefend() { S.next = null; setPhase('defend'); }
 function defenderReady() {
   if (online()) { lockIn(); return; }
-  if (SOLO.on) { soloBeginWave(); return; }
+  if (SOLO.on) { soloReady(); return; }
   S.next = 'attack';
   setPhase('handoff');
   showHandoff('atk', `Round ${S.round} of ${RULES.rounds}`, 'Pass to Attacker',
@@ -1628,7 +1632,7 @@ function attackerReady() {
     S.confirmEmpty = true; refreshUI(); toast('Your army is empty. Tap Ready again to send nothing.', 'atk'); return;
   }
   if (online()) { lockIn(); return; }
-  if (SOLO.on) { soloBeginWave(); return; }
+  if (SOLO.on) { soloReady(); return; }
   S.next = 'wave';
   setPhase('handoff');
   const n = armyCount(S.designs), c = S.charges.size;
@@ -1636,10 +1640,15 @@ function attackerReady() {
     `Both players watch. ${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${plural(c, 'charge')}` : ''} against the defense. Tap anything on the board to inspect it.`, 'Start the wave', startWave);
 }
 function startWave(seed) {
-  srand = mulberry32(seed == null ? (Math.random() * 4294967296) >>> 0 : seed);
   simAcc = 0;
   S.preWave = coreSnapshot('attack');
   S.next = null;
+  prepWave(seed);
+  setPhase('wave');
+}
+// Everything the wave simulation needs to begin. The computer's hidden test runs (trial) use it too.
+function prepWave(seed) {
+  srand = mulberry32(seed == null ? (Math.random() * 4294967296) >>> 0 : seed);
   S.sentArmy = S.designs.map(d => ({ ...d, tl: { ...d.tl, pos: d.tl.pos ? d.tl.pos.slice() : null } }));
   S.wave = blankWave();
   S.wave.x = armyValue(S.designs);
@@ -1649,9 +1658,9 @@ function startWave(seed) {
   S.waveT = 0; S.endDelay = 0; S.units = []; S.shots = [];
   S.spawnStart = S.detQueue.length ? DET0 + S.detQueue.length * DETGAP * 0.5 : 0.35;
   for (const g of S.grid) if (g && g.t === 'tower') { g.cd = 0.2; g.kick = 0; g.dealt = 0; }
-  setPhase('wave');
 }
 function endRound() {
+  if (QUIET) { S.trialDone = true; return; }
   const X = S.wave.x, Y = S.wave.y, sp = splitFor(X, Y);
   const dGain = Math.round(RULES.pot * sp.share), aGain = RULES.pot - dGain;
   S.dFree += dGain; S.aFree += aGain;
@@ -1673,6 +1682,9 @@ function nextRound() {
 }
 function newMatch() {
   S = newState(); uid = 0;
+  soloStop();
+  SOLO.rng = mulberry32(SOLO.seed != null ? SOLO.seed : (Math.random() * 4294967296) >>> 0);
+  SOLO.mem = { atk: {}, def: {} }; SOLO.note = '';
   fx.length = 0; floaters.length = 0;
   recompute(); drawTerrain();
 }
@@ -1723,6 +1735,7 @@ function showSummary() {
     <h2 class="sum-title" id="sum-title">${title}</h2>
     ${splitViz(L)}
     <div class="bx"><div class="bx-row keep"><span>The keep took ${fmtNum(L.Y)} damage</span><b>${Math.ceil(S.keep)} / ${RULES.keep}</b></div></div>
+    ${SOLO.on && SOLO.note ? `<div class="bx ainote"><h3>The computer’s thinking</h3><p>${SOLO.note}</p></div>` : ''}
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">+${L.dGain}</span>
         <ul><li><span>Pot share ${Math.round(L.share * 100)}%</span><span>+${L.dGain}</span></li>
@@ -1893,6 +1906,7 @@ function lockIn() {
   netCheck();
 }
 function unlock() {
+  if (SOLO.on) { SOLO.locked = false; hide(ovWait); return; }
   if (NET.go >= S.round) return;
   NET.lk = 0; NET.myPlan = null;
   hide(ovWait);
@@ -2283,36 +2297,287 @@ function disconnect() {
 /* =====================================================================
    Versus computer. The computer plays the other side knowing only what
    a human in its seat would: as attacker, the defense as it stood after
-   the last wave; as defender, the army that marched in it. It plans at
-   the start of each round on copies, and its plan is applied only when
-   the player locks in, in the same format online plans travel in, so
-   nothing it does shows while the player plans.
-   Both players started as copies of the balance-test bots in
-   tools/sim/ai.js. They are simple rule-based players, not strong ones.
+   the last wave; as defender, its own defense and the army that marched
+   in the last wave (and the attacker's coins, which the HUD shows both
+   players). At the start of each round it copies that knowledge and
+   thinks in the background while the player plans: simple principles
+   propose plans, each plan is test-run in a hidden copy of the real
+   wave (trial), and the best one is played. The plan is applied only
+   when the player locks in, in the same format online plans travel in,
+   so nothing it does shows while the player plans, and it can't depend
+   on the player's plan.
    ===================================================================== */
 const SOLO_LEVELS = {
-  easy: { def: { style: 'basic' }, atk: { army: 'mixed' } },
-  normal: { def: { style: 'counter' }, atk: { army: 'counter', charges: 'both', chargeShare: 0.25 } },
+  // sample: how many army ideas or tower mixes it considers (armies: which army ideas); finalists: how many
+  // go on to deeper tests. foresight: 0 judges a plan by what it saw, 1 averages in the likely counters,
+  // 2 also weighs the worst of them. pick: chooses at random among this many of the best plans; slip: chance
+  // of settling for the second best.
+  easy: { sample: 3, armies: ['swarm', 'ghost', 'screen', 'raid', 'rush'], finalists: 2, foresight: 0, maxCharges: 1, pick: 3, slip: 0 },
+  normal: { sample: 99, finalists: 3, foresight: 1, maxCharges: 9, pick: 1, slip: 0.1 },
+  hard: { sample: 99, finalists: 4, foresight: 2, maxCharges: 9, pick: 1, slip: 0 },
 };
+const THINK_MS = 3000; // in the game it stops looking for better plans after this long and plays the best so far
+
+// Everything the computer may know this round, copied before the player does anything.
+const copyDesign = d => ({ ...d, tl: { ...d.tl, pos: null } });
+function soloKnows(side) {
+  const K = { side, round: S.round, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null, deadline: Infinity };
+  if (side === 'atk') { K.designs = S.designs.map(copyDesign); K.aFree = S.aFree; }
+  else { K.grid = S.grid.map(cloneCell); K.dFree = S.dFree; K.towerSeq = S.towerSeq; }
+  return K;
+}
+const shuffled = (a, rng) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+// list is sorted best first
+const choose = (list, L, rng) => (L.pick > 1 ? list[Math.floor(rng() * Math.min(L.pick, list.length))] : list.length > 1 && rng() < L.slip ? list[1] : list[0]);
+const armyWords = ds => ds.filter(d => d.count).map(d => `${d.count} × ${d.name}`).join(' and ');
+
+/* ---------- what it reads from a defense or an army ---------- */
+function readDefense(G) {
+  let n = 0, walls = 0, val = 0, splash = 0, heavy = 0, rapid = 0;
+  for (const g of G) {
+    if (!g) continue;
+    if (g.t === 'wall') { walls++; continue; }
+    const v = towerValue(g); n++; val += v;
+    if (g.cfg.splash) splash += v; else if (g.cfg.rate >= 4) heavy += v; else if (g.cfg.rate <= 1) rapid += v;
+  }
+  const f = x => (val ? x / val : 0);
+  return { n, walls, splash: f(splash), heavy: f(heavy), rapid: f(rapid) };
+}
+function readArmy(ds) {
+  let val = 0, cheap = 0, armor = 0, dodge = 0, regen = 0, big = 0;
+  for (const d of ds) {
+    const v = d.count * unitCost(d); val += v;
+    if (d.hp <= 2) cheap += v; if (d.armor) armor += v; if (d.dodge) dodge += v; if (d.regen) regen += v; if (d.hp >= 7) big += v;
+  }
+  const f = x => (val ? x / val : 0);
+  return { val, cheap: f(cheap), armor: f(armor), dodge: f(dodge), regen: f(regen), big: f(big) };
+}
+// The defense as a defender would likely retune it against this army, prices aside: splash on half the
+// towers against cheap or dodging units, slow heavy shots against armor or huge units, steady fire against regen.
+function retuneAgainst(G, ds) {
+  const A = readArmy(ds);
+  let k = 0;
+  return G.map(g => {
+    const c = cloneCell(g);
+    if (!c || c.t !== 'tower' || c.off > 0) return c;
+    const i = k++;
+    if (A.cheap + A.dodge > 0.45) { if (i % 2 === 0) Object.assign(c.cfg, { splash: 2, rate: 4 }); }
+    else if (A.armor > 0.3 || A.big > 0.3) c.cfg.rate = 5;
+    else if (A.regen > 0.3) c.cfg.rate = 1;
+    return c;
+  });
+}
+
+/* ---------- routes and charge targets ---------- */
+// The route cost units minimise, from the entry, with some cells blasted open and some towers offline.
+function routeCost(G, open, off) {
+  flow(tmpB, i => !G[i] || open.has(i), dangerField(G, off));
+  return tmpB[ENTRY];
+}
+// Walls to charge, best first: each pick is the chargeable wall whose blast shortens the route the most.
+function wallPicks(G, chargeable, n) {
+  const open = new Set(), picks = [], cells = [];
+  for (let i = 0; i < N; i++) if (chargeable(i)) cells.push(i);
+  let base = routeCost(G, open, null);
+  for (let k = 0; k < n; k++) {
+    let best = -1, bestCost = base, bestBlast = null;
+    for (const i of cells) {
+      if (open.has(i)) continue;
+      const blast = plus(i).filter(j => chargeable(j) && !open.has(j));
+      const c = routeCost(G, new Set([...open, ...blast]), null);
+      if (c >= 0 && c < bestCost) { bestCost = c; best = i; bestBlast = blast; }
+    }
+    if (best < 0 || base - bestCost < 2 * STEPC) break; // saving under two steps isn't worth a charge
+    picks.push(best); for (const j of bestBlast) open.add(j);
+    base = bestCost;
+  }
+  return picks;
+}
+// Seen towers worth knocking out, best first: value times how much of the route they cover.
+function towerPicks(G, n) {
+  flow(tmpB, i => !G[i], dangerField(G));
+  const on = new Set(tracePath(tmpB) || []), list = [];
+  G.forEach((g, i) => {
+    if (!g || g.t !== 'tower' || g.off > 0) return;
+    let cover = 0; coverCells(i, g.cfg, j => { if (on.has(j)) cover++; });
+    if (cover) list.push([towerValue(g) * cover, i]);
+  });
+  return list.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
+}
+const wallChargeOf = () => ({ kind: 'wall', waves: 1, cost: RULES.wallCharge });
+const towerChargeOf = () => ({ kind: 'tower', waves: 1, cost: RULES.towerCharge[0] });
+
+/* ---------- attacker ----------
+   Re-buys its whole army each round (units refund in full). It tries every army idea below, bunched and
+   spread, against the defense it saw, then tests the best few against that defense retuned to counter them
+   and with charges. A charge has to pay for itself: coins spent on charges are gone from every later army,
+   so it's scored at its cost times the share of the army that gets through, for each later round that
+   matters (no more than the rounds the keep would last at this pace). */
+const AI_UNITS = { // slider indexes; anything left out is off
+  Swarm: { hp: 0, speed: 4 }, Runner: { hp: 2, speed: 6 }, Ghost: { hp: 2, speed: 4, dodge: 2 },
+  Plated: { hp: 5, speed: 5, armor: 2 }, Bruiser: { hp: 6, speed: 4, regen: 3 }, Hulk: { hp: 9, speed: 4 },
+  Brute: { hp: 6, speed: 1, armor: 1 },
+};
+const AI_ARMIES = { // [unit, share of coins, launch delay as a share of the wave]
+  swarm: [['Swarm', 1, 0]], rush: [['Runner', 1, 0]], ghost: [['Ghost', 1, 0]], plated: [['Plated', 1, 0]],
+  bruiser: [['Bruiser', 1, 0]], hulk: [['Hulk', 1, 0]],
+  screen: [['Brute', 0.5, 0], ['Swarm', 0.5, 0.08]], // brutes lead and soak fire, a swarm follows
+  raid: [['Runner', 0.5, 0], ['Ghost', 0.5, 0.05]],
+};
+const AI_TIMING = { bunched: 0.12, spread: 0.6 };
+const AI_OPENERS = ['swarm', 'rush', 'screen', 'plated', 'raid'];
+function aiArmy(key, timing, budget) {
+  const parts = AI_ARMIES[key], win = AI_TIMING[timing];
+  const designs = parts.map(([u, , delay], k) => ({ ...makeDesign('Runner', u, COLORS[k]), ...AI_UNITS[u], tl: { s: delay, e: Math.min(1, delay + win), pos: null } }));
+  let left = budget;
+  designs.forEach((d, k) => { d.count = Math.floor(budget * parts[k][1] / unitCost(d)); left -= d.count * unitCost(d); });
+  const last = designs[designs.length - 1], extra = Math.floor(left / unitCost(last)); // leftovers go to the last unit
+  last.count += extra; left -= extra * unitCost(last);
+  return { designs, left };
+}
+function* thinkAttack(K, L, rng) {
+  const worth = K.aFree + armyValue(K.designs), seen = K.seenGrid, D = readDefense(seen);
+  const fallback = { plan: { aFree: K.aFree, a: encodeArmy(K.designs, false), c: [] }, note: '' };
+  const done = c => {
+    const { designs, left } = aiArmy(c.key, c.tm, worth - c.cost);
+    const c2 = c.charges.map(([k, i]) => (k === 'w' ? [i, 0, 1, RULES.wallCharge] : [i, 1, 1, RULES.towerCharge[0]]));
+    return { plan: { aFree: left, a: encodeArmy(designs, false), c: c2 }, note: attackNote(K, D, c, designs, tried) };
+  };
+  let tried = 0;
+  if (K.round === 1) { // nothing seen yet: an opening, picked at random
+    const c = { key: AI_OPENERS[Math.floor(rng() * AI_OPENERS.length)], tm: rng() < 0.5 ? 'bunched' : 'spread', cost: 0, charges: [] };
+    return done(c);
+  }
+  const seed = k => seedFor('trial', K.round, k);
+  const run = (G, designs, charges, k) => { tried++; return trial(G, designs, charges, seed(k)); };
+  const judged = (y, y2) => (L.foresight === 2 ? Math.min(y, y2) : L.foresight === 1 ? (y + y2) / 2 : y);
+  // 1. army ideas against the defense as seen
+  const ideas = [];
+  for (const key of shuffled(L.armies || Object.keys(AI_ARMIES), rng).slice(0, L.sample))
+    for (const tm of L.foresight ? ['bunched', 'spread'] : [rng() < 0.5 ? 'bunched' : 'spread']) {
+      const { designs } = aiArmy(key, tm, worth);
+      if (!armyCount(designs)) continue;
+      const r = run(seen, designs, [], 0); yield;
+      ideas.push({ key, tm, cost: 0, charges: [], base: r, Y: r.Y, score: r.Y });
+    }
+  if (!ideas.length) return fallback;
+  ideas.sort((a, b) => b.score - a.score);
+  const fin = ideas.slice(0, L.finalists), pool = [...fin];
+  // 2. the best few against the likely counter
+  if (L.foresight) for (const c of fin) {
+    const { designs } = aiArmy(c.key, c.tm, worth);
+    c.counterY = run(retuneAgainst(seen, designs), designs, [], 1).Y; yield;
+    c.score = judged(c.Y, c.counterY);
+  }
+  // 3. with charges, under the game's rules: none in round 1 or the final round, only on what it saw
+  if (K.round < RULES.rounds && performance.now() < K.deadline) {
+    const offNow = seen.filter(g => g && g.t === 'tower' && g.off > 0).length;
+    const W = wallPicks(seen, i => !!(seen[i] && seen[i].t === 'wall'), 3);
+    const T = towerPicks(seen, Math.max(0, Math.ceil(D.n / 2) - offNow));
+    const opts = [];
+    if (W.length) opts.push(W.slice(0, 1).map(i => ['w', i]));
+    if (W.length > 1) opts.push(W.slice(0, 2).map(i => ['w', i]));
+    if (W.length > 2) opts.push(W.map(i => ['w', i]));
+    if (T.length) opts.push(T.slice(0, 1).map(i => ['t', i]));
+    if (T.length > 1) opts.push(T.map(i => ['t', i]));
+    if (W.length && T.length) opts.push([['w', W[0]], ['t', T[0]]]);
+    for (const c of fin) for (const ch of opts) {
+      if (ch.length > L.maxCharges || performance.now() > K.deadline) continue;
+      const cost = ch.reduce((v, [k]) => v + (k === 'w' ? RULES.wallCharge : RULES.towerCharge[0]), 0);
+      if (cost > worth / 2) continue; // most of the coins stay in the army
+      const { designs } = aiArmy(c.key, c.tm, worth - cost);
+      const map = new Map(ch.map(([k, i]) => [i, k === 'w' ? wallChargeOf() : towerChargeOf()]));
+      const Y = run(seen, designs, map, 0).Y; yield;
+      const counterY = L.foresight ? run(retuneAgainst(seen, designs), designs, map, 1).Y : Y;
+      if (L.foresight) yield;
+      const later = Math.min(RULES.rounds - K.round, Math.max(0, K.keep / Math.max(1, Y) - 1));
+      pool.push({ key: c.key, tm: c.tm, cost, charges: ch, base: c.base, Y, score: judged(Y, counterY) - cost * Math.max(0.1, c.base.breach) * later });
+    }
+  }
+  for (const c of pool) if (c.Y >= K.keep) c.score += 1e6; // a plan that takes the keep this wave beats everything
+  pool.sort((a, b) => b.score - a.score);
+  const pick = choose(pool, L, rng);
+  pick.best = pick === pool[0];
+  return done(pick);
+}
+function attackNote(K, D, c, designs, tried) {
+  const army = armyWords(designs) + (c.tm === 'bunched' ? ' in one tight group' : ' spread across the wave');
+  if (K.round === 1) return `I hadn’t seen your defense yet, so I opened with ${army}.`;
+  const kind = !D.n ? '' : D.splash >= 0.4 ? ', mostly splash' : D.heavy >= 0.5 ? ', mostly slow heavy shots' : D.rapid >= 0.5 ? ', mostly rapid fire' : ', mostly single-target';
+  const w = c.charges.filter(([k]) => k === 'w').length, t = c.charges.length - w;
+  const ch = [w && `${w === 1 ? 'a charge' : `${w} charges`} on your walls`, t && `${t === 1 ? 'a charge' : `${t} charges`} on your towers`].filter(Boolean).join(' and ');
+  return `Your defense had ${D.n ? plural(D.n, 'tower') : 'no towers'}${kind}${D.walls ? `, and ${D.walls} walls` : ''}. I tried ${plural(tried, 'plan')} against it. ${c.best ? 'What got the most through' : 'I went with'}: ${army}${ch ? `, plus ${ch}` : ''}.`;
+}
 
 /* ---------- defender ----------
    Each round it sells everything (removal refunds in full) and rebuilds from its whole worth: a serpentine
-   maze of 4 wall columns with towers set into the columns so each covers two lanes, then more towers and
-   damage upgrades. It rebuilds the same maze every time, so blown walls get repaired. Offline towers stay put.
-   style 'counter' retunes towers against the last army it saw: splash on half the towers against cheap or
-   dodging units, slow heavy shots against armor. style 'basic' never retunes. */
-const AI_WCOLS = [3, 6, 9, 12];
-const AI_SLOTS = [[3, 5], [6, 5], [9, 5], [12, 5], [3, 8], [6, 2], [9, 8], [12, 2], [3, 2], [6, 8], [9, 2], [12, 8]];
-const aiColCells = k => { const c = AI_WCOLS[k], gap = k % 2 ? ROWS - 1 : 0, out = []; for (let r = 0; r < ROWS; r++) if (r !== gap) out.push(r * COLS + c); return out; };
-function aiTowerCfg(army, k, style) {
-  const cfg = defaultTower();
-  if (style !== 'counter' || !army) return cfg;
-  let val = 0, cheap = 0, armor = 0, dodge = 0;
-  for (const d of army) { const v = d.count * unitCost(d); val += v; if (d.hp <= 2) cheap += v; if (d.armor) armor += v; if (d.dodge) dodge += v; }
-  if (!val) return cfg;
-  if ((cheap + dodge) / val > 0.45 && k % 2 === 0) { cfg.splash = 2; cfg.rate = 4; }
-  else if (armor / val > 0.3) cfg.rate = 5;
-  return cfg;
+   maze of wall columns with towers set into the columns, placed where they cover the most route, then more
+   towers or damage upgrades (always the weakest tower first, so no single tower carries the defense). It
+   tries every maze, tower mix and spending style against the last army it saw, then tests the best few
+   against the armies that would counter them. It keeps its maze unless another is clearly better, and
+   rebuilding on a cell the attacker saw doesn't hide it again (seenAs). Offline towers stay put. */
+const AI_MAZES = { four: [3, 6, 9, 12], three: [4, 8, 12], five: [2, 5, 8, 11, 14] }; // wall columns
+const AI_MIXES = { // tower k's tuning
+  damage: () => ({}),
+  heavy: () => ({ rate: 5 }),
+  splash: k => (k % 2 === 0 ? { rate: 4, splash: 2 } : {}),
+  splash3: k => (k % 3 === 1 ? { rate: 4, splash: 2 } : {}),
+  frost: k => (k === 0 ? { range: 1, dps: 1, rate: 2, slow: true } : {}),
+  poison: k => (k % 2 === 1 ? { poison: true } : {}),
+  steady: () => ({ range: 3, rate: 1 }), // long-range rapid fire
+};
+const AI_SPEND = { tall: { upgradeAfter: 4 }, wide: { upgradeAfter: 8 } }; // towers placed before upgrades compete
+const mazeCells = (c, k) => { const gap = k % 2 ? ROWS - 1 : 0, out = []; for (let r = 0; r < ROWS; r++) if (r !== gap) out.push(r * COLS + c); return out; };
+// Tower cells for a maze: up to 3 per column, at least 3 rows apart, those covering the most route first.
+// The first pass takes the best cell in each column, the next pass the second best, and so on.
+const slotCache = {};
+function aiSlots(maze) {
+  if (slotCache[maze]) return slotCache[maze];
+  const cols = AI_MAZES[maze], G = new Array(N).fill(null), cfg = defaultTower();
+  cols.forEach((c, k) => { for (const i of mazeCells(c, k)) G[i] = { t: 'wall' }; });
+  flow(tmpB, i => !G[i], dangerField(G));
+  const on = new Set(tracePath(tmpB) || []), row = i => (i / COLS) | 0;
+  const picked = cols.map((c, k) => {
+    const ranked = mazeCells(c, k).map(i => { let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; }); return [n, i]; }).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+    const out = [];
+    for (const [, i] of ranked) if (out.length < 3 && out.every(j => Math.abs(row(j) - row(i)) >= 3)) out.push(i);
+    return out;
+  });
+  const slots = [];
+  for (let p = 0; p < 3; p++) picked.forEach(list => { if (list[p] != null) slots.push(list[p]); });
+  return (slotCache[maze] = slots);
+}
+function buildDefense(K, maze, mix, spend) {
+  const G = K.grid.map(g => (g && g.t === 'tower' && g.off > 0 ? cloneCell(g) : null));
+  let worth = K.worth, seq = K.towerSeq, placed = 0, cols = 0;
+  const seen = (i, t) => !!(K.seenGrid[i] && K.seenGrid[i].t === t);
+  const addWall = i => { if (G[i] || worth < RULES.wall) return; G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= RULES.wall; };
+  const addTower = (i, cfg) => {
+    if (G[i] && G[i].t === 'tower') return true; // a locked offline tower already sits here
+    const fee = RULES.towerFee * towerCount(G), cost = towerCost(cfg) + fee;
+    if (worth < cost) return false;
+    if (G[i]) { worth += RULES.wall; G[i] = null; } // the tower replaces a wall in its column
+    G[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seen(i, 'tower'), n: ++seq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
+    worth -= cost; return true;
+  };
+  const C = AI_MAZES[maze], slots = aiSlots(maze), order = [];
+  C.forEach((c, k) => order.push(['col', k], ['tower', slots[k]]));
+  for (const i of slots.slice(C.length)) order.push(['tower', i]);
+  for (const [kind, x] of order) {
+    if (kind === 'col') {
+      const cells = mazeCells(C[x], x);
+      if (worth < cells.length * RULES.wall) break;
+      cells.forEach(addWall); cols++;
+    } else {
+      if (placed >= AI_SPEND[spend].upgradeAfter) for (let d; (d = aiUpgrade(G, worth, false));) worth -= d; // upgrade first
+      if (!addTower(x, { ...defaultTower(), ...AI_MIXES[mix](placed) })) break;
+      placed++;
+    }
+  }
+  for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
+  bfs(tmpA, i => !G[i]);
+  if (tmpA[ENTRY] < 0) return null;
+  return { G, left: worth, seq, maze, mix, spend, cols, towers: towerCount(G) };
 }
 // Raises the weakest tower's damage one step if that buys more damage per coin than another tower would
 // (or whenever it's affordable, with force). Returns the coins spent.
@@ -2326,117 +2591,144 @@ function aiUpgrade(G, worth, force) {
   best.cfg = next;
   return delta;
 }
-function aiDefend(opt) {
-  const G = S.grid.map(g => (g && g.t === 'tower' && g.off > 0 ? cloneTower(g) : null));
-  let worth = S.dFree, seq = S.towerSeq;
-  for (const g of S.grid) if (g && !(g.t === 'tower' && g.off > 0)) worth += g.t === 'wall' ? RULES.wall : towerValue(g);
-  // seenAs: rebuilding on a cell the attacker saw doesn't make it new
-  const addWall = i => { if (G[i] || worth < RULES.wall) return; G[i] = { t: 'wall', fresh: !seenAs(i, 'wall') }; worth -= RULES.wall; };
-  const addTower = (i, cfg) => {
-    if (G[i] && G[i].t === 'tower') return true; // a locked offline tower already sits here
-    const fee = RULES.towerFee * towerCount(G), cost = towerCost(cfg) + fee;
-    if (worth < cost) return false;
-    if (G[i]) { worth += RULES.wall; G[i] = null; } // the tower replaces a wall in its column
-    G[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seenAs(i, 'tower'), n: ++seq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
-    worth -= cost; return true;
-  };
-  const plan = [];
-  for (let k = 0; k < AI_WCOLS.length; k++) plan.push(['col', k], ['tower', k]);
-  for (let k = AI_WCOLS.length; k < AI_SLOTS.length; k++) plan.push(['tower', k]);
-  let placed = 0;
-  for (const [kind, k] of plan) {
-    if (kind === 'col') {
-      const cells = aiColCells(k);
-      if (worth < cells.length * RULES.wall) break;
-      cells.forEach(addWall);
-    } else {
-      if (placed >= 4) for (let d; (d = aiUpgrade(G, worth, false));) worth -= d; // upgrade first
-      const [c, r] = AI_SLOTS[k];
-      if (!addTower(r * COLS + c, aiTowerCfg(S.seenArmy, k, opt.style))) break;
-      placed++;
-    }
+// The armies it defends against: the last one it saw, scaled to the attacker's coins now, and the ideas a
+// smart attacker could switch to.
+function threatsFor(K) {
+  const budget = Math.max(RULES.startAtk, K.aWorth), out = [];
+  const last = K.seenArmy && armyValue(K.seenArmy) > 0 ? K.seenArmy : null;
+  if (last) {
+    const f = budget / armyValue(last);
+    out.push(last.map(d => ({ ...d, count: d.count ? Math.max(1, Math.floor(d.count * f)) : 0 })));
   }
-  for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
-  bfs(tmpA, i => !G[i]);
-  if (tmpA[ENTRY] < 0) return { dFree: S.dFree, ts: S.towerSeq, g: encodeGrid(S.grid) }; // never expected: keep the old defense
-  return { dFree: worth, ts: seq, g: encodeGrid(G) };
+  for (const [key, tm] of [['swarm', 'bunched'], ['plated', 'spread'], ['bruiser', 'spread'], ['rush', 'bunched']]) out.push(aiArmy(key, tm, budget).designs);
+  return out;
+}
+function* thinkDefend(K, L, rng, mem) {
+  K.worth = K.dFree;
+  for (const g of K.grid) if (g && !(g.t === 'tower' && g.off > 0)) K.worth += g.t === 'wall' ? RULES.wall : towerValue(g);
+  const fallback = { plan: { dFree: K.dFree, ts: K.towerSeq, g: encodeGrid(K.grid) }, note: '' };
+  const threats = threatsFor(K), seed = k => seedFor('trial', K.round, k);
+  let tried = 0;
+  const run = (b, designs, charges, k) => { tried++; return trial(b.G, designs, charges, seed(k)).Y; };
+  // Keep the same maze unless another is clearly better; a build that would lose the keep comes last.
+  const scored = (b, y) => { const moved = mem.maze && b.maze !== mem.maze; return y * (moved ? 1.15 : 1) + (moved ? 1 : 0) + (y >= K.keep ? 1e6 : 0); };
+  let mazes = Object.keys(AI_MAZES), mixes = Object.keys(AI_MIXES), spends = Object.keys(AI_SPEND);
+  if (L.sample < mixes.length) { mazes = [mem.maze || 'four']; mixes = shuffled(mixes, rng).slice(0, L.sample - 1); spends = ['tall']; }
+  // 1. every build against the most likely army: the last one seen (an opening swarm in round 1)
+  const builds = [];
+  for (const maze of mazes) for (const mix of mixes) for (const spend of spends) {
+    if (builds.length && performance.now() > K.deadline) break;
+    const b = buildDefense(K, maze, mix, spend);
+    if (!b) continue;
+    b.Y = run(b, threats[0], [], 0); yield;
+    b.score = scored(b, b.Y);
+    builds.push(b);
+  }
+  if (!builds.length) return fallback;
+  builds.sort((a, b) => a.score - b.score);
+  const fin = builds.slice(0, L.finalists);
+  // 2. the best few against the armies that could beat them
+  if (L.foresight) for (const b of fin) {
+    const ys = [];
+    for (let k = 1; k < threats.length; k++) { ys.push(run(b, threats[k], [], k)); yield; }
+    if (L.foresight === 2 && K.seenArmy && K.round < RULES.rounds) { // and the last army with a charge on its best wall
+      const w = wallPicks(b.G, i => !!(K.seenGrid[i] && K.seenGrid[i].t === 'wall' && b.G[i] && b.G[i].t === 'wall' && !b.G[i].fresh), 1);
+      if (w.length) { ys.push(run(b, threats[0], new Map([[w[0], wallChargeOf()]]), 0)); yield; }
+    }
+    const mean = ys.reduce((a, v) => a + v, 0) / ys.length, worst = Math.max(...ys);
+    b.score = scored(b, L.foresight === 2 ? 0.5 * b.Y + 0.25 * mean + 0.25 * worst : (b.Y + mean) / 2);
+  }
+  fin.sort((a, b) => a.score - b.score);
+  const best = choose(fin, L, rng);
+  best.best = best === fin[0];
+  mem.maze = best.maze;
+  return { plan: { dFree: best.left, ts: best.seq, g: encodeGrid(best.G) }, note: defendNote(K, L, best, tried) };
+}
+function defendNote(K, L, b, tried) {
+  const last = K.seenArmy && armyValue(K.seenArmy) > 0 ? K.seenArmy : null;
+  const tight = last && last.every(d => !d.count || d.tl.e - d.tl.s <= 0.2);
+  const saw = last ? `Your last wave was ${armyWords(last)}${tight ? ' in one tight group' : ''}.` : 'I hadn’t seen your army yet.';
+  const against = last ? (L.foresight ? 'against it and against the armies that could beat them' : 'against it') : 'against a few likely openings';
+  let repaired = 0;
+  K.seenGrid.forEach((g, i) => { if (g && g.t === 'wall' && !K.grid[i] && b.G[i] && b.G[i].t === 'wall') repaired++; });
+  const T = b.G.filter(g => g && g.t === 'tower'), count = f => T.filter(f).length;
+  const kinds = [[count(g => g.cfg.splash), 'splash'], [count(g => !g.cfg.splash && g.cfg.rate >= 4), 'heavy-shot'],
+    [count(g => g.cfg.slow), 'frost'], [count(g => g.cfg.poison), 'poison'], [count(g => g.cfg.range >= 3 && g.cfg.rate <= 1), 'long-range']].filter(([k]) => k);
+  const towers = !T.length ? 'no towers' : `${plural(T.length, 'tower')}${kinds.length ? ` (${kinds.map(([k, w]) => `${k} ${w}`).join(', ')})` : ', all single-target'}`;
+  return `${saw} I tried ${plural(tried, 'defense')} ${against}. ${b.best ? 'What held best' : 'I went with'}: ${b.cols ? `a ${b.cols}-column maze` : 'open ground'} with ${towers}.${repaired ? ` I rebuilt the ${plural(repaired, 'wall')} you blew.` : ''}`;
 }
 
-/* ---------- attacker ----------
-   Re-buys its whole army each round (units refund in full). army: a strategy below, or 'counter', which sends
-   a swarm unless at least 30% of the towers it saw had splash, and brutes if they did. charges: 'walls',
-   'towers' or 'both', spending chargeShare of its worth on them under the game's charge rules. */
-const AI_DESIGNS = {
-  Tank: { hp: 9, speed: 7, armor: 3 }, // everything maxed
-  Plated: { hp: 5, speed: 5, armor: 2 },
-  Bruiser: { hp: 6, speed: 4, regen: 3 },
-};
-const AI_ARMIES = { // [design, share of coins, timeline start, timeline end]
-  swarm: [['Swarm', 1, 0, 0.12]],
-  rush: [['Runner', 1, 0, 0.3]],
-  brute: [['Brute', 0.5, 0, 0.15], ['Runner', 0.5, 0.12, 0.25]],
-  mixed: [['Brute', 0.35, 0, 0.15], ['Swarm', 0.35, 0.05, 0.2], ['Runner', 0.3, 0.12, 0.25]],
-  plated: [['Plated', 1, 0, 0.15]],
-  bruiser: [['Bruiser', 1, 0, 0.15]],
-};
-function aiDesign(p, k) {
-  const d = makeDesign(UPRESETS[p] ? p : 'Runner', p, COLORS[k % COLORS.length]);
-  return Object.assign(d, AI_DESIGNS[p] || {});
-}
-function aiCounterPick() {
-  let n = 0, splash = 0;
-  for (const g of S.seenGrid) if (g && g.t === 'tower') { n++; if (g.cfg.splash) splash++; }
-  return !n || splash / n < 0.3 ? 'swarm' : 'brute';
-}
-function aiAttack(opt) {
-  let worth = S.aFree + armyValue(S.designs), spent = 0;
-  const charges = [], budget = Math.floor(worth * (opt.chargeShare || 0));
-  if (budget > 0 && chargeStatus().ok) {
-    const tw = [];
-    S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([towerValue(g), i, g]); });
-    tw.sort((a, b) => b[0] - a[0]);
-    let off = offlineNext(new Map()).size;
-    if (opt.charges === 'towers' || opt.charges === 'both') {
-      for (const [, i, g] of tw) { // knock the most valuable towers offline for one wave
-        if (g.off > 0) continue;
-        const cost = RULES.towerCharge[0];
-        if (off >= towerCap() || spent + cost > budget * (opt.charges === 'both' ? 0.6 : 1)) break;
-        charges.push([i, 1, 1, cost]); spent += cost; off++;
-      }
+/* ---------- hidden test runs ----------
+   The computer judges a plan by playing its wave out of sight on the real simulation: a scratch state is
+   swapped in, the wave runs to the end with QUIET set (no end-of-round screens, no terrain redraw, no keep
+   flash), and everything shared is put back. Only the computer's own copies go in, never the live plans. */
+const cloneCell = g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: !!g.fresh } : { ...cloneTower(g), fresh: !!g.fresh }) : null);
+function trial(grid, designs, charges, seed) {
+  const real = S, rs = srand, ru = uid, f0 = fx.length, l0 = floaters.length, sh = shake, kh = keepHit;
+  QUIET = true;
+  try {
+    S = newState();
+    S.keep = 1e9; S.grid = grid.map(cloneCell);
+    S.designs = designs.map(copyDesign);
+    S.charges = new Map(charges);
+    recompute();
+    prepWave(seed);
+    for (let k = 0; k < 150 / STEP && !S.trialDone; k++) {
+      waveStep(STEP);
+      if (fx.length > f0) fx.length = f0;
+      if (floaters.length > l0) floaters.length = l0;
     }
-    if (opt.charges === 'walls' || opt.charges === 'both') {
-      for (let c = 0; c < COLS; c++) { // one hole per wall column, beside its middle, to cut the maze short
-        let walls = 0;
-        for (let r = 0; r < ROWS; r++) { const g = S.seenGrid[r * COLS + c]; if (g && g.t === 'wall') walls++; }
-        if (walls < 7) continue;
-        for (const r of [4, 6, 3, 7]) {
-          const g = S.seenGrid[r * COLS + c];
-          if (!g || g.t !== 'wall') continue;
-          if (spent + RULES.wallCharge <= budget) { charges.push([r * COLS + c, 0, 1, RULES.wallCharge]); spent += RULES.wallCharge; }
-          break;
-        }
-      }
-    }
+    return { X: S.wave.x, Y: S.wave.y, breach: S.wave.x ? S.wave.y / S.wave.x : 0, kills: S.wave.kills, leaks: S.wave.leaks, walls: S.wave.walls, jammed: S.wave.jammed, t: S.waveT };
+  } finally {
+    S = real; srand = rs; uid = ru; fx.length = f0; floaters.length = l0; shake = sh; keepHit = kh;
+    QUIET = false;
+    hypCache = { key: '', path: null }; projCache = { key: '', path: null }; seenCache = { ver: -1, path: null };
+    recompute();
   }
-  worth -= spent;
-  const spec = AI_ARMIES[opt.army === 'counter' ? aiCounterPick() : opt.army];
-  const designs = spec.map(([p, , s, e], k) => { const d = aiDesign(p, k); d.tl = { s, e, pos: null }; return d; });
-  let left = worth;
-  designs.forEach((d, k) => { d.count = Math.floor(worth * spec[k][1] / unitCost(d)); left -= d.count * unitCost(d); });
-  const last = designs[designs.length - 1]; // leftovers go to the last design so coins aren't wasted
-  if (designs.length > 1) { const extra = Math.floor(left / unitCost(last)); last.count += extra; left -= extra * unitCost(last); }
-  return { aFree: left, a: encodeArmy(designs, false), c: charges };
 }
 
-/* ---------- flow ---------- */
-const soloPlan = () => (SOLO.side === 'def' ? aiAttack(SOLO_LEVELS[SOLO.level].atk) : aiDefend(SOLO_LEVELS[SOLO.level].def));
+/* ---------- flow ----------
+   Thinking runs a few milliseconds at a time between frames, so the page never freezes. If the player locks
+   in first, a wait card shows until the computer is done. */
+const soloLevel = () => SOLO_LEVELS[SOLO.level] || SOLO_LEVELS.easy;
+const think = (side, K, L, rng) => (side === 'atk' ? thinkAttack(K, L, rng, SOLO.mem.atk) : thinkDefend(K, L, rng, SOLO.mem.def));
+function soloStop() { clearTimeout(SOLO.timer); SOLO.timer = 0; SOLO.think = null; SOLO.locked = false; }
 function soloStartRound() {
-  SOLO.plan = soloPlan();
+  soloStop();
+  const side = SOLO.side === 'def' ? 'atk' : 'def', K = soloKnows(side); // the computer's side
+  K.deadline = performance.now() + THINK_MS;
+  SOLO.plan = null; SOLO.note = '';
+  SOLO.fallback = side === 'atk' ? { aFree: K.aFree, a: encodeArmy(K.designs, false), c: [] } : { dFree: K.dFree, ts: K.towerSeq, g: encodeGrid(K.grid) };
+  SOLO.think = think(side, K, soloLevel(), SOLO.rng);
+  pumpThink();
   if (SOLO.side === 'def') startDefend(); else startAttack();
 }
+function pumpThink() {
+  SOLO.timer = 0;
+  const t0 = performance.now();
+  while (SOLO.think) {
+    let r;
+    try { r = SOLO.think.next(); } catch (e) { console.error('computer player', e); r = { done: true, value: { plan: SOLO.fallback, note: '' } }; }
+    if (r.done) {
+      SOLO.think = null; SOLO.plan = r.value.plan; SOLO.pending = r.value.note;
+      if (SOLO.locked) { SOLO.locked = false; hide(ovWait); soloBeginWave(); }
+      return;
+    }
+    if (performance.now() - t0 > 12) break;
+  }
+  if (SOLO.think) SOLO.timer = setTimeout(pumpThink, 0);
+}
+function soloReady() {
+  if (!SOLO.think) { soloBeginWave(); return; }
+  SOLO.locked = true;
+  $('#wait-title').textContent = 'Locked in';
+  $('#wait-sub').textContent = 'The computer is finishing its plan';
+  $('#wait-net').textContent = '';
+  show(ovWait);
+}
 function soloBeginWave() {
-  const p = SOLO.plan || soloPlan();
-  SOLO.plan = null;
+  const p = SOLO.plan || SOLO.fallback;
+  SOLO.plan = null; SOLO.note = SOLO.pending || '';
   if (SOLO.side === 'def') {
     S.designs = decodeArmy(p.a); S.aFree = int(p.aFree, 0, 1e6);
     S.charges = decodeCharges(p.c); S.chargeVer++;
@@ -2452,6 +2744,12 @@ function soloBeginWave() {
     ? `The computer has locked in: ${army} against your defense. Tap anything on the board to inspect it.`
     : `The computer has built its defense. Your ${army} march on it. Tap anything on the board to inspect it.`,
   'Start the wave', startWave);
+}
+// For the simulators: one plan for `side`, thought through to the end at once.
+function brainPlan(side, level, seed) {
+  if (S.round === 1) SOLO.mem[side] = {};
+  const g = think(side, soloKnows(side), SOLO_LEVELS[level], mulberry32(seed));
+  for (;;) { const r = g.next(); if (r.done) return r.value; }
 }
 
 /* ---------- the mode picker ---------- */
@@ -3826,7 +4124,7 @@ try { window.claude?.hot?.snapshot?.(() => ({ siege: snapshotData() })); } catch
 
 // Small handle for collaborators poking at the prototype from the console.
 window.siegeline = {
-  get state() { return S; }, get net() { return NET; }, get solo() { return SOLO; }, rules: RULES, towerCost, towerValue, unitCost, splitFor, tlPositions,
+  get state() { return S; }, get net() { return NET; }, get solo() { return SOLO; }, trial, rules: RULES, towerCost, towerValue, unitCost, splitFor, tlPositions,
   cellToClient(i) { const [x, y] = center(i), [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   unitToClient(u) { const [sx, sy] = w2s(u.x + u.ox, u.y + u.oy), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   get speed() { return waveSpeed; },
