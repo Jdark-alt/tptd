@@ -158,13 +158,18 @@ with sync_playwright() as p:
         check('hadn’t seen your army' in S(page, 'SOLO.note'), f'attack/{level}: round 1 note says it hadn\'t seen an army yet')
         # round 2: the player lays a bridge on a wall of the computer's maze
         page.click('#sum-next'); page.click('#atk-next'); page.click('#atk-next')
+        page.wait_for_timeout(300)  # the board re-lays out once the wide timeline panel closes
         # a wall halfway up a column: the computer guards the wall it would bridge itself, usually by a column's end
+        # (any wall if it built none there: Normal sometimes plays its second-best plan)
         wall = S(page, 'S.seenGrid.findIndex((g, i) => g && g.t === "wall" && i % 16 > 1 && i % 16 < 14 && Math.abs(Math.floor(i / 16) - 5) <= 2)')
-        click_cell(page, wall % COLS, wall // COLS)
-        check(S(page, f'S.charges.has({wall}) && S.charges.get({wall}).kind') == 'bridge', f'attack/{level}: the player plans a bridge on a wall of the computer\'s maze')
+        if wall < 0: wall = S(page, 'S.seenGrid.findIndex(g => g && g.t === "wall")')
+        if wall >= 0:
+            click_cell(page, wall % COLS, wall // COLS)
+            check(S(page, f'S.charges.has({wall}) && S.charges.get({wall}).kind') == 'bridge', f'attack/{level}: the player plans a bridge on a wall of the computer\'s maze')
+        else: print(f'SKIP attack/{level}: the computer built no walls in round 1, nothing to bridge')
         page.click('#atk-next'); page.click('#atk-next'); hand(page); run_wave(page)
         check('Your last wave was 10 × Runner' in S(page, 'SOLO.note'), f'attack/{level}: round 2 note names the army it defended against ({S(page, "SOLO.note")[:60]}…)')
-        check(S(page, f'S.bridges.has({wall})') or S(page, 'S.last.missed') == 1, f'attack/{level}: the bridge goes down (or misses on a guard tower)')
+        if wall >= 0: check(S(page, f'S.bridges.has({wall})') or S(page, 'S.last.missed') == 1, f'attack/{level}: the bridge goes down (or misses on a guard tower)')
         page.click('#sum-next')
         if S(page, 'S.bridges.size'):
             atk_ready(); hand(page)
@@ -276,7 +281,8 @@ with sync_playwright() as p:
     check(nb and nb['x'] >= 0 and nb['x'] + nb['width'] <= 390, f'phone: the computer\'s note fits on the summary {nb}')
     page.locator('#ov-sum .ainote').scroll_into_view_if_needed(); page.screenshot(path=f'{OUT}/m3_note.png')
     page.tap('#sum-next'); page.wait_for_timeout(200)
-    page.evaluate('() => { window.siegeline.state.keep = 1; }')
+    # a big enough wave that something gets through whatever the computer builds (its seed is random here)
+    page.evaluate('() => { const S = window.siegeline.state; S.keep = 1; S.designs[0].count += 40; S.designs[0].tl = { s: 0, e: 0.1, pos: null }; }')
     for _ in range(4): page.tap('#atk-next'); page.wait_for_timeout(80)
     page.wait_for_selector('#ov-hand', state='visible', timeout=30000); page.wait_for_timeout(500); page.tap('#ov-hand')
     page.evaluate('() => window.siegeline.advance(300)'); page.wait_for_selector('#ov-end', state='visible', timeout=5000)

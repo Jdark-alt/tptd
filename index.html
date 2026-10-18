@@ -683,8 +683,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
         <div class="callout"><p><code>cell cost = 1 step + ½ step × towers in range</code></p></div>
         <h3>Bridges, charges and the staged rule</h3>
         <p>A bridge goes on a wall the Attacker has seen. When the wave starts the wall comes down, its coins go back to the Defender, and the cell is open ground for the rest of the match. Nobody can build on it again. Units treat it like any other open cell, and when two routes cost exactly the same they take the one over the bridge. Towers next to it cover it as usual, and the Defender can wall off either end, as long as a route stays open. Taking the wall down first doesn't stop a bridge. Only a tower built on that cell by then does, because the tower is new: the bridge misses and its coins are lost.</p>
-        <p>A bridge costs <span data-rule="bridgeBase">50</span> coins plus <span data-rule="bridgeFee">15</span> for every bridge already on the map, and at most <span data-rule="bridgeCap">1</span> can go down per wave.</p>
-        <div class="callout"><p><code>bridge price = <span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">15</span> × bridges on the map</code></p></div>
+        <p>A bridge costs <span data-rule="bridgeBase">50</span> coins plus <span data-rule="bridgeFee">20</span> for every bridge already on the map, and at most <span data-rule="bridgeCap">1</span> can go down per wave.</p>
+        <div class="callout"><p><code>bridge price = <span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">20</span> × bridges on the map</code></p></div>
         <p>A charge on a tower knocks it offline for one to three waves (25, 55 or 90 coins). An offline tower can't shoot, can't be removed and can't be retuned, but it still blocks its cell. The Defender sees that it's offline, never for how long. No more than half the towers the Attacker has seen, rounded up, can be offline in the same wave, counting towers still offline from earlier charges.</p>
         <p>There are no bridges or charges in the first wave, when nothing has been seen yet, or in the final wave: the last round is the army against the defense as built. Both only work on things the Attacker has seen, which means things built before this round. New defenses always get one round of value. Tearing something down and rebuilding it on the same cell doesn't count as new.</p>
         <h3>Breach, the keep and the shared pot</h3>
@@ -711,7 +711,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when it’s bridged</td></tr>
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower owned</td></tr>
               <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Health, speed and traits multiply; surcharge above 60</td></tr>
-              <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">15</span> each</td><td>Turns a seen wall into open ground for the rest of the match; +<span data-rule="bridgeFee">15</span> for every bridge already on the map; at most <span data-rule="bridgeCap">1</span> per wave; none in the first or final wave</td></tr>
+              <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">20</span> each</td><td>Turns a seen wall into open ground for the rest of the match; +<span data-rule="bridgeFee">20</span> for every bridge already on the map; at most <span data-rule="bridgeCap">1</span> per wave; none in the first or final wave</td></tr>
               <tr><td class="a">Tower charge</td><td class="n">25 / 55 / 90</td><td>Offline for 1 / 2 / 3 waves; at most half the towers (rounded up) per wave; none in the final wave</td></tr>
               <tr><td class="a">Wave length</td><td class="n">20 s</td><td>Width of the timeline</td></tr>
             </tbody>
@@ -842,7 +842,7 @@ const RULES = {
   towerCharge: [25, 55, 90], waveLen: 20,
   // a bridge turns a wall the attacker saw into open ground for the rest of the match. Its price rises with every
   // bridge on the map (bridges planned this round count, in order), and at most bridgeCap go down in one wave
-  bridgeBase: 50, bridgeFee: 15, bridgeCap: 1,
+  bridgeBase: 50, bridgeFee: 20, bridgeCap: 1,
   danger: 5, // extra route cost (in tenths of a step) for each working tower that can hit a cell
 };
 const DET0 = 0.45, DETGAP = 0.32;
@@ -2560,7 +2560,7 @@ const AI_ARMIES = { // [unit, share of coins, launch delay as a share of the wav
 };
 const AI_TIMING = { bunched: 0.12, spread: 0.6 };
 const AI_OPENERS = ['swarm', 'rush', 'screen', 'plated', 'raid'];
-const BRIDGE_HOLD = { open: 0.7, blockable: 0.25 }; // share of a bridge's worth it expects to keep in each later wave
+const BRIDGE_HOLD = { open: 0.35, blockable: 0.1 }; // share of a bridge's worth it expects to keep in each later wave
 function aiArmy(key, timing, budget) {
   const parts = AI_ARMIES[key], win = AI_TIMING[timing];
   const designs = parts.map(([u, , delay], k) => ({ ...makeDesign('Runner', u, COLORS[k]), ...AI_UNITS[u], tl: { s: delay, e: Math.min(1, delay + win), pos: null } }));
