@@ -393,10 +393,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .mode p.fine{font-size:12.5px;color:var(--muted)}
 .mode .ready{flex:none;min-height:50px;font-size:20px}
 .mode .ready:disabled{opacity:.4;cursor:not-allowed}
-.rolepick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.rolepick button{min-height:46px;border-radius:9px;border:1px solid var(--line);background:var(--slate-2);font:800 17px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
+.modecol{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rolepick button,.pick button{min-height:46px;border-radius:9px;border:1px solid var(--line);background:var(--slate-2);font:800 17px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
 .rolepick button[data-role=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink);border-color:var(--cool)}
 .rolepick button[data-role=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink);border-color:var(--warm)}
+.pick button[data-side=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink);border-color:var(--cool)}
+.pick button[data-side=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink);border-color:var(--warm)}
+.pick button[data-level][aria-pressed=true]{color:var(--paper);border-color:var(--paper);box-shadow:inset 0 0 0 1px var(--paper)}
 .codebox{display:flex;gap:6px;align-items:center}
 .codebox label{font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .codebox input{flex:1;width:0;min-width:0;height:46px;border-radius:9px;border:1px solid var(--line);background:var(--slate);color:var(--paper);font:800 24px/1 var(--f-display);letter-spacing:.3em;text-transform:uppercase;text-align:center;padding:0 8px;user-select:text;-webkit-user-select:text}
@@ -608,7 +612,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><span class="w">Siege</span><span class="c">line</span></h1>
-        <p class="tagline">Asymmetric 1v1 tower defense · prototype v6</p>
+        <p class="tagline">Asymmetric 1v1 tower defense · prototype v7</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -620,7 +624,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <div class="ka"><b>Attacker</b>Warm colours. A custom army, a wave you choreograph, and charges.</div>
           <div class="kk"><b>The Keep</b>The score. 1,000 points. The attacker wins if it falls.</div>
         </div>
-        <p>Play on one device and take turns, looking away while the other side plans. Or play online, each on your own device: you both plan at the same time and the wave starts once both sides are ready. Either way you keep your role all match.</p>
+        <p>Play on one device and take turns, looking away while the other side plans. Or play online, each on your own device: you both plan at the same time and the wave starts once both sides are ready. Or play alone against the computer, on either side. Either way you keep your role all match.</p>
         <ol>
           <li><strong>The Defender builds in secret, in three steps.</strong> Maze: walls (5 coins) bend the route. Towers: place them and tap one to tune it. Ready: check the build and what attacked last time.</li>
           <li><strong>The Attacker plans in secret, in four steps.</strong> Army: pick units and how many. Wave: arrange when each one leaves the breach on a 20-second timeline. Charges: plant them on walls and towers you've seen. Ready: check and send.</li>
@@ -681,7 +685,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 
       <section>
         <h2>What this demo is</h2>
-        <p>A prototype that proves the core loop, on one screen or across two devices. The Attacker always sees the defense as it stood after the last wave, and the Defender sees only the army from the last wave. Online, each side's plan stays private until both lock in; then both devices play the same wave, and the Defender's device settles the result. There is no server and nothing is saved, so reloading the page ends the match. Every number is a rough placeholder, not a balanced value.</p>
+        <p>A prototype that proves the core loop, on one screen, across two devices or against the computer. The computer opponent is a simple rule-based player that only knows what a human in its seat would know. The Attacker always sees the defense as it stood after the last wave, and the Defender sees only the army from the last wave. Online, each side's plan stays private until both lock in; then both devices play the same wave, and the Defender's device settles the result. There is no server and nothing is saved, so reloading the page ends the match. Every number is a rough placeholder, not a balanced value.</p>
         <div class="tablewrap">
           <table>
             <thead><tr><th>Rule</th><th>Value</th><th>Note</th></tr></thead>
@@ -718,7 +722,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <li>Monetization that is fair to the community: cosmetic only, never pay-to-win.</li>
         </ul>
         <p>The guiding rule: a fun game first, a business second.</p>
-        <p class="colophon">Siegeline is a working title. Prototype v6, single file, Canvas 2D.</p>
+        <p class="colophon">Siegeline is a working title. Prototype v7, single file, Canvas 2D.</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -747,7 +751,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 <div class="overlay" id="ov-end" hidden role="dialog" aria-modal="true" aria-labelledby="end-title">
   <div class="sheet small">
     <div class="sum-body" id="end-body"></div>
-    <div class="sum-foot"><button class="ready ghost" id="end-swap" hidden>Swap sides</button><button class="ready neutral" id="end-again">Rematch</button></div>
+    <div class="sum-foot"><button class="ready ghost" id="end-swap" hidden>Swap sides</button><button class="ready ghost" id="end-menu" hidden>Menu</button><button class="ready neutral" id="end-again">Rematch</button></div>
   </div>
 </div>
 
@@ -756,10 +760,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
   <div class="sheet">
     <header class="sheet-head"><div><h1 class="logo" id="mode-title"><span class="w">Siege</span><span class="c">line</span></h1><p class="tagline">Choose how to play</p></div></header>
     <div class="modes">
-      <div class="mode">
-        <h3>This device</h3>
-        <p>Pass and play. Take turns on one screen and look away while the other side plans.</p>
-        <button class="ready neutral" id="mode-local">Play here</button>
+      <div class="modecol">
+        <div class="mode">
+          <h3>This device</h3>
+          <p>Pass and play. Take turns on one screen and look away while the other side plans.</p>
+          <button class="ready neutral" id="mode-local">Play here</button>
+        </div>
+        <div class="mode">
+          <h3>Versus computer</h3>
+          <p>Play alone against the computer. Like a human opponent, it only sees the defense or the army from the last wave.</p>
+          <div class="pick" role="group" aria-label="Your side against the computer"><button data-side="def" aria-pressed="true">Defender</button><button data-side="atk" aria-pressed="false">Attacker</button></div>
+          <div class="pick" role="group" aria-label="Difficulty"><button data-level="easy" aria-pressed="true">Easy</button><button data-level="normal" aria-pressed="false">Normal</button></div>
+          <button class="ready neutral" id="mode-solo">Play the computer</button>
+        </div>
       </div>
       <div class="mode">
         <h3>Online</h3>
@@ -980,6 +993,8 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
    State
    ===================================================================== */
 let S = null, uid = 0, tipsOn = false;
+// Versus computer: the player's side, the difficulty, and the computer's plan for this round.
+const SOLO = { on: false, side: 'def', level: 'easy', plan: null };
 const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, walls: 0, wallCoins: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0 });
 function newState() {
   return {
@@ -1576,7 +1591,8 @@ function setPhase(p) {
   el.paneAtk.hidden = p !== 'attack';
   el.paneWave.hidden = p !== 'wave';
   if (p === 'handoff' || p === 'summary' || p === 'over') {
-    const keep = S.next === 'attack' ? el.paneDef : S.next === 'wave' ? el.paneAtk : el.paneWave;
+    // Behind the wave card the player's own panel stays up (against the computer that can be the defender's).
+    const keep = S.next === 'attack' ? el.paneDef : S.next === 'wave' ? (SOLO.on && SOLO.side === 'def' ? el.paneDef : el.paneAtk) : el.paneWave;
     keep.hidden = false;
   }
   for (const k in ctxKey) ctxKey[k] = null;
@@ -1591,6 +1607,7 @@ function goStep(n) {
   refreshUI();
 }
 function startRound() {
+  if (SOLO.on) { soloStartRound(); return; }
   S.next = 'defend';
   setPhase('handoff');
   showHandoff('def', `Round ${S.round} of ${RULES.rounds}`, 'Defender’s turn',
@@ -1599,6 +1616,7 @@ function startRound() {
 function startDefend() { S.next = null; setPhase('defend'); }
 function defenderReady() {
   if (online()) { lockIn(); return; }
+  if (SOLO.on) { soloBeginWave(); return; }
   S.next = 'attack';
   setPhase('handoff');
   showHandoff('atk', `Round ${S.round} of ${RULES.rounds}`, 'Pass to Attacker',
@@ -1610,6 +1628,7 @@ function attackerReady() {
     S.confirmEmpty = true; refreshUI(); toast('Your army is empty. Tap Ready again to send nothing.', 'atk'); return;
   }
   if (online()) { lockIn(); return; }
+  if (SOLO.on) { soloBeginWave(); return; }
   S.next = 'wave';
   setPhase('handoff');
   const n = armyCount(S.designs), c = S.charges.size;
@@ -1723,17 +1742,20 @@ function showSummary() {
 }
 function showEnd() {
   const d = S.winner === 'defender', t = S.totals;
+  const title = SOLO.on ? ((SOLO.side === 'def') === d ? 'You win' : 'The computer wins') : d ? 'Defender wins' : 'Attacker wins';
   $('#end-body').innerHTML = `
     <p class="sum-kicker">${d ? `Survived all ${RULES.rounds} rounds` : `The keep fell in round ${S.round}`}</p>
-    <h2 class="sum-title end-title ${d ? 'd' : 'a'}" id="end-title">${d ? 'Defender wins' : 'Attacker wins'}</h2>
+    <h2 class="sum-title end-title ${d ? 'd' : 'a'}" id="end-title">${title}</h2>
     <p class="fml">${d ? `The keep held with ${Math.ceil(S.keep)} of ${RULES.keep} points left.` : 'The keep is down to zero. The siege line broke through.'}</p>
     ${S.last && d ? splitViz(S.last) : ''}
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Total kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li><li><span>Total coins</span><span>${defWorth()}</span></li></ul></div>
       <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Walls blown / towers knocked out</span><span>${t.walls} / ${t.jammed}</span></li><li><span>Total coins</span><span>${atkWorth()}</span></li></ul></div>
     </div>
-    <p class="fml">${online() ? 'Either player can start the next match for both of you. Rematch keeps your sides; Swap sides trades them.' : 'Swap seats for the rematch to try the other side.'}</p>`;
+    <p class="fml">${online() ? 'Either player can start the next match for both of you. Rematch keeps your sides; Swap sides trades them.'
+      : SOLO.on ? 'Rematch plays the same side again. Open the menu to switch sides or difficulty.' : 'Swap seats for the rematch to try the other side.'}</p>`;
   $('#end-swap').hidden = !online();
+  $('#end-menu').hidden = !SOLO.on;
   show(el.ovEnd);
   setTimeout(() => $('#end-again').focus({ preventScroll: true }), 30);
 }
@@ -2206,8 +2228,8 @@ function linkLost(code) {
 async function connect() {
   const code = codeIn.value.trim().toUpperCase();
   if (!NET.role || !/^[A-Z0-9]{3,6}$/.test(code)) return;
-  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.linkUp = false;
-  codeIn.disabled = true; $('#mode-new').disabled = true; $('#mode-local').disabled = true;
+  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.linkUp = false; SOLO.on = false;
+  codeIn.disabled = true; $('#mode-new').disabled = true; $('#mode-local').disabled = true; $('#mode-solo').disabled = true;
   modeBtn.textContent = 'Cancel'; modeBtn.disabled = false;
   setModeStatus('Connecting', '', true);
   let link = null, why = '';
@@ -2252,9 +2274,184 @@ function disconnect() {
   if (NET.link) { try { NET.link.close(); } catch (_) { /* already closed */ } }
   Object.assign(NET, { on: false, link: null, linkUp: false, peer: null, st: 'lobby' });
   restartBtn.hidden = true;
-  codeIn.disabled = false; $('#mode-new').disabled = false; $('#mode-local').disabled = false;
+  codeIn.disabled = false; $('#mode-new').disabled = false; $('#mode-local').disabled = false; $('#mode-solo').disabled = false;
   modeBtn.textContent = 'Connect';
   syncModeUI();
+}
+
+
+/* =====================================================================
+   Versus computer. The computer plays the other side knowing only what
+   a human in its seat would: as attacker, the defense as it stood after
+   the last wave; as defender, the army that marched in it. It plans at
+   the start of each round on copies, and its plan is applied only when
+   the player locks in, in the same format online plans travel in, so
+   nothing it does shows while the player plans.
+   Both players started as copies of the balance-test bots in
+   tools/sim/ai.js. They are simple rule-based players, not strong ones.
+   ===================================================================== */
+const SOLO_LEVELS = {
+  easy: { def: { style: 'basic' }, atk: { army: 'mixed' } },
+  normal: { def: { style: 'counter' }, atk: { army: 'counter', charges: 'both', chargeShare: 0.25 } },
+};
+
+/* ---------- defender ----------
+   Each round it sells everything (removal refunds in full) and rebuilds from its whole worth: a serpentine
+   maze of 4 wall columns with towers set into the columns so each covers two lanes, then more towers and
+   damage upgrades. It rebuilds the same maze every time, so blown walls get repaired. Offline towers stay put.
+   style 'counter' retunes towers against the last army it saw: splash on half the towers against cheap or
+   dodging units, slow heavy shots against armor. style 'basic' never retunes. */
+const AI_WCOLS = [3, 6, 9, 12];
+const AI_SLOTS = [[3, 5], [6, 5], [9, 5], [12, 5], [3, 8], [6, 2], [9, 8], [12, 2], [3, 2], [6, 8], [9, 2], [12, 8]];
+const aiColCells = k => { const c = AI_WCOLS[k], gap = k % 2 ? ROWS - 1 : 0, out = []; for (let r = 0; r < ROWS; r++) if (r !== gap) out.push(r * COLS + c); return out; };
+function aiTowerCfg(army, k, style) {
+  const cfg = defaultTower();
+  if (style !== 'counter' || !army) return cfg;
+  let val = 0, cheap = 0, armor = 0, dodge = 0;
+  for (const d of army) { const v = d.count * unitCost(d); val += v; if (d.hp <= 2) cheap += v; if (d.armor) armor += v; if (d.dodge) dodge += v; }
+  if (!val) return cfg;
+  if ((cheap + dodge) / val > 0.45 && k % 2 === 0) { cfg.splash = 2; cfg.rate = 4; }
+  else if (armor / val > 0.3) cfg.rate = 5;
+  return cfg;
+}
+// Raises the weakest tower's damage one step if that buys more damage per coin than another tower would
+// (or whenever it's affordable, with force). Returns the coins spent.
+function aiUpgrade(G, worth, force) {
+  let best = null;
+  for (const g of G) if (g && g.t === 'tower' && !(g.off > 0) && g.cfg.dps < TS.dps.steps.length - 1 && (!best || g.cfg.dps < best.cfg.dps)) best = g;
+  if (!best) return 0;
+  const next = { ...best.cfg, dps: best.cfg.dps + 1 }, delta = towerCost(next) - towerCost(best.cfg);
+  if (delta > worth) return 0;
+  if (!force && (TS.dps.steps[next.dps] - TS.dps.steps[best.cfg.dps]) / delta < 18 * 1.5 / (RULES.towerBase + RULES.towerFee * towerCount(G))) return 0;
+  best.cfg = next;
+  return delta;
+}
+function aiDefend(opt) {
+  const G = S.grid.map(g => (g && g.t === 'tower' && g.off > 0 ? cloneTower(g) : null));
+  let worth = S.dFree, seq = S.towerSeq;
+  for (const g of S.grid) if (g && !(g.t === 'tower' && g.off > 0)) worth += g.t === 'wall' ? RULES.wall : towerValue(g);
+  // seenAs: rebuilding on a cell the attacker saw doesn't make it new
+  const addWall = i => { if (G[i] || worth < RULES.wall) return; G[i] = { t: 'wall', fresh: !seenAs(i, 'wall') }; worth -= RULES.wall; };
+  const addTower = (i, cfg) => {
+    if (G[i] && G[i].t === 'tower') return true; // a locked offline tower already sits here
+    const fee = RULES.towerFee * towerCount(G), cost = towerCost(cfg) + fee;
+    if (worth < cost) return false;
+    if (G[i]) { worth += RULES.wall; G[i] = null; } // the tower replaces a wall in its column
+    G[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seenAs(i, 'tower'), n: ++seq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
+    worth -= cost; return true;
+  };
+  const plan = [];
+  for (let k = 0; k < AI_WCOLS.length; k++) plan.push(['col', k], ['tower', k]);
+  for (let k = AI_WCOLS.length; k < AI_SLOTS.length; k++) plan.push(['tower', k]);
+  let placed = 0;
+  for (const [kind, k] of plan) {
+    if (kind === 'col') {
+      const cells = aiColCells(k);
+      if (worth < cells.length * RULES.wall) break;
+      cells.forEach(addWall);
+    } else {
+      if (placed >= 4) for (let d; (d = aiUpgrade(G, worth, false));) worth -= d; // upgrade first
+      const [c, r] = AI_SLOTS[k];
+      if (!addTower(r * COLS + c, aiTowerCfg(S.seenArmy, k, opt.style))) break;
+      placed++;
+    }
+  }
+  for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
+  bfs(tmpA, i => !G[i]);
+  if (tmpA[ENTRY] < 0) return { dFree: S.dFree, ts: S.towerSeq, g: encodeGrid(S.grid) }; // never expected: keep the old defense
+  return { dFree: worth, ts: seq, g: encodeGrid(G) };
+}
+
+/* ---------- attacker ----------
+   Re-buys its whole army each round (units refund in full). army: a strategy below, or 'counter', which sends
+   a swarm unless at least 30% of the towers it saw had splash, and brutes if they did. charges: 'walls',
+   'towers' or 'both', spending chargeShare of its worth on them under the game's charge rules. */
+const AI_DESIGNS = {
+  Tank: { hp: 9, speed: 7, armor: 3 }, // everything maxed
+  Plated: { hp: 5, speed: 5, armor: 2 },
+  Bruiser: { hp: 6, speed: 4, regen: 3 },
+};
+const AI_ARMIES = { // [design, share of coins, timeline start, timeline end]
+  swarm: [['Swarm', 1, 0, 0.12]],
+  rush: [['Runner', 1, 0, 0.3]],
+  brute: [['Brute', 0.5, 0, 0.15], ['Runner', 0.5, 0.12, 0.25]],
+  mixed: [['Brute', 0.35, 0, 0.15], ['Swarm', 0.35, 0.05, 0.2], ['Runner', 0.3, 0.12, 0.25]],
+  plated: [['Plated', 1, 0, 0.15]],
+  bruiser: [['Bruiser', 1, 0, 0.15]],
+};
+function aiDesign(p, k) {
+  const d = makeDesign(UPRESETS[p] ? p : 'Runner', p, COLORS[k % COLORS.length]);
+  return Object.assign(d, AI_DESIGNS[p] || {});
+}
+function aiCounterPick() {
+  let n = 0, splash = 0;
+  for (const g of S.seenGrid) if (g && g.t === 'tower') { n++; if (g.cfg.splash) splash++; }
+  return !n || splash / n < 0.3 ? 'swarm' : 'brute';
+}
+function aiAttack(opt) {
+  let worth = S.aFree + armyValue(S.designs), spent = 0;
+  const charges = [], budget = Math.floor(worth * (opt.chargeShare || 0));
+  if (budget > 0 && chargeStatus().ok) {
+    const tw = [];
+    S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([towerValue(g), i, g]); });
+    tw.sort((a, b) => b[0] - a[0]);
+    let off = offlineNext(new Map()).size;
+    if (opt.charges === 'towers' || opt.charges === 'both') {
+      for (const [, i, g] of tw) { // knock the most valuable towers offline for one wave
+        if (g.off > 0) continue;
+        const cost = RULES.towerCharge[0];
+        if (off >= towerCap() || spent + cost > budget * (opt.charges === 'both' ? 0.6 : 1)) break;
+        charges.push([i, 1, 1, cost]); spent += cost; off++;
+      }
+    }
+    if (opt.charges === 'walls' || opt.charges === 'both') {
+      for (let c = 0; c < COLS; c++) { // one hole per wall column, beside its middle, to cut the maze short
+        let walls = 0;
+        for (let r = 0; r < ROWS; r++) { const g = S.seenGrid[r * COLS + c]; if (g && g.t === 'wall') walls++; }
+        if (walls < 7) continue;
+        for (const r of [4, 6, 3, 7]) {
+          const g = S.seenGrid[r * COLS + c];
+          if (!g || g.t !== 'wall') continue;
+          if (spent + RULES.wallCharge <= budget) { charges.push([r * COLS + c, 0, 1, RULES.wallCharge]); spent += RULES.wallCharge; }
+          break;
+        }
+      }
+    }
+  }
+  worth -= spent;
+  const spec = AI_ARMIES[opt.army === 'counter' ? aiCounterPick() : opt.army];
+  const designs = spec.map(([p, , s, e], k) => { const d = aiDesign(p, k); d.tl = { s, e, pos: null }; return d; });
+  let left = worth;
+  designs.forEach((d, k) => { d.count = Math.floor(worth * spec[k][1] / unitCost(d)); left -= d.count * unitCost(d); });
+  const last = designs[designs.length - 1]; // leftovers go to the last design so coins aren't wasted
+  if (designs.length > 1) { const extra = Math.floor(left / unitCost(last)); last.count += extra; left -= extra * unitCost(last); }
+  return { aFree: left, a: encodeArmy(designs, false), c: charges };
+}
+
+/* ---------- flow ---------- */
+const soloPlan = () => (SOLO.side === 'def' ? aiAttack(SOLO_LEVELS[SOLO.level].atk) : aiDefend(SOLO_LEVELS[SOLO.level].def));
+function soloStartRound() {
+  SOLO.plan = soloPlan();
+  if (SOLO.side === 'def') startDefend(); else startAttack();
+}
+function soloBeginWave() {
+  const p = SOLO.plan || soloPlan();
+  SOLO.plan = null;
+  if (SOLO.side === 'def') {
+    S.designs = decodeArmy(p.a); S.aFree = int(p.aFree, 0, 1e6);
+    S.charges = decodeCharges(p.c); S.chargeVer++;
+  } else {
+    S.grid = decodeGrid(p.g); S.dFree = int(p.dFree, 0, 1e6); S.towerSeq = int(p.ts, 0, 9999);
+    S.gridVer++; recompute(); drawTerrain();
+  }
+  const n = armyCount(S.designs), c = S.charges.size;
+  const army = `${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${plural(c, 'charge')}` : ''}`;
+  S.next = 'wave';
+  setPhase('handoff');
+  showHandoff('both', `Round ${S.round} of ${RULES.rounds}`, `Wave ${S.round}`, SOLO.side === 'def'
+    ? `The computer has locked in: ${army} against your defense. Tap anything on the board to inspect it.`
+    : `The computer has built its defense. Your ${army} march on it. Tap anything on the board to inspect it.`,
+  'Start the wave', startWave);
 }
 
 /* ---------- the mode picker ---------- */
@@ -2272,7 +2469,16 @@ function showMode() {
   syncModeUI();
   show(ovMode);
 }
-$('#mode-local').addEventListener('click', () => { hide(ovMode); NET.on = false; document.body.dataset.role = ''; startRound(); });
+$('#mode-local').addEventListener('click', () => { hide(ovMode); NET.on = false; SOLO.on = false; document.body.dataset.role = ''; newMatch(); startRound(); });
+function syncSoloUI() {
+  for (const b of document.querySelectorAll('.pick button')) b.setAttribute('aria-pressed', String(b.dataset.side ? b.dataset.side === SOLO.side : b.dataset.level === SOLO.level));
+}
+for (const b of document.querySelectorAll('.pick button')) b.addEventListener('click', () => {
+  if (b.dataset.side) SOLO.side = b.dataset.side; else SOLO.level = b.dataset.level;
+  syncSoloUI();
+});
+$('#mode-solo').addEventListener('click', () => { hide(ovMode); NET.on = false; SOLO.on = true; document.body.dataset.role = ''; newMatch(); startRound(); });
+$('#end-menu').addEventListener('click', () => { hide(el.ovEnd); SOLO.on = false; showMode(); });
 for (const b of document.querySelectorAll('.rolepick button')) b.addEventListener('click', () => {
   NET.role = b.dataset.role; syncModeUI();
   if (NET.on && NET.st === 'lobby') { publish(); lobbyCheck(); }
@@ -3579,10 +3785,13 @@ function coreSnapshot(phase) {
 }
 function snapshotData() {
   if (!S || S.phase === 'over' || online()) return null;
-  if (S.phase === 'wave') return S.preWave;
-  if (S.phase === 'handoff') return coreSnapshot(S.next === 'wave' ? 'attack' : 'defend');
-  if (S.phase === 'summary') { const d = coreSnapshot('defend'); d.round = S.round + 1; return d; }
-  return coreSnapshot(S.phase);
+  let d;
+  if (S.phase === 'wave') d = S.preWave;
+  else if (S.phase === 'handoff') d = coreSnapshot(S.next === 'wave' ? 'attack' : 'defend');
+  else if (S.phase === 'summary') { d = coreSnapshot('defend'); d.round = S.round + 1; }
+  else d = coreSnapshot(S.phase);
+  // Against the computer the match resumes in the player's own phase, and the computer plans the round again.
+  return SOLO.on ? { ...d, phase: SOLO.side === 'def' ? 'defend' : 'attack', solo: { side: SOLO.side, level: SOLO.level } } : d;
 }
 function restore(d) {
   if (!d || d.v !== 3) throw new Error('old snapshot');
@@ -3593,6 +3802,12 @@ function restore(d) {
   S.seenGrid = d.seenGrid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: false } : { ...tw(g), fresh: false }) : null));
   S.designs = d.designs; S.seenArmy = d.seenArmy; S.charges = new Map(d.charges || []);
   recompute(); drawTerrain();
+  if (d.solo) {
+    Object.assign(SOLO, { on: true, side: d.solo.side === 'atk' ? 'atk' : 'def', level: SOLO_LEVELS[d.solo.level] ? d.solo.level : 'easy' });
+    // charges planted by a computer attacker were part of a plan it will now make again
+    if (SOLO.side === 'def') { S.aFree += chargesValue(); S.charges = new Map(); }
+    syncSoloUI(); soloStartRound(); return;
+  }
   if (d.phase === 'attack') startAttack(); else startDefend();
 }
 
@@ -3611,7 +3826,7 @@ try { window.claude?.hot?.snapshot?.(() => ({ siege: snapshotData() })); } catch
 
 // Small handle for collaborators poking at the prototype from the console.
 window.siegeline = {
-  get state() { return S; }, get net() { return NET; }, rules: RULES, towerCost, towerValue, unitCost, splitFor, tlPositions,
+  get state() { return S; }, get net() { return NET; }, get solo() { return SOLO; }, rules: RULES, towerCost, towerValue, unitCost, splitFor, tlPositions,
   cellToClient(i) { const [x, y] = center(i), [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   unitToClient(u) { const [sx, sy] = w2s(u.x + u.ox, u.y + u.oy), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   get speed() { return waveSpeed; },
