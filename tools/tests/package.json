@@ -1,0 +1,9 @@
+{
+  "name": "siegeline-tests",
+  "private": true,
+  "description": "Test-only dependencies (kept out of the root package.json so Render doesn't install them)",
+  "devDependencies": {
+    "peer": "1.0.2",
+    "peerjs": "1.5.4"
+  }
+}
