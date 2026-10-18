@@ -1,6 +1,6 @@
 # Siegeline: notes for Claude Code
 
-Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v6.**
+Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v7.**
 
 ## Working with the user
 
@@ -30,9 +30,11 @@ Search for these names; the file is long.
 - **Rules:** `RULES` (all tunable numbers), `TS` (tower sliders), `US` (unit sliders), `RESIST`, `TPRESETS`/`UPRESETS`, `towerCost`, `unitCost`/`unitRaw`.
 - **Pathing:** `flow` (Dijkstra cost field from the exit), `dangerField`, `nextStep`, `tracePath`, `recompute`, `routeOpenWithout` (connectivity check for "path must stay open").
 - **Defender actions:** `canBuild`, `tryBuild`, `removeAt`, `setTowerCfg`, `seenAs`.
-- **Attacker actions:** `setDesign`, `changeCount`, `plantWall`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`.
+- **Attacker actions:** `setDesign`, `changeCount`, `plantWall`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`, `blastCells` (what a wall charge reaches).
 - **Wave simulation:** `startWave`, `buildSpawns`, `makeUnit`, `waveStep`, `moveUnit`, `updateTowers`, `strike`, `damage`, `leak`, `detonate`, `endRound`.
 - **Flow and UI:** `setPhase`, `startRound`, `defenderReady`, `attackerReady`, `nextRound`, `renderDef`, `renderAtk`, `renderWave`, the overlays (`#ov-info`, `#ov-mode`, `#ov-wait`, `#ov-hand`, `#ov-sum`, `#ov-end`), and `frame` (main loop with the 1×/5×/10× wave speed).
+- **Slider prices:** `setSlider`/`setNext` show each slider's multiplier and what one more step costs (red when unaffordable). For units the step is priced for every unit of the design.
+- **Replay:** `startReplay`, `exitReplay`, `stateFrom`. `startWave` saves `S.lastWave = { seed, snap }`. A replay swaps `S` for a scratch state built from that snapshot and plays it with the same seed; the real match waits in `replay.live` (`real()` returns it). `endRound`/`finishOver` only mark a replay done, and `netCheck`/`adoptResult` wait until it closes.
 - **Online:** `NET`, `netState`, `lockIn`, `unlock`, `netCheck`, `beginOnlineWave`, `netAfterWave`, `adoptResult`, `encodeGrid`/`decodeGrid`, `encodeArmy`/`decodeArmy`, `decodeCharges`. Transports: `roomLink` (claude.ai), `relayLink` (server.js), `peerLink` (PeerJS), chosen in `connect()` in that order.
 - **Handle:** `window.siegeline` is a small handle for the console and tests: `state`, `net`, `rules`, `cellToClient`, `advance(sec)`. The tools inject extra internals into their own copy only.
 
@@ -45,6 +47,7 @@ Online play sends only plans. Both devices then run the same wave and must get b
 - Step in fixed 1/60 s increments (`STEP`). The speed buttons run more steps per frame; they never change the step size.
 - Keep path costs integers. Rebuild state on both sides from the encoded plans (`beginOnlineWave` decodes both players' plans, its own included).
 - After any change to wave logic, run `tools/tests/test_online.py`. It checks that both devices end identical, including with one device at 10× speed.
+- The replay relies on the same determinism: `test_local.py` checks that a replay ends with exactly the real wave's numbers.
 
 ### Online protocol (presence-style, absolute state)
 
@@ -56,7 +59,7 @@ Each side publishes `{v, id, role, code, ep, st, rd, lk, go, at, plan, res}`. Th
 4. The defender publishes `res`, and the attacker adopts it if their copy disagrees, so the defender's device is the referee.
 5. `ep` is the match epoch. A rematch or a rejoin after a reload bumps it, and the other side follows. A device that reloads mid-match can't resume; the lobby offers to restart.
 
-## The game as it stands (v6)
+## The game as it stands (v7)
 
 - **Board and route:** 16×11 grid, entry at the left middle, keep at the right middle. Building may never close the route. Units follow the cheapest route: each cell costs 10, plus `RULES.danger = 5` for every working tower that can hit it. So units steer around tower range when the detour is short, and walls are what force them through fire.
 - **Rounds:** 8. Each round the defender builds while the attacker plans, in secret. The wave then plays out with everything revealed.
@@ -80,7 +83,7 @@ Each side publishes `{v, id, role, code, ep, st, rd, lk, go, at, plan, res}`. Th
   - Resist: 60% less splash, 60% less poison, or 60% weaker frost.
 - **Wave timeline:** each design is a track and each unit a dot on a 20 s timeline. Spacing between dots is time between spawns. It decides bunching versus spreading.
 - **Charges:**
-  - Wall charge (`wallCharge = 60`): destroys the wall and its four neighbours that the attacker saw. The defender loses those coins.
+  - Wall charge (`wallCharge = 60`): destroys only the wall it's planted on (`wallBlast = 0`; 1 brings back the v6 blast that also took the four neighbours). The defender loses that wall's coins. If the defender took the wall down or replaced it with a tower, the charge goes off on nothing ("MISSED"); a tower there is not affected, because it's new.
   - Tower charge (25/55/90 coins): knocks a tower offline for 1/2/3 waves. The defender sees that it's offline, never for how long.
   - At most half the seen towers, rounded up, can be offline in a wave, including ones still offline from earlier charges.
   - No charges in the first wave (nothing seen yet) or the final wave.
@@ -110,8 +113,15 @@ Each side publishes `{v, id, role, code, ep, st, rd, lk, go, at, plan, res}`. Th
   - Wall charge 40 → 60.
   - Big-unit surcharge added.
   - The design scan then found regeneration was the worst offender. A unit healing 6% per second fully recovered between towers, and about two-thirds of high-health regen designs beat every defense. Regen was reworked to the rules above.
+- **v7:**
+  - At the user's request a wall charge breaks one wall, not the wall and its neighbours (`wallBlast` 1 → 0). Price unchanged at 60.
+    - Same-budget test on the bot maze (`wallCharge` at its best wall vs more units): one wall opens the same shortcut as the old blast, because units pass a 1-cell gap single file. A 60-coin wall charge still adds 60–150 keep damage against 4–6 towers, more than a 25-coin tower charge on the best tower. Swarms gain little from either.
+    - Full matches: "counter + wall charges" went from 3/3 attacker wins to 0/3, but only because the bot charges the wall right beside a tower, and a 1-cell hole leaves the route no room to dodge it. A human picks better walls.
+    - What really changes: double-thick walls now need two charges, so thickening key walls (5 coins a cell) counters wall charges.
+  - Sliders show what the next step costs, in red when unaffordable.
+  - Replay of the last wave, from the round summary, the end screen and both sides' Ready step.
 
-**Where it stands (v6, measured with the tools below):**
+**Where it stands (measured on v6 with the tools below; v7 only changed wall charges):**
 
 - Against the defender bot that retunes towers, roughly half the attacker strategies win. These include runner rush, mid-size armored units, regen bruisers, and wall or tower charges. Single-type swarms, ghosts, mixed armies and counter-picking lose. Against a defender bot that never retunes, the attacker wins everything.
 - The full v6 design scan ran 256 design-and-wave combinations, each against four defenses of about 750 coins. In 34 of them (13%) even the best defense let more than 30% through, and in 10 (4%) more than half. All the strongest are high-health designs (900 HP marked as 9):
@@ -131,12 +141,13 @@ Each side publishes `{v, id, role, code, ep, st, rd, lk, go, at, plan, res}`. Th
   - dodge or regen pricing on high-health units
 
   Re-run `scan.py` after changes; results go to `tools/.build/`, which isn't committed.
-- The user's last stance: a small attacker nerf was warranted, delivered as v6. Get their playtest feedback on v6 before the next round of changes.
+- The user's last stance: a small attacker nerf was warranted, delivered as v6. v7 added the one-wall charge on their request. They asked whether wall and tower charges should cost the same; the answer given was no (see v7 above), leaving the wall charge at 60 until playtests show whether players start thickening walls.
 
 **Known open issues and ideas (not done):**
 
 - **The pot rewards losing waves.** The attacker gets 70% when a wave fails, so sandbagging and saving up is paid for. It was flagged to the user and not changed. One option is to base the comeback share on the keep instead of the last wave.
 - **The defender bot is crude.** It only counters by rule: splash against cheap or dodging armies, slow heavy shots against armor. It has no answer to regen or high-health bunches. Improving it would make the simulations more trustworthy.
+- **The attacker bot's wall charges are naive.** It charges a wall beside the middle of each column, next to a tower. With one-wall charges (v7) that badly undersells wall charges in `match.py`. Picking the wall that shortens the route most would fix it.
 - **Possible features, not built:**
   - Tower targeting modes and a decoy unit trait (postponed by the user).
   - A computer-opponent mode for practising alone (offered, not built).

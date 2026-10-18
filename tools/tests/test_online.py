@@ -121,7 +121,15 @@ try:
             wait(A, "S.phase==='summary'"); wait(B, "S.phase==='summary'")
             same(A, B, 'round 1 results identical on both devices')
             check('defender published the result', ev(A, "N.res && N.res.r") == 1)
-            A.click('#sum-next'); B.click('#sum-next')
+            # the attacker replays the wave while the defender moves on to round 2
+            B.click('#sum-replay'); A.click('#sum-next')
+            check('replay runs on one device only', B.evaluate('()=>window.siegeline.replaying') and ev(A, "S.phase") == 'defend')
+            B.evaluate('()=>window.siegeline.advance(300)')
+            check('replay matches the wave', ev(B, "S.wave.y") == ev(A, "S.last.Y"))
+            B.click('#rp-close')
+            check('closing the replay goes back to the summary', B.is_visible('#ov-sum') and ev(B, "S.phase") == 'summary')
+            B.click('#sum-next')
+            same(A, B, 'replay leaves the online match untouched')
 
             # ---------- round 2: charges, unlock and relock, real-time wave ----------
             wait(B, "S.phase==='attack'")
