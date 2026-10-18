@@ -1,6 +1,6 @@
 """Versus-computer suite: the mode card, both sides at every level, the computer thinking in the background
-without touching the live game, its plan staying fixed whatever the player does, its coins adding up, charges
-at every level under the game's rules, the computer's notes, the wait card when the player locks in first,
+without touching the live game, its plan staying fixed whatever the player does, its coins adding up, bridges
+and charges at every level under the game's rules, its defense never standing on a bridge, the computer's notes, the wait card when the player locks in first,
 replays against the computer (also while it thinks), full matches to the end screen, and phone layout.
    python tools/tests/test_solo.py   (screenshots land in tools/.build/shots/solo)"""
 import os, sys
@@ -34,8 +34,9 @@ PLAN = 'JSON.stringify(SOLO.plan)'
 LIVE = 'JSON.stringify([S.grid.map(g => g && [g.t, g.cfg, g.off, g.fresh]), S.designs, S.dFree, S.aFree, S.charges.size, S.path && S.path.length, S.keep, S.round, S.phase])'
 DWORTH = 'S.dFree + S.grid.reduce((v, g) => v + (g ? (g.t === "wall" ? 5 : window.siegeline.towerValue(g)) : 0), 0)'
 AWORTH = 'S.aFree + S.designs.reduce((v, d) => v + d.count * window.siegeline.unitCost(d), 0) + [...S.charges.values()].reduce((v, c) => v + c.cost, 0)'
-# charges on the live wave: all on cells the attacker saw, of the right kind, within the cap
-CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].t === c.kind)
+# bridges and charges on the live wave: all on cells the attacker saw (bridges on walls, charges on towers), within the caps
+CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].t === (c.kind === "bridge" ? "wall" : c.kind))
+  && [...S.charges.values()].filter(c => c.kind === "bridge").length <= window.siegeline.rules.bridgeCap
   && [...S.charges.values()].filter(c => c.kind === "tower").length + S.seenGrid.filter(g => g && g.t === "tower" && g.off > 0).length
      <= Math.ceil(S.seenGrid.filter(g => g && g.t === "tower").length / 2)'''
 
@@ -68,7 +69,7 @@ def play_out(page, side, label, ready):
         worth_ok &= before == S(page, AWORTH if side == 'def' else DWORTH)
         coins_ok &= S(page, 'S.aFree >= 0 && S.dFree >= 0 && S.path !== null')
         n = S(page, 'S.charges.size'); charges += n; most = max(most, n)
-        rules_ok &= S(page, CHARGES_OK)
+        rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])')
         if S(page, 'S.round') in (1, 8): first_last.append(n)
         run_wave(page)
         notes += bool(S(page, 'SOLO.note'))
@@ -76,7 +77,7 @@ def play_out(page, side, label, ready):
         page.click('#sum-next'); page.wait_for_timeout(60)
     check(worth_ok, f'{label}: the computer\'s plan moves no coins in or out of its worth')
     check(coins_ok, f'{label}: no side overspends and the route stays open')
-    check(rules_ok and not any(first_last), f'{label}: computer charges only on what it saw, within the cap, none in round 1 or 8')
+    check(rules_ok and not any(first_last), f'{label}: bridges and charges only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge')
     check(notes == rounds, f'{label}: the computer explains every wave ({notes}/{rounds})')
     check(page.is_visible('#ov-end') and text(page, '#end-title') in ('You win', 'The computer wins'), f'{label}: match ends with a solo result ({text(page, "#end-title")}, {rounds} rounds)')
     return charges, most
@@ -137,7 +138,7 @@ with sync_playwright() as p:
         page.click('#sum-next')
         def maze_ready(): page.click('#def-next'); page.click('#def-next'); page.click('#def-next')
         charges, most = play_out(page, 'def', f'defend/{level}', maze_ready)
-        check(charges > 0, f'{level} computer attacker uses charges on a walled defense ({charges} over the match)')
+        check(charges > 0, f'{level} computer attacker uses bridges or charges on a walled defense ({charges} over the match)')
         if level == 'easy': check(most <= 1, f'easy computer plants at most one charge a wave (most {most})')
         page.click('#end-menu')
 
@@ -155,9 +156,23 @@ with sync_playwright() as p:
         if level == 'easy': page.wait_for_timeout(900); page.screenshot(path=f'{OUT}/4_atk_wave.png')
         run_wave(page)
         check('hadn’t seen your army' in S(page, 'SOLO.note'), f'attack/{level}: round 1 note says it hadn\'t seen an army yet')
-        page.click('#sum-next'); atk_ready(); hand(page); run_wave(page)
+        # round 2: the player lays a bridge on a wall of the computer's maze
+        page.click('#sum-next'); page.click('#atk-next'); page.click('#atk-next')
+        # a wall halfway up a column: the computer guards the wall it would bridge itself, usually by a column's end
+        wall = S(page, 'S.seenGrid.findIndex((g, i) => g && g.t === "wall" && i % 16 > 1 && i % 16 < 14 && Math.abs(Math.floor(i / 16) - 5) <= 2)')
+        click_cell(page, wall % COLS, wall // COLS)
+        check(S(page, f'S.charges.has({wall}) && S.charges.get({wall}).kind') == 'bridge', f'attack/{level}: the player plans a bridge on a wall of the computer\'s maze')
+        page.click('#atk-next'); page.click('#atk-next'); hand(page); run_wave(page)
         check('Your last wave was 10 × Runner' in S(page, 'SOLO.note'), f'attack/{level}: round 2 note names the army it defended against ({S(page, "SOLO.note")[:60]}…)')
+        check(S(page, f'S.bridges.has({wall})') or S(page, 'S.last.missed') == 1, f'attack/{level}: the bridge goes down (or misses on a guard tower)')
         page.click('#sum-next')
+        if S(page, 'S.bridges.size'):
+            atk_ready(); hand(page)
+            check(S(page, '[...S.bridges].every(i => !S.grid[i])') and 'bridge' in S(page, 'SOLO.note'), f'attack/{level}: the computer builds nothing on the bridge and says what it did about it ({S(page, "SOLO.note")[-110:]})')
+            if level == 'hard': page.wait_for_timeout(700); page.screenshot(path=f'{OUT}/4b_atk_bridge.png')
+            run_wave(page)
+            if page.is_visible('#ov-end'): page.click('#end-menu'); continue
+            page.click('#sum-next')
         play_out(page, 'atk', f'attack/{level}', atk_ready)
         page.click('#end-menu')
 

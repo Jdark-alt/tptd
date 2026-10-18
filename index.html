@@ -147,7 +147,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 .tcost{font:600 13px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
 .ico{width:30px;height:30px;display:block;flex:none}
 .ico svg{width:100%;height:100%;display:block}
-.ico.wall{color:#6d93b1}.ico.tower{color:var(--cool)}.ico.remove{color:var(--muted)}.ico.charge{color:var(--warm)}.ico.add{color:var(--warm)}.ico.replay{color:var(--side)}
+.ico.wall{color:#6d93b1}.ico.tower{color:var(--cool)}.ico.remove{color:var(--muted)}.ico.charge{color:var(--warm)}.ico.add{color:var(--warm)}.ico.replay{color:var(--side)}.ico.bridge{color:#d98a3d}
 .bigstat{display:flex;align-items:baseline;gap:8px;padding:10px 12px;border-radius:10px;background:var(--slate);border:1px solid var(--line);font:600 13px/1 var(--f-ui);color:var(--muted);letter-spacing:.04em}
 .bigstat .lbl{letter-spacing:.12em;text-transform:uppercase;font-size:12px;margin-right:auto}
 .bigstat b{font:800 32px/1 var(--f-display);color:var(--side);font-variant-numeric:tabular-nums}
@@ -554,7 +554,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
       <span class="who" id="t-who">Defender</span>
       <span class="hint" id="t-hint"></span>
       <span class="netpill" id="netpill" hidden></span>
-      <span class="coins" data-tip="What each side owns in total: free coins plus coins parked in towers, walls, the army and charges."><span class="clbl">Total coins</span><b class="c" id="v-dworth">DEF 300</b><b class="w" id="v-aworth">ATK 300</b></span>
+      <span class="coins" data-tip="What each side owns in total: free coins plus coins parked in towers, walls, the army, and bridges or charges planned for the next wave."><span class="clbl">Total coins</span><b class="c" id="v-dworth">DEF 300</b><b class="w" id="v-aworth">ATK 300</b></span>
     </div>
   </header>
 
@@ -584,7 +584,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
         <div class="budget" id="a-budget">
           <div class="bfree"><b id="a-free">300</b><span>coins free</span></div>
           <div class="bright"><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div>
-            <div class="blegend"><span class="l1" id="a-l1">Army 0</span><span class="l2" id="a-l2">Charges 0</span></div></div>
+            <div class="blegend"><span class="l1" id="a-l1">Army 0</span><span class="l2" id="a-l2">Sabotage 0</span></div></div>
         </div>
         <div class="scroll">
           <div class="browse" id="atk-body"></div>
@@ -623,7 +623,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><span class="w">Siege</span><span class="c">line</span></h1>
-        <p class="tagline">Asymmetric 1v1 tower defense · prototype v9</p>
+        <p class="tagline">Asymmetric 1v1 tower defense · prototype v10 (bridges test)</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -632,14 +632,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
         <h2>How to play</h2>
         <div class="key">
           <div class="kd"><b>Defender</b>Cool colours. Walls and one tunable tower type.</div>
-          <div class="ka"><b>Attacker</b>Warm colours. A custom army, a wave you choreograph, and charges.</div>
+          <div class="ka"><b>Attacker</b>Warm colours. A custom army, a wave you choreograph, bridges and charges.</div>
           <div class="kk"><b>The Keep</b>The score. 1,000 points. The attacker wins if it falls.</div>
         </div>
         <p>Play on one device and take turns, looking away while the other side plans. Or play online, each on your own device: you both plan at the same time and the wave starts once both sides are ready. Or play alone against the computer, on either side. Either way you keep your role all match.</p>
         <ol>
           <li><strong>The Defender builds in secret, in three steps.</strong> Maze: walls (5 coins) bend the route. Towers: place them and tap one to tune it. Ready: check the build and what attacked last time.</li>
-          <li><strong>The Attacker plans in secret, in four steps.</strong> Army: pick units and how many. Wave: arrange when each one leaves the breach on a 20-second timeline. Charges: plant them on walls and towers you've seen. Ready: check and send.</li>
-          <li><strong>The wave.</strong> Everything is revealed. Charges go off, units take the cheapest route to the keep, towers fire. Tap any unit or tower to inspect it. Afterwards either side can replay it, from the round summary or from the Ready step while planning.</li>
+          <li><strong>The Attacker plans in secret, in four steps.</strong> Army: pick units and how many. Wave: arrange when each one leaves the breach on a 20-second timeline. Sabotage: lay a bridge over a wall you’ve seen, or charge towers to knock them out. Ready: check and send.</li>
+          <li><strong>The wave.</strong> Everything is revealed. Bridges go down and charges go off, units take the cheapest route to the keep, towers fire. Tap any unit or tower to inspect it. Afterwards either side can replay it, from the round summary or from the Ready step while planning.</li>
           <li><strong>The split.</strong> Every round adds a 200-coin pot. The more of the army's strength gets through, the bigger the defender's share, from 30% up to 70%. The side that's losing gets more to recover with.</li>
         </ol>
         <p><strong>Controls.</strong> Tap or click to build, and drag to draw a line of walls. On touch screens a tower needs a second tap to place, so you can check its range first. On the wave timeline, drag the handles or the dots. When tuning a tower or a unit, the <strong>+</strong> next to each slider is what the next step up costs; it turns red when you can’t afford it.</p>
@@ -648,7 +648,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
       <section>
         <h2>The concept</h2>
         <p>Siegeline is an asymmetric 1v1 PvP tower defense game. One player defends, the other attacks, and each keeps that role for the whole match.</p>
-        <p>There is no fixed path. The map is contested terrain that both sides reshape every round: the Defender builds a maze and the Attacker blows holes in it or knocks towers out. Neither side picks from a fixed menu either. The Defender tunes every tower and the Attacker designs every unit and choreographs every wave, so each round is a new answer to what the other side did last time. Nobody can settle into one dominant habit, and there is always a move that can swing the match.</p>
+        <p>There is no fixed path. The map is contested terrain that both sides reshape every round: the Defender builds a maze, and the Attacker lays bridges through it that stay for the rest of the match, or knocks towers out. Every bridge is ground the Defender can never build on again, so the map fills up with the history of the match. Neither side picks from a fixed menu either. The Defender tunes every tower and the Attacker designs every unit and choreographs every wave, so each round is a new answer to what the other side did last time. Nobody can settle into one dominant habit, and there is always a move that can swing the match.</p>
       </section>
 
       <section>
@@ -672,6 +672,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
               <tr><td class="d">Direct shots</td><td class="a">Dodge chance</td><td class="d">Splash (an area can't be dodged)</td></tr>
               <tr><td class="d">Poison</td><td class="a">Regeneration</td><td class="d">Steady direct fire (it only heals out of fire)</td></tr>
               <tr><td class="d">One huge tower</td><td class="a">A tower charge</td><td class="d">Spreading damage across towers</td></tr>
+              <tr><td class="d">A long maze</td><td class="a">A bridge through one of its walls</td><td class="d">A wall across its far end, or towers beside it</td></tr>
             </tbody>
           </table>
         </div>
@@ -680,10 +681,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
         <h3>Routes: units dodge tower fire</h3>
         <p>Units take the cheapest route to the keep. Every cell costs one step, and every working tower that can hit a cell adds half a step more. So units walk around tower range whenever the detour is short, and towers standing on open ground mostly get bypassed. Walls are how the Defender forces the route through the kill zones. The dashed line always shows the route the units will take, and it updates as you build.</p>
         <div class="callout"><p><code>cell cost = 1 step + ½ step × towers in range</code></p></div>
-        <h3>Charges and the staged rule</h3>
-        <p>A charge on a wall (60 coins) destroys that one wall, and the Defender loses its coins for good. If the Defender has taken the wall down or swapped it for a tower by the time the wave starts, the charge goes off on nothing. A charge on a tower knocks it offline for one to three waves (25, 55 or 90 coins). An offline tower can't shoot, can't be removed and can't be retuned, but it still blocks its cell. The Defender sees that it's offline, never for how long.</p>
-        <p>No more than half the towers the Attacker has seen, rounded up, can be offline in the same wave, counting towers still offline from earlier charges. There are no charges at all in the final wave: the last round is the army against the defense as built.</p>
-        <p>Charges only work on things the Attacker has seen, which means things built before this round. New defenses always get one round of value. Tearing something down and rebuilding it on the same cell doesn't count as new.</p>
+        <h3>Bridges, charges and the staged rule</h3>
+        <p>A bridge goes on a wall the Attacker has seen. When the wave starts the wall comes down, its coins go back to the Defender, and the cell is open ground for the rest of the match. Nobody can build on it again. Units treat it like any other open cell, and when two routes cost exactly the same they take the one over the bridge. Towers next to it cover it as usual, and the Defender can wall off either end, as long as a route stays open. Taking the wall down first doesn't stop a bridge. Only a tower built on that cell by then does, because the tower is new: the bridge misses and its coins are lost.</p>
+        <p>A bridge costs <span data-rule="bridgeBase">50</span> coins plus <span data-rule="bridgeFee">15</span> for every bridge already on the map, and at most <span data-rule="bridgeCap">1</span> can go down per wave.</p>
+        <div class="callout"><p><code>bridge price = <span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">15</span> × bridges on the map</code></p></div>
+        <p>A charge on a tower knocks it offline for one to three waves (25, 55 or 90 coins). An offline tower can't shoot, can't be removed and can't be retuned, but it still blocks its cell. The Defender sees that it's offline, never for how long. No more than half the towers the Attacker has seen, rounded up, can be offline in the same wave, counting towers still offline from earlier charges.</p>
+        <p>There are no bridges or charges in the first wave, when nothing has been seen yet, or in the final wave: the last round is the army against the defense as built. Both only work on things the Attacker has seen, which means things built before this round. New defenses always get one round of value. Tearing something down and rebuilding it on the same cell doesn't count as new.</p>
         <h3>Breach, the keep and the shared pot</h3>
         <p>There is one currency. An army's strength is what it cost. When a unit reaches the keep it carries its cost times the health it has left, so a unit that limps in at 10% health counts for 10%. The breach is the share of the army's strength that got through. It decides two things:</p>
         <ul>
@@ -705,10 +708,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
               <tr><td>Pot per round</td><td class="n">200</td><td>Split 30–70% by breach</td></tr>
               <tr><td>Keep</td><td class="n">1,000</td><td>Loses the strength that gets through</td></tr>
               <tr><td>Rounds</td><td class="n">8</td><td>Defender wins by surviving them</td></tr>
-              <tr><td class="d">Wall</td><td class="n">5</td><td>Refundable unless blown up</td></tr>
+              <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when it’s bridged</td></tr>
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower owned</td></tr>
               <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Health, speed and traits multiply; surcharge above 60</td></tr>
-              <tr><td class="a">Wall charge</td><td class="n">60</td><td>Destroys the one wall it’s planted on</td></tr>
+              <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">15</span> each</td><td>Turns a seen wall into open ground for the rest of the match; +<span data-rule="bridgeFee">15</span> for every bridge already on the map; at most <span data-rule="bridgeCap">1</span> per wave; none in the first or final wave</td></tr>
               <tr><td class="a">Tower charge</td><td class="n">25 / 55 / 90</td><td>Offline for 1 / 2 / 3 waves; at most half the towers (rounded up) per wave; none in the final wave</td></tr>
               <tr><td class="a">Wave length</td><td class="n">20 s</td><td>Width of the timeline</td></tr>
             </tbody>
@@ -733,7 +736,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <li>Monetization that is fair to the community: cosmetic only, never pay-to-win.</li>
         </ul>
         <p>The guiding rule: a fun game first, a business second.</p>
-        <p class="colophon">Siegeline is a working title. Prototype v9, single file, Canvas 2D.</p>
+        <p class="colophon">Siegeline is a working title. Prototype v10 (bridges test), single file, Canvas 2D.</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -836,8 +839,10 @@ const RULES = {
   rounds: 8, keep: 1000, startDef: 300, startAtk: 300, pot: 200,
   shareMin: 0.3, shareMax: 0.7, breachCap: 0.5,
   wall: 5, towerBase: 40, towerFee: 10, unitBase: 15, maxDesigns: 4,
-  wallCharge: 60, towerCharge: [25, 55, 90], waveLen: 20,
-  wallBlast: 0, // how far a wall charge reaches: 0 = only the wall it's planted on, 1 = that wall and the four next to it
+  towerCharge: [25, 55, 90], waveLen: 20,
+  // a bridge turns a wall the attacker saw into open ground for the rest of the match. Its price rises with every
+  // bridge on the map (bridges planned this round count, in order), and at most bridgeCap go down in one wave
+  bridgeBase: 50, bridgeFee: 15, bridgeCap: 1,
   danger: 5, // extra route cost (in tenths of a step) for each working tower that can hit a cell
 };
 const DET0 = 0.45, DETGAP = 0.32;
@@ -967,6 +972,7 @@ const ICON = {
   jam: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M17.5 6.5L10 17.5h6l-1.5 8 7.5-11h-6z" fill="currentColor"/></svg>',
   add: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-dasharray="4 3"/><path d="M16 10v12M10 16h12" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
   replay: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7.5 10.5A11 11 0 1 1 5 17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M3.5 5.5l1 7.5 7.4-1.6z" fill="currentColor"/><path d="M13 11.5v9l7.5-4.5z" fill="currentColor"/></svg>',
+  bridge: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="11" y="1.5" width="10" height="8" rx="1.5" fill="#6d93b1"/><rect x="11" y="22.5" width="10" height="8" rx="1.5" fill="#6d93b1"/><rect x="2.5" y="11" width="27" height="10" rx="2" fill="currentColor"/><path d="M8 11v10M13 11v10M19 11v10M24 11v10" stroke="#2c1004" stroke-width="1.5"/><path d="M2.5 10.5h27M2.5 21.5h27" stroke="#ffd27a" stroke-width="1.8" stroke-linecap="round"/></svg>',
   keep: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 29V12h4v3h3v-3h4v3h2v-3h4v3h3v-3h4v17z" fill="currentColor"/><path d="M13 29v-6a3 3 0 0 1 6 0v6z" fill="#0b1219"/><rect x="7" y="17" width="3" height="4" rx="1" fill="#0b1219"/><rect x="22" y="17" width="3" height="4" rx="1" fill="#0b1219"/></svg>',
 };
 function unitSVG(d) {
@@ -1012,7 +1018,7 @@ const SOLO = { on: false, side: 'def', level: 'easy', plan: null, pending: '', n
 // While a replay runs, S is a scratch copy of the match and the real state waits in replay.live.
 let replay = null;
 const real = () => (replay ? replay.live : S);
-const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, walls: 0, wallCoins: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0 });
+const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, bridges: 0, bridgeRefund: 0, missed: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0 });
 function newState() {
   return {
     round: 1, keep: RULES.keep, dFree: RULES.startDef, aFree: RULES.startAtk,
@@ -1022,10 +1028,11 @@ function newState() {
     designs: [makeDesign('Runner', 'Runner', COLORS[0]), makeDesign('Brute', 'Brute', COLORS[1]), makeDesign('Swarm', 'Swarm', COLORS[2])],
     seenArmy: null, sentArmy: null,
     charges: new Map(), chargeVer: 0, chargeWaves: 1,
+    bridges: new Set(), // cells the attacker has bridged: open ground for the rest of the match, shared by both sides
     tool: 'wall', sel: null,
     units: [], shots: [], spawnList: [], spawnIdx: 0, detQueue: [], detIdx: 0, waveT: 0, spawnStart: 0, endDelay: 0,
-    wave: blankWave(), totals: { kills: 0, leaks: 0, walls: 0, charges: 0, through: 0, jammed: 0 },
-    path: null, pathFlash: 0, over: false, overT: 0, winner: null, scorches: [], confirmEmpty: false, last: null, preWave: null, lastWave: null,
+    wave: blankWave(), totals: { kills: 0, leaks: 0, bridges: 0, charges: 0, through: 0, jammed: 0 },
+    path: null, pathFlash: 0, over: false, overT: 0, winner: null, confirmEmpty: false, last: null, preWave: null, lastWave: null,
   };
 }
 const cloneTower = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, n: g.n, fresh: false, cd: 0, ang: g.ang ?? Math.PI, kick: 0, dealt: 0 });
@@ -1053,8 +1060,11 @@ const splitFor = (X, Y) => {
    detour is short. Units walk downhill on the field, so any change to
    the map re-routes everyone from the cell they are in. Costs are
    integers, which keeps both online devices in exact agreement.
+   The field is kept in 1/FK units: each bridge cell costs one unit
+   less, so of two routes that cost exactly the same, units take the
+   one over more bridges. It never outweighs a real difference.
    ===================================================================== */
-const STEPC = 10;
+const STEPC = 10, FK = 64;
 const dist = new Int32Array(N), tmpA = new Int32Array(N), tmpB = new Int32Array(N), Q = new Int16Array(N);
 const DZ = new Int16Array(N), WT = new Int32Array(N), DONE = new Uint8Array(N);
 function coverCells(i, cfg, fn) {
@@ -1074,9 +1084,10 @@ function dangerField(G, offline, extra) {
   if (extra) coverCells(extra.cell, extra.cfg, bump);
   return DZ;
 }
-function flow(out, isOpen, dz) {
+// br: the bridge cells (a Set), for the tie-break between equally cheap routes.
+function flow(out, isOpen, dz, br) {
   out.fill(-1); DONE.fill(0);
-  for (let i = 0; i < N; i++) WT[i] = STEPC + RULES.danger * dz[i];
+  for (let i = 0; i < N; i++) WT[i] = FK * (STEPC + RULES.danger * dz[i]) - (br && br.has(i) ? 1 : 0);
   out[EXIT] = 0;
   for (;;) {
     let i = -1, best = 2147483647;
@@ -1136,48 +1147,38 @@ function tracePath(d) {
   }
   return p;
 }
-function recompute() { flow(dist, i => !S.grid[i], dangerField(S.grid)); S.path = tracePath(dist); }
+function recompute() { flow(dist, i => !S.grid[i], dangerField(S.grid), S.bridges); S.path = tracePath(dist); }
 function routeOpenWithout(cell) { bfs(tmpA, i => i !== cell && !S.grid[i]); return tmpA[ENTRY] >= 0; }
 let hypCache = { key: '', path: null };
 function pathWithBlock(cell, kind) {
   const key = cell + ':' + kind + ':' + S.gridVer;
   if (hypCache.key !== key) {
-    flow(tmpA, i => i !== cell && !S.grid[i], dangerField(S.grid, null, kind === 'tower' ? { cell, cfg: defaultTower() } : null));
+    flow(tmpA, i => i !== cell && !S.grid[i], dangerField(S.grid, null, kind === 'tower' ? { cell, cfg: defaultTower() } : null), S.bridges);
     hypCache = { key, path: tracePath(tmpA) };
   }
   return hypCache.path;
 }
-// The cells a wall charge reaches: the one it's planted on, plus any within RULES.wallBlast steps.
-function blastCells(i) {
-  const c0 = i % COLS, r0 = (i / COLS) | 0, k = RULES.wallBlast, out = [];
-  for (let r = Math.max(0, r0 - k); r <= Math.min(ROWS - 1, r0 + k); r++)
-    for (let c = Math.max(0, c0 - k); c <= Math.min(COLS - 1, c0 + k); c++)
-      if (Math.abs(c - c0) + Math.abs(r - r0) <= k) out.push(r * COLS + c);
-  return out;
-}
-const blastWhat = w => (RULES.wallBlast ? `${w} and every wall within ${plural(RULES.wallBlast, 'step')} of it` : w);
-// Every wall the attacker has seen was standing before this round, so all of them are chargeable.
-function seenBlast(list) {
-  const set = new Set();
-  for (const i of list) for (const j of blastCells(i)) { const g = S.seenGrid[j]; if (g && g.t === 'wall') set.add(j); }
-  return set;
-}
-const wallChargeCells = () => [...S.charges].filter(([, c]) => c.kind === 'wall').map(([i]) => i);
+/* ---------- bridges ----------
+   The attacker lays a bridge over a wall it saw. When the wave starts the wall's coins go back to the defender
+   and the cell is open ground for the rest of the match: nobody can build on it, and taking the wall down first
+   doesn't stop it. Only a tower standing there by then makes it miss, because that tower is new. */
+const bridgeCost = k => RULES.bridgeBase + RULES.bridgeFee * k; // k: bridges already on the map, planned ones included
+const plannedBridges = () => [...S.charges].filter(([, c]) => c.kind === 'bridge').map(([i]) => i);
+const nextBridgePrice = () => bridgeCost(S.bridges.size + plannedBridges().length);
 const towerChargeCells = () => [...S.charges].filter(([, c]) => c.kind === 'tower').map(([i]) => i);
 let seenCache = { ver: -1, path: null };
 function seenPath() {
-  if (seenCache.ver !== S.seenVer) { flow(tmpB, i => !S.seenGrid[i], dangerField(S.seenGrid)); seenCache = { ver: S.seenVer, path: tracePath(tmpB) }; }
+  if (seenCache.ver !== S.seenVer) { flow(tmpB, i => !S.seenGrid[i], dangerField(S.seenGrid), S.bridges); seenCache = { ver: S.seenVer, path: tracePath(tmpB) }; }
   return seenCache.path;
 }
-// The route as it would run after the planted charges (plus one hovered target) go off.
+// The route as it would run with the planned bridges laid and the tower charges gone off (plus one hovered target).
 let projCache = { key: '', path: null };
 function projected(extra = -1) {
   const key = S.seenVer + ':' + S.chargeVer + ':' + extra;
   if (projCache.key !== key) {
-    const walls = wallChargeCells(), off = new Set(towerChargeCells());
-    if (extra >= 0) { const g = S.seenGrid[extra]; if (g && g.t === 'tower') off.add(extra); else walls.push(extra); }
-    const set = seenBlast(walls);
-    flow(tmpB, i => !S.seenGrid[i] || set.has(i), dangerField(S.seenGrid, off));
+    const open = new Set(plannedBridges()), off = new Set(towerChargeCells());
+    if (extra >= 0) { const g = S.seenGrid[extra]; if (g && g.t === 'tower') off.add(extra); else open.add(extra); }
+    flow(tmpB, i => !S.seenGrid[i] || open.has(i), dangerField(S.seenGrid, off), new Set([...S.bridges, ...open]));
     projCache = { key, path: tracePath(tmpB) };
   }
   return projCache.path;
@@ -1195,6 +1196,7 @@ const seenAs = (cell, kind) => !!(S.seenGrid[cell] && S.seenGrid[cell].t === kin
 function canBuild(cell, kind) {
   if (cell < 0) return { ok: false, quiet: true };
   if (cell === ENTRY || cell === EXIT) return { ok: false, reason: 'Keep the gates clear. Nothing can be built on the entry or exit cell.' };
+  if (S.bridges.has(cell)) return { ok: false, reason: 'That’s the attacker’s bridge. Nothing can be built on it, but you can wall off either end.' };
   if (S.grid[cell]) return { ok: false, quiet: true };
   const cost = kind === 'wall' ? RULES.wall : newTowerPrice();
   if (S.dFree < cost) return { ok: false, reason: `Not enough coins. A ${kind} costs ${cost} and you have ${S.dFree} free.`, gold: true };
@@ -1296,20 +1298,33 @@ function deleteDesign(i) {
   refreshUI();
 }
 function chargeStatus() {
-  if (S.round >= RULES.rounds) return { ok: false, reason: 'No charges in the final wave. The last round is army against the defense as built.' };
+  if (S.round >= RULES.rounds) return { ok: false, reason: 'No bridges or charges in the final wave. The last round is army against the defense as built.' };
   if (S.seenGrid.some(g => g)) return { ok: true };
   return S.seenRound
-    ? { ok: false, reason: 'Nothing was standing when you last saw the defense, so there is nothing to charge.' }
-    : { ok: false, reason: 'Charges go on walls and towers you’ve seen. You see the defense when your first wave marches, so charges unlock in round 2.' };
+    ? { ok: false, reason: 'Nothing was standing when you last saw the defense, so there is nothing to bridge or charge.' }
+    : { ok: false, reason: 'Bridges go on walls you’ve seen and charges on towers you’ve seen. You see the defense when your first wave marches, so they unlock in round 2.' };
 }
-function plantWall(cell) {
+const canBridge = () => chargeStatus().ok && plannedBridges().length < RULES.bridgeCap;
+function bridgeNote() {
+  if (!RULES.bridgeCap) return 'Bridges are off in this game.';
+  const how = `${RULES.bridgeBase} coins plus ${RULES.bridgeFee} for each bridge already on the map, at most ${RULES.bridgeCap} a wave`;
+  return canBridge() ? `The next one costs <b>${nextBridgePrice()}</b> (${how}).` : `<b>Bridge planned</b> for this wave (${how}).`;
+}
+function plantBridge(cell) {
   if (S.charges.has(cell)) { removeCharge(cell); return; }
   if (!chargeStatus().ok) { toast(chargeStatus().reason, 'atk'); return; }
-  if (S.aFree < RULES.wallCharge) { toast(`Not enough coins. A wall charge costs ${RULES.wallCharge} and you have ${S.aFree} free.`, 'bad'); return; }
-  S.charges.set(cell, { kind: 'wall', waves: 0, cost: RULES.wallCharge });
-  S.aFree -= RULES.wallCharge; S.chargeVer++;
+  if (plannedBridges().length >= RULES.bridgeCap) { toast(RULES.bridgeCap ? `At most ${plural(RULES.bridgeCap, 'bridge')} a wave. Tap a planned bridge to take it back.` : 'Bridges are off in this game.', 'bad'); return; }
+  const cost = nextBridgePrice();
+  if (S.aFree < cost) { toast(`Not enough coins. This bridge costs ${cost} and you have ${S.aFree} free.`, 'bad'); return; }
+  S.charges.set(cell, { kind: 'bridge', waves: 0, cost });
+  S.aFree -= cost; S.chargeVer++;
   const [x, y] = center(cell); puff(x, y, '#ff9142');
   refreshUI();
+}
+// Planned bridges are priced in the order they were planned; taking one back re-prices the rest.
+function repriceBridges() {
+  let k = S.bridges.size;
+  for (const c of S.charges.values()) if (c.kind === 'bridge') { const p = bridgeCost(k++); S.aFree += c.cost - p; c.cost = p; }
 }
 // No more than half the towers the attacker has seen, rounded up, can be offline in the same wave,
 // counting towers still offline from earlier charges, so no wave can black out the whole defense.
@@ -1338,7 +1353,8 @@ function removeCharge(cell) {
   const c = S.charges.get(cell);
   if (!c) return;
   S.charges.delete(cell); S.aFree += c.cost; S.chargeVer++;
-  toast(`Charge removed · ${c.cost} refunded`, 'atk');
+  if (c.kind === 'bridge') repriceBridges();
+  toast(`${c.kind === 'bridge' ? 'Bridge' : 'Charge'} removed · ${c.cost} refunded`, 'atk');
   refreshUI();
 }
 
@@ -1365,7 +1381,7 @@ function remain(u) {
   if (u.target === -2) return ((COLS - u.x) - 1) * STEPC;
   const d = dist[u.target];
   const [tx, ty] = center(u.target);
-  return (d < 0 ? 99 * STEPC : d) + STEPC * hyp(tx - u.x, ty - u.y);
+  return (d < 0 ? 99 * STEPC : d / FK) + STEPC * hyp(tx - u.x, ty - u.y);
 }
 function moveUnit(u, dt) {
   let rem = u.speed * (u.slowT > 0 ? 1 - u.slowF : 1) * dt, guard = 0;
@@ -1379,7 +1395,7 @@ function moveUnit(u, dt) {
       if (u.target === -2) { leak(u); return; }
       if (u.target === EXIT) { u.target = -2; u.dir = 0; continue; }
       const j = nextStep(u.target, dist, u.dir);
-      if (j < 0) { u.target = -2; continue; } // cannot happen: blasts only open cells
+      if (j < 0) { u.target = -2; continue; } // cannot happen: bridges only open cells
       u.target = j; u.dir = stepDir;
     } else {
       u.x += dx / dd * rem; u.y += dy / dd * rem; rem = 0;
@@ -1530,23 +1546,22 @@ function detonate(i) {
     else floatText(cx, cy - 0.5, 'MISSED · TOWER GONE', '#ffd27a', 11);
     return;
   }
-  const destroyed = [], tg = S.grid[i];
-  // A wall that was swapped for a tower or taken down is out of reach: the attacker only ever charged a wall.
-  if (!tg || tg.t !== 'wall') floatText(cx, cy - 0.5, tg ? 'MISSED · NOW A TOWER' : 'MISSED · WALL GONE', '#ffd27a', 11);
-  for (const j of blastCells(i)) {
-    const g = S.grid[j];
-    if (g && g.t === 'wall') {
-      if (g.fresh) { const [x, y] = center(j); fx.push({ k: 'ring', x, y, r0: 0.25, r1: 0.6, life: 0.6, max: 0.6, w: 0.06, color: '217,246,255' }); floatText(x, y - 0.3, 'NEW · SAFE', '#d9f6ff', 11); }
-      else { S.grid[j] = null; destroyed.push(j); }
-    }
+  // A bridge: a tower built where the wall stood is new, so the bridge can't go down there and its coins are lost.
+  // Otherwise the wall (if it's still there) goes back to the defender at full price and the cell is open for good.
+  const g = S.grid[i];
+  if (g && g.t === 'tower') {
+    S.wave.missed++;
+    fx.push({ k: 'ring', x: cx, y: cy, r0: 0.25, r1: 0.7, life: 0.6, max: 0.6, w: 0.06, color: '217,246,255' });
+    floatText(cx, cy - 0.5, 'BRIDGE MISSED · NOW A TOWER', '#ffd27a', 11);
+    return;
   }
-  S.wave.walls += destroyed.length; S.wave.wallCoins += destroyed.length * RULES.wall; S.totals.walls += destroyed.length;
+  if (g) { S.dFree += RULES.wall; S.wave.bridgeRefund += RULES.wall; }
+  S.grid[i] = null; S.bridges.add(i);
+  S.wave.bridges++; S.totals.bridges++;
   S.gridVer++; recompute(); S.pathFlash = 1.6;
-  boom(cx, cy, destroyed);
-  if (destroyed.length) floatText(cx, cy - 0.7, `−${destroyed.length * RULES.wall} defender coins`, '#ffb07a', 12);
-  S.scorches.push({ x: cx, y: cy, r: 1.15 });
-  for (const j of destroyed) if (j !== i) { const [x, y] = center(j); S.scorches.push({ x, y, r: 0.65 }); }
-  if (!QUIET) drawTerrain();
+  bridgeFx(cx, cy);
+  floatText(cx, cy - 0.6, 'BRIDGE', '#ffd27a', 14);
+  if (g) floatText(cx, cy + 0.55, `wall refunded +${RULES.wall}`, '#a9dcf0', 11);
 }
 function waveStep(dt) {
   S.waveT += dt;
@@ -1589,7 +1604,7 @@ const DEF_STEPS = [
 const ATK_STEPS = [
   { name: 'Army', hint: 'Step 1 of 4 · Choose which units march and how many.' },
   { name: 'Wave', hint: 'Step 2 of 4 · Arrange when each unit leaves the breach.' },
-  { name: 'Charges', hint: 'Step 3 of 4 · Plant charges on walls and towers you’ve seen.' },
+  { name: 'Sabotage', hint: 'Step 3 of 4 · Lay a bridge over a wall you’ve seen, or charge towers to knock them out.' },
   { name: 'Ready', hint: 'Step 4 of 4 · Check your plan, then start the wave.' },
 ];
 const PHASE_UI = {
@@ -1652,9 +1667,14 @@ function attackerReady() {
   if (SOLO.on) { soloReady(); return; }
   S.next = 'wave';
   setPhase('handoff');
-  const n = armyCount(S.designs), c = S.charges.size;
+  const n = armyCount(S.designs), c = sabotageWords();
   showHandoff('both', `Round ${S.round} of ${RULES.rounds}`, `Wave ${S.round}`,
-    `Both players watch. ${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${plural(c, 'charge')}` : ''} against the defense. Tap anything on the board to inspect it.`, 'Start the wave', startWave);
+    `Both players watch. ${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${c}` : ''} against the defense. Tap anything on the board to inspect it.`, 'Start the wave', startWave);
+}
+// "a bridge and 2 charges", for the cards that announce a wave
+function sabotageWords() {
+  const b = plannedBridges().length, t = S.charges.size - b;
+  return [b && (b === 1 ? 'a bridge' : `${b} bridges`), t && plural(t, 'charge')].filter(Boolean).join(' and ');
 }
 function startWave(seed) {
   const sd = seed == null ? (Math.random() * 4294967296) >>> 0 : seed;
@@ -1786,12 +1806,12 @@ function showSummary() {
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">+${L.dGain}</span>
         <ul><li><span>Pot share ${Math.round(L.share * 100)}%</span><span>+${L.dGain}</span></li>
-        <li><span>Walls blown (${L.walls})</span><span>${L.wallCoins ? '−' + L.wallCoins : '0'}</span></li>
+        <li><span>Walls bridged, refunded (${L.bridges})</span><span>${L.bridgeRefund ? '+' + L.bridgeRefund : '0'}</span></li>
         <li><span>Towers knocked out</span><span>${L.jammed}</span></li>
         <li><span>Total coins now</span><span>${defWorth()}</span></li></ul></div>
       <div class="led a"><h3>Attacker</h3><span class="big">+${L.aGain}</span>
         <ul><li><span>Pot share ${100 - Math.round(L.share * 100)}%</span><span>+${L.aGain}</span></li>
-        <li><span>Charges used (${L.charges})</span><span>${L.chargeCoins ? '−' + L.chargeCoins : '0'}</span></li>
+        <li><span>Bridges and charges (${L.charges})${L.missed ? `, ${L.missed} missed` : ''}</span><span>${L.chargeCoins ? '−' + L.chargeCoins : '0'}</span></li>
         <li><span>Units through / killed</span><span>${L.leaks} / ${L.kills}</span></li>
         <li><span>Total coins now</span><span>${atkWorth()}</span></li></ul></div>
     </div>
@@ -1811,7 +1831,7 @@ function showEnd() {
     ${S.last && d ? splitViz(S.last) : ''}
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Total kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li><li><span>Total coins</span><span>${defWorth()}</span></li></ul></div>
-      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Walls blown / towers knocked out</span><span>${t.walls} / ${t.jammed}</span></li><li><span>Total coins</span><span>${atkWorth()}</span></li></ul></div>
+      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges laid / towers knocked out</span><span>${t.bridges} / ${t.jammed}</span></li><li><span>Total coins</span><span>${atkWorth()}</span></li></ul></div>
     </div>
     <p class="fml">${online() ? 'Either player can start the next match for both of you. Rematch keeps your sides; Swap sides trades them.'
       : SOLO.on ? 'Rematch plays the same side again. Open the menu to switch sides or difficulty.' : 'Swap seats for the rematch to try the other side.'}</p>`;
@@ -1844,7 +1864,8 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 1;
+const PROTO = 2; // 2: bridges replace wall charges. Builds with a different number never see each other
+const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10),
   lk: 0, go: 0, at: 0, myPlan: null, revealed: null, res: null, adopted: 0,
@@ -1911,23 +1932,35 @@ function decodeArmy(list) {
     };
   });
 }
+// [cell, kind (1 tower, 2 bridge), waves, cost]. Bridges must sit on walls the attacker saw, within the cap, and
+// are priced here by the rules, so both devices agree whatever the plan says.
 function decodeCharges(list) {
   const m = new Map();
   if (S.round >= RULES.rounds) return m;
+  let nb = 0;
   if (Array.isArray(list)) for (const a of list) {
     if (!Array.isArray(a)) continue;
-    const i = int(a[0], -1, N - 1, -1); if (i < 0) continue;
-    const c = { kind: a[1] ? 'tower' : 'wall', waves: int(a[2], 1, 3), cost: int(a[3], 0, 999) };
-    if (c.kind === 'tower' && !m.has(i) && !(S.seenGrid[i] && S.seenGrid[i].off > 0) && offlineNext(m).size >= towerCap()) continue;
-    m.set(i, c);
+    const i = int(a[0], -1, N - 1, -1); if (i < 0 || m.has(i)) continue;
+    const kind = a[1] === 1 ? 'tower' : a[1] === 2 ? 'bridge' : null, g = S.seenGrid[i];
+    if (kind === 'tower') {
+      if (!(g && g.t === 'tower') || (!(g.off > 0) && offlineNext(m).size >= towerCap())) continue;
+      m.set(i, { kind, waves: int(a[2], 1, 3), cost: int(a[3], 0, 999) });
+    } else if (kind === 'bridge') {
+      if (!(g && g.t === 'wall') || S.bridges.has(i) || nb >= RULES.bridgeCap) continue;
+      m.set(i, { kind, waves: 0, cost: bridgeCost(S.bridges.size + nb++) });
+    }
   }
   return m;
 }
+const decodeBridges = list => new Set(Array.isArray(list) ? list.map(v => int(v, -1, N - 1, -1)).filter(i => i >= 0 && i !== ENTRY && i !== EXIT) : []);
+// Nothing stands on a bridge, whatever a plan says.
+const clearBridges = G => { for (const i of S.bridges) G[i] = null; return G; };
 const makeDefPlan = () => ({ r: S.round, ep: NET.ep, dFree: S.dFree, ts: S.towerSeq, g: encodeGrid(S.grid) });
-const makeAtkPlan = withPos => ({ r: S.round, ep: NET.ep, aFree: S.aFree, a: encodeArmy(S.designs, withPos), c: [...S.charges].map(([i, c]) => [i, c.kind === 'tower' ? 1 : 0, c.waves, c.cost]) });
+const encodeCharges = M => [...M].map(([i, c]) => [i, c.kind === 'tower' ? 1 : 2, c.waves, c.cost]);
+const makeAtkPlan = withPos => ({ r: S.round, ep: NET.ep, aFree: S.aFree, a: encodeArmy(S.designs, withPos), c: encodeCharges(S.charges) });
 function makeResult() {
   const L = S.last ? Object.fromEntries(Object.entries(S.last).filter(([, v]) => typeof v === 'number')) : null;
-  return { r: S.round, ep: NET.ep, keep: S.keep, dFree: S.dFree, aFree: S.aFree, g: encodeGrid(S.grid), L, T: { ...S.totals }, over: S.over ? 1 : 0, win: S.winner || '' };
+  return { r: S.round, ep: NET.ep, keep: S.keep, dFree: S.dFree, aFree: S.aFree, g: encodeGrid(S.grid), br: [...S.bridges].sort((a, b) => a - b), L, T: { ...S.totals }, over: S.over ? 1 : 0, win: S.winner || '' };
 }
 function netState() {
   return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
@@ -1977,7 +2010,7 @@ function netCheck() {
 function beginOnlineWave(peerPlan) {
   const dp = NET.role === 'def' ? NET.myPlan : peerPlan, ap = NET.role === 'atk' ? NET.myPlan : peerPlan;
   // Both devices load both plans from the same encoded data, so the wave is identical.
-  S.grid = decodeGrid(dp.g); S.dFree = int(dp.dFree, 0, 1e6); S.towerSeq = int(dp.ts, 0, 9999);
+  S.grid = clearBridges(decodeGrid(dp.g)); S.dFree = int(dp.dFree, 0, 1e6); S.towerSeq = int(dp.ts, 0, 9999);
   S.gridVer++; recompute();
   S.designs = decodeArmy(ap.a); S.aFree = int(ap.aFree, 0, 1e6);
   S.charges = decodeCharges(ap.c); S.chargeVer++;
@@ -2004,11 +2037,12 @@ function adoptResult(res) {
   if (!res || typeof res !== 'object' || res.ep !== NET.ep || res.r !== S.doneRound || NET.adopted === res.r) return;
   NET.adopted = res.r;
   const sig = g => JSON.stringify(g);
-  const same = Math.abs(res.keep - S.keep) < 0.01 && !!res.over === !!S.over && res.dFree === S.dFree && res.aFree === S.aFreeAtEnd && sig(res.g) === sig(encodeGrid(S.grid));
+  const same = Math.abs(res.keep - S.keep) < 0.01 && !!res.over === !!S.over && res.dFree === S.dFree && res.aFree === S.aFreeAtEnd && sig(res.g) === sig(encodeGrid(S.grid))
+    && sig(res.br || []) === sig([...S.bridges].sort((a, b) => a - b));
   if (same) return;
   S.keep = clamp(+res.keep || 0, 0, RULES.keep); S.dFree = int(res.dFree, 0, 1e6);
   S.aFree = Math.max(0, S.aFree + int(res.aFree, 0, 1e6) - S.aFreeAtEnd); S.aFreeAtEnd = int(res.aFree, 0, 1e6);
-  S.grid = decodeGrid(res.g); for (const g of S.grid) if (g) g.fresh = false;
+  S.bridges = decodeBridges(res.br); S.grid = clearBridges(decodeGrid(res.g)); for (const g of S.grid) if (g) g.fresh = false;
   S.gridVer++; recompute(); S.seenGrid = cloneGrid(S.grid); S.seenVer++;
   if (res.L && typeof res.L === 'object') S.last = { ...S.last, ...res.L };
   if (res.T && typeof res.T === 'object') S.totals = { ...S.totals, ...res.T };
@@ -2111,7 +2145,7 @@ async function roomLink(code) {
   const room = await window.claude.use('room').catch(() => null);
   if (!room) return null;
   let r, lobby = false;
-  try { r = await room.join('siege-' + code.toLowerCase()); }
+  try { r = await room.join(roomName(code)); }
   catch (e) {
     if (e && e.code === 'not_permitted') { r = room; lobby = true; }
     else throw e;
@@ -2147,7 +2181,7 @@ function loadScript(src) {
 async function peerLink(code) {
   await loadScript('https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js');
   const opts = window.SIEGE_PEER_OPTS || {};
-  const base = 'siegeline3-' + code.toLowerCase() + '-';
+  const base = 'siegeline-' + roomName(code) + '-';
   let peer = null, conn = null, timer = 0, closed = false, last = null, seen = 0;
   const open = id => new Promise((ok, bad) => {
     const p = new window.Peer(id, opts);
@@ -2220,7 +2254,7 @@ async function wakeRelay(base) {
 async function relayLink(code) {
   const base = relayBase();
   await wakeRelay(base);
-  const url = base.replace(/^http/, 'ws') + '/relay', room = 'siege-' + code.toLowerCase();
+  const url = base.replace(/^http/, 'ws') + '/relay', room = roomName(code);
   const peers = new Map(); // id -> { state, at }
   let ws = null, closed = false, last = null, seen = 0, tries = 0, retry = 0;
   const pick = () => {
@@ -2372,7 +2406,7 @@ const THINK_MS = 3000; // in the game it stops looking for better plans after th
 // Everything the computer may know this round, copied before the player does anything.
 const copyDesign = d => ({ ...d, tl: { ...d.tl, pos: null } });
 function soloKnows(side) {
-  const K = { side, round: S.round, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null, deadline: Infinity };
+  const K = { side, round: S.round, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null, bridges: [...S.bridges], deadline: Infinity };
   if (side === 'atk') { K.designs = S.designs.map(copyDesign); K.aFree = S.aFree; }
   else { K.grid = S.grid.map(cloneCell); K.dFree = S.dFree; K.towerSeq = S.towerSeq; }
   return K;
@@ -2419,35 +2453,82 @@ function retuneAgainst(G, ds) {
   });
 }
 
-/* ---------- routes and charge targets ---------- */
-// The route cost units minimise, from the entry, with some cells blasted open and some towers offline.
-function routeCost(G, open, off) {
-  flow(tmpB, i => !G[i] || open.has(i), dangerField(G, off));
-  return tmpB[ENTRY];
+/* ---------- routes, bridges and charge targets ---------- */
+const nbrs = i => { const c = i % COLS, out = []; if (c > 0) out.push(i - 1); if (c < COLS - 1) out.push(i + 1); if (i >= COLS) out.push(i - COLS); if (i < N - COLS) out.push(i + COLS); return out; };
+// The route cost units minimise (10 a step), from the entry, with some cells opened and some towers offline; -1 if closed.
+function routeCost(G, open, off, br) {
+  flow(tmpB, i => !G[i] || open.has(i), dangerField(G, off), br);
+  return tmpB[ENTRY] < 0 ? -1 : Math.ceil(tmpB[ENTRY] / FK);
 }
-// Walls to charge, best first: each pick is the chargeable wall whose blast (blastCells, RULES.wallBlast)
-// shortens the route the most.
-function wallPicks(G, chargeable, n) {
+// How many steps the route takes with some cells opened.
+function routeSteps(G, open, br) {
+  flow(tmpB, i => !G[i] || open.has(i), dangerField(G), br);
+  return pathLen(tracePath(tmpB));
+}
+// Walls to bridge, best first: each pick is the bridgeable wall that shortens the route the most.
+function bridgePicks(G, ok, n, br) {
   const open = new Set(), picks = [], cells = [];
-  for (let i = 0; i < N; i++) if (chargeable(i)) cells.push(i);
-  let base = routeCost(G, open, null);
+  for (let i = 0; i < N; i++) if (ok(i)) cells.push(i);
+  let base = routeCost(G, open, null, br);
   for (let k = 0; k < n; k++) {
-    let best = -1, bestCost = base, bestBlast = null;
+    let best = -1, bestCost = base;
     for (const i of cells) {
       if (open.has(i)) continue;
-      const blast = blastCells(i).filter(j => chargeable(j) && !open.has(j));
-      const c = routeCost(G, new Set([...open, ...blast]), null);
-      if (c >= 0 && c < bestCost) { bestCost = c; best = i; bestBlast = blast; }
+      open.add(i); const c = routeCost(G, open, null, br); open.delete(i);
+      if (c >= 0 && c < bestCost) { bestCost = c; best = i; }
     }
-    if (best < 0 || base - bestCost < 2 * STEPC) break; // saving under two steps isn't worth a charge
-    picks.push(best); for (const j of bestBlast) open.add(j);
-    base = bestCost;
+    if (best < 0 || base - bestCost < 2 * STEPC) break; // saving under two steps isn't worth a bridge
+    picks.push(best); open.add(best); base = bestCost;
   }
   return picks;
 }
+// Walls that take a bridge's shortcut away: on the open cells next to it (or next to bridges joined to it), one of
+// them, two, or all, whichever makes the route longest while it stays open. Empty if walls don't help.
+function bridgeBlock(G, br, i) {
+  const group = [i], cand = [];
+  for (let k = 0; k < group.length; k++) for (const j of nbrs(group[k])) if (br.has(j) && !group.includes(j)) group.push(j);
+  for (const b of group) for (const j of nbrs(b)) if (!G[j] && !br.has(j) && j !== ENTRY && j !== EXIT && !cand.includes(j)) cand.push(j);
+  const opts = cand.map(j => [j]);
+  if (cand.length > 2 && cand.length <= 4) for (let a = 0; a < cand.length; a++) for (let b = a + 1; b < cand.length; b++) opts.push([cand[a], cand[b]]);
+  if (cand.length > 1) opts.push(cand);
+  const base = routeCost(G, new Set(), null, br);
+  let best = [], bestCost = base;
+  for (const o of opts) {
+    const H = G.slice(); for (const j of o) H[j] = { t: 'wall' };
+    const c = routeCost(H, new Set(), null, br);
+    if (c > bestCost) { best = o; bestCost = c; }
+  }
+  return bestCost - base >= 2 * STEPC ? best : [];
+}
+// Blocking walls for every bridge on the map, one bridge after another.
+function blockBridges(G, br) {
+  const H = G.slice(), out = [];
+  for (const i of [...br].sort((a, b) => a - b)) for (const j of bridgeBlock(H, br, i)) { H[j] = { t: 'wall' }; out.push(j); }
+  return out;
+}
+// Kill zones: for each bridge the route crosses, the wall beside it where a tower covers the most of the route.
+function killCells(G, br) {
+  flow(tmpB, i => !G[i], dangerField(G), br);
+  const on = new Set(tracePath(tmpB) || []), cfg = defaultTower(), out = [];
+  for (const b of [...br].sort((x, y) => x - y)) {
+    if (!on.has(b)) continue;
+    const q = b % COLS, r = (b / COLS) | 0;
+    let best = -1, bv = 0;
+    for (let dr = -1; dr <= 1; dr++) for (let dq = -1; dq <= 1; dq++) {
+      const qq = q + dq, r2 = r + dr;
+      if ((!dq && !dr) || qq < 0 || qq >= COLS || r2 < 0 || r2 >= ROWS) continue;
+      const j = r2 * COLS + qq;
+      if (!G[j] || G[j].t !== 'wall' || out.includes(j)) continue;
+      let n = 0; coverCells(j, cfg, x => { if (on.has(x)) n++; });
+      if (n > bv) { bv = n; best = j; }
+    }
+    if (best >= 0) out.push(best);
+  }
+  return out;
+}
 // Seen towers worth knocking out, best first: value times how much of the route they cover.
-function towerPicks(G, n) {
-  flow(tmpB, i => !G[i], dangerField(G));
+function towerPicks(G, n, br) {
+  flow(tmpB, i => !G[i], dangerField(G), br);
   const on = new Set(tracePath(tmpB) || []), list = [];
   G.forEach((g, i) => {
     if (!g || g.t !== 'tower' || g.off > 0) return;
@@ -2456,15 +2537,16 @@ function towerPicks(G, n) {
   });
   return list.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
 }
-const wallChargeOf = () => ({ kind: 'wall', waves: 1, cost: RULES.wallCharge });
+const bridgeOf = cost => ({ kind: 'bridge', waves: 0, cost });
 const towerChargeOf = () => ({ kind: 'tower', waves: 1, cost: RULES.towerCharge[0] });
 
 /* ---------- attacker ----------
    Re-buys its whole army each round (units refund in full). It tries every army idea below, bunched and
-   spread, against the defense it saw, then tests the best few against that defense retuned to counter them
-   and with charges. A charge has to pay for itself: coins spent on charges are gone from every later army,
-   so it's scored at its cost times the share of the army that gets through, for each later round that
-   matters (no more than the rounds the keep would last at this pace). */
+   spread, against the defense it saw, then tests the best few against that defense retuned to counter them,
+   and with bridges and tower charges. Coins spent on them are gone from every later army, so they're scored
+   at their cost times the share of the army that gets through, for each later round that matters (no more
+   than the rounds the keep would last at this pace). A bridge also keeps paying in those rounds, as long as
+   the defender doesn't wall it off: less likely where a wall or two would do it, more where it can't. */
 const AI_UNITS = { // slider indexes; anything left out is off
   Swarm: { hp: 0, speed: 4 }, Runner: { hp: 2, speed: 6 }, Ghost: { hp: 2, speed: 4, dodge: 2 },
   Plated: { hp: 5, speed: 5, armor: 2 }, Bruiser: { hp: 6, speed: 4, regen: 3 }, Hulk: { hp: 9, speed: 4 },
@@ -2478,6 +2560,7 @@ const AI_ARMIES = { // [unit, share of coins, launch delay as a share of the wav
 };
 const AI_TIMING = { bunched: 0.12, spread: 0.6 };
 const AI_OPENERS = ['swarm', 'rush', 'screen', 'plated', 'raid'];
+const BRIDGE_HOLD = { open: 0.7, blockable: 0.25 }; // share of a bridge's worth it expects to keep in each later wave
 function aiArmy(key, timing, budget) {
   const parts = AI_ARMIES[key], win = AI_TIMING[timing];
   const designs = parts.map(([u, , delay], k) => ({ ...makeDesign('Runner', u, COLORS[k]), ...AI_UNITS[u], tl: { s: delay, e: Math.min(1, delay + win), pos: null } }));
@@ -2488,20 +2571,22 @@ function aiArmy(key, timing, budget) {
   return { designs, left };
 }
 function* thinkAttack(K, L, rng) {
-  const worth = K.aFree + armyValue(K.designs), seen = K.seenGrid, D = readDefense(seen);
+  const worth = K.aFree + armyValue(K.designs), seen = K.seenGrid, D = readDefense(seen), BR = new Set(K.bridges);
   const fallback = { plan: { aFree: K.aFree, a: encodeArmy(K.designs, false), c: [] }, note: '' };
+  const bridgesCost = nb => { let v = 0; for (let k = 0; k < nb; k++) v += bridgeCost(BR.size + k); return v; };
+  let tried = 0, W = [];
   const done = c => {
     const { designs, left } = aiArmy(c.key, c.tm, worth - c.cost);
-    const c2 = c.charges.map(([k, i]) => (k === 'w' ? [i, 0, 1, RULES.wallCharge] : [i, 1, 1, RULES.towerCharge[0]]));
-    return { plan: { aFree: left, a: encodeArmy(designs, false), c: c2 }, note: attackNote(K, D, c, designs, tried) };
+    let nb = 0;
+    const c2 = c.charges.map(([k, i]) => (k === 'b' ? [i, 2, 0, bridgeCost(BR.size + nb++)] : [i, 1, 1, RULES.towerCharge[0]]));
+    return { plan: { aFree: left, a: encodeArmy(designs, false), c: c2 }, note: attackNote(K, D, c, designs, tried, W) };
   };
-  let tried = 0;
   if (K.round === 1) { // nothing seen yet: an opening, picked at random
     const c = { key: AI_OPENERS[Math.floor(rng() * AI_OPENERS.length)], tm: rng() < 0.5 ? 'bunched' : 'spread', cost: 0, charges: [] };
     return done(c);
   }
   const seed = k => seedFor('trial', K.round, k);
-  const run = (G, designs, charges, k) => { tried++; return trial(G, designs, charges, seed(k)); };
+  const run = (G, designs, charges, k) => { tried++; return trial(G, designs, charges, seed(k), K.bridges); };
   const judged = (y, y2) => (L.foresight === 2 ? Math.min(y, y2) : L.foresight === 1 ? (y + y2) / 2 : y);
   // 1. army ideas against the defense as seen
   const ideas = [];
@@ -2521,29 +2606,41 @@ function* thinkAttack(K, L, rng) {
     c.counterY = run(retuneAgainst(seen, designs), designs, [], 1).Y; yield;
     c.score = judged(c.Y, c.counterY);
   }
-  // 3. with charges, under the game's rules: none in round 1 or the final round, only on what it saw
+  // 3. with bridges and charges, under the game's rules: none in round 1 or the final round, only on what it saw
   if (K.round < RULES.rounds && performance.now() < K.deadline) {
     const offNow = seen.filter(g => g && g.t === 'tower' && g.off > 0).length;
-    const W = wallPicks(seen, i => !!(seen[i] && seen[i].t === 'wall'), 3);
-    const T = towerPicks(seen, Math.max(0, Math.ceil(D.n / 2) - offNow));
+    W = RULES.bridgeCap ? bridgePicks(seen, i => !!(seen[i] && seen[i].t === 'wall'), Math.min(2, RULES.bridgeCap), BR) : [];
+    const T = towerPicks(seen, Math.max(0, Math.ceil(D.n / 2) - offNow), BR);
+    // would a wall or two at its ends take the bridge away again?
+    const hold = i => { const H = seen.slice(); H[i] = null; return bridgeBlock(H, new Set([...BR, i]), i).length ? BRIDGE_HOLD.blockable : BRIDGE_HOLD.open; };
     const opts = [];
-    if (W.length) opts.push(W.slice(0, 1).map(i => ['w', i]));
-    if (W.length > 1) opts.push(W.slice(0, 2).map(i => ['w', i]));
-    if (W.length > 2) opts.push(W.map(i => ['w', i]));
+    if (W.length) opts.push([['b', W[0]]]);
+    if (W.length > 1) opts.push(W.slice(0, 2).map(i => ['b', i]));
     if (T.length) opts.push(T.slice(0, 1).map(i => ['t', i]));
     if (T.length > 1) opts.push(T.map(i => ['t', i]));
-    if (W.length && T.length) opts.push([['w', W[0]], ['t', T[0]]]);
+    if (W.length && T.length) opts.push([['b', W[0]], ['t', T[0]]]);
     for (const c of fin) for (const ch of opts) {
       if (ch.length > L.maxCharges || performance.now() > K.deadline) continue;
-      const cost = ch.reduce((v, [k]) => v + (k === 'w' ? RULES.wallCharge : RULES.towerCharge[0]), 0);
+      const bs = ch.filter(([k]) => k === 'b').map(([, i]) => i), bCost = bridgesCost(bs.length);
+      const cost = bCost + (ch.length - bs.length) * RULES.towerCharge[0];
       if (cost > worth / 2) continue; // most of the coins stay in the army
       const { designs } = aiArmy(c.key, c.tm, worth - cost);
-      const map = new Map(ch.map(([k, i]) => [i, k === 'w' ? wallChargeOf() : towerChargeOf()]));
+      let nb = 0;
+      const map = new Map(ch.map(([k, i]) => [i, k === 'b' ? bridgeOf(bridgeCost(BR.size + nb++)) : towerChargeOf()]));
       const Y = run(seen, designs, map, 0).Y; yield;
       const counterY = L.foresight ? run(retuneAgainst(seen, designs), designs, map, 1).Y : Y;
       if (L.foresight) yield;
       const later = Math.min(RULES.rounds - K.round, Math.max(0, K.keep / Math.max(1, Y) - 1));
-      pool.push({ key: c.key, tm: c.tm, cost, charges: ch, base: c.base, Y, score: judged(Y, counterY) - cost * Math.max(0.1, c.base.breach) * later });
+      const br = Math.max(0.1, c.base.breach), now = judged(Y, counterY);
+      // what the bridges themselves added this wave (beyond the army their coins would have bought), and the
+      // share of that it expects to keep in each later wave
+      let keep = 0;
+      if (bs.length) {
+        const eff = bs.length === ch.length ? Math.max(0, now - c.score + bCost * br) : (c.bridgeEff || 0);
+        if (bs.length === ch.length && bs.length === 1) c.bridgeEff = eff;
+        keep = eff * bs.reduce((v, i) => v + hold(i), 0) / bs.length;
+      }
+      pool.push({ key: c.key, tm: c.tm, cost, charges: ch, base: c.base, Y, score: now - cost * br * later + keep * later });
     }
   }
   for (const c of pool) if (c.Y >= K.keep) c.score += 1e6; // a plan that takes the keep this wave beats everything
@@ -2552,13 +2649,20 @@ function* thinkAttack(K, L, rng) {
   pick.best = pick === pool[0];
   return done(pick);
 }
-function attackNote(K, D, c, designs, tried) {
+function attackNote(K, D, c, designs, tried, W) {
   const army = armyWords(designs) + (c.tm === 'bunched' ? ' in one tight group' : ' spread across the wave');
   if (K.round === 1) return `I hadn’t seen your defense yet, so I opened with ${army}.`;
   const kind = !D.n ? '' : D.splash >= 0.4 ? ', mostly splash' : D.heavy >= 0.5 ? ', mostly slow heavy shots' : D.rapid >= 0.5 ? ', mostly rapid fire' : ', mostly single-target';
-  const w = c.charges.filter(([k]) => k === 'w').length, t = c.charges.length - w;
-  const ch = [w && `${w === 1 ? 'a charge' : `${w} charges`} on your walls`, t && `${t === 1 ? 'a charge' : `${t} charges`} on your towers`].filter(Boolean).join(' and ');
-  return `Your defense had ${D.n ? plural(D.n, 'tower') : 'no towers'}${kind}${D.walls ? `, and ${D.walls} walls` : ''}. I tried ${plural(tried, 'plan')} against it. ${c.best ? 'What got the most through' : 'I went with'}: ${army}${ch ? `, plus ${ch}` : ''}.`;
+  const bs = c.charges.filter(([k]) => k === 'b').map(([, i]) => i), t = c.charges.length - bs.length;
+  let bridgeText = '';
+  if (bs.length) {
+    const BR = new Set(K.bridges), from = routeSteps(K.seenGrid, new Set(), BR), to = routeSteps(K.seenGrid, new Set(bs), new Set([...BR, ...bs]));
+    bridgeText = `${bs.length === 1 ? 'a bridge' : `${bs.length} bridges`} through the wall${bs.length > 1 ? 's' : ''} that cut your route the most, from ${from} to ${to} steps. ${bs.length === 1 ? 'It stays' : 'They stay'} for the rest of the match`;
+  }
+  const ch = [bridgeText, t && `${t === 1 ? 'a charge' : `${t} charges`} on your towers`].filter(Boolean).join(', and ');
+  const onMap = K.bridges.length ? ` ${K.bridges.length === 1 ? 'The bridge' : `The ${K.bridges.length} bridges`} already on the map counted in every test.` : '';
+  const skipped = !bs.length && W.length && K.round < RULES.rounds ? ' A new bridge didn’t pay for itself this wave.' : '';
+  return `Your defense had ${D.n ? plural(D.n, 'tower') : 'no towers'}${kind}${D.walls ? `, and ${D.walls} walls` : ''}. I tried ${plural(tried, 'plan')} against it.${onMap} ${c.best ? 'What got the most through' : 'I went with'}: ${army}${ch ? `, plus ${ch}` : ''}.${skipped}`;
 }
 
 /* ---------- defender ----------
@@ -2568,8 +2672,12 @@ function attackNote(K, D, c, designs, tried) {
    tries every maze, tower mix and spending style against the last army it saw, then tests the best few
    against the armies that would counter them. It keeps its maze unless another is clearly better, and
    rebuilding on a cell the attacker saw doesn't hide it again (seenAs). Offline towers stay put.
-   A wall charge misses if its wall has become a tower, so at Normal and Hard each finalist also comes in a
-   guarded version, with a tower on the wall it would charge itself in the attacker's place. */
+   Nothing can be built on a bridge, so a bridge in one of a maze's columns leaves a hole in it. Each maze
+   comes as it is (built around the bridges, towers along the shortcut) and, where walls help, with the
+   bridges walled off at one end; its finalists also come with a tower beside each bridge (a kill zone). A
+   maze whose columns miss the bridges is a relocation. A bridge misses if its wall has become a tower, so at
+   Normal and Hard each finalist also comes in a guarded version, with a tower on the wall it would bridge
+   itself in the attacker's place. */
 const AI_MAZES = { four: [3, 6, 9, 12], three: [4, 8, 12], five: [2, 5, 8, 11, 14] }; // wall columns
 const AI_MIXES = { // tower k's tuning
   damage: () => ({}),
@@ -2582,30 +2690,39 @@ const AI_MIXES = { // tower k's tuning
 };
 const AI_SPEND = { tall: { upgradeAfter: 4 }, wide: { upgradeAfter: 8 } }; // towers placed before upgrades compete
 const mazeCells = (c, k) => { const gap = k % 2 ? ROWS - 1 : 0, out = []; for (let r = 0; r < ROWS; r++) if (r !== gap) out.push(r * COLS + c); return out; };
-// Tower cells for a maze: up to 3 per column, at least 3 rows apart, those covering the most route first.
-// The first pass takes the best cell in each column, the next pass the second best, and so on.
-const slotCache = {};
-function aiSlots(maze) {
-  if (slotCache[maze]) return slotCache[maze];
-  const cols = AI_MAZES[maze], G = new Array(N).fill(null), cfg = defaultTower();
-  cols.forEach((c, k) => { for (const i of mazeCells(c, k)) G[i] = { t: 'wall' }; });
-  flow(tmpB, i => !G[i], dangerField(G));
+const mazeCuts = (maze, br) => AI_MAZES[maze].some((c, k) => mazeCells(c, k).some(i => br.has(i))); // a bridge in one of its columns
+const mazeGrid = (maze, br) => { const G = new Array(N).fill(null); AI_MAZES[maze].forEach((c, k) => { for (const i of mazeCells(c, k)) if (!br.has(i)) G[i] = { t: 'wall' }; }); return G; };
+// Tower cells for a maze (with the bridges and any blocking walls): up to 3 per column, at least 3 rows apart,
+// those covering the most route first. first[k] is column k's best cell; rest holds the second best of each
+// column, then the third.
+const slotCache = new Map();
+function aiSlots(maze, br, blocks) {
+  const key = maze + '|' + [...br].sort((a, b) => a - b).join(',') + '|' + blocks.join(',');
+  if (slotCache.has(key)) return slotCache.get(key);
+  const cols = AI_MAZES[maze], G = mazeGrid(maze, br), cfg = defaultTower();
+  for (const i of blocks) G[i] = { t: 'wall' };
+  flow(tmpB, i => !G[i], dangerField(G), br);
   const on = new Set(tracePath(tmpB) || []), row = i => (i / COLS) | 0;
   const picked = cols.map((c, k) => {
-    const ranked = mazeCells(c, k).map(i => { let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; }); return [n, i]; }).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+    const ranked = mazeCells(c, k).filter(i => !br.has(i)).map(i => { let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; }); return [n, i]; }).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
     const out = [];
     for (const [, i] of ranked) if (out.length < 3 && out.every(j => Math.abs(row(j) - row(i)) >= 3)) out.push(i);
     return out;
   });
-  const slots = [];
-  for (let p = 0; p < 3; p++) picked.forEach(list => { if (list[p] != null) slots.push(list[p]); });
-  return (slotCache[maze] = slots);
+  const slots = { first: picked.map(l => l[0]), rest: [] };
+  for (let p = 1; p < 3; p++) picked.forEach(l => { if (l[p] != null) slots.rest.push(l[p]); });
+  if (slotCache.size > 300) slotCache.clear();
+  slotCache.set(key, slots);
+  return slots;
 }
-function buildDefense(K, maze, mix, spend, guard = -1) {
+// mode: 'around' builds the maze as it is, 'block' walls off the bridges, 'kill' puts a tower beside each bridge
+// the route crosses. Returns null when the mode changes nothing for this maze or the build would close the route.
+function buildDefense(K, maze, mix, spend, guard = -1, mode = 'around') {
+  const br = K.bridgeSet;
   const G = K.grid.map(g => (g && g.t === 'tower' && g.off > 0 ? cloneCell(g) : null));
   let worth = K.worth, seq = K.towerSeq, placed = 0, cols = 0;
   const seen = (i, t) => !!(K.seenGrid[i] && K.seenGrid[i].t === t);
-  const addWall = i => { if (G[i] || worth < RULES.wall) return; G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= RULES.wall; };
+  const addWall = i => { if (G[i] || br.has(i) || worth < RULES.wall) return; G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= RULES.wall; };
   const addTower = (i, cfg) => {
     if (G[i] && G[i].t === 'tower') return true; // a locked offline tower already sits here
     const fee = RULES.towerFee * towerCount(G), cost = towerCost(cfg) + fee;
@@ -2614,17 +2731,32 @@ function buildDefense(K, maze, mix, spend, guard = -1) {
     G[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seen(i, 'tower'), n: ++seq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
     worth -= cost; return true;
   };
-  const C = AI_MAZES[maze], slots = aiSlots(maze), order = []; // slots[k] is column k's best cell for k < C.length
+  const C = AI_MAZES[maze], hit = mazeCuts(maze, br);
+  if (mode !== 'around' && !hit) return null;
+  const blocks = mode === 'block' ? blockBridges(mazeGrid(maze, br), br) : [];
+  const kill = mode === 'kill' ? killCells(mazeGrid(maze, br), br) : [];
+  if ((mode === 'block' && !blocks.length) || (mode === 'kill' && !kill.length)) return null;
+  const { first, rest } = aiSlots(maze, br, blocks);
   const gk = guard >= 0 ? C.indexOf(guard % COLS) : -1;
-  if (guard >= 0 && (gk < 0 || !mazeCells(C[gk], gk).includes(guard))) return null; // not a wall of this maze
-  C.forEach((c, k) => { order.push(['col', k]); if (k === gk) order.push(['tower', guard]); if (slots[k] !== guard) order.push(['tower', slots[k]]); });
-  for (const i of slots.slice(C.length)) if (i !== guard) order.push(['tower', i]);
+  if (guard >= 0 && (gk < 0 || !mazeCells(C[gk], gk).includes(guard) || br.has(guard))) return null; // not a wall of this maze
+  // a blocking wall goes in with the column of the bridge it blocks
+  const colOf = j => { for (const b of nbrs(j)) if (br.has(b)) { const k = C.indexOf(b % COLS); if (k >= 0) return k; } return C.length - 1; };
+  const order = [], towerAt = new Set([guard, ...kill]);
+  C.forEach((c, k) => {
+    order.push(['col', k]);
+    for (const j of blocks) if (colOf(j) === k) order.push(['wall', j]);
+    for (const j of kill) if (j % COLS === c) order.push(['tower', j]);
+    if (k === gk) order.push(['tower', guard]);
+    if (first[k] != null && !towerAt.has(first[k])) order.push(['tower', first[k]]);
+  });
+  for (const i of rest) if (!towerAt.has(i)) order.push(['tower', i]);
   for (const [kind, x] of order) {
     if (kind === 'col') {
-      const cells = mazeCells(C[x], x);
+      const cells = mazeCells(C[x], x).filter(i => !br.has(i));
       if (worth < cells.length * RULES.wall) break;
       cells.forEach(addWall); cols++;
-    } else {
+    } else if (kind === 'wall') addWall(x);
+    else {
       if (placed >= AI_SPEND[spend].upgradeAfter) for (let d; (d = aiUpgrade(G, worth, false));) worth -= d; // upgrade first
       if (!addTower(x, { ...defaultTower(), ...AI_MIXES[mix](placed) })) break;
       placed++;
@@ -2633,7 +2765,8 @@ function buildDefense(K, maze, mix, spend, guard = -1) {
   for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
   bfs(tmpA, i => !G[i]);
   if (tmpA[ENTRY] < 0) return null;
-  return { G, left: worth, seq, maze, mix, spend, guard, cols, towers: towerCount(G) };
+  return { G, left: worth, seq, maze, mix, spend, guard, mode, hit, cols, towers: towerCount(G),
+    blocks: blocks.filter(j => G[j] && G[j].t === 'wall').length, kill: kill.filter(j => G[j] && G[j].t === 'tower').length };
 }
 // Raises the weakest tower's damage one step if that buys more damage per coin than another tower would
 // (or whenever it's affordable, with force). Returns the coins spent.
@@ -2660,21 +2793,22 @@ function threatsFor(K) {
   return out;
 }
 function* thinkDefend(K, L, rng, mem) {
+  K.bridgeSet = new Set(K.bridges);
   K.worth = K.dFree;
   for (const g of K.grid) if (g && !(g.t === 'tower' && g.off > 0)) K.worth += g.t === 'wall' ? RULES.wall : towerValue(g);
   const fallback = { plan: { dFree: K.dFree, ts: K.towerSeq, g: encodeGrid(K.grid) }, note: '' };
   const threats = threatsFor(K), seed = k => seedFor('trial', K.round, k);
   let tried = 0;
-  const run = (b, designs, charges, k) => { tried++; return trial(b.G, designs, charges, seed(k)).Y; };
+  const run = (b, designs, charges, k) => { tried++; return trial(b.G, designs, charges, seed(k), K.bridges).Y; };
   // Keep the same maze unless another is clearly better; a build that would lose the keep comes last.
   const scored = (b, y) => { const moved = mem.maze && b.maze !== mem.maze; return y * (moved ? 1.15 : 1) + (moved ? 1 : 0) + (y >= K.keep ? 1e6 : 0); };
   let mazes = Object.keys(AI_MAZES), mixes = Object.keys(AI_MIXES), spends = Object.keys(AI_SPEND);
   if (L.sample < mixes.length) { mazes = [mem.maze || 'four']; mixes = shuffled(mixes, rng).slice(0, L.sample - 1); spends = ['tall']; }
   // 1. every build against the most likely army: the last one seen (an opening swarm in round 1)
   const builds = [];
-  for (const maze of mazes) for (const mix of mixes) for (const spend of spends) {
+  for (const maze of mazes) for (const mix of mixes) for (const spend of spends) for (const mode of ['around', 'block']) {
     if (builds.length && performance.now() > K.deadline) break;
-    const b = buildDefense(K, maze, mix, spend);
+    const b = buildDefense(K, maze, mix, spend, -1, mode);
     if (!b) continue;
     b.Y = run(b, threats[0], [], 0); yield;
     b.score = scored(b, b.Y);
@@ -2682,23 +2816,29 @@ function* thinkDefend(K, L, rng, mem) {
   }
   if (!builds.length) return fallback;
   builds.sort((a, b) => a.score - b.score);
-  const fin = builds.slice(0, L.finalists);
-  // the guarded versions: a tower on the seen wall a charge would most likely hit (charges come in rounds 2-7)
-  const target = K.round > 1 && K.round < RULES.rounds ? wallPicks(K.seenGrid, i => !!(K.seenGrid[i] && K.seenGrid[i].t === 'wall'), 1)[0] : undefined;
-  if (L.foresight && target != null) for (const f of fin.slice()) {
-    const b = buildDefense(K, f.maze, f.mix, f.spend, target);
-    if (!b) continue;
-    b.Y = run(b, threats[0], [], 0); yield;
-    b.score = scored(b, b.Y);
-    fin.push(b);
+  let fin = builds.slice(0, L.finalists);
+  // kill-zone versions of the finalists, and guarded versions: a tower on the seen wall a bridge would most
+  // likely go on (bridges come in rounds 2-7)
+  const seenWall = i => !!(K.seenGrid[i] && K.seenGrid[i].t === 'wall');
+  const target = K.round > 1 && K.round < RULES.rounds && RULES.bridgeCap ? bridgePicks(K.seenGrid, seenWall, 1, K.bridgeSet)[0] : undefined;
+  if (L.foresight) {
+    for (const f of fin.slice()) for (const [guard, mode] of [[-1, 'kill'], [target, f.mode]]) {
+      if (guard == null || (mode === 'kill' && f.mode !== 'around')) continue;
+      const b = buildDefense(K, f.maze, f.mix, f.spend, guard, mode);
+      if (!b) continue;
+      b.Y = run(b, threats[0], [], 0); yield;
+      b.score = scored(b, b.Y);
+      fin.push(b);
+    }
+    fin = fin.sort((a, b) => a.score - b.score).slice(0, L.finalists + 2);
   }
   // 2. the best few against the armies that could beat them
   if (L.foresight) for (const b of fin) {
     const ys = [];
     for (let k = 1; k < threats.length; k++) { ys.push(run(b, threats[k], [], k)); yield; }
-    if (L.foresight === 2 && K.seenArmy && K.round < RULES.rounds) { // and the last army with a charge on its best wall
-      const w = wallPicks(b.G, i => !!(K.seenGrid[i] && K.seenGrid[i].t === 'wall' && b.G[i] && b.G[i].t === 'wall' && !b.G[i].fresh), 1);
-      if (w.length) { ys.push(run(b, threats[0], new Map([[w[0], wallChargeOf()]]), 0)); yield; }
+    if (L.foresight === 2 && K.seenArmy && K.round < RULES.rounds && RULES.bridgeCap) { // and the last army with a bridge on its best wall
+      const w = bridgePicks(b.G, i => seenWall(i) && !!(b.G[i] && b.G[i].t === 'wall' && !b.G[i].fresh), 1, K.bridgeSet);
+      if (w.length) { ys.push(run(b, threats[0], new Map([[w[0], bridgeOf(bridgeCost(K.bridges.length))]]), 0)); yield; }
     }
     const mean = ys.reduce((a, v) => a + v, 0) / ys.length, worst = Math.max(...ys);
     b.score = scored(b, L.foresight === 2 ? 0.5 * b.Y + 0.25 * mean + 0.25 * worst : (b.Y + mean) / 2);
@@ -2706,22 +2846,32 @@ function* thinkDefend(K, L, rng, mem) {
   fin.sort((a, b) => a.score - b.score);
   const best = choose(fin, L, rng);
   best.best = best === fin[0];
-  mem.maze = best.maze;
-  return { plan: { dFree: best.left, ts: best.seq, g: encodeGrid(best.G) }, note: defendNote(K, L, best, tried) };
+  // what it did about the bridges, for its note and the simulators
+  const prev = mem.maze, prevCut = !!prev && mazeCuts(prev, K.bridgeSet);
+  const info = { bridges: K.bridges.length, maze: best.maze, mode: best.mode, guard: best.guard >= 0, blocks: best.blocks, kill: best.kill, cut: best.hit,
+    relocated: prevCut && best.maze !== prev };
+  info.response = !info.bridges ? '' : info.relocated ? 'relocate' : best.mode === 'block' ? 'block' : best.mode === 'kill' ? 'kill' : best.hit ? 'around' : 'clear';
+  mem.maze = best.maze; mem.info = info;
+  return { plan: { dFree: best.left, ts: best.seq, g: encodeGrid(best.G) }, note: defendNote(K, L, best, tried, info), info };
 }
-function defendNote(K, L, b, tried) {
+function defendNote(K, L, b, tried, info) {
   const last = K.seenArmy && armyValue(K.seenArmy) > 0 ? K.seenArmy : null;
   const tight = last && last.every(d => !d.count || d.tl.e - d.tl.s <= 0.2);
   const saw = last ? `Your last wave was ${armyWords(last)}${tight ? ' in one tight group' : ''}.` : 'I hadn’t seen your army yet.';
   const against = last ? (L.foresight ? 'against it and against the armies that could beat them' : 'against it') : 'against a few likely openings';
-  let repaired = 0;
-  K.seenGrid.forEach((g, i) => { if (g && g.t === 'wall' && !K.grid[i] && b.G[i] && b.G[i].t === 'wall') repaired++; });
   const T = b.G.filter(g => g && g.t === 'tower'), count = f => T.filter(f).length;
   const kinds = [[count(g => g.cfg.splash), 'splash'], [count(g => !g.cfg.splash && g.cfg.rate >= 4), 'heavy-shot'],
     [count(g => g.cfg.slow), 'frost'], [count(g => g.cfg.poison), 'poison'], [count(g => g.cfg.range >= 3 && g.cfg.rate <= 1), 'long-range']].filter(([k]) => k);
   const towers = !T.length ? 'no towers' : `${plural(T.length, 'tower')}${kinds.length ? ` (${kinds.map(([k, w]) => `${k} ${w}`).join(', ')})` : ', all single-target'}`;
-  const guarded = b.guard >= 0 ? ' I also put a tower on the wall I’d have charged in your place, so a charge there would miss.' : '';
-  return `${saw} I tried ${plural(tried, 'defense')} ${against}. ${b.best ? 'What held best' : 'I went with'}: ${b.cols ? `a ${b.cols}-column maze` : 'open ground'} with ${towers}.${guarded}${repaired ? ` I rebuilt the ${plural(repaired, 'wall')} you blew.` : ''}`;
+  const n = info.bridges, your = n === 1 ? 'your bridge' : `your ${n} bridges`, it = n === 1 ? 'it' : 'them';
+  const bridges = !n ? ''
+    : info.relocated ? ` I moved my maze so ${your} open${n === 1 ? 's' : ''} onto nothing.`
+    : b.mode === 'block' ? ` I walled off ${n === 1 ? 'one end of your bridge' : `the ends of ${your}`} (${plural(b.blocks, 'wall')}), so the shortcut leads nowhere.`
+    : b.mode === 'kill' ? ` I left ${your} open and put ${plural(b.kill, 'tower')} beside ${it}, so units crossing walk into fire.`
+    : b.hit ? ` I built around ${your} and set my towers along the shortcut ${n === 1 ? 'it opens' : 'they open'}.`
+    : ` My maze runs clear of ${your}.`;
+  const guarded = b.guard >= 0 ? ' I also put a tower on the wall I’d have bridged in your place, so a bridge there would miss.' : '';
+  return `${saw} I tried ${plural(tried, 'defense')} ${against}. ${b.best ? 'What held best' : 'I went with'}: ${b.cols ? `a ${b.cols}-column maze` : 'open ground'} with ${towers}.${bridges}${guarded}`;
 }
 
 /* ---------- hidden test runs ----------
@@ -2729,12 +2879,13 @@ function defendNote(K, L, b, tried) {
    swapped in, the wave runs to the end with QUIET set (no end-of-round screens, no terrain redraw, no keep
    flash), and everything shared is put back. Only the computer's own copies go in, never the live plans. */
 const cloneCell = g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: !!g.fresh } : { ...cloneTower(g), fresh: !!g.fresh }) : null);
-function trial(grid, designs, charges, seed) {
+function trial(grid, designs, charges, seed, bridges = []) {
   const real = S, rs = srand, ru = uid, f0 = fx.length, l0 = floaters.length, sh = shake, kh = keepHit;
   QUIET = true;
   try {
     S = newState();
     S.keep = 1e9; S.grid = grid.map(cloneCell);
+    S.bridges = new Set(bridges); for (const i of S.bridges) S.grid[i] = null;
     S.designs = designs.map(copyDesign);
     S.charges = new Map(charges);
     recompute();
@@ -2744,7 +2895,7 @@ function trial(grid, designs, charges, seed) {
       if (fx.length > f0) fx.length = f0;
       if (floaters.length > l0) floaters.length = l0;
     }
-    return { X: S.wave.x, Y: S.wave.y, breach: S.wave.x ? S.wave.y / S.wave.x : 0, kills: S.wave.kills, leaks: S.wave.leaks, walls: S.wave.walls, jammed: S.wave.jammed, t: S.waveT };
+    return { X: S.wave.x, Y: S.wave.y, breach: S.wave.x ? S.wave.y / S.wave.x : 0, kills: S.wave.kills, leaks: S.wave.leaks, bridges: S.wave.bridges, jammed: S.wave.jammed, t: S.waveT };
   } finally {
     S = real; srand = rs; uid = ru; fx.length = f0; floaters.length = l0; shake = sh; keepHit = kh;
     QUIET = false;
@@ -2800,11 +2951,11 @@ function soloBeginWave() {
     S.designs = decodeArmy(p.a); S.aFree = int(p.aFree, 0, 1e6);
     S.charges = decodeCharges(p.c); S.chargeVer++;
   } else {
-    S.grid = decodeGrid(p.g); S.dFree = int(p.dFree, 0, 1e6); S.towerSeq = int(p.ts, 0, 9999);
+    S.grid = clearBridges(decodeGrid(p.g)); S.dFree = int(p.dFree, 0, 1e6); S.towerSeq = int(p.ts, 0, 9999);
     S.gridVer++; recompute(); drawTerrain();
   }
-  const n = armyCount(S.designs), c = S.charges.size;
-  const army = `${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${plural(c, 'charge')}` : ''}`;
+  const n = armyCount(S.designs), c = sabotageWords();
+  const army = `${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${c}` : ''}`;
   S.next = 'wave';
   setPhase('handoff');
   showHandoff('both', `Round ${S.round} of ${RULES.rounds}`, `Wave ${S.round}`, SOLO.side === 'def'
@@ -3031,13 +3182,15 @@ function defBodyHTML(step) {
     <div class="tools">${toolBtn('wall', 'Wall', '5 coins')}${toolBtn('remove', 'Remove', 'full refund')}</div>
     <div class="bigstat"><span class="lbl">Route length</span><b id="d-route">15</b><span>steps</span></div>
     <p class="note show">Units take the shortest route but steer around tower range when the detour is short. Walls force them through your fire. Drag to draw a line of walls.</p>
-    <p class="note">Glowing walls are new this round. The attacker hasn’t seen them, so charges can’t touch them yet.</p>`;
+    ${bridgeDefNote()}
+    <p class="note">Glowing walls are new this round. The attacker hasn’t seen them, so it can’t bridge them yet.</p>`;
   if (step === 1) return `
     <div class="tools">${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span> coins')}${toolBtn('remove', 'Remove', 'full refund')}</div>
     <p class="note show" id="d-fee"></p>
     <div class="list" id="d-tlist"></div>`;
-  return `<div class="sumgrid" id="d-sum"></div>${replayRow()}<div class="list" id="def-intel"></div>`;
+  return `<div class="sumgrid" id="d-sum"></div>${bridgeDefNote()}${replayRow()}<div class="list" id="def-intel"></div>`;
 }
+const bridgeDefNote = () => (S.bridges.size ? `<p class="note show"><b>${S.bridges.size === 1 ? 'The orange bridge is' : `The ${S.bridges.size} orange bridges are`} the attacker’s</b>: open ground for the rest of the match. You can’t build on ${S.bridges.size === 1 ? 'it' : 'them'}, but you can wall off either end, or put towers beside ${S.bridges.size === 1 ? 'it' : 'them'}.</p>` : '');
 function towerRows() {
   const rows = [];
   S.grid.forEach((g, i) => {
@@ -3259,18 +3412,18 @@ function tlUp(e) {
 function chargeRows() {
   const rows = [];
   for (const [cell, c] of S.charges) {
-    const g = S.seenGrid[cell];
-    const label = c.kind === 'wall' ? 'Wall charge' : `Tower charge · ${plural(c.waves, 'wave')}`;
-    const sub = c.kind === 'wall' ? `Destroys ${blastWhat('this wall')}` : `Knocks out a ${g ? towerValue(g) : '?'}-coin tower`;
-    rows.push(`<div class="rrow"><span class="rpick" style="cursor:default"><span class="ico ${c.kind === 'wall' ? 'charge' : 'charge'}">${c.kind === 'wall' ? ICON.charge : ICON.jam}</span><span class="rmain"><span class="rname">${label} · ${c.cost}</span><span class="rsub">${sub}</span></span></span><button class="xbtn" data-rm="${cell}" aria-label="Remove charge">×</button></div>`);
+    const g = S.seenGrid[cell], b = c.kind === 'bridge';
+    const label = b ? 'Bridge' : `Tower charge · ${plural(c.waves, 'wave')}`;
+    const sub = b ? 'Open ground through this wall, for the rest of the match' : `Knocks out a ${g ? towerValue(g) : '?'}-coin tower`;
+    rows.push(`<div class="rrow"><span class="rpick" style="cursor:default"><span class="ico ${b ? 'bridge' : 'charge'}">${b ? ICON.bridge : ICON.jam}</span><span class="rmain"><span class="rname">${label} · ${c.cost}</span><span class="rsub">${sub}</span></span></span><button class="xbtn" data-rm="${cell}" aria-label="Remove ${b ? 'bridge' : 'charge'}">×</button></div>`);
   }
-  return rows.length ? `<div class="lhd"><span>Planted</span><span>tap × to refund</span></div>${rows.join('')}` : '';
+  return rows.length ? `<div class="lhd"><span>Planned</span><span>tap × to refund</span></div>${rows.join('')}` : '';
 }
 function renderAtk() {
   el.atkSteps.innerHTML = stepsHTML(ATK_STEPS, S.step);
   el.hint.textContent = ATK_STEPS[S.step].hint;
   const av = armyValue(S.designs), cv = chargesValue();
-  setBudget('a', S.aFree, av, cv, 'Army', 'Charges');
+  setBudget('a', S.aFree, av, cv, 'Army', 'Sabotage');
   const bk = 'a' + S.step + (S.step === 1 ? ':' + S.designs.map(d => d.count).join(',') : '');
   if (bodyKey.atk !== bk) { bodyKey.atk = bk; el.atkBody.innerHTML = atkBodyHTML(S.step); }
   const n = armyCount(S.designs);
@@ -3285,7 +3438,7 @@ function renderAtk() {
     const cs = chargeStatus();
     $('#a-chg-note').className = 'callout2' + (cs.ok ? '' : ' locked');
     $('#a-chg-note').innerHTML = cs.ok
-      ? `<b>Tap a wall</b> to blow up ${blastWhat('that wall')} (${RULES.wallCharge} coins). <b>Tap a tower</b> to knock it offline for 1–3 waves (${RULES.towerCharge.join(' / ')}). Up to <b>${towerCap()} of ${seenTowers()}</b> towers can be offline in one wave${offlineNext().size ? ` (${offlineNext().size} used)` : ''}. You’re seeing the defense as it stood after wave ${S.seenRound}.`
+      ? `<b>Tap a wall</b> to lay a bridge over it: open ground from this wave to the end of the match, and nobody can build on it. ${bridgeNote()} <b>Tap a tower</b> to knock it offline for 1–3 waves (${RULES.towerCharge.join(' / ')}). Up to <b>${towerCap()} of ${seenTowers()}</b> towers can be offline in one wave${offlineNext().size ? ` (${offlineNext().size} used)` : ''}. You’re seeing the defense as it stood after wave ${S.seenRound}.`
       : `<b>Locked this round.</b> ${cs.reason}`;
     $('#a-charges').innerHTML = chargeRows();
   }
@@ -3294,9 +3447,9 @@ function renderAtk() {
     $('#a-sum').innerHTML = `
       <div class="sumcell"><span class="lbl">Army</span><b>${n}</b><span class="s">${plural(n, 'unit')} · ${av} strength</span></div>
       <div class="sumcell"><span class="lbl">Busiest second</span><b>${peak}</b><span class="s">units leaving together</span></div>
-      <div class="sumcell"><span class="lbl">Charges</span><b>${S.charges.size}</b><span class="s">${cv} coins</span></div>
+      <div class="sumcell"><span class="lbl">Sabotage</span><b>${S.charges.size}</b><span class="s">${plannedBridges().length ? `${plural(plannedBridges().length, 'bridge')} · ` : ''}${cv} coins</span></div>
       <div class="sumcell"><span class="lbl">Unspent</span><b>${S.aFree}</b><span class="s">coins carry over</span></div>`;
-    $('#a-seen-note').innerHTML = S.seenRound ? `Route as last seen: <b>${pathLen(seenPath())} steps</b>${S.charges.size ? `, about <b>${pathLen(projected())}</b> after your charges` : ''}.` : 'You haven’t seen the defense yet. Everything is revealed when the wave starts.';
+    $('#a-seen-note').innerHTML = S.seenRound ? `Route as last seen: <b>${pathLen(seenPath())} steps</b>${S.charges.size ? `, about <b>${pathLen(projected())}</b> with your ${plannedBridges().length ? 'bridge' : 'charge'}${S.charges.size > 1 ? 's' : ''}` : ''}.${S.bridges.size ? ` ${plural(S.bridges.size, 'bridge')} already on the map.` : ''}` : 'You haven’t seen the defense yet. Everything is revealed when the wave starts.';
   }
   let key = '';
   if (S.sel && S.sel.k === 'design' && S.designs[S.sel.i]) key = 'design:' + S.sel.i + ':' + S.designs.length + ':' + tipsOn;
@@ -3526,7 +3679,7 @@ function rr(c, x, y, w, h, r) {
   c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 
-/* terrain: survey-sheet contours with every fourth line heavier (index contours), plus blast scars */
+/* terrain: survey-sheet contours with every fourth line heavier (index contours) */
 const terr = document.createElement('canvas'), tctx = terr.getContext('2d');
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const hills = (() => {
@@ -3557,11 +3710,6 @@ function drawTerrain() {
       c.lineWidth = (index ? 1.5 : 1) * px; c.stroke();
     }
   }
-  for (const s of S.scorches) {
-    const g = c.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
-    g.addColorStop(0, 'rgba(6,5,4,0.62)'); g.addColorStop(0.45, 'rgba(34,16,8,0.4)'); g.addColorStop(0.8, 'rgba(90,40,14,0.08)'); g.addColorStop(1, 'rgba(90,40,14,0)');
-    c.fillStyle = g; c.beginPath(); c.arc(s.x, s.y, s.r, 0, TAU); c.fill();
-  }
   c.restore();
   c.strokeStyle = 'rgba(160,205,225,0.16)'; c.lineWidth = px; c.beginPath();
   for (let x = 1; x < COLS; x++) for (let y = 1; y < ROWS; y++) { c.moveTo(x - 0.07, y); c.lineTo(x + 0.07, y); c.moveTo(x, y - 0.07); c.lineTo(x, y + 0.07); }
@@ -3578,26 +3726,19 @@ function flashCell(cell) { badFlash = { cell, t: 0.7 }; }
 function floatText(x, y, text, color, size = 13) { floaters.push({ x, y, text, color, size, life: 0.95, max: 0.95 }); }
 function puff(x, y, color) { fx.push({ k: 'ring', x, y, r0: 0.2, r1: 0.7, life: 0.3, max: 0.3, w: 0.05, color: hexRgb(color) }); }
 function hexRgb(h) { const n = parseInt(h.slice(1), 16); return `${n >> 16 & 255},${n >> 8 & 255},${n & 255}`; }
-function boom(x, y, destroyed) {
-  fx.push({ k: 'flash', x, y, r: 2.0, life: 0.32, max: 0.32, color: '255,170,80' });
-  fx.push({ k: 'ring', x, y, r0: 0.2, r1: 2.3, life: 0.5, max: 0.5, w: 0.16, color: '255,190,120' });
-  fx.push({ k: 'ring', x, y, r0: 0.1, r1: 1.4, life: 0.35, max: 0.35, w: 0.1, color: '255,240,200' });
-  for (let k = 0; k < 30; k++) {
-    const a = Math.random() * TAU, s = 3 + Math.random() * 6;
-    fx.push({ k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.35 + Math.random() * 0.3, max: 0.65, color: Math.random() < 0.5 ? '#ffd27a' : '#ff8a3a', drag: 0.04 });
+// A bridge going down: the wall's stones scatter, then a warm flash where the deck lands.
+function bridgeFx(x, y) {
+  fx.push({ k: 'flash', x, y, r: 1.3, life: 0.3, max: 0.3, color: '255,190,110' });
+  fx.push({ k: 'ring', x, y, r0: 0.2, r1: 1.6, life: 0.5, max: 0.5, w: 0.12, color: '255,200,130' });
+  for (let k = 0; k < 14; k++) {
+    const a = Math.random() * TAU, s = 1.5 + Math.random() * 3;
+    fx.push({ k: 'debris', x: x + (Math.random() - 0.5) * 0.5, y: y + (Math.random() - 0.5) * 0.5, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6 + Math.random() * 0.4, max: 1, size: 0.07 + Math.random() * 0.1, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, color: Math.random() < 0.6 ? '#3d5c76' : '#6a8fae', drag: 0.03 });
   }
-  for (const j of destroyed) {
-    const [cx, cy] = center(j);
-    for (let k = 0; k < 10; k++) {
-      const a = Math.atan2(cy - y, cx - x) + (Math.random() - 0.5) * 2.2, s = 1.5 + Math.random() * 4;
-      fx.push({ k: 'debris', x: cx + (Math.random() - 0.5) * 0.5, y: cy + (Math.random() - 0.5) * 0.5, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.7 + Math.random() * 0.4, max: 1.1, size: 0.08 + Math.random() * 0.12, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 16, color: Math.random() < 0.6 ? '#3d5c76' : '#6a8fae', drag: 0.03 });
-    }
+  for (let k = 0; k < 16; k++) {
+    const a = Math.random() * TAU, s = 2 + Math.random() * 4;
+    fx.push({ k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.3 + Math.random() * 0.25, max: 0.55, color: Math.random() < 0.5 ? '#ffd27a' : '#ff9142', drag: 0.05 });
   }
-  for (let k = 0; k < 12; k++) {
-    const a = Math.random() * TAU, s = 0.3 + Math.random() * 1.2;
-    fx.push({ k: 'smoke', x: x + Math.cos(a) * 0.3, y: y + Math.sin(a) * 0.3, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.9 + Math.random() * 0.6, max: 1.5, size: 0.3 + Math.random() * 0.25, drag: 0.15 });
-  }
-  addShake(10);
+  addShake(5);
 }
 function updateFx(dt) {
   for (const p of fx) {
@@ -3631,7 +3772,7 @@ function render(t) {
   drawGates(c, t);
   drawPaths(c, t);
   drawWalls(c, t, G);
-  drawBlastPreview(c);
+  drawBridges(c, t, G);
   drawTowers(c, t, G);
   drawCharges(c, t);
   drawUnits(c, t);
@@ -3682,7 +3823,7 @@ function strokePath(c, p, color, w, t, dash) {
 function ghostCell() { return hoverType === 'mouse' ? hover : pending; }
 function drawPaths(c, t) {
   if (S.phase === 'attack') {
-    const extra = (S.step === 2 && hoverType === 'mouse' && hover >= 0 && S.seenGrid[hover] && !S.charges.has(hover) && (S.seenGrid[hover].t === 'wall' || canChargeTower(hover))) ? hover : -1;
+    const extra = (S.step === 2 && hoverType === 'mouse' && hover >= 0 && S.seenGrid[hover] && !S.charges.has(hover) && (S.seenGrid[hover].t === 'wall' ? canBridge() : canChargeTower(hover))) ? hover : -1;
     const hyp = (S.charges.size || extra >= 0) ? projected(extra) : null;
     strokePath(c, seenPath(), hyp ? 'rgba(200,228,242,0.22)' : 'rgba(200,228,242,0.5)', 0.06, t);
     if (hyp) strokePath(c, hyp, 'rgba(255,150,70,0.95)', 0.075, t, [0.22, 0.12]);
@@ -3740,18 +3881,39 @@ function drawWalls(c, t, G) {
     c.stroke();
   }
 }
-function drawBlastCells(c, list, strong) {
-  for (const j of seenBlast(list)) {
-    const q = j % COLS, r = (j / COLS) | 0;
-    c.beginPath(); rr(c, q + 0.05, r + 0.05, 0.9, 0.9, 0.14);
-    c.fillStyle = `rgba(255,120,40,${strong ? 0.38 : 0.26})`; c.fill();
-    c.setLineDash([0.1, 0.08]); c.lineWidth = 0.04; c.strokeStyle = 'rgba(255,160,90,0.95)'; c.stroke(); c.setLineDash([]);
-  }
+// A bridge runs across the wall line it cuts through: if the walls (or bridges) continue above and below,
+// the deck runs left to right, otherwise top to bottom.
+function bridgeAcross(i, G) {
+  const q = i % COLS, r = (i / COLS) | 0, solid = j => !!G[j] || S.bridges.has(j);
+  const ud = (r > 0 && solid(i - COLS)) + (r < ROWS - 1 && solid(i + COLS)), lr = (q > 0 && solid(i - 1)) + (q < COLS - 1 && solid(i + 1));
+  return ud >= lr; // true: deck left to right
 }
-function drawBlastPreview(c) {
-  if (S.phase !== 'attack') return;
-  const list = wallChargeCells();
-  if (list.length) drawBlastCells(c, list, false);
+// planned: an outline for a bridge the attacker has planned but not laid yet
+function drawBridgeShape(c, i, G, planned, t = 0) {
+  const [x, y] = center(i);
+  c.save(); c.translate(x, y);
+  if (!bridgeAcross(i, G)) c.rotate(Math.PI / 2);
+  const L = 0.64, W = 0.3;
+  c.beginPath(); rr(c, -L, -W, 2 * L, 2 * W, 0.07);
+  if (planned) {
+    c.fillStyle = 'rgba(217,138,61,0.38)'; c.fill();
+    c.setLineDash([0.1, 0.07]); c.lineDashOffset = reduceMotion ? 0 : -t * 0.3; c.lineWidth = 0.05; c.strokeStyle = '#ffd27a'; c.stroke(); c.setLineDash([]);
+  } else {
+    c.fillStyle = '#b06a2c'; c.fill();
+    c.lineWidth = 0.03; c.strokeStyle = '#4a2008'; c.stroke();
+    c.beginPath();
+    for (let k = 1; k < 7; k++) { const px = -L + k * (2 * L / 7); c.moveTo(px, -W + 0.03); c.lineTo(px, W - 0.03); }
+    c.lineWidth = 0.028; c.strokeStyle = 'rgba(60,24,6,0.85)'; c.stroke();
+    c.beginPath(); c.moveTo(-L, -W); c.lineTo(L, -W); c.moveTo(-L, W); c.lineTo(L, W);
+    c.lineWidth = 0.065; c.lineCap = 'round'; c.strokeStyle = '#ffd27a'; c.stroke();
+    c.fillStyle = '#ffd27a';
+    for (const px of [-L, L]) for (const py of [-W, W]) c.fillRect(px - 0.05, py - 0.05, 0.1, 0.1);
+  }
+  c.restore();
+}
+function drawBridges(c, t, G) {
+  for (const i of S.bridges) drawBridgeShape(c, i, G, false);
+  if (S.phase === 'attack' || S.phase === 'wave') for (const [i, ch] of S.charges) if (ch.kind === 'bridge') drawBridgeShape(c, i, G, true, t);
 }
 function drawTowers(c, t, G) {
   for (let i = 0; i < N; i++) {
@@ -3799,15 +3961,8 @@ function drawCharges(c, t) {
     const [x, y] = center(i);
     const fast = S.phase === 'wave';
     const on = Math.sin(t * (fast ? 34 : 6)) > (fast ? -0.2 : 0.1);
-    if (ch.kind === 'tower') {
-      c.beginPath(); c.arc(x, y, 0.4, 0, TAU); c.setLineDash([0.09, 0.06]); c.lineWidth = 0.05; c.strokeStyle = on ? '#d9ccff' : '#8a6fe0'; c.stroke(); c.setLineDash([]);
-      continue;
-    }
-    c.beginPath(); c.arc(x, y, 0.21, 0, TAU); c.fillStyle = '#2a1206'; c.fill();
-    c.lineWidth = 0.05; c.strokeStyle = '#ff9142'; c.stroke();
-    c.beginPath(); c.moveTo(x - 0.2, y); c.lineTo(x + 0.2, y); c.lineWidth = 0.045; c.strokeStyle = 'rgba(255,145,66,0.75)'; c.stroke();
-    c.beginPath(); c.arc(x, y, 0.075, 0, TAU); c.fillStyle = on ? '#ffd27a' : '#6a2c0c'; c.fill();
-    if (on) { c.beginPath(); c.arc(x, y, 0.16, 0, TAU); c.fillStyle = 'rgba(255,210,122,0.18)'; c.fill(); }
+    if (ch.kind !== 'tower') continue; // planned bridges are drawn with the bridges
+    c.beginPath(); c.arc(x, y, 0.4, 0, TAU); c.setLineDash([0.09, 0.06]); c.lineWidth = 0.05; c.strokeStyle = on ? '#d9ccff' : '#8a6fe0'; c.stroke(); c.setLineDash([]);
   }
 }
 function unitPath(c, shape, R) {
@@ -3914,12 +4069,13 @@ function drawInteraction(c, t, G) {
     } else if (S.tool === 'wall' || S.tool === 'tower') {
       const cell = ghostCell();
       if (cell >= 0 && !S.grid[cell]) {
-        const v = canBuild(cell, S.tool), [x, y] = center(cell);
+        const v = canBuild(cell, S.tool), [x, y] = center(cell), br = S.bridges.has(cell);
         c.globalAlpha = 0.55;
-        if (S.tool === 'wall') { c.beginPath(); rr(c, x - 0.43, y - 0.43, 0.86, 0.86, 0.13); c.fillStyle = '#7cc4e2'; c.fill(); }
+        if (br) { /* only the cross: nothing goes on a bridge */ }
+        else if (S.tool === 'wall') { c.beginPath(); rr(c, x - 0.43, y - 0.43, 0.86, 0.86, 0.13); c.fillStyle = '#7cc4e2'; c.fill(); }
         else drawTowerShape(c, defaultTower(), x, y, Math.PI, 0, false);
         c.globalAlpha = 1;
-        if (S.tool === 'tower') drawRange(c, x, y, TS.range.steps[defaultTower().range], v.ok);
+        if (S.tool === 'tower' && !br) drawRange(c, x, y, TS.range.steps[defaultTower().range], v.ok);
         if (!v.ok) drawX(c, cell);
         else if (hoverType !== 'mouse' && pending === cell) {
           c.beginPath(); rr(c, x - 0.48, y - 0.48, 0.96, 0.96, 0.16);
@@ -3929,10 +4085,11 @@ function drawInteraction(c, t, G) {
     }
   }
   if (S.phase === 'attack' && S.step === 2) {
-    // mark every target the attacker can charge
+    // mark every wall the attacker can bridge and every tower it can charge
+    const walls = canBridge();
     for (let i = 0; i < N; i++) {
       const g = S.seenGrid[i];
-      if (!g || S.charges.has(i)) continue;
+      if (!g || S.charges.has(i) || (g.t === 'wall' && !walls)) continue;
       const q = i % COLS, r = (i / COLS) | 0;
       c.beginPath(); c.arc(q + 0.5, r + 0.5, g.t === 'wall' ? 0.07 : 0.09, 0, TAU); c.fillStyle = g.t === 'wall' ? 'rgba(255,145,66,0.8)' : 'rgba(182,156,255,0.9)'; c.fill();
     }
@@ -3940,7 +4097,7 @@ function drawInteraction(c, t, G) {
       const g = S.seenGrid[hover];
       if (g && g.t === 'wall') {
         if (S.charges.has(hover)) { const [x, y] = center(hover); c.beginPath(); c.arc(x, y, 0.34, 0, TAU); c.lineWidth = 0.05; c.strokeStyle = 'rgba(255,93,93,0.9)'; c.stroke(); }
-        else drawBlastCells(c, [hover], true);
+        else if (walls) drawBridgeShape(c, hover, G, true, t);
       }
     }
   }
@@ -3986,9 +4143,9 @@ function drawLabels(c, G) {
     pill(c, sx, sy, `Remove +${removeLabel.val}`, '#ffb0b0', 'rgba(6,10,14,0.92)', 'center');
   }
   if (S.phase === 'attack' && view.cs >= 18) for (const [i, ch] of S.charges) {
-    if (ch.kind !== 'tower') continue;
     const [x, y] = center(i), [sx, sy] = w2s(x, y - 0.62);
-    pill(c, sx, sy - 10, `CHARGE \u00b7 ${ch.waves} WAVE${ch.waves > 1 ? 'S' : ''}`, '#1a1030', 'rgba(182,156,255,0.95)', 'center');
+    if (ch.kind === 'bridge') pill(c, sx, sy - 10, `BRIDGE \u00b7 ${ch.cost}`, '#2c1004', 'rgba(255,190,110,0.95)', 'center');
+    else pill(c, sx, sy - 10, `CHARGE \u00b7 ${ch.waves} WAVE${ch.waves > 1 ? 'S' : ''}`, '#1a1030', 'rgba(182,156,255,0.95)', 'center');
   }
   // offline towers: the defender sees "?", the attacker (whose charge it was) sees the waves left
   if (view.cs >= 18) for (let i = 0; i < N; i++) {
@@ -4062,8 +4219,9 @@ function pressAttack(cell) {
   if (S.step === 2) {
     const cs = chargeStatus();
     if (!cs.ok) { toast(cs.reason, 'atk'); return null; }
-    if (S.charges.has(cell) || (g && g.t === 'wall')) { if (S.sel) S.sel = null; plantWall(cell); return null; }
-  } else if (g && g.t === 'wall') toast('Plant charges in step 3, Charges.', 'atk');
+    if (S.charges.has(cell) || (g && g.t === 'wall')) { if (S.sel) S.sel = null; plantBridge(cell); return null; }
+    if (S.bridges.has(cell)) toast('Your bridge. It stays open for the rest of the match.', 'atk');
+  } else if (g && g.t === 'wall') toast('Lay bridges in step 3, Sabotage.', 'atk');
   if (S.sel) { S.sel = null; refreshUI(); }
   return null;
 }
@@ -4168,11 +4326,11 @@ function frame(now) {
 function coreSnapshot(phase) {
   const tw = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n });
   return {
-    v: 3, round: S.round, keep: S.keep, dFree: S.dFree, aFree: S.aFree, phase, towerSeq: S.towerSeq,
+    v: 4, round: S.round, keep: S.keep, dFree: S.dFree, aFree: S.aFree, phase, towerSeq: S.towerSeq,
     grid: S.grid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: g.fresh } : tw(g)) : null)),
     seenGrid: S.seenGrid.map(g => (g ? (g.t === 'wall' ? { t: 'wall' } : tw(g)) : null)), seenRound: S.seenRound,
     designs: S.designs.map(d => ({ ...d, tl: { ...d.tl, pos: d.tl.pos ? d.tl.pos.slice() : null } })), seenArmy: S.seenArmy ? S.seenArmy.map(d => ({ ...d })) : null,
-    charges: [...S.charges].map(([cell, c]) => [cell, { ...c }]), scorches: S.scorches.slice(), totals: { ...S.totals },
+    charges: [...S.charges].map(([cell, c]) => [cell, { ...c }]), bridges: [...S.bridges], totals: { ...S.totals },
   };
 }
 function snapshotData() {
@@ -4189,7 +4347,7 @@ function snapshotData() {
 // A fresh state from a snapshot. Everything is copied, so one snapshot can be replayed again and again.
 function stateFrom(d) {
   const R = newState();
-  Object.assign(R, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, towerSeq: d.towerSeq || 0, scorches: (d.scorches || []).slice(), totals: { ...R.totals, ...d.totals } });
+  Object.assign(R, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, towerSeq: d.towerSeq || 0, bridges: new Set(d.bridges || []), totals: { ...R.totals, ...d.totals } });
   const tw = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n, cd: 0, ang: Math.PI, kick: 0, dealt: 0 });
   R.grid = d.grid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: !!g.fresh } : tw(g)) : null));
   R.seenGrid = d.seenGrid.map(g => (g ? (g.t === 'wall' ? { t: 'wall', fresh: false } : { ...tw(g), fresh: false }) : null));
@@ -4198,7 +4356,7 @@ function stateFrom(d) {
   return R;
 }
 function restore(d) {
-  if (!d || d.v !== 3) throw new Error('old snapshot');
+  if (!d || d.v !== 4) throw new Error('old snapshot');
   S = stateFrom(d);
   recompute(); drawTerrain();
   if (d.solo) {
@@ -4211,6 +4369,7 @@ function restore(d) {
 }
 
 function start(data) {
+  for (const n of document.querySelectorAll('[data-rule]')) n.textContent = RULES[n.dataset.rule]; // info text follows the rules
   newMatch();
   buildPanels();
   layout();

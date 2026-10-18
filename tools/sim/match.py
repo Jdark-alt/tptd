@@ -1,11 +1,12 @@
 """Full 8-round matches between the computer players (tools/sim/ai.js), on the real game code in index.html.
 
   python tools/sim/match.py                                   # every attacker strategy vs both defenders, 2 seeds
-  python tools/sim/match.py --rules '{"wallCharge": 80}'      # try a rule change (any RULES key, plus knobs)
+  python tools/sim/match.py --rules '{"bridgeBase": 60}'      # try a rule change (any RULES key, plus knobs)
   python tools/sim/match.py --defenders counter --attackers swarm,rush,counter --seeds 3 --log
   python tools/sim/match.py --rules '{"US": {"hp": {"steps": [50,75,112,150,200,275,375,450,550,650]}}}'
   python tools/sim/match.py --defenders game:normal,game:hard                # the game's computer defender
   python tools/sim/match.py --defenders counter,basic --attackers computer   # the game's computer attacker
+  python tools/sim/match.py --attackers computer --rules '{"bridgeCap": 0}'   # ... and the same computer that never bridges
 
 Read results relatively: run the current rules and the variant with the same bots, and compare.
 Two CPUs make a full run take a few minutes; split strategies across processes with --attackers if needed.
@@ -29,10 +30,13 @@ ATTACKERS = {  # name -> attacker options for ai.js
     'big tanks': {'army': 'bigtank'},
     'regen bruisers': {'army': 'regenbruiser'},
     'slow fat regen': {'army': 'fatregen'},
-    'counter + wall charges': {'army': 'counter', 'charges': 'walls', 'chargeShare': 0.2},
+    # these four take the place of v9's wall-charge strategies, with the same armies and budgets
+    'counter + bridges': {'army': 'counter', 'charges': 'bridges', 'chargeShare': 0.2},
     'counter + tower charges': {'army': 'counter', 'charges': 'towers', 'chargeShare': 0.25},
-    'counter + both charges': {'army': 'counter', 'charges': 'both', 'chargeShare': 0.3},
-    'alternate + both charges': {'army': 'alternate', 'charges': 'both', 'chargeShare': 0.3},
+    'counter + bridges & towers': {'army': 'counter', 'charges': 'both', 'chargeShare': 0.3},
+    'alternate + bridges & towers': {'army': 'alternate', 'charges': 'both', 'chargeShare': 0.3},
+    # always lays a bridge when one shortens the route (counter-picks above is the same army that never does)
+    'always bridge': {'army': 'counter', 'charges': 'bridges', 'chargeShare': 1},
     # the game's own computer attacker (Versus computer), not run unless named: --attackers computer
     'computer easy': {'game': 'easy'}, 'computer normal': {'game': 'normal'}, 'computer hard': {'game': 'hard'},
 }
@@ -66,9 +70,17 @@ with sync_playwright() as p:
             w = sum(r['winner'] == 'attacker' for r in res); wins += w; total += len(res)
             fell = [r['round'] for r in res if r['winner'] == 'attacker']
             br = [x['breach'] for r in res for x in r['log'] if 'breach' in x]
-            ch = sum(x.get('charges') or 0 for r in res for x in r['log']) / len(res)
-            print(f'  defender {dn:11s} vs {an:26s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
-                  f'  avg breach {sum(br)/max(1, len(br)):4.1f}%  charges/match {ch:4.1f}' + (f'  fell in rounds {fell}' if fell else ''), flush=True)
+            bridges = sum(x.get('bridges') or 0 for r in res for x in r['log']) / len(res)
+            jams = sum(x.get('jammed') or 0 for r in res for x in r['log']) / len(res)
+            # how the defender dealt with the bridges on the map, over every round that had one
+            resp = {}
+            for r in res:
+                for x in r['log']:
+                    if x.get('response'): resp[x['response']] = resp.get(x['response'], 0) + 1
+            rs = ' '.join(f'{k} {v}' for k, v in sorted(resp.items()))
+            print(f'  defender {dn:11s} vs {an:28s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
+                  f'  avg breach {sum(br)/max(1, len(br)):4.1f}%  bridges/match {bridges:3.1f}  towers out/match {jams:3.1f}'
+                  + (f'  fell in rounds {fell}' if fell else '') + (f'  defender vs bridges: {rs}' if rs else ''), flush=True)
             if a.log:
                 for x in res[0]['log']: print('      ', x)
     print(f'ATTACKER WINS {wins}/{total} = {100 * wins / max(1, total):.0f}%')

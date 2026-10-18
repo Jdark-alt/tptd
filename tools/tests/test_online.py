@@ -15,6 +15,11 @@ _html = game_html()
 open(os.path.join(WEB, 'room.html'), 'w').write(_html.replace('<head>', '<head><script src="mockroom.js"></script>', 1))
 open(os.path.join(WEB, 'index.html'), 'w').write(_html)
 shutil.copy(os.path.join(HERE, 'mockroom.js'), WEB)
+# old.html: the build on main, if it speaks another protocol version, to check the two never join one match
+try: _old = subprocess.run(['git', 'show', 'origin/main:index.html'], cwd=ROOT, capture_output=True, text=True).stdout
+except Exception: _old = ''
+OLD = bool(_old) and 'const PROTO = ' in _old and _old.split('const PROTO = ')[1].split(';')[0] != _html.split('const PROTO = ')[1].split(';')[0]
+if OLD: open(os.path.join(WEB, 'old.html'), 'w').write(_old.replace('<head>', '<head><script src="mockroom.js"></script>', 1))
 PEERJS = os.path.join(HERE, 'node_modules', 'peerjs', 'dist', 'peerjs.min.js')
 if not os.path.exists(PEERJS):
     sys.exit('Run "npm install" in tools/tests first (installs peerjs and the local peer server).')
@@ -33,7 +38,7 @@ def cell(pg, i):
     x, y = pg.evaluate(f'()=>window.siegeline.cellToClient({i})'); pg.mouse.click(x, y)
 def snap(pg):
     return pg.evaluate('''()=>{const S=window.siegeline.state;return {keep:S.keep,dFree:S.dFree,aFree:S.aFree,last:S.last,totals:S.totals,round:S.round,over:S.over,winner:S.winner,
-      grid:S.grid.map(g=>g?(g.t==="wall"?"w":"t"+g.off):0).join(","), army:JSON.stringify(S.designs.map(d=>[d.name,d.count,d.hp,d.speed,d.tl.s,d.tl.e,d.tl.pos]))}}''')
+      grid:S.grid.map(g=>g?(g.t==="wall"?"w":"t"+g.off):0).join(","), bridges:[...S.bridges].sort((a,b)=>a-b).join(","), army:JSON.stringify(S.designs.map(d=>[d.name,d.count,d.hp,d.speed,d.tl.s,d.tl.e,d.tl.pos]))}}''')
 
 def join(pg, role, code):
     pg.click('#info-go')
@@ -131,11 +136,11 @@ try:
             B.click('#sum-next')
             same(A, B, 'replay leaves the online match untouched')
 
-            # ---------- round 2: charges, unlock and relock, real-time wave ----------
+            # ---------- round 2: a bridge and a charge, unlock and relock, real-time wave ----------
             wait(B, "S.phase==='attack'")
             tower_cell = idx(5, 4)
             attack_round(B, [10, 2, 6], lock=False,
-                         extra=f"S.charges.set({tower_cell},{{kind:'tower',waves:2,cost:55}}); S.aFree-=55; S.charges.set({idx(3,4)},{{kind:'wall',waves:1,cost:30}}); S.aFree-=30;")
+                         extra=f"S.charges.set({tower_cell},{{kind:'tower',waves:2,cost:55}}); S.aFree-=55; S.charges.set({idx(3,4)},{{kind:'bridge',waves:0,cost:50}}); S.aFree-=50;")
             B.click('#atk-next')
             B.wait_for_timeout(200)
             check('attacker locks in first', B.is_visible('#ov-wait'))
@@ -156,7 +161,7 @@ try:
             check('10x finishes much sooner', ta * 3 < tb)
             s2 = same(A, B, 'round 2 identical with one device at 10x')
             check('tower charge landed on both', ev(A, f"S.grid[{tower_cell}].off") == 1 and ev(B, f"S.grid[{tower_cell}].off") == 1)
-            check('wall charge blew walls on both', s2['last']['walls'] > 0, s2['last']['walls'])
+            check('bridge laid on both', s2['last']['bridges'] == 1 and ev(A, f"S.bridges.has({idx(3,4)})") and ev(B, f"S.bridges.has({idx(3,4)})"), s2['bridges'])
             A.screenshot(path=f'{SHOTS}/o3_summary_def.png'); B.screenshot(path=f'{SHOTS}/o3_summary_atk.png')
             A.click('#sum-next'); B.click('#sum-next')
 
@@ -230,6 +235,16 @@ try:
             check('switching side in lobby starts the match', True)
             check('max presence size', ev(A, 'window.__maxPresence||0') < 4096, max(ev(pg, 'window.__maxPresence||0') for pg in (A, B, C, D)))
             for pg in (C, D): pg.close()
+            # ---------- a build with another protocol version (main) never joins this one ----------
+            if OLD:
+                C = ctx.new_page(); D = ctx.new_page()
+                for pg in (C, D): errors_hook(pg, errs)
+                C.goto('http://127.0.0.1:8765/old.html'); D.goto('http://127.0.0.1:8765/room.html'); C.wait_for_timeout(300)
+                join(C, 'def', 'MIXD'); join(D, 'atk', 'MIXD')
+                D.wait_for_timeout(2500)
+                check('other protocol version: both stay in the lobby', ev(C, "N.st") == 'lobby' and ev(D, "N.st") == 'lobby' and 'Waiting' in D.inner_text('#mode-status'), D.inner_text('#mode-status'))
+                for pg in (C, D): pg.close()
+            else: print('SKIP protocol check: main speaks the same protocol')
             check('no page errors (room)', not errs, errs[:5])
             A.close(); B.close(); ctx.close()
 

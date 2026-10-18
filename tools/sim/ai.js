@@ -13,10 +13,12 @@
   /* ---------------- defender ----------------
      Sells everything each round (removal refunds in full, walls 5) and rebuilds from its whole worth: a
      serpentine maze of 4 wall columns with towers set into the columns so each covers two lanes, then more
-     towers and damage upgrades. Locked (offline) towers stay put.
+     towers and damage upgrades. Locked (offline) towers stay put. It never moves its maze: nothing can be built
+     on a bridge, so a bridge in one of its columns leaves a hole.
      style 'counter': retunes towers against the last army it saw (splash on half the towers vs cheap or
-                      dodging units, slow heavy shots vs armor). This is the "competent defender" baseline.
-     style 'basic':   never retunes (default towers + damage upgrades). A weak defender.
+                      dodging units, slow heavy shots vs armor), and walls off the ends of bridges that cut its
+                      maze (the game's blockBridges). This is the "competent defender" baseline.
+     style 'basic':   never retunes and leaves bridges open (default towers + damage upgrades). A weak defender.
      game: 'easy' | 'normal' | 'hard' plays the game's own computer defender (brainPlan in index.html) instead. */
   const WCOLS = [3, 6, 9, 12];
   const SLOTS = [[3, 5], [6, 5], [9, 5], [12, 5], [3, 8], [6, 2], [9, 8], [12, 2], [3, 2], [6, 8], [9, 2], [12, 8]];
@@ -48,12 +50,14 @@
     }
     best.cfg = next; spend(delta); return true;
   }
+  // returns how it dealt with the bridges on the map ('' when there are none)
   function defend(S, opt, seed) {
     if (opt.game) {
-      const p = I.brainPlan('def', opt.game, seed).plan;
+      const r = I.brainPlan('def', opt.game, seed), p = r.plan;
       S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; I.recompute();
+      if ([...S.bridges].some(i => S.grid[i])) throw new Error('game defender built on a bridge');
       if (!S.path) throw new Error('game defender blocked the path');
-      return;
+      return r.info ? r.info.response : '';
     }
     let worth = S.dFree;
     for (let i = 0; i < N; i++) {
@@ -64,9 +68,10 @@
     // same rule as the game: rebuilding on a cell the attacker saw doesn't make it "new"
     const seen = (i, t) => !!(S.seenGrid[i] && S.seenGrid[i].t === t);
     const towers = () => S.grid.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0);
-    const addWall = i => { if (S.grid[i] || worth < I.RULES.wall) return; S.grid[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= I.RULES.wall; };
+    const addWall = i => { if (S.grid[i] || S.bridges.has(i) || worth < I.RULES.wall) return; S.grid[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= I.RULES.wall; };
     const addTower = (i, cfg) => {
       if (S.grid[i] && S.grid[i].t === 'tower') return true; // a locked offline tower already sits here
+      if (S.bridges.has(i)) return 'skip'; // nothing stands on a bridge
       const fee = I.RULES.towerFee * towers(), cost = I.towerCost(cfg) + fee;
       if (worth < cost) return false;
       if (S.grid[i]) { worth += I.RULES.wall; S.grid[i] = null; } // the tower replaces a wall in its column
@@ -75,18 +80,23 @@
     };
     const cols = opt.maxCols == null ? 4 : opt.maxCols;
     const plan = [];
-    for (let k = 0; k < 4; k++) { if (k < cols) plan.push(['col', k]); plan.push(['tower', k]); }
+    for (let k = 0; k < 4; k++) { if (k < cols) plan.push(['col', k]); if (k === cols - 1) plan.push(['block']); plan.push(['tower', k]); }
     for (let k = 4; k < SLOTS.length; k++) plan.push(['tower', k]);
-    let placed = 0;
+    let placed = 0, blocked = 0;
+    const cut = S.bridges.size && [...S.bridges].some(i => WCOLS.includes(i % COLS) && colCells(WCOLS.indexOf(i % COLS)).includes(i));
     for (const [kind, k] of plan) {
       if (kind === 'col') {
-        const cells = colCells(k);
+        const cells = colCells(k).filter(i => !S.bridges.has(i));
         if (worth < cells.length * I.RULES.wall) break;
         cells.forEach(addWall);
+      } else if (kind === 'block') {
+        if (opt.style === 'counter' && S.bridges.size) for (const i of I.blockBridges(S.grid, S.bridges)) { const w = worth; addWall(i); if (worth < w) blocked++; }
       } else {
         if (placed >= 4) while (upgradeStep(S, () => worth, v => { worth -= v; }, towers)) { /* upgrade first */ }
         const [c, r] = SLOTS[k];
-        if (!addTower(at(c, r), towerCfgFor(S.seenArmy, k, opt.style))) break;
+        const ok = addTower(at(c, r), towerCfgFor(S.seenArmy, k, opt.style));
+        if (ok === 'skip') continue;
+        if (!ok) break;
         placed++;
       }
     }
@@ -94,14 +104,16 @@
     S.dFree = worth;
     I.recompute();
     if (!S.path) throw new Error('defender blocked the path');
+    return !S.bridges.size ? '' : blocked ? 'block' : cut ? 'around' : 'clear';
   }
 
   /* ---------------- attacker ----------------
      Also re-buys its whole army from its worth every round (units refund in full).
      opt.army: a strategy name below, or opt.armySpec = [[stats or preset name, share, start, end], ...]
        stats are slider indexes, e.g. { hp: 6, speed: 4, regen: 3 }; start/end are the wave-timeline window (0..1).
-     opt.charges: 'walls' | 'towers' | 'both' (with opt.chargeShare = share of worth spent on charges). Wall charges go
-       on the walls that shorten the seen route most (the game's wallPicks); tower charges on the most valuable towers.
+     opt.charges: 'bridges' | 'towers' | 'both' (with opt.chargeShare = share of worth spent on them). Bridges go on
+       the walls that shorten the seen route most (the game's bridgePicks), up to the per-wave cap; tower charges on
+       the most valuable towers.
      opt.cap: respect the "half the seen towers offline per wave" cap; opt.noLastCharges: none in the final wave.
      opt.game: 'easy' | 'normal' | 'hard' plays the game's own computer attacker (brainPlan in index.html) instead. */
   const DESIGNS = {
@@ -164,11 +176,13 @@
           S.charges.set(i, { kind: 'tower', waves: 1, cost: c }); spent += c; off++;
         }
       }
-      if (opt.charges === 'walls' || opt.charges === 'both') {
-        // the walls whose blast (RULES.wallBlast) shortens the seen route most, picked like the game's computer does
-        for (const i of I.wallPicks(S.seenGrid, j => !!(S.seenGrid[j] && S.seenGrid[j].t === 'wall'), 4)) {
-          if (spent + I.RULES.wallCharge > budget) break;
-          S.charges.set(i, { kind: 'wall', waves: 0, cost: I.RULES.wallCharge }); spent += I.RULES.wallCharge;
+      if (opt.charges === 'bridges' || opt.charges === 'both') {
+        // the walls that shorten the seen route most, picked like the game's computer does
+        let k = 0;
+        for (const i of I.bridgePicks(S.seenGrid, j => !!(S.seenGrid[j] && S.seenGrid[j].t === 'wall'), I.RULES.bridgeCap, S.bridges)) {
+          const c = I.bridgeCost(S.bridges.size + k);
+          if (spent + c > budget) break;
+          S.charges.set(i, { kind: 'bridge', waves: 0, cost: c }); spent += c; k++;
         }
       }
     }
@@ -196,15 +210,16 @@
     I.recompute();
     const log = [];
     for (;;) {
-      defend(S, dOpt, seed * 7919 + S.round);
+      const response = defend(S, dOpt, seed * 7919 + S.round);
       const army = attack(S, aOpt, seed * 104729 + S.round);
       I.startWave(seed * 101 + S.round);
       window.siegeline.advance(900);
-      if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: S.wave.x, Y: Math.round(S.wave.y), keep: 0 }); return { winner: 'attacker', round: S.round, keep: 0, log }; }
+      if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: S.wave.x, Y: Math.round(S.wave.y), keep: 0, bridges: S.wave.bridges, jammed: S.wave.jammed, response }); return { winner: 'attacker', round: S.round, keep: 0, log }; }
       const L = S.last;
       log.push({ r: S.round, army, X: L.X, Y: Math.round(L.Y), breach: Math.round(L.breach * 100), keep: Math.round(S.keep),
         defWorth: Math.round(S.dFree + S.grid.reduce((v, g) => v + (g ? (g.t === 'wall' ? I.RULES.wall : I.towerValue(g)) : 0), 0)),
-        atkWorth: S.aFree + S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0), charges: L.charges, jammed: L.jammed, wallsBlown: L.walls });
+        atkWorth: S.aFree + S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0), charges: L.charges, bridges: L.bridges, missed: L.missed, jammed: L.jammed,
+        onMap: S.bridges.size, response });
       if (S.over) return { winner: S.winner, round: S.round, keep: Math.round(S.keep), log };
       S.round++;
     }
