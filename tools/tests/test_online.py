@@ -176,10 +176,13 @@ try:
             wait(A, "S.phase==='defend'"); wait(B, "S.phase==='attack'")
             # the attacker's plan also carries a bridge on a wall away from the route: both devices must drop it
             off = B.evaluate('()=>{const S=window.siegeline.state; return S.seenGrid.findIndex((g,i)=>g&&g.t==="wall"&&!S.bridges.has(i)&&!window.siegeline.canBridgeAt(i));}')
-            defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else ''))
+            # and a tower charge priced 25 though one was planted last round: both devices price it 25 + 10
+            stale = f"S.charges.set({idx(13, 4)},{{kind:'tower',waves:1,cost:25}}); S.aFree-=25;"
+            defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else '') + stale)
             A.evaluate("()=>document.querySelector('#def-next').click()"); B.evaluate("()=>document.querySelector('#atk-next').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
+            check('a tower charge is priced by the rules on both devices (the second of the match: 35)', ev(A, "S.wave.chargeCoins") == 35 and ev(B, "S.wave.chargeCoins") == 35, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
             if off >= 0: check('a bridge off the route in a plan is dropped on both devices', not ev(A, f"S.charges.has({off})") and not ev(B, f"S.charges.has({off})") and ev(A, "S.charges.size") == ev(B, "S.charges.size"))
             # Desync on purpose: the attacker's copy drifts and must adopt the defender's result.
             B.evaluate('()=>{window.siegeline.state.keep -= 37;}')

@@ -695,7 +695,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v14</p>
+        <p class="tagline">Two Player Tower Defence · v15</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -757,7 +757,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
       <section>
         <h2>Sabotage</h2>
         <p><strong>Bridge.</strong> Goes on a wall you’ve seen that touches the route you saw, so it’s a shortcut on the route. When the wave starts the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. A tower built on the cell first makes it miss. It costs <span data-rule="bridgeBase">50</span> plus <span data-rule="bridgeFee">20</span> for every bridge on the map, at most <span data-rule="bridgesPerWave">1</span> a wave.</p>
-        <p><strong>Tower charge.</strong> Knocks a tower you’ve seen offline for 1, 2 or 3 waves (25, 55 or 90). It hits the spot: a tower rebuilt there still goes down, a tower moved away is safe. At most half the towers you’ve seen can be offline at once.</p>
+        <p><strong>Tower charge.</strong> Knocks a tower you’ve seen offline for 1, 2 or 3 waves (25, 55 or 90, plus <span data-rule="towerChargeFee">10</span> for every tower charge you’ve planted before it this match). It hits the spot: a tower rebuilt there still goes down, a tower moved away is safe. At most half the towers you’ve seen can be offline at once.</p>
         <p>No sabotage in the first or the final wave.</p>
       </section>
 
@@ -775,13 +775,13 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower; moving one is free</td></tr>
               <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Traits multiply; surcharge above 60</td></tr>
               <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">20</span> × n</td><td>At most <span data-rule="bridgesPerWave">1</span> a wave, touching the route</td></tr>
-              <tr><td class="a">Tower charge</td><td class="n">25 / 55 / 90</td><td>Offline for 1 / 2 / 3 waves</td></tr>
+              <tr><td class="a">Tower charge</td><td class="n">25 / 55 / 90 + <span data-rule="towerChargeFee">10</span> × n</td><td>Offline for 1 / 2 / 3 waves; n counts your earlier tower charges</td></tr>
               <tr><td>Rough ground</td><td class="n">~<span data-rule="roughShare%">5</span>%</td><td>Walkable, unbuildable</td></tr>
               <tr><td>Rock</td><td class="n">~<span data-rule="rockShare%">5</span>%</td><td>A permanent wall</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v14</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v15</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -884,7 +884,9 @@ const RULES = {
   rounds: 8, keep: 1000, startDef: 300, startAtk: 300, pot: 200,
   shareMin: 0.3, shareMax: 0.7, breachCap: 0.5,
   wall: 5, towerBase: 40, towerFee: 10, unitBase: 15, maxDesigns: 4,
-  towerCharge: [25, 55, 90], waveLen: 20,
+  // a tower charge costs towerCharge[waves - 1], plus towerChargeFee for every tower charge planted before it in the
+  // match (earlier waves, and earlier this round in the order planned)
+  towerCharge: [25, 55, 90], towerChargeFee: 10, waveLen: 20,
   // a bridge turns a wall the attacker saw into open ground for the rest of the match. Its price rises with every
   // bridge on the map (bridges planned this round count, in order), at most bridgesPerWave go down in one wave, and
   // each must touch the route as the attacker saw it (a shortcut on the route, not a way round it)
@@ -971,7 +973,7 @@ const US = {
     mult: i => US.speed.steps[i] / 1.3, hint: 'Fast units spend less time in range, so price grows in step with speed.' },
   armor: { name: 'Armor', steps: [0, 3, 6, 10], m: [1, 1.35, 1.7, 2.1], val: v => (v ? `Blocks ${v} per hit` : 'None'),
     mult: i => US.armor.m[i], hint: 'Every hit loses this much, but at least 20% still lands. Beats rapid fire, weak to heavy shots.' },
-  dodge: { name: 'Dodge', steps: [0, 20, 35, 50], m: [1, 1.2, 1.4, 1.7], val: v => (v ? `${v}% of direct shots` : 'None'),
+  dodge: { name: 'Dodge', steps: [0, 10, 20, 30], m: [1, 1.2, 1.4, 1.7], val: v => (v ? `${v}% of direct shots` : 'None'),
     mult: i => US.dodge.m[i], hint: 'Chance to dodge direct shots. Beats single-target towers. Splash can’t be dodged.' },
   regen: { name: 'Regeneration', steps: [0, 1, 2, 3], m: [1, 1.2, 1.4, 1.65], val: v => (v ? `${v}%/s · up to ${v * RULES.regenCap}% a wave` : 'None'),
     mult: i => US.regen.m[i], hint: 'Heals between towers: starts 3 seconds after the last direct hit, and only so much per wave. Beats poison; steady fire keeps it from healing.' },
@@ -1094,7 +1096,7 @@ function newState() {
     terrain: new Uint8Array(N), mapSeed: 0, // ROUGH and ROCK cells for this match (startMap); rock also sits in the grids
     tool: 'wall', sel: null,
     units: [], shots: [], spawnList: [], spawnIdx: 0, detQueue: [], detIdx: 0, waveT: 0, spawnStart: 0, endDelay: 0,
-    wave: blankWave(), totals: { kills: 0, leaks: 0, bridges: 0, charges: 0, through: 0, jammed: 0 },
+    wave: blankWave(), totals: { kills: 0, leaks: 0, bridges: 0, charges: 0, towerCharges: 0, through: 0, jammed: 0 },
     path: null, pathFlash: 0, over: false, overT: 0, winner: null, confirmEmpty: false, last: null, preWave: null, lastWave: null,
   };
 }
@@ -1243,6 +1245,14 @@ const bridgeCost = k => RULES.bridgeBase + RULES.bridgeFee * k; // k: bridges al
 const plannedBridges = () => [...S.charges].filter(([, c]) => c.kind === 'bridge').map(([i]) => i);
 const nextBridgePrice = () => bridgeCost(S.bridges.size + plannedBridges().length);
 const towerChargeCells = () => [...S.charges].filter(([, c]) => c.kind === 'tower').map(([i]) => i);
+// k: tower charges planted before this one in the match (S.totals.towerCharges from earlier waves, then this round's in order)
+const towerChargeCost = (waves, k) => RULES.towerCharge[waves - 1] + RULES.towerChargeFee * k;
+const chargesBefore = () => S.totals.towerCharges || 0;
+// What a tower charge on cell would cost: its own place in the order if it's planned, else the next one's.
+function chargePrice(cell, waves) {
+  const order = towerChargeCells(), k = order.indexOf(cell);
+  return towerChargeCost(waves, chargesBefore() + (k >= 0 ? k : order.length));
+}
 /* ---------- terrain ----------
    Each match gets its own rough ground (units cross it, nobody can build on it) and rock (blocks like a wall
    that can't be removed, built on or bridged), from a seed both online devices share. The board is split into
@@ -1679,10 +1689,13 @@ function plantBridge(cell) {
   const [x, y] = center(cell); puff(x, y, '#ff8a3d');
   refreshUI();
 }
-// Planned bridges are priced in the order they were planned; taking one back re-prices the rest.
-function repriceBridges() {
-  let k = S.bridges.size;
-  for (const c of S.charges.values()) if (c.kind === 'bridge') { const p = bridgeCost(k++); S.aFree += c.cost - p; c.cost = p; }
+// Planned bridges and tower charges are priced in the order they were planned; taking one back re-prices the rest.
+function repriceCharges() {
+  let kb = S.bridges.size, kt = chargesBefore();
+  for (const c of S.charges.values()) {
+    const p = c.kind === 'bridge' ? bridgeCost(kb++) : towerChargeCost(c.waves, kt++);
+    S.aFree += c.cost - p; c.cost = p;
+  }
 }
 // No more than half the towers the attacker has seen, rounded up, can be offline in the same wave,
 // counting towers still offline from earlier charges, so no wave can black out the whole defense.
@@ -1698,7 +1711,7 @@ const canChargeTower = cell => { const g = S.seenGrid[cell]; return !!(g && g.t 
 function plantTower(cell, waves) {
   if (!chargeStatus().ok) { toast(chargeStatus().reason, 'atk'); return false; }
   if (!canChargeTower(cell)) { toast(`At most ${towerCap()} of the ${seenTowers()} towers you’ve seen can be offline in one wave.`, 'bad'); return false; }
-  const cost = RULES.towerCharge[waves - 1], cur = S.charges.get(cell);
+  const cost = chargePrice(cell, waves), cur = S.charges.get(cell);
   const delta = cost - (cur ? cur.cost : 0);
   if (delta > S.aFree) { toast(`That costs ${delta} more and you have ${S.aFree} free.`, 'bad'); return false; }
   S.aFree -= delta;
@@ -1711,7 +1724,7 @@ function removeCharge(cell) {
   const c = S.charges.get(cell);
   if (!c) return;
   S.charges.delete(cell); S.aFree += c.cost; S.chargeVer++;
-  if (c.kind === 'bridge') repriceBridges();
+  repriceCharges();
   toast(`${c.kind === 'bridge' ? 'Bridge' : 'Charge'} removed · ${c.cost} refunded`, 'atk');
   refreshUI();
 }
@@ -2052,6 +2065,7 @@ function prepWave(seed) {
   S.wave = blankWave();
   S.wave.x = armyValue(S.designs);
   S.wave.charges = S.charges.size; S.wave.chargeCoins = chargesValue(); S.totals.charges += S.charges.size;
+  S.totals.towerCharges = chargesBefore() + towerChargeCells().length;
   S.spawnList = buildSpawns(S.sentArmy); S.spawnIdx = 0;
   S.detQueue = [...S.charges.keys()].sort((a, b) => (a % COLS) - (b % COLS) || a - b); S.detIdx = 0;
   S.waveT = 0; S.endDelay = 0; S.units = []; S.shots = [];
@@ -2270,7 +2284,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 5; // 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route. Builds with a different number never see each other
+const PROTO = 6; // 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time. Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10),
@@ -2340,18 +2354,19 @@ function decodeArmy(list) {
   });
 }
 // [cell, kind (1 tower, 2 bridge), waves, cost]. Bridges must sit on walls the attacker saw, beside the route it saw,
-// within the cap, and are priced here by the rules, so both devices agree whatever the plan says.
+// within the cap. Both kinds are priced here by the rules, so both devices agree whatever the plan says.
 function decodeCharges(list) {
   const m = new Map();
   if (S.round >= RULES.rounds) return m;
-  let nb = 0;
+  let nb = 0, nt = chargesBefore();
   if (Array.isArray(list)) for (const a of list) {
     if (!Array.isArray(a)) continue;
     const i = int(a[0], -1, N - 1, -1); if (i < 0 || m.has(i)) continue;
     const kind = a[1] === 1 ? 'tower' : a[1] === 2 ? 'bridge' : null, g = S.seenGrid[i];
     if (kind === 'tower') {
       if (!(g && g.t === 'tower') || (!(g.off > 0) && offlineNext(m).size >= towerCap())) continue;
-      m.set(i, { kind, waves: int(a[2], 1, 3), cost: int(a[3], 0, 999) });
+      const waves = int(a[2], 1, 3);
+      m.set(i, { kind, waves, cost: towerChargeCost(waves, nt++) });
     } else if (kind === 'bridge') {
       if (!(g && g.t === 'wall') || S.bridges.has(i) || nb >= RULES.bridgesPerWave || !touchesRoute(i, seenRouteSet())) continue;
       m.set(i, { kind, waves: 0, cost: bridgeCost(S.bridges.size + nb++) });
@@ -2817,7 +2832,7 @@ const THINK_MS = 3000; // in the game it stops looking for better plans after th
 const copyDesign = d => ({ ...d, tl: { ...d.tl, pos: null } });
 function soloKnows(side) {
   const K = { side, round: S.round, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null,
-    bridges: [...S.bridges], terrain: S.terrain.slice(), mapKey: terrainKey(S.terrain), deadline: Infinity }; // bridges and terrain are public
+    bridges: [...S.bridges], terrain: S.terrain.slice(), mapKey: terrainKey(S.terrain), towerCharges: chargesBefore(), deadline: Infinity }; // bridges, terrain and charges planted are public
   if (side === 'atk') { K.designs = S.designs.map(copyDesign); K.aFree = S.aFree; }
   else { K.grid = S.grid.map(cloneCell); K.dFree = S.dFree; K.towerSeq = S.towerSeq; }
   return K;
@@ -2957,7 +2972,7 @@ function towerPicks(G, n, br) {
   return list.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
 }
 const bridgeOf = cost => ({ kind: 'bridge', waves: 0, cost });
-const towerChargeOf = () => ({ kind: 'tower', waves: 1, cost: RULES.towerCharge[0] });
+const towerChargeOf = k => ({ kind: 'tower', waves: 1, cost: towerChargeCost(1, k) }); // k: tower charges planted before it
 
 /* ---------- attacker ----------
    Re-buys its whole army each round (units refund in full). It tries every army idea below, bunched and
@@ -2994,11 +3009,12 @@ function* thinkAttack(K, L, rng) {
   const ROUGH_K = []; K.terrain.forEach((v, i) => { if (v === ROUGH) ROUGH_K.push(i); });
   const fallback = { plan: { aFree: K.aFree, a: encodeArmy(K.designs, false), c: [] }, note: '' };
   const bridgesCost = nb => { let v = 0; for (let k = 0; k < nb; k++) v += bridgeCost(BR.size + k); return v; };
+  const towersCost = nt => { let v = 0; for (let k = 0; k < nt; k++) v += towerChargeCost(1, K.towerCharges + k); return v; };
   let tried = 0, W = [];
   const done = c => {
     const { designs, left } = aiArmy(c.key, c.tm, worth - c.cost);
-    let nb = 0;
-    const c2 = c.charges.map(([k, i]) => (k === 'b' ? [i, 2, 0, bridgeCost(BR.size + nb++)] : [i, 1, 1, RULES.towerCharge[0]]));
+    let nb = 0, nt = K.towerCharges;
+    const c2 = c.charges.map(([k, i]) => (k === 'b' ? [i, 2, 0, bridgeCost(BR.size + nb++)] : [i, 1, 1, towerChargeCost(1, nt++)]));
     return { plan: { aFree: left, a: encodeArmy(designs, false), c: c2 }, note: attackNote(K, D, c, designs, tried, W) };
   };
   if (K.round === 1) { // nothing seen yet: an opening, picked at random
@@ -3043,11 +3059,11 @@ function* thinkAttack(K, L, rng) {
     for (const c of fin) for (const ch of opts) {
       if (ch.length > L.maxCharges || performance.now() > K.deadline) continue;
       const bs = ch.filter(([k]) => k === 'b').map(([, i]) => i), bCost = bridgesCost(bs.length);
-      const cost = bCost + (ch.length - bs.length) * RULES.towerCharge[0];
+      const cost = bCost + towersCost(ch.length - bs.length);
       if (cost > worth / 2) continue; // most of the coins stay in the army
       const { designs } = aiArmy(c.key, c.tm, worth - cost);
-      let nb = 0;
-      const map = new Map(ch.map(([k, i]) => [i, k === 'b' ? bridgeOf(bridgeCost(BR.size + nb++)) : towerChargeOf()]));
+      let nb = 0, nt = K.towerCharges;
+      const map = new Map(ch.map(([k, i]) => [i, k === 'b' ? bridgeOf(bridgeCost(BR.size + nb++)) : towerChargeOf(nt++)]));
       const Y = run(seen, designs, map, 0).Y; yield;
       const counterY = L.foresight ? run(retuneAgainst(seen, designs), designs, map, 1).Y : Y;
       if (L.foresight) yield;
@@ -3952,7 +3968,7 @@ function renderSabotage() {
   $('#a-sabo-bridge').innerHTML = !RULES.bridgesPerWave ? 'Off in this game'
     : plannedBridges().length >= RULES.bridgesPerWave ? `<b>Planned</b> · ${perWaveText()}`
     : `<b>${nextBridgePrice()} coins</b> · ${RULES.bridgesPerWave} a wave`;
-  $('#a-sabo-tower').innerHTML = `<b>${RULES.towerCharge.join(' / ')} coins</b> · ${seenTowers() ? `${used} of ${towerCap()} used` : 'no towers seen'}`;
+  $('#a-sabo-tower').innerHTML = `<b>${RULES.towerCharge.map((c, k) => chargePrice(-1, k + 1)).join(' / ')} coins</b> · ${seenTowers() ? `${used} of ${towerCap()} used` : 'no towers seen'}`;
   for (const b of document.querySelectorAll('[data-sabo]')) {
     b.setAttribute('aria-pressed', saboMode === b.dataset.sabo);
     b.classList.toggle('off', b.dataset.sabo === 'bridge' ? !bridgeOk : !towerOk);
@@ -3965,7 +3981,7 @@ function renderSabotage() {
       : !canBridge() ? `<b>${perWaveText()}</b> Tap your bridge again to take it back.`
       : !spots ? 'None of the walls you saw touch the route.'
       : `<b>Tap a marked wall on the map.</b> Bridges must connect to the current path. A bridge costs ${RULES.bridgeBase}, plus ${RULES.bridgeFee} for each one already on the map.`)
-    : saboMode === 'tower' ? (seenTowers() ? `<b>Tap a marked tower on the map</b>, then choose 1, 2 or 3 waves. Up to <b>${towerCap()} of ${seenTowers()}</b> towers can be offline in one wave${used ? ` (${used} used)` : ''}. The defender sees it’s offline, never for how long.` : 'There were no towers in the defense you saw.')
+    : saboMode === 'tower' ? (seenTowers() ? `<b>Tap a marked tower on the map</b>, then choose 1, 2 or 3 waves. Each charge costs ${RULES.towerChargeFee} more than the one before it this match. Up to <b>${towerCap()} of ${seenTowers()}</b> towers can be offline in one wave${used ? ` (${used} used)` : ''}. The defender sees it’s offline, never for how long.` : 'There were no towers in the defense you saw.')
     : '<b>Pick one</b> to see where it can go, or tap a wall or a tower on the map. You can skip this step.';
   $('#a-charges').innerHTML = chargeRows();
 }
@@ -4008,7 +4024,7 @@ function renderAtk() {
   if (S.sel && S.sel.k === 'design' && S.designs[S.sel.i]) key = 'design:' + S.sel.i + ':' + S.designs.length + ':' + tipsOn;
   else if (S.sel && S.sel.k === 'tower' && S.seenGrid[S.sel.cell] && S.seenGrid[S.sel.cell].t === 'tower') {
     const ch = S.charges.get(S.sel.cell);
-    key = `seen:${S.sel.cell}:${S.step}:${ch ? ch.waves : 0}:${S.chargeWaves}:${offlineNext().size}`;
+    key = `seen:${S.sel.cell}:${S.step}:${ch ? ch.waves : 0}:${S.chargeWaves}:${offlineNext().size}:${towerChargeCells().join(',')}`;
   }
   if (ctxKey.atk !== key) {
     ctxKey.atk = key;
@@ -4027,9 +4043,9 @@ function seenTowerHTML(cell) {
   if (S.step === 2 && !chargeStatus().ok) extra = `<div class="callout2 locked"><b>Locked this round.</b> ${chargeStatus().reason}</div>`;
   else if (S.step === 2) {
     extra = `<div class="segrow"><div class="shead"><span class="sname">Knock it offline for</span></div>
-      <div class="seg">${RULES.towerCharge.map((c, k) => `<button data-waves="${k + 1}" aria-pressed="${w === k + 1}">${plural(k + 1, 'wave')}<br>${c} coins</button>`).join('')}</div>
+      <div class="seg">${RULES.towerCharge.map((c, k) => `<button data-waves="${k + 1}" aria-pressed="${w === k + 1}">${plural(k + 1, 'wave')}<br>${chargePrice(cell, k + 1)} coins</button>`).join('')}</div>
       <div class="shint show">An offline tower can’t shoot, be removed or be retuned, but it still blocks its cell. The defender sees it’s offline, never for how long.</div></div>
-      ${ch || canChargeTower(cell) ? `<button class="cta${ch ? ' ghost' : ''}" data-act="${ch ? 'unplant' : 'plant'}">${ch ? `Remove charge · refund ${ch.cost}` : `Plant charge · ${RULES.towerCharge[w - 1]} coins`}</button>`
+      ${ch || canChargeTower(cell) ? `<button class="cta${ch ? ' ghost' : ''}" data-act="${ch ? 'unplant' : 'plant'}">${ch ? `Remove charge · refund ${ch.cost}` : `Plant charge · ${chargePrice(cell, w)} coins`}</button>`
         : `<button class="cta ghost" disabled>Limit reached · ${towerCap()} of ${seenTowers()}</button><div class="shint show">No more than half the towers you’ve seen, rounded up, can be offline in the same wave. Remove another tower charge to move it here.</div>`}`;
   } else extra = '<p class="fnote">To knock this tower offline, go to step 3, Sabotage.</p>';
   return towerCardHTML(g, { tag: `As last seen after wave ${S.seenRound} · ${status}`, extra });

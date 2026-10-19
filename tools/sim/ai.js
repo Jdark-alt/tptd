@@ -186,9 +186,10 @@
       const cap = opt.cap ? Math.ceil(tw.length / 2) : tw.length;
       let off = tw.filter(([, , g]) => g.off > 0).length;
       if (opt.charges === 'towers' || opt.charges === 'both') {
+        let k = S.totals.towerCharges || 0; // each charge costs more than the one before it in the match
         for (const [, i, g] of tw) { // knock out the most valuable towers for one wave
           if (g.off > 0) continue;
-          const c = I.RULES.towerCharge[0];
+          const c = I.towerChargeCost(1, k++);
           if (off >= cap || spent + c > budget * (opt.charges === 'both' ? 0.6 : 1)) break;
           S.charges.set(i, { kind: 'tower', waves: 1, cost: c }); spent += c; off++;
         }

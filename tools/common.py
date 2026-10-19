@@ -32,7 +32,7 @@ def write_build(name, html):
 
 # Internals the simulators need. Exposed only in the tools' copy of the page, never in the shipped game.
 SIM_HOOK = ("window.siegeline = { _i: { startWave, recompute, newState, defaultTower, unitCost, towerCost, towerValue, "
-            "UPRESETS, makeDesign, COLORS, pathLen, RULES, TS, US, brainPlan, decodeGrid, decodeArmy, decodeCharges, bridgePicks, bridgeSpots, bridgeCost, blockBridges, SOLO, makeTerrain, startMap, mazeRoom, ROUGH, ROCK, sellOff, keepFees, "
+            "UPRESETS, makeDesign, COLORS, pathLen, RULES, TS, US, brainPlan, decodeGrid, decodeArmy, decodeCharges, bridgePicks, bridgeSpots, bridgeCost, towerChargeCost, blockBridges, SOLO, makeTerrain, startMap, mazeRoom, ROUGH, ROCK, sellOff, keepFees, "
             "get S(){return S}, set S(v){S=v} },")
 
 # Optional test-only knobs: each one rewrites a line of the copy so a sim can scale something without editing the
