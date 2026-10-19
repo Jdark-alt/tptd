@@ -183,7 +183,9 @@ try:
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
             check('a tower charge is priced by the rules on both devices (the second of the match: 35)', ev(A, "S.wave.chargeCoins") == 35 and ev(B, "S.wave.chargeCoins") == 35, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
-            if off >= 0: check('a bridge off the route in a plan is dropped on both devices', not ev(A, f"S.charges.has({off})") and not ev(B, f"S.charges.has({off})") and ev(A, "S.charges.size") == ev(B, "S.charges.size"))
+            # the charges each device started the wave with (the live list empties as they go off, sooner on the 10x device)
+            pre = "S.preWave.charges.map(c => c[0])"
+            if off >= 0: check('a bridge off the route in a plan is dropped on both devices', ev(A, pre) == ev(B, pre) and off not in ev(A, pre), f'{ev(A, pre)} / {ev(B, pre)}')
             # Desync on purpose: the attacker's copy drifts and must adopt the defender's result.
             B.evaluate('()=>{window.siegeline.state.keep -= 37;}')
             for pg in (A, B): pg.evaluate('()=>window.siegeline.advance(300)')

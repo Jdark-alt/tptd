@@ -70,7 +70,7 @@ def build_maze(page, strong=False):
 
 def play_out(page, side, label, ready):
     """Plays rounds until the match ends: ready() does the player's turn. Checks the computer's side each round."""
-    rounds, coins_ok, worth_ok, rules_ok, most, notes = 0, True, True, True, 0, 0
+    rounds, coins_ok, worth_ok, rules_ok, most, notes, longest = 0, True, True, True, 0, 0, 0
     charges, first_last = 0, []
     for _ in range(8):
         rounds += 1
@@ -80,6 +80,8 @@ def play_out(page, side, label, ready):
         coins_ok &= S(page, 'S.aFree >= 0 && S.dFree >= 0 && S.path !== null')
         n = S(page, 'S.charges.size'); charges += n; most = max(most, n)
         rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])') and S(page, TERRAIN_OK)
+        rules_ok &= S(page, '[...S.charges.values()].every(c => c.kind !== "tower" || (c.waves >= 1 && c.waves <= 3))')
+        longest = max(longest, S(page, 'Math.max(0, ...[...S.charges.values()].filter(c => c.kind === "tower").map(c => c.waves))'))
         if S(page, 'S.round') in (1, 8): first_last.append(n)
         run_wave(page)
         notes += bool(S(page, 'SOLO.note'))
@@ -89,6 +91,7 @@ def play_out(page, side, label, ready):
     check(coins_ok, f'{label}: no side overspends and the route stays open')
     check(rules_ok and not any(first_last), f'{label}: bridges and charges only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge or rough ground, rock in place')
     check(notes == rounds, f'{label}: the computer explains every wave ({notes}/{rounds})')
+    if side == 'def': print(f'      {label}: longest computer tower charge {longest} wave(s)')
     check(page.is_visible('#ov-end') and text(page, '#end-title') in ('You win', 'The computer wins'), f'{label}: match ends with a solo result ({text(page, "#end-title")}, {rounds} rounds)')
     return charges, most
 
@@ -190,6 +193,37 @@ with sync_playwright() as p:
             page.click('#sum-next')
         play_out(page, 'atk', f'attack/{level}', atk_ready)
         page.click('#end-menu')
+
+    # ---------- tower charges against the computer: charges are tied to the cell, so Hard moves the towers it expects
+    # the player to charge, and charges planted on their old cells miss
+    start(page, 'atk', 'hard', seed=11)
+    for _ in range(12): page.click('.step.plus[data-i="0"]')
+    for _ in range(4): page.click('#atk-next')
+    hand(page); run_wave(page); page.click('#sum-next')
+    dodges, planted, knocked, moved_note = 0, 0, 0, False
+    for rnd in range(2, 8):
+        thought(page)
+        dodges += 1 if S(page, 'SOLO.mem.def.info && SOLO.mem.def.info.dodged') else 0
+        page.evaluate('() => { window.siegeline.state.aFree += 120; }')  # coins for a charge every round
+        page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(250)  # to Sabotage
+        # the seen tower worth most: the obvious target
+        cell = S(page, 'S.seenGrid.reduce((b, g, i) => g && g.t === "tower" && !(g.off > 0) && (b < 0 || window.siegeline.towerValue(g) > window.siegeline.towerValue(S.seenGrid[b])) ? i : b, -1)')
+        if cell >= 0:
+            click_cell(page, cell % COLS, cell // COLS)
+            if page.is_visible('#atk-ctx [data-act=plant]'): page.click('#atk-ctx [data-act=plant]'); planted += 1
+            if page.is_visible('#atk-ctx [data-act=close]'): page.click('#atk-ctx [data-act=close]')
+        page.click('#atk-next'); page.click('#atk-next'); hand(page); run_wave(page)
+        knocked += S(page, 'S.last ? S.last.jammed : 0')
+        moved_note |= 'to a new cell' in S(page, 'SOLO.note')
+        if page.is_visible('#ov-end'): break
+        page.click('#sum-next')
+    check(dodges > 0 and moved_note, f'hard computer moves the towers it expects to be charged, and says so ({dodges} of the rounds)')
+    check(planted > 0 and knocked < planted, f'player charges on the old cells miss ({knocked} of {planted} knocked a tower out)')
+    if page.is_visible('#ov-end'): page.click('#end-menu')
+    else:
+        page.evaluate('() => { window.siegeline.state.keep = 1; }')
+        for _ in range(4): page.click('#atk-next')
+        hand(page); run_wave(page); page.click('#end-menu')
 
     # ---------- the computer's plan can't depend on the player's: same seed, player busy or idle while it thinks
     plans = []

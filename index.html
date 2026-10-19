@@ -695,7 +695,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v15</p>
+        <p class="tagline">Two Player Tower Defence · v16</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -781,7 +781,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v15</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v16</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -2980,7 +2980,10 @@ const towerChargeOf = k => ({ kind: 'tower', waves: 1, cost: towerChargeCost(1, 
    and with bridges and tower charges. Coins spent on them are gone from every later army, so they're scored
    at their cost times the share of the army that gets through, for each later round that matters (no more
    than the rounds the keep would last at this pace). A bridge also keeps paying in those rounds, as long as
-   the defender doesn't wall it off: less likely where a wall or two would do it, more where it can't. */
+   the defender doesn't wall it off: less likely where a wall or two would do it, more where it can't.
+   A tower charge can last 2 or 3 waves. Each one costs more than the last (towerChargeFee), and an offline tower
+   is locked, so the defender can't move it out of the way: the extra waves count for part (TOWER_HOLD) of what
+   the charge added this wave, since the defender builds around a dead tower. */
 const AI_UNITS = { // slider indexes; anything left out is off
   Swarm: { hp: 0, speed: 4 }, Runner: { hp: 2, speed: 6 }, Ghost: { hp: 2, speed: 4, dodge: 2 },
   Plated: { hp: 5, speed: 5, armor: 2 }, Bruiser: { hp: 6, speed: 4, regen: 3 }, Hulk: { hp: 9, speed: 4 },
@@ -2995,6 +2998,7 @@ const AI_ARMIES = { // [unit, share of coins, launch delay as a share of the wav
 const AI_TIMING = { bunched: 0.12, spread: 0.6 };
 const AI_OPENERS = ['swarm', 'rush', 'screen', 'plated', 'raid'];
 const BRIDGE_HOLD = { open: 0.35, blockable: 0.1 }; // share of a bridge's worth it expects to keep in each later wave
+const TOWER_HOLD = 0.6; // share of a tower charge's worth it expects in each extra wave it lasts
 function aiArmy(key, timing, budget) {
   const parts = AI_ARMIES[key], win = AI_TIMING[timing];
   const designs = parts.map(([u, , delay], k) => ({ ...makeDesign('Runner', u, COLORS[k]), ...AI_UNITS[u], tl: { s: delay, e: Math.min(1, delay + win), pos: null } }));
@@ -3009,12 +3013,13 @@ function* thinkAttack(K, L, rng) {
   const ROUGH_K = []; K.terrain.forEach((v, i) => { if (v === ROUGH) ROUGH_K.push(i); });
   const fallback = { plan: { aFree: K.aFree, a: encodeArmy(K.designs, false), c: [] }, note: '' };
   const bridgesCost = nb => { let v = 0; for (let k = 0; k < nb; k++) v += bridgeCost(BR.size + k); return v; };
-  const towersCost = nt => { let v = 0; for (let k = 0; k < nt; k++) v += towerChargeCost(1, K.towerCharges + k); return v; };
+  // tower charges are ['t', cell, waves], priced in plan order
+  const towersCost = ts => ts.reduce((v, [, , w], k) => v + towerChargeCost(w, K.towerCharges + k), 0);
   let tried = 0, W = [];
   const done = c => {
     const { designs, left } = aiArmy(c.key, c.tm, worth - c.cost);
     let nb = 0, nt = K.towerCharges;
-    const c2 = c.charges.map(([k, i]) => (k === 'b' ? [i, 2, 0, bridgeCost(BR.size + nb++)] : [i, 1, 1, towerChargeCost(1, nt++)]));
+    const c2 = c.charges.map(([k, i, w]) => (k === 'b' ? [i, 2, 0, bridgeCost(BR.size + nb++)] : [i, 1, w, towerChargeCost(w, nt++)]));
     return { plan: { aFree: left, a: encodeArmy(designs, false), c: c2 }, note: attackNote(K, D, c, designs, tried, W) };
   };
   if (K.round === 1) { // nothing seen yet: an opening, picked at random
@@ -3050,20 +3055,24 @@ function* thinkAttack(K, L, rng) {
     // would a wall or two at its ends take the bridge away again? Rough ground next to it counts as a lane the
     // defender can't wall off, like another bridge.
     const hold = i => { const H = seen.slice(); H[i] = null; return bridgeBlock(H, new Set([...BR, ...ROUGH_K, i]), i, new Set([...BR, i])).length ? BRIDGE_HOLD.blockable : BRIDGE_HOLD.open; };
-    const opts = [];
+    const opts = [], last = RULES.rounds - K.round; // waves left after this one
     if (W.length) opts.push([['b', W[0]]]);
     if (W.length > 1) opts.push(W.slice(0, 2).map(i => ['b', i]));
-    if (T.length) opts.push(T.slice(0, 1).map(i => ['t', i]));
-    if (T.length > 1) opts.push(T.map(i => ['t', i]));
-    if (W.length && T.length) opts.push([['b', W[0]], ['t', T[0]]]);
+    if (T.length) opts.push([['t', T[0], 1]]);
+    if (T.length > 1) opts.push(T.map(i => ['t', i, 1]));
+    if (W.length && T.length) opts.push([['b', W[0]], ['t', T[0], 1]]);
+    for (const w of [2, 3]) if (T.length && w - 1 <= last) { // the best tower kept offline longer
+      opts.push([['t', T[0], w]]);
+      if (W.length && w === 2) opts.push([['b', W[0]], ['t', T[0], 2]]);
+    }
     for (const c of fin) for (const ch of opts) {
       if (ch.length > L.maxCharges || performance.now() > K.deadline) continue;
-      const bs = ch.filter(([k]) => k === 'b').map(([, i]) => i), bCost = bridgesCost(bs.length);
-      const cost = bCost + towersCost(ch.length - bs.length);
+      const bs = ch.filter(([k]) => k === 'b').map(([, i]) => i), ts = ch.filter(([k]) => k === 't'), bCost = bridgesCost(bs.length);
+      const tCost = towersCost(ts), cost = bCost + tCost;
       if (cost > worth / 2) continue; // most of the coins stay in the army
       const { designs } = aiArmy(c.key, c.tm, worth - cost);
       let nb = 0, nt = K.towerCharges;
-      const map = new Map(ch.map(([k, i]) => [i, k === 'b' ? bridgeOf(bridgeCost(BR.size + nb++)) : towerChargeOf(nt++)]));
+      const map = new Map(ch.map(([k, i, w]) => [i, k === 'b' ? bridgeOf(bridgeCost(BR.size + nb++)) : { ...towerChargeOf(nt), waves: w, cost: towerChargeCost(w, nt++) }]));
       const Y = run(seen, designs, map, 0).Y; yield;
       const counterY = L.foresight ? run(retuneAgainst(seen, designs), designs, map, 1).Y : Y;
       if (L.foresight) yield;
@@ -3077,7 +3086,10 @@ function* thinkAttack(K, L, rng) {
         if (bs.length === ch.length && bs.length === 1) c.bridgeEff = eff;
         keep = eff * bs.reduce((v, i) => v + hold(i), 0) / bs.length;
       }
-      pool.push({ key: c.key, tm: c.tm, cost, charges: ch, base: c.base, Y, score: now - cost * br * later + keep * later });
+      // what the best tower's charge added this wave (from the 1-wave charge alone), kept for its extra waves
+      if (ts.length === 1 && ch.length === 1 && ts[0][2] === 1) c.towerEff = Math.max(0, now - c.score + tCost * br);
+      const extra = ts.reduce((v, [, , w]) => v + Math.min(w - 1, later), 0);
+      pool.push({ key: c.key, tm: c.tm, cost, charges: ch, base: c.base, Y, score: now - cost * br * later + keep * later + (c.towerEff || 0) * TOWER_HOLD * extra });
     }
   }
   for (const c of pool) if (c.Y >= K.keep) c.score += 1e6; // a plan that takes the keep this wave beats everything
@@ -3097,7 +3109,10 @@ function attackNote(K, D, c, designs, tried, W) {
     const rough = bs.some(i => nbrs(i).some(j => K.terrain[j] === ROUGH));
     bridgeText = `${bs.length === 1 ? 'a bridge' : `${bs.length} bridges`} through the wall${bs.length > 1 ? 's' : ''} that cut your route the most, from ${from} to ${to} steps. ${bs.length === 1 ? 'It stays' : 'They stay'} for the rest of the match${rough ? ', and it opens onto rough ground you can’t wall off' : ''}`;
   }
-  const ch = [bridgeText, t && `${t === 1 ? 'a charge' : `${t} charges`} on your towers`].filter(Boolean).join(', and ');
+  const long = c.charges.filter(([k, , w]) => k === 't' && w > 1).map(([, , w]) => w);
+  const towerText = t && (t === 1 && long.length ? `a charge that keeps your best tower offline for ${long[0]} waves`
+    : `${t === 1 ? 'a charge' : `${t} charges`} on your towers${long.length ? `, one lasting ${long[0]} waves` : ''}`);
+  const ch = [bridgeText, towerText].filter(Boolean).join(', and ');
   const onMap = K.bridges.length ? ` ${K.bridges.length === 1 ? 'The bridge' : `The ${K.bridges.length} bridges`} already on the map counted in every test.` : '';
   const skipped = !bs.length && W.length && K.round < RULES.rounds ? ' A new bridge didn’t pay for itself this wave.' : '';
   return `Your defense had ${D.n ? plural(D.n, 'tower') : 'no towers'}${kind}${D.walls ? `, and ${D.walls} walls` : ''}. I tried ${plural(tried, 'plan')} against it.${onMap} ${c.best ? 'What got the most through' : 'I went with'}: ${army}${ch ? `, plus ${ch}` : ''}.${skipped}`;
@@ -3172,16 +3187,17 @@ function pickMazes(K) {
 }
 // Tower cells for a maze (with its blocking walls): up to 3 per column, at least 3 rows apart, those covering the
 // most route first. first[k] is column k's best cell; rest holds the second best of each column, then the third.
+// avoid: cells to keep towers off (seen towers it expects to be charged), so the next best cells take their place.
 const slotCache = new Map();
-function aiSlots(K, maze, blocks) {
-  const key = maze + '|' + K.mapKey + '|' + K.bridges.slice().sort((a, b) => a - b).join(',') + '|' + blocks.join(',');
+function aiSlots(K, maze, blocks, avoid = []) {
+  const key = maze + '|' + K.mapKey + '|' + K.bridges.slice().sort((a, b) => a - b).join(',') + '|' + blocks.join(',') + '|' + avoid.join(',');
   if (slotCache.has(key)) return slotCache.get(key);
   const cols = mazeCols(maze), G = mazeInfo(K, maze).G.slice(), cfg = defaultTower();
   for (const i of blocks) G[i] = { t: 'wall' };
   flow(tmpB, i => !G[i], dangerField(G), K.bridgeSet);
   const on = new Set(tracePath(tmpB) || []), row = i => (i / COLS) | 0;
   const picked = cols.map((c, k) => {
-    const ranked = mazeCells(c, k).filter(i => !K.holes.has(i) && !(G[i] && G[i].t === 'rock')).map(i => { let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; }); return [n, i]; }).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+    const ranked = mazeCells(c, k).filter(i => !K.holes.has(i) && !(G[i] && G[i].t === 'rock') && !avoid.includes(i)).map(i => { let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; }); return [n, i]; }).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
     const out = [];
     for (const [, i] of ranked) if (out.length < 3 && out.every(j => Math.abs(row(j) - row(i)) >= 3)) out.push(i);
     return out;
@@ -3193,8 +3209,9 @@ function aiSlots(K, maze, blocks) {
   return slots;
 }
 // mode: 'around' builds the maze as it is, 'block' walls off the holes, 'kill' puts a tower beside each hole the
-// route crosses. Returns null when the mode changes nothing for this maze or the build would close the route.
-function buildDefense(K, maze, mix, spend, guard = -1, mode = 'around') {
+// route crosses. avoid: seen tower cells to move towers off (a tower on a cell the attacker saw as a wall is new,
+// so a charge there misses). Returns null when the mode changes nothing for this maze or the build would close the route.
+function buildDefense(K, maze, mix, spend, guard = -1, mode = 'around', avoid = []) {
   const holes = K.holes, M = mazeInfo(K, maze);
   if (!M.room) return null;
   const G = withRocks(K.grid.map(g => (g && g.t === 'tower' && g.off > 0 ? cloneCell(g) : null)), K.terrain);
@@ -3215,7 +3232,7 @@ function buildDefense(K, maze, mix, spend, guard = -1, mode = 'around') {
   if (mode !== 'around' && !M.cut) return null;
   const blocks = mode === 'block' ? M.blocks : [], kill = mode === 'kill' ? M.kill : [];
   if ((mode === 'block' && !blocks.length) || (mode === 'kill' && !kill.length)) return null;
-  const { first, rest } = aiSlots(K, maze, blocks);
+  const { first, rest } = aiSlots(K, maze, blocks, avoid);
   const gk = guard >= 0 ? C.indexOf(guard % COLS) : -1;
   if (guard >= 0 && (gk < 0 || !mazeCells(C[gk], gk).includes(guard) || holes.has(guard) || K.terrain[guard] === ROCK)) return null; // not a wall of this maze
   // a blocking wall goes in with the column of the hole it blocks
@@ -3247,7 +3264,8 @@ function buildDefense(K, maze, mix, spend, guard = -1, mode = 'around') {
   bfs(tmpA, i => !G[i]);
   if (tmpA[ENTRY] < 0) return null;
   return { G, left: worth, seq, maze, mix, spend, guard, mode, hit: M.bridgeCut, holes: M.cut, rocks: M.rocks, rough: M.rough, cols, towers: towerCount(G),
-    blocks: blocks.filter(j => G[j] && G[j].t === 'wall').length, kill: kill.filter(j => G[j] && G[j].t === 'tower').length };
+    blocks: blocks.filter(j => G[j] && G[j].t === 'wall').length, kill: kill.filter(j => G[j] && G[j].t === 'tower').length,
+    dodged: avoid.filter(j => !(G[j] && G[j].t === 'tower' && !G[j].fresh)).length }; // expected charge targets no longer holding a seen tower
 }
 // Raises the weakest tower's damage one step if that buys more damage per coin than another tower would
 // (or whenever it's affordable, with force). Returns the coins spent.
@@ -3306,14 +3324,31 @@ function* thinkDefend(K, L, rng, mem) {
   // likely go on (bridges come in rounds 2-7)
   const seenWall = bridgeSpots(K.seenGrid, K.bridgeSet); // where the attacker may bridge: seen walls beside the seen route
   const target = K.round > 1 && K.round < RULES.rounds && RULES.bridgesPerWave ? bridgePicks(K.seenGrid, seenWall, 1, K.bridgeSet)[0] : undefined;
+  // Tower charges it expects (rounds 2-7), once the attacker has charged a tower this match (that's public: the
+  // defender saw it go offline): on the seen towers it would charge itself in the attacker's place, up to two within
+  // the cap. Charges are tied to the cell, so a dodged version moves those towers to cells the attacker saw as walls.
+  // Expecting them from an attacker who never charges cost Hard keep in the sims, so neither level does.
+  const seenTowers = K.seenGrid.filter(g => g && g.t === 'tower');
+  const capLeft = Math.max(0, Math.ceil(seenTowers.length / 2) - seenTowers.filter(g => g.off > 0).length);
+  const expect = K.round > 1 && K.round < RULES.rounds && L.foresight > 0 && K.towerCharges > 0;
+  const targets = expect ? towerPicks(K.seenGrid, Math.min(2, capLeft), K.bridgeSet) : [];
+  const charged = new Map(targets.map((i, k) => [i, towerChargeOf(K.towerCharges + k)]));
   if (L.foresight) {
-    for (const f of fin.slice()) for (const [guard, mode] of [[-1, 'kill'], [target, f.mode]]) {
-      if (guard == null || (mode === 'kill' && f.mode !== 'around')) continue;
-      const b = buildDefense(K, f.maze, f.mix, f.spend, guard, mode);
+    for (const f of fin.slice()) for (const [guard, mode, avoid] of [[-1, 'kill'], [target, f.mode], [targets.length ? -1 : null, f.mode, targets]]) {
+      if (guard == null || (mode === 'kill' && f.mode !== 'around') || performance.now() > K.deadline) continue;
+      const b = buildDefense(K, f.maze, f.mix, f.spend, guard, mode, avoid);
       if (!b) continue;
       b.Y = run(b, threats[0], [], 0); yield;
-      b.score = scored(b, b.Y);
+      b.score = scored(b, b.Y); b.from = f;
       fin.push(b);
+    }
+    // With charges expected, each build is judged half on the wave without them and half with them. Guarded and
+    // kill-zone versions keep their towers where the build they came from has them, so they take its charge loss
+    // instead of a test wave of their own.
+    if (targets.length) {
+      for (const b of fin) if (!b.from || b.dodged) { b.Yc = run(b, threats[0], charged, 0); yield; }
+      for (const b of fin) if (b.Yc == null) b.Yc = b.Y + (b.from.Yc - b.from.Y);
+      for (const b of fin) { b.Y = (b.Y + b.Yc) / 2; b.score = scored(b, b.Y); }
     }
     fin = fin.sort((a, b) => a.score - b.score).slice(0, L.finalists + 2);
   }
@@ -3325,6 +3360,7 @@ function* thinkDefend(K, L, rng, mem) {
       const w = bridgePicks(b.G, i => seenWall(i) && !!(b.G[i] && b.G[i].t === 'wall' && !b.G[i].fresh), 1, K.bridgeSet);
       if (w.length) { ys.push(run(b, threats[0], new Map([[w[0], bridgeOf(bridgeCost(K.bridges.length))]]), 0)); yield; }
     }
+    if (L.foresight === 2 && b.Yc != null) ys.push(b.Yc); // the charged wave counts toward the worst case too
     const mean = ys.reduce((a, v) => a + v, 0) / ys.length, worst = Math.max(...ys);
     b.score = scored(b, L.foresight === 2 ? 0.5 * b.Y + 0.25 * mean + 0.25 * worst : (b.Y + mean) / 2);
   }
@@ -3334,7 +3370,7 @@ function* thinkDefend(K, L, rng, mem) {
   // what it did about the bridges, for its note and the simulators
   const prev = mem.maze, prevCut = !!prev && mazeCuts(prev, K.bridgeSet);
   const info = { bridges: K.bridges.length, maze: best.maze, mode: best.mode, guard: best.guard >= 0, blocks: best.blocks, kill: best.kill, cut: best.hit,
-    relocated: prevCut && best.maze !== prev, rocks: best.rocks, rough: best.rough, shifted: /[+-]/.test(best.maze) };
+    relocated: prevCut && best.maze !== prev, rocks: best.rocks, rough: best.rough, shifted: /[+-]/.test(best.maze), expected: targets.length, dodged: best.dodged };
   info.response = !info.bridges ? '' : info.relocated ? 'relocate' : best.mode === 'block' ? 'block' : best.mode === 'kill' ? 'kill' : best.hit ? 'around' : 'clear';
   mem.maze = best.maze; mem.info = info;
   return { plan: { dFree: best.left, ts: best.seq, g: encodeGrid(best.G) }, note: defendNote(K, L, best, tried, info), info };
@@ -3359,7 +3395,8 @@ function defendNote(K, L, b, tried, info) {
   const ground = [info.shifted && 'I shifted my maze a column to fit the ground', b.rocks && `it uses ${plural(b.rocks, 'rock')} as walls`].filter(Boolean).join(', and ');
   const terrain = ground ? ` ${ground[0].toUpperCase() + ground.slice(1)}.` : '';
   const guarded = b.guard >= 0 ? ' I also put a tower on the wall I’d have bridged in your place, so a bridge there would miss.' : '';
-  return `${saw} I tried ${plural(tried, 'defense')} ${against}. ${b.best ? 'What held best' : 'I went with'}: ${b.cols ? `a ${b.cols}-column maze` : 'open ground'} with ${towers}.${terrain}${bridges}${guarded}`;
+  const dodged = info.dodged ? ` I moved ${info.dodged === 1 ? 'the tower you were most likely to charge' : `the ${info.dodged} towers you were most likely to charge`} to a new cell, so a charge planted on the old spot misses.` : '';
+  return `${saw} I tried ${plural(tried, 'defense')} ${against}. ${b.best ? 'What held best' : 'I went with'}: ${b.cols ? `a ${b.cols}-column maze` : 'open ground'} with ${towers}.${terrain}${bridges}${guarded}${dodged}`;
 }
 
 /* ---------- hidden test runs ----------
