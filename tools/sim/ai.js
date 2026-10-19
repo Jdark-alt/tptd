@@ -60,12 +60,16 @@
       if (!S.path) throw new Error('game defender blocked the path');
       return r.info ? r.info.response : '';
     }
-    let worth = S.dFree;
+    // sells all it can, like the game's defender: the offline towers keep the smallest build fees (sellOff)
+    const sold = I.sellOff(S.grid);
+    let worth = S.dFree + sold.back;
     for (let i = 0; i < N; i++) {
       const g = S.grid[i]; if (!g || g.t === 'rock') continue;
       if (g.t === 'tower' && g.off > 0) continue;
-      worth += g.t === 'wall' ? I.RULES.wall : I.towerValue(g); S.grid[i] = null;
+      if (g.t === 'wall') worth += I.RULES.wall;
+      S.grid[i] = null;
     }
+    I.keepFees(S.grid, sold.keep);
     // same rule as the game: rebuilding on a cell the attacker saw doesn't make it "new"
     const seen = (i, t) => !!(S.seenGrid[i] && S.seenGrid[i].t === t);
     const towers = () => S.grid.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0);

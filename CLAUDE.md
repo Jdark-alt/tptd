@@ -1,6 +1,6 @@
 # Siegeline: notes for Claude Code
 
-Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v11, the bridges-and-terrain test build, on the `bridges` branch. `main` still runs v9 (wall charges) for the friends' Render link.**
+Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v12, the bridges-and-terrain test build, on the `bridges` branch. `main` still runs v9 (wall charges) for the friends' Render link.**
 
 ## Working with the user
 
@@ -22,7 +22,7 @@ Siegeline (working title) is an asymmetric 1v1 tower defense played in the brows
 - **Render** (free web service): Build `npm install`, Start `npm start`. Free instances sleep after 15 minutes without inbound traffic and take about a minute to wake. The page shows "Waking the game server" and retries for 90 s. Pages send a heartbeat every 15 s, so a match keeps the server awake.
 - **GitHub Pages** serves the same `index.html`. Pages hosted elsewhere only use the relay if `const RELAY_HOST = ''` near the top of the script holds the Render URL. With it empty they fall back to PeerJS, which fails between different networks. The players currently use the Render link.
 - **claude.ai artifact:** there is also a copy published as a Claude artifact, where online play uses the claude.ai room capability (`window.claude.use('room')`). That code path is inert elsewhere. Keep it working, but the repo is the source of truth now.
-- **Branches:** `main` is what the friends play on Render (v9, wall charges). `bridges` is a test branch (v11: bridges and terrain) that GitHub Pages serves for solo testing. Don't touch `main` from the bridges work; it merges only once the user approves. The builds speak different protocol versions (`PROTO` 1 on main, 3 on bridges) and use protocol-named rooms, so a bridges page can never join a main match.
+- **Branches:** `main` is what the friends play on Render (v9, wall charges). `bridges` is a test branch (v12: bridges, terrain, order-free tower fees) that GitHub Pages serves for solo testing. Don't touch `main` from the bridges work; it merges only once the user approves. The builds speak different protocol versions (`PROTO` 1 on main, 4 on bridges) and use protocol-named rooms, so a bridges page can never join a main match.
 
 ## How index.html is organised
 
@@ -30,9 +30,9 @@ Search for these names; the file is long.
 
 - **Rules:** `RULES` (all tunable numbers), `TS` (tower sliders), `US` (unit sliders), `RESIST`, `TPRESETS`/`UPRESETS`, `towerCost`, `unitCost`/`unitRaw`.
 - **Pathing:** `flow` (Dijkstra cost field from the exit, in 1/`FK` units so equal routes prefer bridges), `dangerField`, `nextStep`, `tracePath`, `recompute`, `routeOpenWithout` (connectivity check for "path must stay open").
-- **Terrain:** `ROUGH`/`ROCK`, `S.terrain` (one value per cell) and `S.mapSeed`, `makeTerrain` (seeded, with rerolls), `scatterTerrain` (zones and clusters), `mazeRoom` (the validity check), `startMap`, `withRocks` (puts `{ t: 'rock' }` into a grid), `newMapSeed`, `terrainKey`, `drawGround` (drawn into the terrain layer).
-- **Defender actions:** `canBuild` (also refuses bridges, rough ground and rock), `tryBuild`, `removeAt`, `setTowerCfg`, `seenAs`.
-- **Attacker actions:** `setDesign`, `changeCount`, `plantBridge`, `canBridge`, `bridgeCost`/`nextBridgePrice`, `plannedBridges`, `repriceBridges`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`. Planned bridges live in `S.charges` with `kind: 'bridge'`; laid ones in `S.bridges` (a Set of cells, shared by both sides).
+- **Terrain:** `ROUGH`/`ROCK`, `S.terrain` (one value per cell) and `S.mapSeed`, `makeTerrain` (seeded, with rerolls), `scatterTerrain` (zones and clusters), `mazeRoom` (the validity check), `startMap`, `withRocks` (puts `{ t: 'rock' }` into a grid), `newMapSeed`, `terrainKey`, `drawGround` (drawn into the terrain layer: rough ground as bare earth with gravel and dry grass, rock as faceted boulders on a rubble bed; both join into neighbouring cells of their kind).
+- **Defender actions:** `canBuild` (also refuses bridges, rough ground and rock), `tryBuild`, `removeAt`, `setTowerCfg`, `seenAs`. Tower fees: `nextFee`, `topFee`, `sellValue`, `sellTower` (refund and fee hand-over), `sellOff`/`keepFees` (selling everything but the offline towers, for the computer and the sim bots).
+- **Attacker actions:** `setDesign`, `changeCount`, `plantBridge`, `canBridge`, `bridgeCost`/`nextBridgePrice`, `plannedBridges`, `repriceBridges`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`, `renderSabotage` (step 3's two cards, Bridge a wall and Knock out a tower; `saboMode` is the picked card, which frames its targets on the map). Planned bridges live in `S.charges` with `kind: 'bridge'`; laid ones in `S.bridges` (a Set of cells, shared by both sides).
 - **Wave simulation:** `startWave` (UI) and `prepWave` (setup), `buildSpawns`, `makeUnit`, `waveStep`, `moveUnit`, `updateTowers`, `strike`, `damage`, `leak`, `detonate` (tower charges and laying bridges), `endRound`.
 - **Flow and UI:** `setPhase`, `startRound`, `defenderReady`, `attackerReady`, `nextRound`, `renderDef`, `renderAtk`, `renderWave`, the overlays (`#ov-info`, `#ov-mode`, `#ov-wait`, `#ov-hand`, `#ov-sum`, `#ov-end`), and `frame` (main loop with the 1×/5×/10× wave speed).
 - **Slider prices:** `setSlider`/`setNext` show each slider's multiplier and what one more step costs (red when unaffordable). For units the step is priced for every unit of the design.
@@ -146,7 +146,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - All missions open, nothing saved (no localStorage).
 - **Never:** the computer never peeks at the player's current plan, at any difficulty.
 
-## The game as it stands (v10, bridges branch)
+## The game as it stands (v12, bridges branch)
 
 - **Modes:** pass-and-play on one device, online on two, or versus the computer on either side. The rules are identical in all three. Since v6 the rule changes are the one-wall charge (v7) and then bridges replacing wall charges (v10).
 
@@ -160,14 +160,15 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
 - **Hidden information:**
   - The attacker sees the defense as it stood after the last wave (`seenGrid`).
   - The defender sees the last army sent (`seenArmy`).
-  - Bridges and charges only work on things the attacker saw. Rebuilding on the same cell doesn't make something "new" (`seenAs`), which closed a loophole.
+  - Bridges and charges only work on things the attacker saw. Rebuilding on the same cell doesn't make something "new" (`seenAs`), which closed a loophole. So charges are tied to the spot: a tower rebuilt where the attacker saw one still goes offline, a tower moved to a new cell is safe for a round (the user confirmed this in v12; no charge follows a moved tower), and a spot left empty or walled makes the charge miss.
   - Bridges already on the map are public.
 - **Economy:** both start with 300 coins. The keep has 1000 points; the attacker wins at 0, the defender by surviving 8 rounds. Each round adds a 200-coin pot.
   - Army strength X is the cost of the units sent. Through-strength Y is cost × health fraction left, for each unit that reaches the keep. Breach = Y/X, and the keep loses Y.
   - Defender's pot share = 30% + 40% × (breach ÷ 50%), clamped to 30–70%. If no army is sent, the split is 50/50.
-  - Everything is fully refundable: towers at cost plus fee, walls 5 (a bridged wall is refunded automatically), units at cost. Exceptions: laid bridges and spent charges are lost, and offline towers are locked.
+  - Everything is fully refundable: towers at their tuning plus the highest build fee paid (v12, see Towers), walls 5 (a bridged wall is refunded automatically), units at cost. Exceptions: laid bridges and spent charges are lost, and offline towers are locked.
 - **Towers:** one tower type, tuned with sliders.
   - Price: 40 × range multiplier (by square) × damage multiplier (^1.15) × splash × frost 1.35 × poison 1.45 × chain 1.5, plus a build fee of 10 × towers owned. Fire rate is free.
+  - Fees count towers, not which one goes (v12): selling any tower gives back its tuning plus the highest fee paid, and the tower that paid that takes over the sold one's smaller fee (`sellTower`). So moving a tower and rebuilding it with the same tuning leaves the coins exactly where they were, and the fees between n towers are always 0, 10, …, 10 × (n − 1).
   - Presets: Basic, Cannon (splash), Sniper, Frost. Offline towers still block their cell and can't be removed or retuned.
 - **Walls:** 5 coins each.
 - **Units:** up to 4 permanent designs. Units that die come back next wave.
@@ -177,6 +178,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - **Regeneration:** 1/2/3% of max health per second. It only heals after `regenDelay = 3` s without a direct hit (poison ticks don't count), and at most `regenCap = 10`% × level of max health per wave.
   - Resist: 60% less splash, 60% less poison, or 60% weaker frost.
 - **Wave timeline:** each design is a track and each unit a dot on a 20 s timeline. Spacing between dots is time between spawns. It decides bunching versus spreading.
+- **Sabotage** (the attacker's step 3) shows two cards since v12, **Bridge a wall** and **Knock out a tower**, each with what it does and its price. Picking one frames its targets on the map; tapping a wall or a tower works whichever card is picked, and picks that card.
 - **Bridges** (replaced wall charges in v10; planned in the attacker's step 3, Sabotage):
   - Placed on a wall the attacker saw, hidden like charges (so never on rock or rough ground). When the wave starts the bridge goes down: the wall's 5 coins go back to the defender and the cell is open ground for the rest of the match.
   - Drawn as a square deck with no direction (v11); neighbouring bridges join into one deck, with rails only on the outer edges (`drawBridgeShape`).
@@ -227,6 +229,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - Price tuned with the sims from the spec's 50 + 15 × n to 50 + 20 × n: at 15, bridging every wave beat the blocking bot 89% of the time (see "Measured on v10").
   - `PROTO` 2 and protocol-named rooms keep it apart from v9 matches.
 - **v11 (bridges branch):** at the user's request, bridges are drawn as direction-free square decks that join with their neighbours, and every match gets random terrain: 5% rough ground and 5% rock, spread evenly, validated, the same on both online devices (rules under "The game as it stands"). The computer's mazes shift a column to use rock and dodge rough ground. `PROTO` 3.
+- **v12 (bridges branch):** at the user's request: tower fees count towers, not which one you sell (the meta moves towers a cell or two each round, and selling an old tower used to cost the fee gap; selling everything and rebuilding was already free, so it only taxed players who didn't know that); rock and rough ground redrawn (faceted boulders, bare earth with gravel); the Sabotage step split into two cards so new players see both options. Same bots and seeds give identical match results to v11 (they already sold and rebuilt everything each round). `PROTO` 4.
 
 **Where it stands (measured on v6 with the tools below; since then only wall charges changed, see v7 and the single-player measurements):**
 
@@ -292,7 +295,7 @@ npm install                      # repo root: ws, for server.js and the relay te
 **Test suites (`tools/tests/`; run after any change):**
 
 - The fixed scenarios in the local, online and solo suites click known cells, so they set `roughShare` and `rockShare` to 0 through `window.siegeline.rules`; each suite then has its own terrain section.
-- `test_local.py`: pass-and-play. Covers terrain (9 rough and 9 rock tiles, gates clear, 0–2 per zone, the route around rock, no wall or tower on rough ground or rock, rock can't be removed or bridged, the attacker sees rock in round 1, a replay keeps the map, a rematch gets a new one, portrait), building, pricing, tuning, bridges (price 50/70/90, one a wave, the wall refund, nothing built on one, a bridge on a removed wall still lands, one on a wall turned tower misses, the tie-break toward the bridge, planning one by touch on a phone), the charge cap, offline towers, the timeline, win and loss, and phone layout.
+- `test_local.py`: pass-and-play. Covers moving a tuned tower (the oldest, then back) leaving the coins unchanged, the two Sabotage cards, terrain (9 rough and 9 rock tiles, gates clear, 0–2 per zone, the route around rock, no wall or tower on rough ground or rock, rock can't be removed or bridged, the attacker sees rock in round 1, a replay keeps the map, a rematch gets a new one, portrait), building, pricing, tuning, bridges (price 50/70/90, one a wave, the wall refund, nothing built on one, a bridge on a removed wall still lands, one on a wall turned tower misses, the tie-break toward the bridge, planning one by touch on a phone), the charge cap, offline towers, the timeline, win and loss, and phone layout.
 - `test_online.py`: online play. Covers the lobby, ready gating, hidden plans, identical waves on both devices (also at 10×, with a bridge and a tower charge), desync adoption, rematch with swap, drop and rejoin, both devices building the same map and playing the same wave on it (and a new shared map after a rematch), a `main` build with another `PROTO` never joining (skipped if `origin/main` speaks the same protocol), and peer-to-peer. It uses a stand-in for the claude.ai room (`mockroom.js`) and a local PeerJS server.
 - `test_solo.py`: versus computer. Covers:
   - the mode card, and both sides at every level

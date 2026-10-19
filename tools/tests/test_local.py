@@ -86,6 +86,18 @@ with sync_playwright() as p:
     page.click('.tool[data-tool=remove]'); click_cell(page, 4, 3)
     check(S(page, 'S.dFree') == fr + 60, 'removing refunds tuning + build fee')
     page.click('.tool[data-tool=tower]'); click_cell(page, 4, 3); page.click('[data-act=close]')
+    # moving the oldest tower (no fee, tuned) and rebuilding it with the same tuning leaves the coins where they were
+    fr, cfg = S(page, 'S.dFree'), S(page, f'S.grid[{idx(9,5)}].cfg')
+    tuned = page.evaluate(f'() => window.siegeline.towerCost(window.siegeline.state.grid[{idx(9,5)}].cfg)')
+    page.click('.tool[data-tool=remove]'); click_cell(page, 9, 5)
+    check(S(page, 'S.dFree') == fr + tuned + 20 and S(page, f'S.grid[{idx(4,3)}].fee') == 0,
+          'removing the oldest tower refunds its tuning and the top fee (20); the newest takes over its fee')
+    for src, dst in (((9, 5), (9, 4)), ((9, 4), (9, 5))):
+        if src != (9, 5): page.click('.tool[data-tool=remove]'); click_cell(page, *src)
+        page.click('.tool[data-tool=tower]'); click_cell(page, *dst)
+        set_slider(page, '#te-range', 2); set_slider(page, '#te-dps', 2); page.click('[data-act=close]')
+        check(S(page, f'S.grid[{idx(*dst)}].cfg') == cfg and S(page, 'S.dFree') == fr, f'tower moved to {dst} with the same tuning: coins unchanged ({S(page, "S.dFree")} vs {fr})')
+    check(sorted(S(page, 'S.grid.filter(g => g && g.t === "tower").map(g => g.fee)')) == [0, 10, 20], 'fees still 0, 10, 20 between the towers')
     check(page.is_visible('#d-tlist .irow'), 'tower list shows towers')
     page.screenshot(path=f'{OUT}/d2_towers.png')
     page.click('#def-next')
@@ -169,6 +181,15 @@ with sync_playwright() as p:
     page.click('#atk-next'); page.click('#atk-next')
     page.wait_for_timeout(300)
     check(S(page, 'S.step') == 2 and 'locked' not in page.get_attribute('#a-chg-note', 'class'), 'Sabotage open in round 2')
+    check(page.is_visible('[data-sabo=bridge]') and page.is_visible('[data-sabo=tower]') and 'pick one' in page.inner_text('#a-chg-note').lower(),
+          'Sabotage shows two options: bridge a wall, knock out a tower')
+    page.click('[data-sabo=bridge]')
+    check(page.get_attribute('[data-sabo=bridge]', 'aria-pressed') == 'true' and 'marked wall' in page.inner_text('#a-chg-note'), 'picking Bridge a wall explains it and marks the walls')
+    page.click('[data-sabo=tower]')
+    check(page.get_attribute('[data-sabo=tower]', 'aria-pressed') == 'true' and page.get_attribute('[data-sabo=bridge]', 'aria-pressed') == 'false'
+          and 'marked tower' in page.inner_text('#a-chg-note'), 'picking Knock out a tower switches the card')
+    page.click('[data-sabo=tower]')
+    check(page.get_attribute('[data-sabo=tower]', 'aria-pressed') == 'false', 'tapping the picked card again unpicks it')
     click_cell(page, 9, 5)
     check(page.is_visible('#atk-ctx [data-waves]'), 'tapping a seen tower opens the knock-out card')
     page.click('#atk-ctx [data-waves="2"]')
@@ -181,9 +202,11 @@ with sync_playwright() as p:
     check('limit reached' in page.inner_text('#atk-ctx').lower() and not page.is_visible('#atk-ctx [data-act=plant]'), 'third tower charge blocked: 2 of 3 seen towers max')
     page.click('#atk-ctx [data-act=close]')
     check('2 of 3' in page.inner_text('#a-chg-note'), 'charge note shows the cap')
-    check('next one costs <b>50</b>' in page.inner_html('#a-chg-note'), 'sabotage note shows the next bridge price')
+    check(page.inner_text('#a-sabo-bridge').startswith('50 coins') and '2 of 2 used' in page.inner_text('#a-sabo-tower'), 'the cards show the next bridge price and the towers used')
     click_cell(page, 7, 4)
     check(S(page, f'S.charges.get({idx(7,4)}).kind') == 'bridge' and S(page, 'S.aFree') == 500 - 55 - 25 - 50, 'first bridge 50, 1-wave tower charge 25')
+    check(page.get_attribute('[data-sabo=bridge]', 'aria-pressed') == 'true' and page.inner_text('#a-sabo-bridge').startswith('Planned'),
+          'tapping a wall picks the bridge card, which then shows the bridge planned')
     a0 = S(page, 'S.aFree')
     click_cell(page, 7, 7)
     check(not S(page, f'S.charges.has({idx(7,7)})') and S(page, 'S.aFree') == a0 and 'at most 1 bridge' in toast(page).lower(), f'one bridge per wave ({toast(page)})')
