@@ -30,8 +30,9 @@ def start_server():
     return subprocess.Popen(['node', 'server.js'], cwd=SRV, env={**os.environ, 'PORT': str(PORT)}, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 def play_round(A, B, walls=()):
     wait(A, "S.phase==='defend'"); wait(B, "S.phase==='attack'")
+    A.evaluate("()=>{const b=document.querySelector('#def-steps [data-act=hints]'); if (b && b.getAttribute('aria-pressed')==='true') b.click();}")  # known cells: no hint sets
     for c in walls: cell(A, c)
-    A.evaluate("()=>{const b=document.querySelector('#def-next'); b.click(); b.click(); b.click();}")
+    A.evaluate("()=>{const b=document.querySelector('#def-next'); b.click(); b.click();}")
     B.evaluate("()=>{const sl=window.siegeline,S=sl.state; S.designs[0].count=6; S.aFree-=6*sl.unitCost(S.designs[0]);}")
     B.evaluate("()=>{const b=document.querySelector('#atk-next'); b.click(); b.click(); b.click(); b.click();}")
     wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
@@ -71,7 +72,7 @@ try:
         srv.terminate(); srv.wait()
         A.wait_for_timeout(1500)
         check('drop shows reconnecting', 'reconnect' in A.inner_text('#netpill').lower() or 'offline' in A.inner_text('#netpill').lower(), A.inner_text('#netpill'))
-        A.evaluate("()=>{const b=document.querySelector('#def-next'); b.click(); b.click(); b.click();}")  # locks in while the server is down
+        A.evaluate("()=>{const b=document.querySelector('#def-next'); b.click(); b.click();}")  # locks in while the server is down
         srv = start_server()
         wait(A, "N.linkUp && N.peer", 20000); wait(B, "N.linkUp && N.peer", 20000)
         check('both reconnect after a server restart', True)

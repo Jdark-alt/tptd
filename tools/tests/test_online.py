@@ -52,8 +52,10 @@ def join(pg, role, code):
 
 def defend_round(pg, walls=(), towers=(), lock=True):
     wait(pg, "S.phase==='defend' && S.step===0")
+    # known cells are clicked: with hints on, a glowing tile would place the hint's whole set
+    if pg.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true': pg.click('#def-steps [data-act=hints]')
     for c in walls: cell(pg, c)
-    pg.click('#def-next'); pg.wait_for_timeout(120)
+    if towers: pg.click('.tool[data-tool=tower]')
     for c, cfg in towers:
         cell(pg, c)
         if cfg: pg.evaluate(f'()=>{{const g=window.siegeline.state.grid[{c}]; Object.assign(g.cfg,{json.dumps(cfg)});}}')
@@ -142,8 +144,10 @@ try:
             # ---------- round 2: a bridge and a charge, unlock and relock, real-time wave ----------
             wait(B, "S.phase==='attack'")
             tower_cell = idx(5, 4)
+            # a bridge has to touch the route the attacker saw: take a wall of column 3 beside it
+            bcell = B.evaluate('()=>{const S=window.siegeline.state; const ok=S.seenGrid.map((g,i)=>i).filter(i=>window.siegeline.canBridgeAt(i)); return ok.find(i=>i%16===3) ?? ok[0];}')
             attack_round(B, [10, 2, 6], lock=False,
-                         extra=f"S.charges.set({tower_cell},{{kind:'tower',waves:2,cost:55}}); S.aFree-=55; S.charges.set({idx(3,4)},{{kind:'bridge',waves:0,cost:50}}); S.aFree-=50;")
+                         extra=f"S.charges.set({tower_cell},{{kind:'tower',waves:2,cost:55}}); S.aFree-=55; S.charges.set({bcell},{{kind:'bridge',waves:0,cost:50}}); S.aFree-=50;")
             B.click('#atk-next')
             B.wait_for_timeout(200)
             check('attacker locks in first', B.is_visible('#ov-wait'))
@@ -164,16 +168,19 @@ try:
             check('10x finishes much sooner', ta * 3 < tb)
             s2 = same(A, B, 'round 2 identical with one device at 10x')
             check('tower charge landed on both', ev(A, f"S.grid[{tower_cell}].off") == 1 and ev(B, f"S.grid[{tower_cell}].off") == 1)
-            check('bridge laid on both', s2['last']['bridges'] == 1 and ev(A, f"S.bridges.has({idx(3,4)})") and ev(B, f"S.bridges.has({idx(3,4)})"), s2['bridges'])
+            check('bridge laid on both', s2['last']['bridges'] == 1 and ev(A, f"S.bridges.has({bcell})") and ev(B, f"S.bridges.has({bcell})"), s2['bridges'])
             A.screenshot(path=f'{SHOTS}/o3_summary_def.png'); B.screenshot(path=f'{SHOTS}/o3_summary_atk.png')
             A.click('#sum-next'); B.click('#sum-next')
 
             # ---------- round 3: both lock at once ----------
             wait(A, "S.phase==='defend'"); wait(B, "S.phase==='attack'")
-            defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False)
+            # the attacker's plan also carries a bridge on a wall away from the route: both devices must drop it
+            off = B.evaluate('()=>{const S=window.siegeline.state; return S.seenGrid.findIndex((g,i)=>g&&g.t==="wall"&&!S.bridges.has(i)&&!window.siegeline.canBridgeAt(i));}')
+            defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else ''))
             A.evaluate("()=>document.querySelector('#def-next').click()"); B.evaluate("()=>document.querySelector('#atk-next').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
+            if off >= 0: check('a bridge off the route in a plan is dropped on both devices', not ev(A, f"S.charges.has({off})") and not ev(B, f"S.charges.has({off})") and ev(A, "S.charges.size") == ev(B, "S.charges.size"))
             # Desync on purpose: the attacker's copy drifts and must adopt the defender's result.
             B.evaluate('()=>{window.siegeline.state.keep -= 37;}')
             for pg in (A, B): pg.evaluate('()=>window.siegeline.advance(300)')
@@ -332,7 +339,7 @@ try:
         wait(P1, "S.phase==='defend'")
         P1.wait_for_timeout(300)
         P1.screenshot(path=f'{SHOTS}/p2_defend.png')
-        P1.evaluate("()=>{const b=document.querySelector('#def-next'); b.click(); b.click(); b.click();}")
+        P1.evaluate("()=>{const b=document.querySelector('#def-next'); b.click(); b.click();}")
         P1.wait_for_timeout(300)
         P1.screenshot(path=f'{SHOTS}/p3_wait.png')
         check('phone: wait card visible', P1.is_visible('#ov-wait'))

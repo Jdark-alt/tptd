@@ -196,7 +196,7 @@
       if (opt.charges === 'bridges' || opt.charges === 'both') {
         // the walls that shorten the seen route most, picked like the game's computer does
         let k = 0;
-        for (const i of I.bridgePicks(S.seenGrid, j => !!(S.seenGrid[j] && S.seenGrid[j].t === 'wall'), I.RULES.bridgeCap, S.bridges)) {
+        for (const i of I.bridgePicks(S.seenGrid, I.bridgeSpots(S.seenGrid, S.bridges), I.RULES.bridgesPerWave, S.bridges)) {
           const c = I.bridgeCost(S.bridges.size + k);
           if (spent + c > budget) break;
           S.charges.set(i, { kind: 'bridge', waves: 0, cost: c }); spent += c; k++;

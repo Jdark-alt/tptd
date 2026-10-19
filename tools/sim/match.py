@@ -6,7 +6,7 @@
   python tools/sim/match.py --rules '{"US": {"hp": {"steps": [50,75,112,150,200,275,375,450,550,650]}}}'
   python tools/sim/match.py --defenders game:normal,game:hard                # the game's computer defender
   python tools/sim/match.py --defenders counter,basic --attackers computer   # the game's computer attacker
-  python tools/sim/match.py --attackers computer --rules '{"bridgeCap": 0}'   # ... and the same computer that never bridges
+  python tools/sim/match.py --attackers computer --rules '{"bridgesPerWave": 0}'   # ... and the same computer that never bridges
 
 Read results relatively: run the current rules and the variant with the same bots, and compare.
 Two CPUs make a full run take a few minutes; split strategies across processes with --attackers if needed.

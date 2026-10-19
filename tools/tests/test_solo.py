@@ -38,7 +38,7 @@ DWORTH = 'S.dFree + S.grid.reduce((v, g) => v + (!g || g.t === "rock" ? 0 : g.t 
 AWORTH = 'S.aFree + S.designs.reduce((v, d) => v + d.count * window.siegeline.unitCost(d), 0) + [...S.charges.values()].reduce((v, c) => v + c.cost, 0)'
 # bridges and charges on the live wave: all on cells the attacker saw (bridges on walls, charges on towers), within the caps
 CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].t === (c.kind === "bridge" ? "wall" : c.kind))
-  && [...S.charges.values()].filter(c => c.kind === "bridge").length <= window.siegeline.rules.bridgeCap
+  && [...S.charges.values()].filter(c => c.kind === "bridge").length <= window.siegeline.rules.bridgesPerWave
   && [...S.charges.values()].filter(c => c.kind === "tower").length + S.seenGrid.filter(g => g && g.t === "tower" && g.off > 0).length
      <= Math.ceil(S.seenGrid.filter(g => g && g.t === "tower").length / 2)'''
 # terrain on the live board: rock in the grid where the map has it, nothing on rough ground
@@ -51,15 +51,19 @@ def start(page, side, level, seed=None):
     page.click(f'.pick button[data-side={side}]'); page.click(f'.pick button[data-level={level}]')
     page.click('#mode-solo'); page.wait_for_timeout(60)
 
+def hints_off(page):
+    """The fixed scenarios click known cells; with hints on, a glowing tile would place the hint's whole set."""
+    if page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true': page.click('#def-steps [data-act=hints]')
 def build_maze(page, strong=False):
     """A 3-column serpentine clicked in like a player: a tower in the middle of each column (285 coins), or with
     strong=True three towers per column on 900 coins, a defense worth charging."""
     rows = (2, 5, 8) if strong else (5,)
     if strong: page.evaluate('() => { window.siegeline.state.dFree = 900; }')
+    hints_off(page)
     for k, c in enumerate((3, 7, 11)):
         for r in range(11):
             if r not in rows and r != (10 if k % 2 else 0): click_cell(page, c, r)
-    page.click('#def-next')
+    page.click('.tool[data-tool=tower]')
     for r in rows:
         for c in (3, 7, 11): click_cell(page, c, r)
     page.click('#def-next')  # to Ready, so the next click locks in
@@ -124,7 +128,7 @@ with sync_playwright() as p:
     check(S(page, 'S.round') == 2 and S(page, 'S.phase') == 'defend' and not page.is_visible('#ov-hand'), 'round 2 goes straight back to the defender')
     thought(page)
     check(S(page, 'SOLO.plan.c.length') <= 1, 'easy computer plants at most one charge a wave')
-    def def_ready(): page.click('#def-next'); page.click('#def-next'); page.click('#def-next')
+    def def_ready(): page.click('#def-next'); page.click('#def-next')
     play_out(page, 'def', 'defend/easy', def_ready)
     check(not page.is_visible('#end-swap') and page.is_visible('#end-menu'), 'end screen offers Menu, not Swap sides')
     page.click('#end-again')
@@ -142,7 +146,7 @@ with sync_playwright() as p:
         page.click('#def-next'); hand(page); run_wave(page)
         if page.is_visible('#ov-end'): page.click('#end-menu'); check(False, f'{level}: keep fell in round 1'); continue
         page.click('#sum-next')
-        def maze_ready(): page.click('#def-next'); page.click('#def-next'); page.click('#def-next')
+        def maze_ready(): page.click('#def-next'); page.click('#def-next')
         charges, most = play_out(page, 'def', f'defend/{level}', maze_ready)
         check(charges > 0, f'{level} computer attacker uses bridges or charges on a walled defense ({charges} over the match)')
         if level == 'easy': check(most <= 1, f'easy computer plants at most one charge a wave (most {most})')
@@ -165,10 +169,10 @@ with sync_playwright() as p:
         # round 2: the player lays a bridge on a wall of the computer's maze
         page.click('#sum-next'); page.click('#atk-next'); page.click('#atk-next')
         page.wait_for_timeout(300)  # the board re-lays out once the wide timeline panel closes
-        # a wall halfway up a column: the computer guards the wall it would bridge itself, usually by a column's end
-        # (any wall if it built none there: Normal sometimes plays its second-best plan)
-        wall = S(page, 'S.seenGrid.findIndex((g, i) => g && g.t === "wall" && i % 16 > 1 && i % 16 < 14 && Math.abs(Math.floor(i / 16) - 5) <= 2)')
-        if wall < 0: wall = S(page, 'S.seenGrid.findIndex(g => g && g.t === "wall")')
+        # a wall halfway up a column, beside the route: the computer guards the wall it would bridge itself, usually by
+        # a column's end (any wall beside the route if it built none there: Normal sometimes plays its second-best plan)
+        wall = S(page, 'S.seenGrid.findIndex((g, i) => window.siegeline.canBridgeAt(i) && i % 16 > 1 && i % 16 < 14 && Math.abs(Math.floor(i / 16) - 5) <= 2)')
+        if wall < 0: wall = S(page, 'S.seenGrid.findIndex((g, i) => window.siegeline.canBridgeAt(i))')
         if wall >= 0:
             click_cell(page, wall % COLS, wall // COLS)
             check(S(page, f'S.charges.has({wall}) && S.charges.get({wall}).kind') == 'bridge', f'attack/{level}: the player plans a bridge on a wall of the computer\'s maze')
@@ -272,7 +276,7 @@ with sync_playwright() as p:
     page.evaluate('() => { window.siegeline.solo.on = false; }')
     page.evaluate('() => { document.querySelector("#ov-sum").hidden = true; document.querySelector("#ov-mode").hidden = false; }')
     page.click('#mode-local'); page.wait_for_timeout(480); page.click('#ov-hand')
-    for _ in range(3): page.click('#def-next')
+    for _ in range(2): page.click('#def-next')
     page.wait_for_timeout(480); page.click('#ov-hand')
     for _ in range(5): page.click('#atk-next')  # an empty army takes a second Ready
     page.wait_for_timeout(480); page.click('#ov-hand'); run_wave(page)
