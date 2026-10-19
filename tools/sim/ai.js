@@ -14,7 +14,7 @@
      Sells everything each round (removal refunds in full, walls 5) and rebuilds from its whole worth: a
      serpentine maze of 4 wall columns with towers set into the columns so each covers two lanes, then more
      towers and damage upgrades. Locked (offline) towers stay put. It never moves its maze: nothing can be built
-     on a bridge, so a bridge in one of its columns leaves a hole.
+     on a bridge or rough ground, so one in its columns leaves a hole; rock in a column serves as a wall.
      style 'counter': retunes towers against the last army it saw (splash on half the towers vs cheap or
                       dodging units, slow heavy shots vs armor), and walls off the ends of bridges that cut its
                       maze (the game's blockBridges). This is the "competent defender" baseline.
@@ -56,22 +56,33 @@
       const r = I.brainPlan('def', opt.game, seed), p = r.plan;
       S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; I.recompute();
       if ([...S.bridges].some(i => S.grid[i])) throw new Error('game defender built on a bridge');
+      if (p.g.w.concat(p.g.f, p.g.t.map(a => a[0])).some(i => S.terrain[i])) throw new Error('game defender built on rough ground or rock');
       if (!S.path) throw new Error('game defender blocked the path');
       return r.info ? r.info.response : '';
     }
     let worth = S.dFree;
     for (let i = 0; i < N; i++) {
-      const g = S.grid[i]; if (!g) continue;
+      const g = S.grid[i]; if (!g || g.t === 'rock') continue;
       if (g.t === 'tower' && g.off > 0) continue;
       worth += g.t === 'wall' ? I.RULES.wall : I.towerValue(g); S.grid[i] = null;
     }
     // same rule as the game: rebuilding on a cell the attacker saw doesn't make it "new"
     const seen = (i, t) => !!(S.seenGrid[i] && S.seenGrid[i].t === t);
     const towers = () => S.grid.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0);
-    const addWall = i => { if (S.grid[i] || S.bridges.has(i) || worth < I.RULES.wall) return; S.grid[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= I.RULES.wall; };
+    // like a player, it can't close the route (rock can leave a column's gap blocked)
+    const open = () => { const seenC = new Uint8Array(N), q = [at(0, 5)]; seenC[q[0]] = 1;
+      while (q.length) { const i = q.pop(); if (i === at(15, 5)) return true; const c = i % COLS;
+        for (const j of [c > 0 ? i - 1 : -1, c < COLS - 1 ? i + 1 : -1, i - COLS, i + COLS]) if (j >= 0 && j < N && !seenC[j] && !S.grid[j]) { seenC[j] = 1; q.push(j); } }
+      return false; };
+    const addWall = i => {
+      if (S.grid[i] || S.bridges.has(i) || S.terrain[i] || worth < I.RULES.wall) return;
+      S.grid[i] = { t: 'wall', fresh: !seen(i, 'wall') };
+      if (!open()) { S.grid[i] = null; return; }
+      worth -= I.RULES.wall;
+    };
     const addTower = (i, cfg) => {
       if (S.grid[i] && S.grid[i].t === 'tower') return true; // a locked offline tower already sits here
-      if (S.bridges.has(i)) return 'skip'; // nothing stands on a bridge
+      if (S.bridges.has(i) || S.terrain[i]) return 'skip'; // nothing stands on a bridge, rough ground or rock
       const fee = I.RULES.towerFee * towers(), cost = I.towerCost(cfg) + fee;
       if (worth < cost) return false;
       if (S.grid[i]) { worth += I.RULES.wall; S.grid[i] = null; } // the tower replaces a wall in its column
@@ -86,11 +97,13 @@
     const cut = S.bridges.size && [...S.bridges].some(i => WCOLS.includes(i % COLS) && colCells(WCOLS.indexOf(i % COLS)).includes(i));
     for (const [kind, k] of plan) {
       if (kind === 'col') {
-        const cells = colCells(k).filter(i => !S.bridges.has(i));
+        const cells = colCells(k).filter(i => !S.bridges.has(i) && !S.terrain[i]);
         if (worth < cells.length * I.RULES.wall) break;
         cells.forEach(addWall);
       } else if (kind === 'block') {
-        if (opt.style === 'counter' && S.bridges.size) for (const i of I.blockBridges(S.grid, S.bridges)) { const w = worth; addWall(i); if (worth < w) blocked++; }
+        // holes in its columns: bridges and rough ground (rock in a column already blocks)
+        const holes = new Set([...S.bridges, ...WCOLS.flatMap((c, k) => colCells(k)).filter(i => S.terrain[i] === I.ROUGH)]);
+        if (opt.style === 'counter' && holes.size) for (const i of I.blockBridges(S.grid, holes, S.bridges)) { const w = worth; addWall(i); if (worth < w && S.bridges.size) blocked++; }
       } else {
         if (placed >= 4) while (upgradeStep(S, () => worth, v => { worth -= v; }, towers)) { /* upgrade first */ }
         const [c, r] = SLOTS[k];
@@ -207,6 +220,7 @@
     Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
     if (US) for (const [k, v] of Object.entries(US)) { if (v.steps) I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); }
     I.S = I.newState(); const S = I.S;
+    I.startMap(Math.imul(seed, 2654435761) >>> 0); // each seed is its own map (none when the shares are 0)
     I.recompute();
     const log = [];
     for (;;) {
@@ -217,7 +231,7 @@
       if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: S.wave.x, Y: Math.round(S.wave.y), keep: 0, bridges: S.wave.bridges, jammed: S.wave.jammed, response }); return { winner: 'attacker', round: S.round, keep: 0, log }; }
       const L = S.last;
       log.push({ r: S.round, army, X: L.X, Y: Math.round(L.Y), breach: Math.round(L.breach * 100), keep: Math.round(S.keep),
-        defWorth: Math.round(S.dFree + S.grid.reduce((v, g) => v + (g ? (g.t === 'wall' ? I.RULES.wall : I.towerValue(g)) : 0), 0)),
+        defWorth: Math.round(S.dFree + S.grid.reduce((v, g) => v + (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? I.RULES.wall : I.towerValue(g)), 0)),
         atkWorth: S.aFree + S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0), charges: L.charges, bridges: L.bridges, missed: L.missed, jammed: L.jammed,
         onMap: S.bridges.size, response });
       if (S.over) return { winner: S.winner, round: S.round, keep: Math.round(S.keep), log };

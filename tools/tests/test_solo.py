@@ -1,7 +1,9 @@
 """Versus-computer suite: the mode card, both sides at every level, the computer thinking in the background
 without touching the live game, its plan staying fixed whatever the player does, its coins adding up, bridges
 and charges at every level under the game's rules, its defense never standing on a bridge, the computer's notes, the wait card when the player locks in first,
-replays against the computer (also while it thinks), full matches to the end screen, and phone layout.
+replays against the computer (also while it thinks), full matches to the end screen, phone layout, and the computer
+on terrain (rock where it should be, nothing on rough ground, the same plan for the same seed). The fixed scenarios
+play without terrain.
    python tools/tests/test_solo.py   (screenshots land in tools/.build/shots/solo)"""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,13 +34,17 @@ def run_wave(page):
 def text(page, sel): return page.evaluate(f'() => document.querySelector("{sel}").textContent')
 PLAN = 'JSON.stringify(SOLO.plan)'
 LIVE = 'JSON.stringify([S.grid.map(g => g && [g.t, g.cfg, g.off, g.fresh]), S.designs, S.dFree, S.aFree, S.charges.size, S.path && S.path.length, S.keep, S.round, S.phase])'
-DWORTH = 'S.dFree + S.grid.reduce((v, g) => v + (g ? (g.t === "wall" ? 5 : window.siegeline.towerValue(g)) : 0), 0)'
+DWORTH = 'S.dFree + S.grid.reduce((v, g) => v + (!g || g.t === "rock" ? 0 : g.t === "wall" ? 5 : window.siegeline.towerValue(g)), 0)'
 AWORTH = 'S.aFree + S.designs.reduce((v, d) => v + d.count * window.siegeline.unitCost(d), 0) + [...S.charges.values()].reduce((v, c) => v + c.cost, 0)'
 # bridges and charges on the live wave: all on cells the attacker saw (bridges on walls, charges on towers), within the caps
 CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].t === (c.kind === "bridge" ? "wall" : c.kind))
   && [...S.charges.values()].filter(c => c.kind === "bridge").length <= window.siegeline.rules.bridgeCap
   && [...S.charges.values()].filter(c => c.kind === "tower").length + S.seenGrid.filter(g => g && g.t === "tower" && g.off > 0).length
      <= Math.ceil(S.seenGrid.filter(g => g && g.t === "tower").length / 2)'''
+# terrain on the live board: rock in the grid where the map has it, nothing on rough ground
+TERRAIN_OK = 'S.grid.every((g, i) => S.terrain[i] === 2 ? !!(g && g.t === "rock") : S.terrain[i] === 1 ? !g : !(g && g.t === "rock"))'
+def terrain(page, on):
+    page.evaluate(f'() => {{ const R = window.siegeline.rules; R.roughShare = R.rockShare = {0.05 if on else 0}; }}')
 
 def start(page, side, level, seed=None):
     page.evaluate(f'() => {{ window.siegeline.solo.seed = {"null" if seed is None else seed}; }}')
@@ -69,7 +75,7 @@ def play_out(page, side, label, ready):
         worth_ok &= before == S(page, AWORTH if side == 'def' else DWORTH)
         coins_ok &= S(page, 'S.aFree >= 0 && S.dFree >= 0 && S.path !== null')
         n = S(page, 'S.charges.size'); charges += n; most = max(most, n)
-        rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])')
+        rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])') and S(page, TERRAIN_OK)
         if S(page, 'S.round') in (1, 8): first_last.append(n)
         run_wave(page)
         notes += bool(S(page, 'SOLO.note'))
@@ -77,7 +83,7 @@ def play_out(page, side, label, ready):
         page.click('#sum-next'); page.wait_for_timeout(60)
     check(worth_ok, f'{label}: the computer\'s plan moves no coins in or out of its worth')
     check(coins_ok, f'{label}: no side overspends and the route stays open')
-    check(rules_ok and not any(first_last), f'{label}: bridges and charges only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge')
+    check(rules_ok and not any(first_last), f'{label}: bridges and charges only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge or rough ground, rock in place')
     check(notes == rounds, f'{label}: the computer explains every wave ({notes}/{rounds})')
     check(page.is_visible('#ov-end') and text(page, '#end-title') in ('You win', 'The computer wins'), f'{label}: match ends with a solo result ({text(page, "#end-title")}, {rounds} rounds)')
     return charges, most
@@ -89,7 +95,7 @@ with sync_playwright() as p:
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.on('console', lambda m: errors.append(m.text) if m.type == 'error' and 'ERR_' not in m.text else None)
-    page.goto('file://' + HARNESS); page.wait_for_timeout(500)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(500); terrain(page, False)
     page.click('#info-go')
     check(page.is_visible('#mode-solo') and page.get_attribute('.pick button[data-side=def]', 'aria-pressed') == 'true', 'mode screen shows Versus computer, defender picked by default')
     check(page.is_visible('.pick button[data-level=hard]'), 'mode screen offers Easy, Normal and Hard')
@@ -242,6 +248,26 @@ with sync_playwright() as p:
     hand(page); run_wave(page)
     check(S(page, 'S.round') == 2 and (page.is_visible('#ov-sum') or page.is_visible('#ov-end')), 'solo: the next wave plays normally after the replay')
 
+    # ---------- terrain: the computer reads the map on both sides
+    terrain(page, True)
+    page.evaluate('() => { document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
+    for level in ('normal', 'hard'):
+        start(page, 'atk', level)
+        check(S(page, 'S.terrain.some(v => v) && S.seenGrid.some(g => g && g.t === "rock")'), f'terrain attack/{level}: the match has rough ground and rock, and the player sees the rock')
+        for _ in range(10): page.click('.step.plus[data-i="0"]')
+        play_out(page, 'atk', f'terrain attack/{level}', atk_ready)
+        page.click('#end-menu')
+    start(page, 'def', 'hard')
+    play_out(page, 'def', 'terrain defend/hard', def_ready)
+    page.click('#end-menu')
+    plans = []
+    for _ in range(2):
+        start(page, 'atk', 'hard', seed=11); thought(page)
+        plans.append((S(page, '[...S.terrain].join("")'), S(page, PLAN)))
+        page.evaluate('() => { document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
+    check(plans[0] == plans[1] and '2' in plans[0][0], 'terrain: the same match seed gives the same map and the same computer plan')
+    terrain(page, False)
+
     # ---------- pass-and-play never shows a computer note
     page.evaluate('() => { window.siegeline.solo.on = false; }')
     page.evaluate('() => { document.querySelector("#ov-sum").hidden = true; document.querySelector("#ov-mode").hidden = false; }')
@@ -258,7 +284,7 @@ with sync_playwright() as p:
     ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
     page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('file://' + HARNESS); page.wait_for_timeout(400)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); terrain(page, False)
     page.tap('#info-go'); page.wait_for_timeout(200)
     page.locator('#mode-solo').scroll_into_view_if_needed()
     bx = page.locator('#mode-solo').bounding_box()

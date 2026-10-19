@@ -1,5 +1,6 @@
 """Online suite: lobby, ready gating, hidden plans, identical waves on both devices (also at 10x), desyncs,
-   rematch/swap, drop and rejoin, plus the peer-to-peer path. Needs: npm install in tools/tests.
+   rematch/swap, drop and rejoin, both devices building the same map (terrain), plus the peer-to-peer path.
+   The room scenarios click known cells, so they play without terrain. Needs: npm install in tools/tests.
    python tools/tests/test_online.py        (add "peer" to run only the peer-to-peer part)"""
 import os, sys, json, subprocess, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,6 +41,8 @@ def snap(pg):
     return pg.evaluate('''()=>{const S=window.siegeline.state;return {keep:S.keep,dFree:S.dFree,aFree:S.aFree,last:S.last,totals:S.totals,round:S.round,over:S.over,winner:S.winner,
       grid:S.grid.map(g=>g?(g.t==="wall"?"w":"t"+g.off):0).join(","), bridges:[...S.bridges].sort((a,b)=>a-b).join(","), army:JSON.stringify(S.designs.map(d=>[d.name,d.count,d.hp,d.speed,d.tl.s,d.tl.e,d.tl.pos]))}}''')
 
+def no_terrain(*pgs):
+    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0;}')
 def join(pg, role, code):
     pg.click('#info-go')
     pg.wait_for_selector('#ov-mode:not([hidden])')
@@ -86,7 +89,7 @@ try:
             A = ctx.new_page(); B = ctx.new_page()
             for pg in (A, B): errors_hook(pg, errs)
             A.goto('http://127.0.0.1:8765/room.html'); B.goto('http://127.0.0.1:8765/room.html')
-            A.wait_for_timeout(400)
+            A.wait_for_timeout(400); no_terrain(A, B)
 
             # ---------- lobby ----------
             A.click('#info-go')
@@ -214,7 +217,7 @@ try:
             check('locked in while opponent offline: wave waits', ev(A, "S.phase") == 'attack' and 'offline' in A.inner_text('#wait-sub').lower(), A.inner_text('#wait-sub'))
             A.screenshot(path=f'{SHOTS}/o5_wait_offline.png')
             B = ctx.new_page(); errors_hook(B, errs)
-            B.goto('http://127.0.0.1:8765/room.html'); B.wait_for_timeout(300)
+            B.goto('http://127.0.0.1:8765/room.html'); B.wait_for_timeout(300); no_terrain(B)
             join(B, 'def', 'TEST')
             B.wait_for_selector('#mode-restart:not([hidden])', timeout=5000)
             check('rejoining device is offered a fresh match', 'lost track' in B.inner_text('#mode-status'), B.inner_text('#mode-status'))
@@ -234,6 +237,32 @@ try:
             wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
             check('switching side in lobby starts the match', True)
             check('max presence size', ev(A, 'window.__maxPresence||0') < 4096, max(ev(pg, 'window.__maxPresence||0') for pg in (A, B, C, D)))
+            for pg in (C, D): pg.close()
+            # ---------- terrain: both devices build the same map, play the same wave on it, and a rematch brings a new one ----------
+            C = ctx.new_page(); D = ctx.new_page()
+            for pg in (C, D): errors_hook(pg, errs); pg.goto('http://127.0.0.1:8765/room.html')
+            C.wait_for_timeout(300)
+            join(C, 'def', 'TERR'); join(D, 'atk', 'TERR')
+            wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
+            MAP = '[S.mapSeed,[...S.terrain].join(""),S.grid.map(g=>g&&g.t==="rock"?1:0).join("")]'
+            m1 = ev(C, MAP)
+            check('terrain: both devices build the same map', m1 == ev(D, MAP) and '1' in m1[1] and '2' in m1[1], m1[0])
+            check('terrain: the attacker sees the rock from the start', ev(D, 'S.seenGrid.filter(g=>g&&g.t==="rock").length') == m1[1].count('2'))
+            defend_round(C); attack_round(D, [6, 1, 8])
+            wait(C, "S.phase==='wave'"); wait(D, "S.phase==='wave'")
+            for pg in (C, D): pg.evaluate('()=>window.siegeline.advance(300)')
+            wait(C, "S.phase==='summary'"); wait(D, "S.phase==='summary'")
+            same(C, D, 'terrain: the wave on the map is identical on both devices')
+            C.click('#sum-next'); D.click('#sum-next')
+            wait(C, "S.phase==='defend'"); wait(D, "S.phase==='attack'")
+            for pg in (C, D): pg.evaluate('()=>{window.siegeline.state.keep = 5;}')
+            defend_round(C); attack_round(D, [12, 2, 10])
+            for pg in (C, D): wait(pg, "S.phase==='wave'"); pg.evaluate('()=>window.siegeline.advance(300)')
+            wait(C, "S.phase==='over'", 8000); wait(D, "S.phase==='over'", 8000)
+            D.click('#end-again')
+            wait(C, "N.ep===2 && S.round===1"); wait(D, "N.ep===2 && S.round===1")
+            m2 = ev(C, MAP)
+            check('terrain: a rematch brings a new map, the same on both devices', m2 == ev(D, MAP) and m2[1] != m1[1], m2[0])
             for pg in (C, D): pg.close()
             # ---------- a build with another protocol version (main) never joins this one ----------
             if OLD:

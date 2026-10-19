@@ -1,4 +1,5 @@
-"""Pass-and-play suite: building, tuning, pricing, bridges, charges, offline towers, timeline, win/loss, phone layout.
+"""Pass-and-play suite: building, tuning, pricing, bridges, charges, offline towers, timeline, win/loss, phone layout,
+   and terrain (rough ground and rock). The fixed scenarios switch terrain off; the terrain checks come last.
    python tools/tests/test_local.py   (screenshots land in tools/.build/shots/local)"""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,6 +23,9 @@ def hand(page):
     page.wait_for_timeout(480); page.click('#ov-hand'); page.wait_for_timeout(60)
 def set_slider(page, sel, v):
     page.evaluate(f"""() => {{ const i = document.querySelector('{sel}'); i.value = {v}; i.dispatchEvent(new Event('input', {{bubbles:true}})); }}""")
+def no_terrain(page):
+    """The fixed scenarios click known cells, so their matches start without rough ground or rock."""
+    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; }')
 def drag(page, x0, y0, x1, y1, steps=8):
     page.mouse.move(x0, y0); page.mouse.down()
     for k in range(1, steps + 1): page.mouse.move(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps)
@@ -34,10 +38,11 @@ with sync_playwright() as p:
     errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.on('console', lambda m: errors.append(m.text) if m.type == 'error' and 'ERR_' not in m.text else None)
-    page.goto('file://' + HARNESS); page.wait_for_timeout(500)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(500); no_terrain(page)
     check(page.is_visible('#ov-info'), 'info overlay on load')
     page.click('#info-go'); page.click('#mode-local'); hand(page)
     check(S(page, 'S.phase') == 'defend' and S(page, 'S.step') == 0, 'defender starts at step 1 (Maze)')
+    check(S(page, 'S.terrain.every(v => !v) && S.grid.every(g => !g)'), 'terrain shares at 0: a map without rough ground or rock')
     check(page.inner_text('#d-route') == '15', 'route length shown')
     for r in range(0, 10): click_cell(page, 7, r)
     g0 = S(page, 'S.dFree')
@@ -279,7 +284,7 @@ with sync_playwright() as p:
     ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
     page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('file://' + HARNESS); page.wait_for_timeout(400)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
     page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
     def tap_cell(c, r):
         x, y = page.evaluate(f'() => window.siegeline.cellToClient({idx(c,r)})'); page.touchscreen.tap(x, y)
@@ -341,7 +346,7 @@ with sync_playwright() as p:
     # ---------- ties between equal routes go over the bridge (the default heading rule would go up instead)
     ctx = b.new_context(viewport={'width': 1366, 'height': 860})
     page = ctx.new_page()
-    page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
     page.click('#info-go'); page.click('#mode-local'); hand(page)
     page.evaluate(f'() => {{ window.siegeline.state.bridges.add({idx(8,7)}); window.siegeline.state.dFree = 999; }}')
     for r in range(11):
@@ -356,11 +361,68 @@ with sync_playwright() as p:
 
     ctx = b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
     page = ctx.new_page()
-    page.goto('file://' + HARNESS); page.wait_for_timeout(400)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
     page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(150)
     rb = page.locator('#def-next').bounding_box()
     check(rb and rb['y'] + rb['height'] <= 390, f'landscape phone: Next visible {rb}')
     page.screenshot(path=f'{OUT}/l0.png')
+    ctx.close()
+
+    # ---------- terrain: rough ground and rock, a new map every match
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+    page.click('#info-go'); page.click('#mode-local'); hand(page)
+    T = S(page, '[...S.terrain]')
+    rough = [i for i, v in enumerate(T) if v == 1]; rock = [i for i, v in enumerate(T) if v == 2]
+    check(len(rough) == round(176 * 0.05) and len(rock) == round(176 * 0.05), f'about 5% rough ground and 5% rock ({len(rough)}, {len(rock)})')
+    gates = {r * COLS + c for c0 in (0, 15) for r in (4, 5, 6) for c in (c0 - 1, c0, c0 + 1) if 0 <= c < COLS}
+    check(not (set(rough) | set(rock)) & gates, 'the gates and the cells around them stay clear')
+    zones = [[sum(1 for r in range(r0, r1) for c in range(c0, c1) if T[r * COLS + c] == k) for (r0, r1) in ((0, 4), (4, 7), (7, 11)) for (c0, c1) in ((0, 5), (5, 11), (11, 16))] for k in (1, 2)]
+    check(all(0 <= z <= 2 for zs in zones for z in zs), f'spread evenly: each of the 3x3 zones holds 0-2 of each kind {zones}')
+    check(S(page, 'S.path !== null') and not set(S(page, 'S.path')) & set(rock), 'a route exists and goes around the rock')
+    check(all(S(page, f'S.grid[{i}] && S.grid[{i}].t') == 'rock' for i in rock) and all(S(page, f'S.grid[{i}]') is None for i in rough), 'rock stands in the grid like a wall; rough ground stays open')
+    i = rough[0]; click_cell(page, i % COLS, i // COLS)
+    check(S(page, f'S.grid[{i}]') is None and 'rough' in toast(page).lower(), f'no wall on rough ground ({toast(page)})')
+    j = rock[0]; click_cell(page, j % COLS, j // COLS)
+    check(S(page, f'S.grid[{j}].t') == 'rock' and 'rock' in toast(page).lower(), f'no wall on rock ({toast(page)})')
+    page.click('.tool[data-tool=remove]'); click_cell(page, j % COLS, j // COLS)
+    check(S(page, f'S.grid[{j}].t') == 'rock' and 'can’t be removed' in toast(page), f'rock can’t be removed ({toast(page)})')
+    page.screenshot(path=f'{OUT}/t0_terrain.png')
+    page.click('#def-next'); click_cell(page, i % COLS, i // COLS)
+    check(S(page, f'S.grid[{i}]') is None, 'no tower on rough ground')
+    page.click('#def-next'); page.click('#def-next'); hand(page)
+    check(S(page, f'S.seenGrid[{j}] && S.seenGrid[{j}].t') == 'rock', 'the attacker sees the rock from round 1')
+    for _ in range(5): page.click('.step.plus[data-i="0"]')
+    for _ in range(4): page.click('#atk-next')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
+    live = S(page, '[...S.terrain].join("")')
+    page.click('#sum-replay'); page.wait_for_timeout(100)
+    check(S(page, '[...S.terrain].join("")') == live and S(page, f'S.grid[{j}].t') == 'rock', 'the replay plays on the same map')
+    page.click('#rp-close'); page.click('#sum-next'); hand(page)
+    page.click('#def-next'); page.click('#def-next'); page.click('#def-next'); hand(page)
+    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(300)
+    click_cell(page, j % COLS, j // COLS)
+    check(S(page, 'S.charges.size') == 0 and 'can’t be bridged' in toast(page), f'rock can’t be bridged ({toast(page)})')
+    click_cell(page, i % COLS, i // COLS)
+    check(S(page, 'S.charges.size') == 0 and 'rough ground' in toast(page).lower(), f'rough ground needs no bridge ({toast(page)})')
+    page.evaluate('() => { window.siegeline.state.keep = 1; }')
+    page.click('#atk-next'); page.click('#atk-next'); hand(page)
+    page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_selector('#ov-end', state='visible', timeout=5000)
+    page.click('#end-again')
+    check(S(page, '[...S.terrain].join("")') != live and S(page, 'S.terrain.filter(v => v).length') == len(rough) + len(rock), 'a rematch gets a new map')
+    check(not errors, f'terrain: no errors {errors[:3]}')
+    ctx.close()
+
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400)
+    page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
+    check(S(page, 'S.terrain.some(v => v)') and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'), 'phone: terrain on the transposed board, no overflow')
+    page.screenshot(path=f'{OUT}/m10_terrain.png')
+    check(not errors, f'phone terrain: no errors {errors[:3]}')
     ctx.close()
     b.close()
 

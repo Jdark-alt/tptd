@@ -45,43 +45,48 @@ DEFENDERS = {'counter': {'style': 'counter'}, 'basic': {'style': 'basic'},
 # The game's current charge rules, applied to every attacker unless --opts overrides them.
 GAME_RULES_OPTS = {'cap': True, 'noLastCharges': True}
 
-ap = argparse.ArgumentParser()
-ap.add_argument('--rules', default='{}', help='JSON overrides for RULES / knobs / US slider tables')
-ap.add_argument('--opts', default='{}', help='JSON merged into every attacker option set')
-ap.add_argument('--attackers', default='all', help='comma-separated names (substring match) or "all"')
-ap.add_argument('--defenders', default='counter,basic')
-ap.add_argument('--seeds', type=int, default=2)
-ap.add_argument('--log', action='store_true', help='print the round-by-round log of the first seed')
-a = ap.parse_args()
-rules, extra = json.loads(a.rules), json.loads(a.opts)
-atk = ({k: v for k, v in ATTACKERS.items() if not k.startswith('computer')} if a.attackers == 'all'
-       else {k: v for k, v in ATTACKERS.items() if any(s.strip() in k for s in a.attackers.split(','))})
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--rules', default='{}', help='JSON overrides for RULES / knobs / US slider tables')
+    ap.add_argument('--opts', default='{}', help='JSON merged into every attacker option set')
+    ap.add_argument('--attackers', default='all', help='comma-separated names (substring match) or "all"')
+    ap.add_argument('--defenders', default='counter,basic')
+    ap.add_argument('--seeds', type=int, default=2)
+    ap.add_argument('--log', action='store_true', help='print the round-by-round log of the first seed')
+    a = ap.parse_args()
+    rules, extra = json.loads(a.rules), json.loads(a.opts)
+    atk = ({k: v for k, v in ATTACKERS.items() if not k.startswith('computer')} if a.attackers == 'all'
+           else {k: v for k, v in ATTACKERS.items() if any(s.strip() in k for s in a.attackers.split(','))})
 
-page_path = sim_page()
-with sync_playwright() as p:
-    b = launch(p); pg = b.new_page()
-    pg.goto('file://' + page_path); pg.wait_for_timeout(300)
-    print(f'rules {json.dumps(rules)}  attacker opts {json.dumps({**GAME_RULES_OPTS, **extra})}', flush=True)
-    total = wins = 0
-    for dn in a.defenders.split(','):
-        for an, ao in atk.items():
-            opts = {**GAME_RULES_OPTS, **ao, **extra}
-            res = [pg.evaluate('([d,a,s,r]) => runMatch(d,a,s,r)', [DEFENDERS[dn], opts, s + 1, rules]) for s in range(a.seeds)]
-            w = sum(r['winner'] == 'attacker' for r in res); wins += w; total += len(res)
-            fell = [r['round'] for r in res if r['winner'] == 'attacker']
-            br = [x['breach'] for r in res for x in r['log'] if 'breach' in x]
-            bridges = sum(x.get('bridges') or 0 for r in res for x in r['log']) / len(res)
-            jams = sum(x.get('jammed') or 0 for r in res for x in r['log']) / len(res)
-            # how the defender dealt with the bridges on the map, over every round that had one
-            resp = {}
-            for r in res:
-                for x in r['log']:
-                    if x.get('response'): resp[x['response']] = resp.get(x['response'], 0) + 1
-            rs = ' '.join(f'{k} {v}' for k, v in sorted(resp.items()))
-            print(f'  defender {dn:11s} vs {an:28s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
-                  f'  avg breach {sum(br)/max(1, len(br)):4.1f}%  bridges/match {bridges:3.1f}  towers out/match {jams:3.1f}'
-                  + (f'  fell in rounds {fell}' if fell else '') + (f'  defender vs bridges: {rs}' if rs else ''), flush=True)
-            if a.log:
-                for x in res[0]['log']: print('      ', x)
-    print(f'ATTACKER WINS {wins}/{total} = {100 * wins / max(1, total):.0f}%')
-    b.close()
+    page_path = sim_page()
+    with sync_playwright() as p:
+        b = launch(p); pg = b.new_page()
+        pg.goto('file://' + page_path); pg.wait_for_timeout(300)
+        print(f'rules {json.dumps(rules)}  attacker opts {json.dumps({**GAME_RULES_OPTS, **extra})}', flush=True)
+        total = wins = 0
+        for dn in a.defenders.split(','):
+            for an, ao in atk.items():
+                opts = {**GAME_RULES_OPTS, **ao, **extra}
+                res = [pg.evaluate('([d,a,s,r]) => runMatch(d,a,s,r)', [DEFENDERS[dn], opts, s + 1, rules]) for s in range(a.seeds)]
+                w = sum(r['winner'] == 'attacker' for r in res); wins += w; total += len(res)
+                fell = [r['round'] for r in res if r['winner'] == 'attacker']
+                br = [x['breach'] for r in res for x in r['log'] if 'breach' in x]
+                bridges = sum(x.get('bridges') or 0 for r in res for x in r['log']) / len(res)
+                jams = sum(x.get('jammed') or 0 for r in res for x in r['log']) / len(res)
+                # how the defender dealt with the bridges on the map, over every round that had one
+                resp = {}
+                for r in res:
+                    for x in r['log']:
+                        if x.get('response'): resp[x['response']] = resp.get(x['response'], 0) + 1
+                rs = ' '.join(f'{k} {v}' for k, v in sorted(resp.items()))
+                print(f'  defender {dn:11s} vs {an:28s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
+                      f'  avg breach {sum(br)/max(1, len(br)):4.1f}%  bridges/match {bridges:3.1f}  towers out/match {jams:3.1f}'
+                      + (f'  fell in rounds {fell}' if fell else '') + (f'  defender vs bridges: {rs}' if rs else ''), flush=True)
+                if a.log:
+                    for x in res[0]['log']: print('      ', x)
+        print(f'ATTACKER WINS {wins}/{total} = {100 * wins / max(1, total):.0f}%')
+        b.close()
+
+
+if __name__ == '__main__':
+    main()
