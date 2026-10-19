@@ -3,548 +3,558 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Siegeline</title>
+<title>TPTD · Two Player Tower Defence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Semi+Condensed:wght@500;600;700&family=Big+Shoulders+Display:wght@600;800&family=Big+Shoulders+Stencil+Display:wght@800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@700..900&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap">
 <style>
-/* Layout: one-screen war table. HUD on top (round, the keep as the centrepiece, coins on the side),
-   survey-sheet board in the middle, a stepped command panel on the right (landscape) or underneath
-   (portrait). Tuning cards drill in on desktop and open as bottom sheets on phones. Committed dark look. */
+/* TPTD. One screen, one instrument: a dark field, hairlines, two signal colours (cyan defends, orange attacks)
+   and gold for the keep. Numbers are dot-matrix (Doto), labels monospaced (Geist Mono), prose in Geist.
+   HUD on top, the board in the middle, the stepped command panel on the right (landscape) or underneath
+   (portrait). Tuning cards drill in on desktop and open as bottom sheets on phones. */
 :root{
   color-scheme: dark;
-  --ink:#0b1219; --slate:#131d27; --slate-2:#1a2632; --line:#2a3a49;
-  --paper:#e2e9ee; --muted:#8b9daa; --soft:#cdd7de;
-  --cool:#5fd0f0; --cool-ink:#062431; --cool-wash:rgba(95,208,240,.12); --cool-2:#2c86a6; --cool-3:#3d5a72;
-  --warm:#ff9142; --warm-ink:#2c1004; --warm-wash:rgba(255,145,66,.13); --warm-2:#b65e26; --warm-3:#6c3818;
-  --keep:#f2d48a; --bad:#ff5d5d; --frost:#bff3ff; --poison:#8fe388; --chain:#b69cff;
-  --f-display:"Big Shoulders Display","Arial Narrow","Roboto Condensed",Impact,sans-serif;
-  --f-stencil:"Big Shoulders Stencil Display","Big Shoulders Display","Arial Narrow",Impact,sans-serif;
-  --f-ui:"Barlow Semi Condensed","Barlow","Arial Narrow",system-ui,sans-serif;
-  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --ink:#07090c; --slate:#0c1015; --slate-2:#12171e; --line:#1b222b; --line-2:#29323d;
+  --paper:#e8ecef; --muted:#6d7985; --soft:#b3bdc6;
+  --cool:#4fd6ee; --cool-ink:#03161c; --cool-wash:rgba(79,214,238,.07); --cool-2:#2b8ea6; --cool-3:#284553;
+  --warm:#ff8a3d; --warm-ink:#1f0b02; --warm-wash:rgba(255,138,61,.07); --warm-2:#b5602a; --warm-3:#5a3218;
+  --keep:#e8c873; --bad:#ff5a5a; --frost:#bff3ff; --poison:#8fe388; --chain:#a98bff;
+  --f-display:"Doto",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --f-ui:"Geist Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  --f-body:"Geist",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:4px; --r2:6px;
 }
 html{height:100%;box-sizing:border-box;background:var(--ink)}
 *,*::before,*::after{box-sizing:inherit}
 [hidden]{display:none!important}
-body{height:100%;margin:0;background:var(--ink);color:var(--paper);font-family:var(--f-body);overflow:hidden;
+body{height:100%;margin:0;background:var(--ink);color:var(--paper);font:400 14px/1.4 var(--f-body);overflow:hidden;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;
-  --side:var(--paper);--side-ink:var(--ink);--side-wash:rgba(226,233,238,.08)}
+  --side:var(--paper);--side-ink:var(--ink);--side-wash:rgba(232,236,239,.05)}
 body[data-side=def]{--side:var(--cool);--side-ink:var(--cool-ink);--side-wash:var(--cool-wash)}
 body[data-side=atk]{--side:var(--warm);--side-ink:var(--warm-ink);--side-wash:var(--warm-wash)}
 button{font:inherit;color:inherit;touch-action:manipulation}
-button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
+button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-offset:2px}
+.mark{display:inline-block;flex:none;width:.5em;height:.5em;background:linear-gradient(135deg,var(--cool) 50%,var(--warm) 50%)}
 
-#app{height:100%;max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:10px;overflow:hidden;
-  padding-block:10px;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+#app{height:100%;max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:12px;overflow:hidden;
+  padding-block:12px;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
 
 /* ---------- HUD ---------- */
-#hud{flex:none;display:flex;flex-direction:column;gap:7px}
-.hud-row{display:flex;gap:10px;align-items:stretch}
-.brand{font:800 30px/1 var(--f-stencil);letter-spacing:.05em;text-transform:uppercase;align-self:center;padding-right:4px;white-space:nowrap}
-.brand .w,.logo .w{color:var(--warm)} .brand .c,.logo .c{color:var(--cool)}
-.roundchip{flex:none;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:6px 14px;border-radius:9px;background:var(--slate);border:1px solid var(--line)}
-.roundchip .lbl{font:600 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.roundchip .val{font:800 26px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
-.roundchip .val small{font:600 14px/1 var(--f-ui);color:var(--muted);margin-left:4px}
-.keepbox{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:7px 14px;border-radius:10px;
-  background:linear-gradient(90deg,rgba(242,212,138,.09),rgba(242,212,138,.02));border:1px solid rgba(242,212,138,.4);position:relative}
-.keepbox .kico{flex:none;width:34px;height:34px;color:var(--keep)}
+#hud{flex:none;display:flex;flex-direction:column;gap:10px}
+.hud-row{display:flex;gap:8px;align-items:stretch;min-height:50px}
+.brand{display:flex;align-items:center;gap:9px;padding:0 10px 0 2px;font:900 28px/1 var(--f-display);letter-spacing:.04em;white-space:nowrap}
+.roundchip{flex:none;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 14px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line)}
+.roundchip .lbl,.klbl{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.roundchip .val{font:900 22px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.roundchip .val small{font:500 11px/1 var(--f-ui);color:var(--muted);margin-left:5px;letter-spacing:.06em}
+.keepbox{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);position:relative;transition:border-color .3s}
+.keepbox .kico{flex:none;width:16px;height:16px;color:var(--keep)}
 .keepbox .kico svg{width:100%;height:100%;display:block}
-.kmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.kmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
 .ktop{display:flex;align-items:baseline;gap:10px;min-width:0}
-.klbl{font:800 17px/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--keep);white-space:nowrap}
-.ksub{font:500 13px/1.2 var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.knum{margin-left:auto;font:800 24px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--paper)}
-.knum small{font:600 14px/1 var(--f-ui);color:var(--muted);margin-left:2px}
-.kbar{position:relative;height:9px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
-.kbar i{position:absolute;left:0;top:0;bottom:0;display:block;background:linear-gradient(90deg,#d9b25c,var(--keep));transition:width .35s}
-.kbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 2px),var(--ink) calc(10% - 2px) 10%)}
-.keepbox.low{border-color:var(--bad);background:linear-gradient(90deg,rgba(255,93,93,.14),rgba(255,93,93,.03))}
+.klbl{color:var(--keep)}
+.ksub{display:none}
+.knum{margin-left:auto;font:900 22px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--paper)}
+.knum small{font:500 11px/1 var(--f-ui);color:var(--muted);margin-left:4px}
+.kbar{position:relative;height:4px;background:rgba(255,255,255,.06);overflow:hidden}
+.kbar i{position:absolute;left:0;top:0;bottom:0;display:block;background:var(--keep);transition:width .35s}
+.kbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(10% - 2px),var(--slate) calc(10% - 2px) 10%)}
+.keepbox.low{border-color:rgba(255,90,90,.45)}
 .keepbox.low .kbar i{background:var(--bad)} .keepbox.low .klbl,.keepbox.low .kico{color:var(--bad)}
 .keepbox.hit{animation:hit .55s ease-out}
-@keyframes hit{from{background:rgba(255,93,93,.4)}}
-#btn-info{flex:none;width:48px;border:0;border-radius:8px;background:var(--paper);color:var(--ink);
-  font:italic 700 26px/1 Georgia,"Times New Roman",serif;cursor:pointer}
-#btn-info:hover{background:#fff}
-#turnbar{display:flex;align-items:center;gap:10px;min-height:28px;font-family:var(--f-ui);overflow:hidden}
-.who{flex:none;font:800 15px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;padding:6px 10px 5px;border-radius:5px;
-  background:var(--side);color:var(--side-ink);white-space:nowrap}
-.hint{flex:1;min-width:0;color:var(--soft);font:500 14px/1.2 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.coins{flex:none;display:flex;align-items:baseline;gap:9px;font:600 12px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-.coins b{font:800 17px/1 var(--f-display);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+@keyframes hit{from{background:rgba(255,90,90,.16);border-color:var(--bad)}}
+#btn-info{flex:none;width:50px;border:1px solid var(--line);border-radius:var(--r2);background:var(--slate);color:var(--soft);font:500 17px/1 var(--f-ui);cursor:pointer;transition:color .15s,border-color .15s}
+#btn-info:hover{color:var(--paper);border-color:var(--line-2)}
+#turnbar{display:flex;align-items:center;gap:12px;min-height:24px;overflow:hidden}
+.who{flex:none;display:inline-flex;align-items:center;gap:7px;font:600 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;padding:6px 10px;border-radius:999px;
+  color:var(--side);background:var(--side-wash);border:1px solid color-mix(in srgb,var(--side) 40%,transparent);white-space:nowrap}
+.who::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--side);box-shadow:0 0 8px var(--side)}
+.hint{flex:1;min-width:0;color:var(--muted);font:400 13px/1.2 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.coins{flex:none;display:flex;align-items:baseline;gap:12px;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.coins b{font:600 12.5px/1 var(--f-ui);letter-spacing:.06em;font-variant-numeric:tabular-nums}
 .coins b.c{color:var(--cool)} .coins b.w{color:var(--warm)}
 
 /* ---------- Stage ---------- */
-#stage{flex:1;min-height:0;display:flex;gap:14px}
+#stage{flex:1;min-height:0;display:flex;gap:18px}
 #boardwrap{flex:1;min-width:0;min-height:0;position:relative}
 #board{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
-#toast{position:absolute;left:50%;bottom:10px;transform:translate(-50%,8px);opacity:0;pointer-events:none;z-index:5;
-  background:rgba(9,14,19,.95);border:1px solid var(--line);color:var(--paper);padding:8px 16px;border-radius:999px;
-  font:600 15px/1.25 var(--f-ui);width:max-content;max-width:calc(100% - 24px);text-align:center;transition:opacity .18s,transform .18s}
+#toast{position:absolute;left:50%;bottom:12px;transform:translate(-50%,6px);opacity:0;pointer-events:none;z-index:5;
+  background:rgba(12,16,21,.96);border:1px solid var(--line-2);color:var(--paper);padding:9px 14px;border-radius:var(--r);
+  font:500 13px/1.3 var(--f-body);width:max-content;max-width:calc(100% - 24px);text-align:center;transition:opacity .18s,transform .18s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
-#toast.bad{border-color:var(--bad);color:#ffd9d9}
-#toast.atk{border-color:var(--warm)} #toast.def{border-color:var(--cool)}
+#toast.bad{border-color:rgba(255,90,90,.6);color:#ffd2d2}
+#toast.atk{border-color:rgba(255,138,61,.6)} #toast.def{border-color:rgba(79,214,238,.6)}
 
 /* ---------- Panel ---------- */
 #panel{flex:none;width:340px;display:flex;flex-direction:column;min-height:0}
 #panel.wide{width:min(600px,46vw)}
-.pane{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
-.steps{display:flex;gap:4px}
-.steps button{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 3px;border-radius:8px;border:1px solid var(--line);
-  background:var(--slate);color:var(--muted);font:700 12.5px/1 var(--f-ui);letter-spacing:.03em;text-transform:uppercase;cursor:pointer;white-space:nowrap;overflow:hidden}
-.steps button .n{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--slate-2);font-size:11px;color:var(--soft);flex:none}
+.pane{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
+.steps{display:flex;border-bottom:1px solid var(--line)}
+.steps button{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 2px 12px;border:0;background:none;position:relative;
+  color:var(--muted);font:500 10.5px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;white-space:nowrap;overflow:hidden;transition:color .15s}
+.steps button:hover{color:var(--soft)}
+.steps button .n{font-variant-numeric:tabular-nums;opacity:.6}
+.steps button .n::before{content:"0"}
 .steps button.done{color:var(--soft)}
-.steps button.done .n{background:var(--side-wash);color:var(--side)}
-.steps button[aria-current=step]{border-color:var(--side);color:var(--side);background:var(--side-wash)}
-.steps button[aria-current=step] .n{background:var(--side);color:var(--side-ink)}
-.pane-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.pane-title{margin:0;font:800 26px/1 var(--f-display);text-transform:uppercase;letter-spacing:.04em;color:var(--side)}
-.pane-meta{font:600 12px/1.2 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:right}
-.speed{display:flex;gap:4px;flex:none}
-.speed button{min-width:42px;height:32px;padding:0 8px;border-radius:7px;border:1px solid var(--line);background:var(--slate-2);color:var(--soft);font:700 14px/1 var(--f-ui);cursor:pointer}
-.speed button[aria-pressed=true]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
-.scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:3px;overscroll-behavior:contain}
+.steps button[aria-current=step]{color:var(--side)}
+.steps button[aria-current=step] .n{opacity:1}
+.steps button[aria-current=step]::after{content:"";position:absolute;left:8%;right:8%;bottom:-1px;height:2px;background:var(--side)}
+.pane-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pane-title{margin:0;font:900 26px/1 var(--f-display);letter-spacing:.04em;color:var(--paper)}
+.pane-meta{font:500 10.5px/1.2 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:right}
+.speed{display:flex;flex:none;border:1px solid var(--line);border-radius:var(--r)}
+.speed button{min-width:40px;height:30px;padding:0 8px;border:0;background:none;color:var(--muted);font:500 11.5px/1 var(--f-ui);cursor:pointer}
+.speed button+button{border-left:1px solid var(--line)}
+.speed button[aria-pressed=true]{background:var(--paper);color:var(--ink)}
+.scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:3px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
 .browse{display:flex;flex-direction:column;gap:10px}
 .pane.drill .browse{display:none}
 .ctx:empty{display:none}
-.note{margin:0;font:500 14px/1.45 var(--f-body);color:var(--muted)}
-.note b{color:var(--paper);font-weight:600}
+.note{margin:0;font:400 13px/1.5 var(--f-body);color:var(--muted)}
+.note b{color:var(--soft);font-weight:500}
 .navrow{flex:none;display:flex;gap:8px}
-.back{flex:none;min-height:54px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--slate);font:700 16px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
-.back:hover{background:var(--slate-2)}
-.ready{flex:1;min-height:54px;border:0;border-radius:10px;font:800 22px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:0 14px}
+.back{flex:none;min-height:50px;padding:0 18px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;color:var(--soft);
+  font:500 11.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:border-color .15s,color .15s}
+.back:hover{border-color:var(--muted);color:var(--paper)}
+.ready{flex:1;min-height:50px;border:0;border-radius:var(--r);font:600 12.5px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;cursor:pointer;padding:0 14px;transition:filter .15s,background .15s}
 .ready.def{background:var(--cool);color:var(--cool-ink)}
 .ready.atk{background:var(--warm);color:var(--warm-ink)}
 .ready.neutral{background:var(--paper);color:var(--ink)}
-.ready.ghost{background:transparent;border:1px solid var(--side);color:var(--side)}
-.cta{min-height:46px;border:0;border-radius:9px;font:800 18px/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;padding:0 12px;background:var(--warm);color:var(--warm-ink)}
-.cta.ghost{background:transparent;border:1px solid var(--warm);color:var(--warm)}
-.cta:disabled{opacity:.5;cursor:not-allowed}
-.ready:hover{filter:brightness(1.08)}
-.ready:active{transform:translateY(1px)}
+.ready.ghost{background:transparent;border:1px solid color-mix(in srgb,var(--side) 55%,transparent);color:var(--side)}
+.cta{min-height:44px;border:0;border-radius:var(--r);font:600 12px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;padding:0 12px;background:var(--warm);color:var(--warm-ink)}
+.cta.ghost{background:transparent;border:1px solid rgba(255,138,61,.55);color:var(--warm)}
+.cta:disabled{opacity:.45;cursor:not-allowed}
+.ready:hover,.cta:hover{filter:brightness(1.08)}
+.ready:active,.cta:active{transform:translateY(1px)}
 
 /* budget */
-.budget{display:flex;align-items:center;gap:12px;background:var(--slate);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
-.bfree{flex:none;display:flex;align-items:baseline;gap:6px;font:600 12px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.bfree b{font:800 30px/.9 var(--f-display);color:var(--side);letter-spacing:0;font-variant-numeric:tabular-nums}
-.bright{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
-.bbar{display:flex;height:8px;border-radius:5px;overflow:hidden;background:var(--ink);gap:2px}
+.budget{display:flex;align-items:center;gap:14px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:10px 12px}
+.bfree{flex:none;display:flex;align-items:baseline;gap:7px;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.bfree b{font:900 28px/.9 var(--f-display);color:var(--side);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.bright{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.bbar{display:flex;height:4px;overflow:hidden;background:rgba(255,255,255,.05);gap:2px}
 .bbar i{display:block;height:100%;transition:width .2s;min-width:0}
 .bbar .s0{background:var(--side)}
 #d-budget .s1,#d-budget .l1::before{background:var(--cool-2)} #d-budget .s2,#d-budget .l2::before{background:var(--cool-3)}
 #a-budget .s1,#a-budget .l1::before{background:var(--warm-2)} #a-budget .s2,#a-budget .l2::before{background:var(--warm-3)}
-.blegend{display:flex;gap:10px;flex-wrap:wrap;font:500 12px/1.2 var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
-.blegend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:var(--side)}
+.blegend{display:flex;gap:12px;flex-wrap:wrap;font:500 10.5px/1.2 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
+.blegend span::before{content:"";display:inline-block;width:6px;height:6px;margin-right:6px;background:var(--side);vertical-align:1px}
 
 /* tools + rows */
 .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.tool{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:var(--slate);border:1px solid var(--line);cursor:pointer;text-align:left;min-height:56px}
-.tool:hover{background:var(--slate-2)}
-.tool[aria-pressed=true]{border-color:var(--cool);background:var(--cool-wash);box-shadow:inset 0 0 0 1px var(--cool)}
+.tool{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;text-align:left;min-height:54px;transition:border-color .15s,background .15s}
+.tool:hover{border-color:var(--line-2)}
+.tool[aria-pressed=true]{border-color:color-mix(in srgb,var(--side) 70%,transparent);background:var(--side-wash)}
 .tool.poor .tcost{color:var(--bad)}
-.tool .tx{display:flex;flex-direction:column;gap:3px;min-width:0}
-.tname{font:700 16px/1 var(--f-ui);letter-spacing:.02em}
-.tcost{font:600 13px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
-.ico{width:30px;height:30px;display:block;flex:none}
+.tool .tx{display:flex;flex-direction:column;gap:5px;min-width:0}
+.tname{font:600 14px/1 var(--f-body);letter-spacing:-.005em}
+.tcost{font:500 10.5px/1 var(--f-ui);letter-spacing:.06em;color:var(--muted);font-variant-numeric:tabular-nums}
+.ico{width:24px;height:24px;display:block;flex:none}
 .ico svg{width:100%;height:100%;display:block}
-.ico.wall{color:#6d93b1}.ico.tower{color:var(--cool)}.ico.remove{color:var(--muted)}.ico.charge{color:var(--warm)}.ico.add{color:var(--warm)}.ico.replay{color:var(--side)}.ico.bridge{color:#d98a3d}
-.bigstat{display:flex;align-items:baseline;gap:8px;padding:10px 12px;border-radius:10px;background:var(--slate);border:1px solid var(--line);font:600 13px/1 var(--f-ui);color:var(--muted);letter-spacing:.04em}
-.bigstat .lbl{letter-spacing:.12em;text-transform:uppercase;font-size:12px;margin-right:auto}
-.bigstat b{font:800 32px/1 var(--f-display);color:var(--side);font-variant-numeric:tabular-nums}
+.ico.wall{color:#6b8aa3}.ico.tower{color:var(--cool)}.ico.remove{color:var(--muted)}.ico.charge{color:var(--chain)}.ico.add{color:var(--warm)}.ico.replay{color:var(--side)}.ico.bridge{color:var(--warm)}.ico.jam{color:var(--chain)}
+.bigstat{display:flex;align-items:baseline;gap:8px;padding:10px 12px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);font:500 10.5px/1 var(--f-ui);color:var(--muted);letter-spacing:.06em}
+.bigstat .lbl{letter-spacing:.16em;text-transform:uppercase;margin-right:auto}
+.bigstat b{font:900 28px/1 var(--f-display);color:var(--side);font-variant-numeric:tabular-nums}
 .list{display:flex;flex-direction:column;gap:6px}
-.lhd{display:flex;justify-content:space-between;gap:8px;font:600 11px/1.2 var(--f-ui);letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
-.irow,.rrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:9px;padding:6px 9px;min-height:46px;
-  border-radius:9px;background:var(--slate);border:1px solid var(--line);text-align:left}
-.irow{cursor:pointer;width:100%}
-.irow:hover,.rpick:hover{background:var(--slate-2)}
+.lhd{display:flex;justify-content:space-between;gap:8px;padding:4px 2px 0;font:500 10px/1.2 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.irow,.rrow{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:10px;padding:7px 10px;min-height:46px;
+  border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);text-align:left}
+.irow{cursor:pointer;width:100%;transition:border-color .15s}
+.irow:hover{border-color:var(--line-2)}
+.rpick:hover{background:var(--slate-2)}
 .irow.sel{border-color:var(--side)}
-.rmain{display:flex;flex-direction:column;gap:3px;min-width:0}
-.rname{font:700 16px/1.05 var(--f-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rsub{font:500 12.5px/1.3 var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rmain{display:flex;flex-direction:column;gap:4px;min-width:0}
+.rname{font:600 14px/1.1 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rsub{font:500 10.5px/1.3 var(--f-ui);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em}
 .rsub.wrap{white-space:normal}
-.rval{font:800 19px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--soft);text-align:right}
-.tag{font:700 11px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;padding:4px 6px;border-radius:4px;background:var(--slate-2);color:var(--muted)}
-.tag.off{background:rgba(255,93,93,.15);color:#ffb0b0}
-.tag.new{background:var(--cool-wash);color:var(--cool)}
-.xbtn{width:32px;height:32px;border-radius:7px;border:1px solid var(--line);background:var(--slate-2);font:400 20px/1 var(--f-ui);cursor:pointer;color:var(--muted)}
-.rrow{grid-template-columns:minmax(0,1fr) auto;padding:5px 6px 5px 5px}
-.rpick{display:grid;grid-template-columns:30px minmax(0,1fr);gap:9px;align-items:center;background:none;border:0;border-radius:7px;padding:3px 4px;cursor:pointer;text-align:left;min-width:0}
+.rval{font:900 18px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--soft);text-align:right}
+.tag{font:600 9.5px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;padding:4px 6px;border-radius:2px;border:1px solid var(--line-2);color:var(--muted)}
+.tag.off{border-color:rgba(169,139,255,.5);color:#cbbcff}
+.tag.new{border-color:rgba(79,214,238,.5);color:var(--cool)}
+.xbtn{width:30px;height:30px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:400 16px/1 var(--f-ui);cursor:pointer;color:var(--muted)}
+.xbtn:hover{color:var(--paper);border-color:var(--muted)}
+.rrow{grid-template-columns:minmax(0,1fr) auto;padding:5px 7px 5px 5px}
+.rpick{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:center;background:none;border:0;border-radius:var(--r);padding:3px 5px;cursor:pointer;text-align:left;min-width:0}
 .stepper{display:flex;align-items:center;gap:4px}
-.step{width:36px;height:36px;border-radius:7px;border:1px solid var(--line);background:var(--slate-2);font:700 22px/1 var(--f-ui);cursor:pointer;display:grid;place-items:center;padding:0}
-.step.plus{background:var(--warm-wash);border-color:rgba(255,145,66,.55);color:var(--warm)}
-.step:disabled{opacity:.35;cursor:default}
-.count{min-width:26px;text-align:center;font:800 21px/1 var(--f-display);font-variant-numeric:tabular-nums}
-.abtn{display:flex;align-items:center;gap:9px;padding:8px 10px;min-height:48px;border-radius:9px;background:var(--slate);border:1px dashed rgba(255,145,66,.45);cursor:pointer;text-align:left}
-.abtn .ico{width:24px;height:24px}
-.abtn .tname{font-size:15px}
-.abtn small{display:block;font:600 12px/1.2 var(--f-ui);color:var(--muted);margin-top:2px}
-.abtn:disabled{opacity:.45;cursor:not-allowed}
+.step{width:32px;height:32px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:400 18px/1 var(--f-ui);cursor:pointer;display:grid;place-items:center;padding:0;color:var(--soft)}
+.step.plus{border-color:rgba(255,138,61,.5);color:var(--warm)}
+.step:disabled{opacity:.3;cursor:default}
+.count{min-width:26px;text-align:center;font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.abtn{display:flex;align-items:center;gap:10px;padding:8px 10px;min-height:46px;border-radius:var(--r2);background:transparent;border:1px dashed rgba(255,138,61,.4);cursor:pointer;text-align:left}
+.abtn:hover{background:var(--warm-wash)}
+.abtn .ico{width:20px;height:20px}
+.abtn .tname{font-size:13.5px}
+.abtn small{display:block;font:500 10.5px/1.2 var(--f-ui);color:var(--muted);margin-top:4px;letter-spacing:.04em}
+.abtn:disabled{opacity:.4;cursor:not-allowed}
 .sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.sumcell{background:var(--slate);border:1px solid var(--line);border-radius:9px;padding:9px 11px;display:flex;flex-direction:column;gap:5px;min-width:0}
-.sumcell .lbl{font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.sumcell b{font:800 24px/1 var(--f-display);font-variant-numeric:tabular-nums}
-.sumcell span.s{font:500 12.5px/1.3 var(--f-body);color:var(--muted)}
+.sumcell{background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:10px 12px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.sumcell .lbl{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.sumcell b{font:900 24px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.sumcell span.s{font:500 10.5px/1.35 var(--f-ui);color:var(--muted);letter-spacing:.02em}
 .sumcell.wide{grid-column:1 / -1}
-.callout2{background:var(--side-wash);border:1px solid var(--side);border-radius:10px;padding:10px 12px;font:500 14px/1.45 var(--f-body);color:var(--soft)}
-.callout2 b{color:var(--paper)}
-.callout2.locked{background:var(--slate);border-color:var(--line)}
-.sabo-lead{margin:0;font:500 13.5px/1.4 var(--f-body);color:var(--muted)}
+.callout2{background:var(--side-wash);border:1px solid color-mix(in srgb,var(--side) 35%,transparent);border-left:2px solid var(--side);border-radius:var(--r);padding:10px 12px;font:400 13px/1.5 var(--f-body);color:var(--soft)}
+.callout2 b{color:var(--paper);font-weight:600}
+.callout2.locked{background:var(--slate);border-color:var(--line);border-left-color:var(--line-2)}
+.sabo-lead{margin:0;font:400 13px/1.45 var(--f-body);color:var(--muted)}
 .sabo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.sopt{display:flex;flex-direction:column;gap:6px;padding:10px 11px;border-radius:10px;background:var(--slate);border:1px solid var(--line);cursor:pointer;text-align:left;min-width:0}
-.sopt:hover{background:var(--slate-2)}
-.sopt[data-sabo=bridge][aria-pressed=true]{border-color:var(--warm);background:var(--warm-wash);box-shadow:inset 0 0 0 1px var(--warm)}
-.sopt[data-sabo=tower][aria-pressed=true]{border-color:#b69cff;background:rgba(182,156,255,.1);box-shadow:inset 0 0 0 1px #b69cff}
-.sopt.off{opacity:.55}
-.sohead{display:flex;align-items:center;gap:8px;min-width:0}
-.sohead .ico{width:26px;height:26px}
-.sohead .tname{font-size:15.5px;line-height:1.1}
-.sodesc{font:500 13px/1.35 var(--f-body);color:var(--soft)}
-.socost{font:600 12.5px/1.25 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
-.socost b{color:var(--paper)}
-.ico.jam{color:#b69cff}
+.sopt{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;text-align:left;min-width:0;transition:border-color .15s,background .15s}
+.sopt:hover{border-color:var(--line-2)}
+.sopt[data-sabo=bridge][aria-pressed=true]{border-color:var(--warm);background:var(--warm-wash)}
+.sopt[data-sabo=tower][aria-pressed=true]{border-color:var(--chain);background:rgba(169,139,255,.07)}
+.sopt.off{opacity:.5}
+.sohead{display:flex;align-items:center;gap:9px;min-width:0}
+.sohead .ico{width:20px;height:20px}
+.sohead .tname{font-size:14px;line-height:1.15}
+.sodesc{font:400 12.5px/1.45 var(--f-body);color:var(--muted)}
+.socost{font:500 10.5px/1.3 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.02em;margin-top:auto}
+.socost b{color:var(--paper);font-weight:600}
 
 /* editor cards */
-.ed{display:flex;flex-direction:column;gap:9px}
-.ed-head{display:flex;align-items:center;gap:9px}
-.ed-back{flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--slate-2);font:700 14px/1 var(--f-ui);letter-spacing:.04em;cursor:pointer}
-.ed-title{font:800 23px/1 var(--f-display);text-transform:uppercase;letter-spacing:.04em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ed-price{margin-left:auto;display:flex;align-items:baseline;gap:4px;white-space:nowrap}
-.ed-price b{font:800 30px/1 var(--f-display);color:var(--side);font-variant-numeric:tabular-nums}
-.ed-price small{font:600 13px/1 var(--f-ui);color:var(--muted)}
-.ed-sub{display:flex;align-items:center;gap:8px;font:500 13.5px/1.35 var(--f-body);color:var(--muted);margin:0}
-.ed-sub b{color:var(--paper);font-weight:600}
-.tipbtn{margin-left:auto;flex:none;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font:700 12px/1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.ed{display:flex;flex-direction:column;gap:10px}
+.ed-head{display:flex;align-items:center;gap:10px}
+.ed-back{flex:none;height:34px;padding:0 12px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
+.ed-back:hover{color:var(--paper);border-color:var(--muted)}
+.ed-title{font:600 17px/1 var(--f-body);letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ed-price{margin-left:auto;display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+.ed-price b{font:900 26px/1 var(--f-display);color:var(--side);font-variant-numeric:tabular-nums}
+.ed-price small{font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.ed-sub{display:flex;align-items:center;gap:8px;font:400 12.5px/1.45 var(--f-body);color:var(--muted);margin:0}
+.ed-sub b{color:var(--soft);font-weight:500}
+.tipbtn{margin-left:auto;flex:none;height:26px;padding:0 9px;border-radius:999px;border:1px solid var(--line-2);background:transparent;color:var(--muted);font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
 .tipbtn[aria-pressed=true]{color:var(--side);border-color:var(--side)}
 .ed:not(.tips) .shint{display:none}
 .presets{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
-.plabel{font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:2px}
-.pre{padding:7px 9px;border-radius:7px;border:1px solid var(--line);background:var(--slate-2);font:600 14px/1 var(--f-ui);cursor:pointer;white-space:nowrap}
-.pre small{color:var(--muted);font-weight:600;margin-left:3px;font-variant-numeric:tabular-nums}
-.pre[aria-pressed=true]{border-color:var(--side);color:var(--side)}
+.plabel{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.pre{padding:7px 9px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:500 13px/1 var(--f-body);cursor:pointer;white-space:nowrap}
+.pre small{color:var(--muted);font:500 10.5px/1 var(--f-ui);margin-left:4px;font-variant-numeric:tabular-nums}
+.pre[aria-pressed=true]{border-color:var(--side);color:var(--side);background:var(--side-wash)}
 .pre.poor small{color:var(--bad)}
-.srow{display:flex;flex-direction:column;gap:3px;background:var(--slate);border:1px solid var(--line);border-radius:9px;padding:8px 10px 6px}
+.srow{display:flex;flex-direction:column;gap:4px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:9px 11px 7px}
 .shead{display:flex;align-items:baseline;gap:8px;min-width:0}
-.sname{font:700 15px/1 var(--f-ui);white-space:nowrap}
-.sval{font:600 13.5px/1.1 var(--f-ui);color:var(--soft);font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.smult{margin-left:auto;flex:none;font:700 13px/1 var(--f-ui);padding:3px 6px;border-radius:5px;background:var(--slate-2);color:var(--muted);font-variant-numeric:tabular-nums}
+.sname{font:600 13.5px/1 var(--f-body);white-space:nowrap}
+.sval{font:500 11.5px/1.1 var(--f-ui);color:var(--soft);font-variant-numeric:tabular-nums;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smult{margin-left:auto;flex:none;font:500 10.5px/1 var(--f-ui);padding:3px 5px;border-radius:2px;color:var(--muted);font-variant-numeric:tabular-nums}
 .smult.up{color:var(--side);background:var(--side-wash)}
 .smult.down{color:#9ad0a0}
-.smult.free{color:#cfe9a9;background:rgba(160,220,120,.1);letter-spacing:.06em;text-transform:uppercase}
+.smult.free{color:#cfe9a9;letter-spacing:.12em;text-transform:uppercase}
 /* what one more step costs; red when there aren't enough free coins */
-.snext{flex:none;font:700 13px/1 var(--f-ui);padding:3px 6px;border-radius:5px;background:var(--slate-2);color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
-.snext.poor{color:#ffb0b0;background:rgba(255,93,93,.16)}
-.snext.max{color:var(--muted);background:none;padding-inline:0}
-.srow input[type=range]{width:100%;margin:2px 0;height:26px;accent-color:var(--side);cursor:pointer;touch-action:pan-y}
-.shint{font:500 12.5px/1.35 var(--f-body);color:var(--muted)}
+.snext{flex:none;font:500 10.5px/1 var(--f-ui);padding:3px 5px;border-radius:2px;border:1px solid var(--line-2);color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
+.snext.poor{color:#ffb4b4;border-color:rgba(255,90,90,.45)}
+.snext.max{color:var(--muted);border:0;padding-inline:0}
+.srow input[type=range]{width:100%;margin:2px 0;height:24px;accent-color:var(--side);cursor:pointer;touch-action:pan-y}
+.shint{font:400 12px/1.4 var(--f-body);color:var(--muted)}
 .shint.show{display:block!important}
 .fxgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.fxrow{display:flex;flex-direction:column;gap:5px;width:100%;padding:8px 9px;border-radius:9px;background:var(--slate);border:1px solid var(--line);cursor:pointer;text-align:left}
-.fxtop{display:flex;align-items:center;gap:7px}
-.fxrow .box{width:18px;height:18px;flex:none;border-radius:5px;border:2px solid var(--muted);display:grid;place-items:center}
-.fxrow[aria-pressed=true]{border-color:var(--fx);background:color-mix(in srgb,var(--fx) 9%,transparent)}
+.fxrow{display:flex;flex-direction:column;gap:6px;width:100%;padding:9px 10px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;text-align:left}
+.fxtop{display:flex;align-items:center;gap:8px}
+.fxrow .box{width:14px;height:14px;flex:none;border-radius:2px;border:1px solid var(--muted);display:grid;place-items:center}
+.fxrow[aria-pressed=true]{border-color:var(--fx);background:color-mix(in srgb,var(--fx) 7%,transparent)}
 .fxrow[aria-pressed=true] .box{border-color:var(--fx);background:var(--fx)}
-.fxrow[aria-pressed=true] .box::after{content:"";width:8px;height:4px;border:2.5px solid var(--ink);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
-.fxrow .rname{font-size:15px}
+.fxrow[aria-pressed=true] .box::after{content:"";width:6px;height:3px;border:1.5px solid var(--ink);border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.fxrow .rname{font-size:13.5px}
 .fxcost{display:flex;gap:5px;align-items:center}
 .fxrow .smult{margin-left:0}
 .fx-slow{--fx:var(--frost)} .fx-poison{--fx:var(--poison)} .fx-chain{--fx:var(--chain)}
-.segrow{display:flex;flex-direction:column;gap:6px;background:var(--slate);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
-.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{flex:1;border:0;background:transparent;padding:9px 4px;font:600 14px/1.1 var(--f-ui);cursor:pointer;color:var(--muted);min-width:0}
-.seg button+button{border-left:1px solid var(--line)}
+.segrow{display:flex;flex-direction:column;gap:7px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:9px 11px}
+.seg{display:flex;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;padding:9px 4px;font:500 12px/1.2 var(--f-ui);cursor:pointer;color:var(--muted);min-width:0}
+.seg button+button{border-left:1px solid var(--line-2)}
 .seg button[aria-pressed=true]{background:var(--side);color:var(--side-ink)}
-.countrow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--slate);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
-.formula{display:flex;flex-direction:column;gap:7px;background:var(--ink);border:1px dashed #3a4f62;border-radius:9px;padding:9px 10px}
-.fchips{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:flex-end}
-.fchip{display:flex;flex-direction:column;align-items:center;gap:2px;font:800 17px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--paper)}
-.fchip small{font:600 10.5px/1 var(--f-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.countrow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:8px 11px}
+.formula{display:flex;flex-direction:column;gap:8px;background:transparent;border:1px dashed var(--line-2);border-radius:var(--r2);padding:10px 11px}
+.fchips{display:flex;flex-wrap:wrap;gap:4px 7px;align-items:flex-end}
+.fchip{display:flex;flex-direction:column;align-items:center;gap:3px;font:600 14px/1 var(--f-ui);font-variant-numeric:tabular-nums;color:var(--paper)}
+.fchip small{font:500 9px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .fchip.eq{color:var(--side)}
-.fop{font:700 15px/1 var(--f-ui);color:var(--muted);padding-bottom:13px}
-.fnote{margin:0;font:500 12.5px/1.4 var(--f-body);color:var(--muted)}
-.fnote b{color:var(--paper)}
-.ed-remove{min-height:42px;border-radius:9px;border:1px solid rgba(255,93,93,.4);background:transparent;color:#ffb0b0;font:700 14px/1 var(--f-ui);letter-spacing:.04em;cursor:pointer}
-.ed-remove:hover{background:rgba(255,93,93,.08)}
-.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;margin:0;font:500 14px/1.3 var(--f-body)}
-.kv dt{color:var(--muted);font:600 13px/1.3 var(--f-ui);letter-spacing:.03em}
+.fop{font:400 13px/1 var(--f-ui);color:var(--muted);padding-bottom:12px}
+.fnote{margin:0;font:400 12px/1.45 var(--f-body);color:var(--muted)}
+.fnote b{color:var(--soft);font-weight:500}
+.ed-remove{min-height:42px;border-radius:var(--r);border:1px solid rgba(255,90,90,.35);background:transparent;color:#ffb4b4;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.ed-remove:hover{background:rgba(255,90,90,.07)}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;margin:0;font:400 13px/1.3 var(--f-body)}
+.kv dt{color:var(--muted);font:500 10.5px/1.3 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;padding-top:2px}
 .kv dd{margin:0;color:var(--paper);font-variant-numeric:tabular-nums}
-.hpbar{height:8px;border-radius:4px;background:var(--ink);overflow:hidden}
+.hpbar{height:4px;background:rgba(255,255,255,.06);overflow:hidden}
 .hpbar i{display:block;height:100%;background:#f3e3cf}
-.tagline2{font:600 12px/1.3 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--side)}
+.tagline2{font:500 10.5px/1.35 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--side)}
 
 /* timeline */
-.tl{display:flex;flex-direction:column;gap:8px}
+.tl{display:flex;flex-direction:column;gap:9px}
 .tl-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.tl-title{font:800 18px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase}
-.tl-len{font:600 13px/1 var(--f-ui);color:var(--muted);margin-right:auto}
-.mini{height:30px;padding:0 10px;border-radius:7px;border:1px solid var(--line);background:var(--slate-2);font:700 12.5px/1 var(--f-ui);letter-spacing:.04em;cursor:pointer;color:var(--soft)}
+.tl-title{font:500 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.tl-len{font:500 10.5px/1 var(--f-ui);color:var(--muted);margin-right:auto}
+.mini{height:28px;padding:0 10px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
+.mini:hover{border-color:var(--muted);color:var(--paper)}
 .tl-grid{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;align-items:center}
-.tl-dens{display:flex;align-items:flex-end;gap:2px;height:34px;padding:0 0 1px;border-bottom:1px solid var(--line)}
-.tl-dens i{flex:1;background:var(--warm);opacity:.85;border-radius:2px 2px 0 0;min-height:1px;transition:height .1s}
-.tl-dens i.peak{background:#ffd27a;opacity:1}
-.tl-peaklbl{font:600 12px/1.25 var(--f-ui);color:var(--muted);letter-spacing:.03em}
-.tl-peaklbl b{display:block;font:800 20px/1 var(--f-display);color:var(--warm)}
-.trk-lbl{display:grid;grid-template-columns:24px minmax(0,1fr);gap:6px;align-items:center;min-width:0}
-.trk-lbl .ico{width:24px;height:24px}
-.trk-lbl .rname{font-size:14px}
-.trk-lbl .rsub{font-size:11.5px;white-space:normal;line-height:1.2}
-.lane{position:relative;height:48px;border-radius:8px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 calc(25% - 1px),rgba(255,255,255,.09) calc(25% - 1px) 25%),var(--slate);border:1px solid var(--line);touch-action:none}
+.tl-dens{display:flex;align-items:flex-end;gap:2px;height:32px;padding:0 0 1px;border-bottom:1px solid var(--line-2)}
+.tl-dens i{flex:1;background:var(--warm);opacity:.55;min-height:1px;transition:height .1s}
+.tl-dens i.peak{opacity:1}
+.tl-peaklbl{font:500 10px/1.3 var(--f-ui);color:var(--muted);letter-spacing:.06em}
+.tl-peaklbl b{display:block;font:900 20px/1 var(--f-display);color:var(--warm)}
+.trk-lbl{display:grid;grid-template-columns:20px minmax(0,1fr);gap:7px;align-items:center;min-width:0}
+.trk-lbl .ico{width:20px;height:20px}
+.trk-lbl .rname{font-size:13px}
+.trk-lbl .rsub{font-size:10px;white-space:normal;line-height:1.25}
+.lane{position:relative;height:48px;border-radius:var(--r);background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--line) calc(25% - 1px) 25%),var(--slate);border:1px solid var(--line);touch-action:none}
 /* top band: the group's window with its two grab tabs; lower band: one dot per unit */
-.lane .rng{position:absolute;top:4px;height:12px;background:rgba(255,145,66,.28);border-radius:6px}
+.lane .rng{position:absolute;top:5px;height:10px;background:rgba(255,138,61,.22);border-radius:1px}
 .lane .hdl{position:absolute;top:0;height:20px;width:26px;margin-left:-13px;z-index:3;cursor:ew-resize;touch-action:none;display:grid;place-items:center}
-.lane .hdl::before{content:"";width:12px;height:16px;border-radius:4px;background:var(--warm);box-shadow:0 0 0 2px var(--ink)}
-.lane .clip{position:absolute;top:31px;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--c);border:2px solid #2c1004;cursor:grab;z-index:2;touch-action:none}
+.lane .hdl::before{content:"";width:6px;height:16px;border-radius:1px;background:var(--warm);box-shadow:0 0 0 2px var(--ink)}
+.lane .clip{position:absolute;top:31px;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--c);border:2px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
 .lane .clip:nth-of-type(3n){top:26px} .lane .clip:nth-of-type(3n+1){top:36px}
-.lane .clip:hover{transform:scale(1.25)}
-.tl-ruler{display:flex;justify-content:space-between;font:600 11px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
+.lane .clip:hover{transform:scale(1.3)}
+.tl-ruler{display:flex;justify-content:space-between;font:500 10px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
 .dragging,.dragging *{cursor:grabbing!important}
 
 /* wave pane */
-.breach{display:flex;flex-direction:column;gap:7px;background:var(--slate);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
-.brow{display:flex;align-items:baseline;gap:8px;font:600 13px/1 var(--f-ui);color:var(--muted)}
-.brow b{margin-left:auto;font:800 22px/1 var(--f-display);color:var(--paper);font-variant-numeric:tabular-nums}
-.brow em{font:800 22px/1 var(--f-display);font-style:normal;color:var(--warm);min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
-.splitbar{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px}
+.breach{display:flex;flex-direction:column;gap:9px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:12px}
+.brow{display:flex;align-items:baseline;gap:8px;font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.brow b{margin-left:auto;font:900 22px/1 var(--f-display);color:var(--paper);font-variant-numeric:tabular-nums}
+.brow em{font:900 22px/1 var(--f-display);font-style:normal;color:var(--warm);min-width:52px;text-align:right;font-variant-numeric:tabular-nums}
+.splitbar{display:flex;height:4px;overflow:hidden;gap:2px}
 .splitbar i{display:block;height:100%;transition:width .25s}
 .splitbar .d{background:var(--cool)} .splitbar .a{background:var(--warm)}
-.splitlbl{display:flex;justify-content:space-between;gap:8px;font:700 13px/1.2 var(--f-ui);font-variant-numeric:tabular-nums}
+.splitlbl{display:flex;justify-content:space-between;gap:8px;font:500 10.5px/1.2 var(--f-ui);letter-spacing:.04em;font-variant-numeric:tabular-nums}
 .splitlbl .c{color:var(--cool)} .splitlbl .w{color:var(--warm);text-align:right}
-.fine{margin:0;font:500 12px/1.4 var(--f-body);color:var(--muted)}
+.fine{margin:0;font:400 12px/1.45 var(--f-body);color:var(--muted)}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.tile{background:var(--slate);border:1px solid var(--line);border-radius:9px;padding:7px 9px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.tile .lbl{font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-.tile .val{font:800 24px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.tile{background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:9px 11px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tile .lbl{font:500 9.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.tile .val{font:900 24px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .val.c{color:var(--cool)} .val.w{color:var(--warm)}
 .m-only{display:none}
 
 /* ---------- Overlays ---------- */
 .overlay{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
   padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
-  background:rgba(5,9,13,.86);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+  background:rgba(4,6,9,.84);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.overlay:not([hidden]) > *{animation:rise .28s cubic-bezier(.2,.7,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
 .overlay.info{z-index:60}
 .sheet{width:100%;max-width:760px;max-height:100%;display:flex;flex-direction:column;background:var(--slate);
-  border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 30px 80px -20px #000}
-.sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 22px 14px;border-bottom:1px solid var(--line)}
-.logo{margin:0;font:800 46px/.9 var(--f-stencil);letter-spacing:.05em;text-transform:uppercase}
-.tagline{margin:8px 0 0;font:600 13px/1.2 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.x{flex:none;width:44px;height:44px;border-radius:8px;border:1px solid var(--line);background:var(--slate-2);font:400 28px/1 var(--f-ui);cursor:pointer}
-.sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 22px 22px;user-select:text;-webkit-user-select:text;overscroll-behavior:contain;outline:none}
-.sheet-body section{padding-top:20px}
-.sheet-body h2{margin:0 0 10px;font:800 25px/1.05 var(--f-display);letter-spacing:.04em;text-transform:uppercase;text-wrap:balance}
-.sheet-body h3{margin:14px 0 6px;font:700 17px/1.2 var(--f-ui);letter-spacing:.02em;color:var(--paper)}
-.sheet-body p,.sheet-body li{font:400 16px/1.55 var(--f-body);color:var(--soft);max-width:64ch}
+  border:1px solid var(--line-2);border-radius:8px;overflow:hidden;box-shadow:0 40px 120px -30px #000}
+.sheet-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:22px 24px 18px;border-bottom:1px solid var(--line)}
+.logo{margin:0;display:flex;align-items:center;gap:14px;font:900 46px/.9 var(--f-display);letter-spacing:.04em}
+.tagline{margin:10px 0 0;font:500 10.5px/1.2 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.x{flex:none;width:40px;height:40px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:300 22px/1 var(--f-ui);cursor:pointer;color:var(--soft)}
+.x:hover{color:var(--paper);border-color:var(--muted)}
+.sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 24px 24px;user-select:text;-webkit-user-select:text;overscroll-behavior:contain;outline:none;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.sheet-body section{padding-top:24px}
+.sheet-body h2{margin:0 0 12px;font:500 10.5px/1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+.sheet-body h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.sheet-body h3{margin:18px 0 6px;font:600 15px/1.25 var(--f-body);color:var(--paper)}
+.sheet-body p,.sheet-body li{font:400 14.5px/1.6 var(--f-body);color:var(--soft);max-width:66ch}
 .sheet-body p{margin:0 0 10px}
-.sheet-body ol,.sheet-body ul{margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.sheet-body ol,.sheet-body ul{margin:0 0 12px;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.sheet-body li::marker{color:var(--muted);font:500 12px var(--f-ui)}
 .sheet-body strong{color:var(--paper);font-weight:600}
-.sheet-body code{font:600 14px/1.4 ui-monospace,Menlo,Consolas,monospace;color:var(--paper);background:var(--ink);padding:1px 5px;border-radius:4px}
-.howto{background:linear-gradient(180deg,rgba(255,255,255,.035),transparent);margin:0 -22px;padding:18px 22px 6px!important;border-bottom:1px solid var(--line)}
-.key{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:4px 0 14px}
-.key div{border-radius:9px;padding:10px 12px;font:500 14px/1.35 var(--f-body);color:var(--soft)}
-.key .kd{background:var(--cool-wash);border:1px solid rgba(95,208,240,.4)}
-.key .ka{background:var(--warm-wash);border:1px solid rgba(255,145,66,.4)}
-.key .kk{background:rgba(242,212,138,.08);border:1px solid rgba(242,212,138,.4)}
-.key b{display:block;font:800 17px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
-.key .kd b{color:var(--cool)} .key .ka b{color:var(--warm)} .key .kk b{color:var(--keep)}
+.sheet-body code{font:500 12.5px/1.5 var(--f-ui);color:var(--paper)}
+.howto{padding-top:22px!important}
+.key{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:0 0 16px}
+.key div{border-radius:var(--r2);padding:12px;font:400 13px/1.45 var(--f-body);color:var(--soft);border:1px solid var(--line);border-top:2px solid var(--k)}
+.key .kd{--k:var(--cool)} .key .ka{--k:var(--warm)} .key .kk{--k:var(--keep)}
+.key b{display:block;font:600 10.5px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;margin-bottom:8px;color:var(--k)}
 .tablewrap{overflow-x:auto;margin:4px 0 12px}
-.sheet-body table{border-collapse:collapse;width:100%;min-width:460px;font:500 14px/1.35 var(--f-body)}
-.sheet-body th{text-align:left;font:600 11px/1 var(--f-ui);letter-spacing:.13em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
-.sheet-body td{padding:7px 8px;border-bottom:1px solid rgba(42,58,73,.6);color:var(--soft);vertical-align:top}
-.sheet-body td.d{color:var(--cool);font-weight:600} .sheet-body td.a{color:var(--warm);font-weight:600}
-.sheet-body td.n{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--paper);font-weight:600}
-.callout{background:var(--ink);border:1px dashed #3a4f62;border-radius:10px;padding:10px 12px;margin:2px 0 12px}
-.callout p{margin:0;font-size:15px}
-.sheet-foot{padding:12px 22px 16px;border-top:1px solid var(--line);display:flex}
+.sheet-body table{border-collapse:collapse;width:100%;min-width:460px;font:400 13px/1.4 var(--f-body)}
+.sheet-body th{text-align:left;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:8px;border-bottom:1px solid var(--line-2)}
+.sheet-body td{padding:8px;border-bottom:1px solid var(--line);color:var(--soft);vertical-align:top}
+.sheet-body td.d{color:var(--cool)} .sheet-body td.a{color:var(--warm)}
+.sheet-body td.n{font:500 12px/1.4 var(--f-ui);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--paper)}
+.callout{border-left:2px solid var(--line-2);padding:4px 0 4px 14px;margin:4px 0 14px}
+.callout p{margin:0 0 4px;font-size:13.5px}
+.sheet-foot{padding:14px 24px 18px;border-top:1px solid var(--line);display:flex}
 .sheet-foot .ready{flex:1}
-.colophon{margin-top:18px!important;font-size:13px!important;color:var(--muted)!important}
+.colophon{margin-top:20px!important;font:500 10.5px/1.5 var(--f-ui)!important;letter-spacing:.08em;color:var(--muted)!important}
 
 /* handoff: opaque so the next player can't see what's behind it */
 .overlay.hand{cursor:pointer;-webkit-backdrop-filter:none;backdrop-filter:none;background-color:var(--ink);
-  background-image:radial-gradient(110% 80% at 50% 45%,var(--hand-glow),transparent 72%)}
-.overlay.hand.atk{--hand-glow:rgba(255,145,66,.28);--hand:var(--warm)}
-.overlay.hand.def{--hand-glow:rgba(95,208,240,.24);--hand:var(--cool)}
-.overlay.hand.both{--hand-glow:rgba(226,233,238,.13);--hand:var(--paper)}
-.hand-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;max-width:580px;background:none;border:0;cursor:pointer;padding:10px}
-.hand-kicker{font:700 14px/1 var(--f-ui);letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
-.hand-title{font:800 clamp(46px,10vw,92px)/.9 var(--f-stencil);text-transform:uppercase;letter-spacing:.03em;color:var(--hand);text-wrap:balance}
-.hand-sub{font:500 18px/1.45 var(--f-body);color:var(--soft);max-width:42ch}
-.hand-cta{margin-top:8px;font:800 20px/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase;padding:14px 26px;border-radius:999px;background:var(--hand);color:var(--ink);animation:breathe 1.8s ease-in-out infinite}
-@keyframes breathe{50%{transform:scale(1.05)}}
+  background-image:radial-gradient(60% 50% at 50% 50%,var(--hand-glow),transparent 70%)}
+.overlay.hand.atk{--hand-glow:rgba(255,138,61,.12);--hand:var(--warm)}
+.overlay.hand.def{--hand-glow:rgba(79,214,238,.1);--hand:var(--cool)}
+.overlay.hand.both{--hand-glow:rgba(232,236,239,.06);--hand:var(--paper)}
+.hand-card{display:flex;flex-direction:column;align-items:center;text-align:center;gap:18px;max-width:640px;background:none;border:0;cursor:pointer;padding:10px}
+.hand-kicker{font:500 11px/1 var(--f-ui);letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.hand-title{font:900 clamp(40px,9vw,88px)/.95 var(--f-display);letter-spacing:.03em;color:var(--hand);text-wrap:balance}
+.hand-sub{font:400 15px/1.5 var(--f-body);color:var(--muted);max-width:40ch}
+.hand-cta{margin-top:6px;font:500 11px/1 var(--f-ui);letter-spacing:.24em;text-transform:uppercase;padding:13px 22px;border-radius:999px;border:1px solid color-mix(in srgb,var(--hand) 55%,transparent);color:var(--hand);animation:breathe 2.2s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.45}}
 
 /* summary + end */
-.sheet.small{max-width:560px}
-.sum-body{padding:18px 22px 6px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
-.sum-kicker{font:700 13px/1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin:0}
-.sum-title{margin:0;font:800 44px/.95 var(--f-display);text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
-.bx{display:flex;flex-direction:column;gap:6px;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.bx-row{display:flex;align-items:baseline;gap:8px;font:600 14px/1.2 var(--f-ui);color:var(--muted)}
-.ainote h3{margin:0;font:700 11.5px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.ainote p{margin:0;font:500 14px/1.45 var(--f-body);color:var(--soft)}
-.bx-row b{margin-left:auto;font:800 22px/1 var(--f-display);color:var(--paper);font-variant-numeric:tabular-nums}
+.sheet.small{max-width:540px}
+.sum-body{padding:22px 24px 8px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.sum-kicker{font:500 10.5px/1 var(--f-ui);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0}
+.sum-title{margin:0;font:600 32px/1.05 var(--f-body);letter-spacing:-.02em;text-wrap:balance}
+.bx{display:flex;flex-direction:column;gap:8px;background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:12px}
+.bx-row{display:flex;align-items:baseline;gap:8px;font:500 10.5px/1.2 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.ainote h3{margin:0;font:500 10px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.ainote p{margin:0;font:400 13px/1.5 var(--f-body);color:var(--soft)}
+.bx-row b{margin-left:auto;font:900 22px/1 var(--f-display);color:var(--paper);font-variant-numeric:tabular-nums}
 .bx-row.big b{font-size:30px;color:var(--warm)}
 .bx-row.keep b{color:var(--keep)}
-.sv{display:flex;flex-direction:column;gap:6px}
-.sv-track{position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--warm) 0%,var(--paper) 50%,var(--cool) 100%);opacity:.9}
-.sv-mark{position:absolute;top:-5px;width:4px;height:22px;margin-left:-2px;border-radius:2px;background:var(--paper);box-shadow:0 0 0 2px var(--ink)}
-.sv-ticks{display:flex;justify-content:space-between;font:700 12px/1.25 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
+.sv{display:flex;flex-direction:column;gap:7px}
+.sv-track{position:relative;height:4px;background:linear-gradient(90deg,var(--warm) 0%,#8a8f95 50%,var(--cool) 100%)}
+.sv-mark{position:absolute;top:-6px;width:2px;height:16px;margin-left:-1px;background:var(--paper);box-shadow:0 0 0 2px var(--slate)}
+.sv-ticks{display:flex;justify-content:space-between;font:500 10.5px/1.3 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
 .sv-ticks span{display:flex;flex-direction:column;align-items:center}
 .sv-ticks span:first-child{align-items:flex-start} .sv-ticks span:last-child{align-items:flex-end}
-.sv-ticks small{font:600 11px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase}
-.fml{margin:0;font:500 14px/1.45 var(--f-body);color:var(--soft)}
-.fml b{color:var(--paper)}
-.sum-line{display:flex;flex-wrap:wrap;gap:6px 18px;font:600 15px/1.3 var(--f-ui);color:var(--muted)}
-.sum-line b{color:var(--paper);font:800 22px/1 var(--f-display);margin-right:4px;font-variant-numeric:tabular-nums}
-.ledger{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.led{border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px}
-.led.d{background:var(--cool-wash);border:1px solid rgba(95,208,240,.35)}
-.led.a{background:var(--warm-wash);border:1px solid rgba(255,145,66,.35)}
-.led h3{margin:0;font:800 15px/1 var(--f-display);letter-spacing:.14em;text-transform:uppercase}
-.led.d h3{color:var(--cool)} .led.a h3{color:var(--warm)}
-.led .big{font:800 34px/1 var(--f-display);font-variant-numeric:tabular-nums}
-.led ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font:500 13px/1.35 var(--f-body);color:var(--soft);font-variant-numeric:tabular-nums}
+.sv-ticks small{font:500 9.5px/1.3 var(--f-ui);letter-spacing:.1em;text-transform:uppercase}
+.fml{margin:0;font:400 12px/1.5 var(--f-ui);color:var(--muted)}
+.fml b{color:var(--soft);font-weight:500}
+.sum-line{display:flex;flex-wrap:wrap;gap:6px 18px;font:500 10.5px/1.3 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sum-line b{color:var(--paper);font:900 22px/1 var(--f-display);margin-right:5px;font-variant-numeric:tabular-nums}
+.ledger{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.led{border-radius:var(--r2);padding:12px;display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-top:2px solid var(--k)}
+.led.d{--k:var(--cool)} .led.a{--k:var(--warm)}
+.led h3{margin:0;font:500 10.5px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--k)}
+.led .big{font:900 32px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.led ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font:400 12px/1.4 var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
 .led li{display:flex;justify-content:space-between;gap:6px}
-.sum-foot{padding:14px 22px 18px;display:flex;gap:10px}
+.led li span:last-child{font:500 11.5px/1.4 var(--f-ui);color:var(--soft)}
+.sum-foot{padding:16px 24px 20px;display:flex;gap:8px}
 .sum-foot .ready{flex:1}
 .end-title.d{color:var(--cool)} .end-title.a{color:var(--warm)}
 
 /* mode picker + online */
 .sheet .modes{overflow-y:auto}
-.modes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:12px;padding:18px 22px 20px;align-items:start}
-.mode{display:flex;flex-direction:column;gap:10px;background:var(--ink);border:1px solid var(--line);border-radius:12px;padding:14px}
-.mode h3{margin:0;font:800 22px/1 var(--f-display);letter-spacing:.06em;text-transform:uppercase}
-.mode p{margin:0;font:500 14px/1.45 var(--f-body);color:var(--soft)}
-.mode p.fine{font-size:12.5px;color:var(--muted)}
-.mode .ready{flex:none;min-height:50px;font-size:20px}
-.mode .ready:disabled{opacity:.4;cursor:not-allowed}
-.modecol{display:flex;flex-direction:column;gap:12px;min-width:0}
-.rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.modes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px;padding:20px 24px 24px;align-items:start}
+.mode{display:flex;flex-direction:column;gap:12px;background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:16px}
+.mode h3{margin:0;display:flex;align-items:baseline;gap:10px;font:600 16px/1.1 var(--f-body);letter-spacing:-.01em}
+.mode h3 .idx{font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;color:var(--muted)}
+.mode p{margin:0;font:400 13px/1.5 var(--f-body);color:var(--muted)}
+.mode p.fine{font-size:11.5px}
+.mode .ready{flex:none;min-height:46px}
+.mode .ready:disabled{opacity:.35;cursor:not-allowed}
+.modecol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
 .pick.lv{grid-template-columns:repeat(3,minmax(0,1fr))}
-.rolepick button,.pick button{min-height:46px;border-radius:9px;border:1px solid var(--line);background:var(--slate-2);font:800 17px/1 var(--f-display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
-.rolepick button[data-role=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink);border-color:var(--cool)}
-.rolepick button[data-role=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink);border-color:var(--warm)}
-.pick button[data-side=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink);border-color:var(--cool)}
-.pick button[data-side=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink);border-color:var(--warm)}
-.pick button[data-level][aria-pressed=true]{color:var(--paper);border-color:var(--paper);box-shadow:inset 0 0 0 1px var(--paper)}
+.rolepick button,.pick button{min-height:40px;border:0;background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--muted)}
+.rolepick button+button,.pick button+button{border-left:1px solid var(--line-2)}
+.rolepick button[data-role=def][aria-pressed=true],.pick button[data-side=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink)}
+.rolepick button[data-role=atk][aria-pressed=true],.pick button[data-side=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink)}
+.pick button[data-level][aria-pressed=true]{background:var(--paper);color:var(--ink)}
 .codebox{display:flex;gap:6px;align-items:center}
-.codebox label{font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-.codebox input{flex:1;width:0;min-width:0;height:46px;border-radius:9px;border:1px solid var(--line);background:var(--slate);color:var(--paper);font:800 24px/1 var(--f-display);letter-spacing:.3em;text-transform:uppercase;text-align:center;padding:0 8px;user-select:text;-webkit-user-select:text}
-.netstatus{font:600 13.5px/1.4 var(--f-ui);color:var(--muted);min-height:19px}
-.netstatus.bad{color:#ffb0b0} .netstatus.ok{color:#a8e6b0}
-.netpill{flex:none;font:700 11.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;padding:5px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.netpill.ok{border-color:rgba(168,230,176,.5);color:#a8e6b0} .netpill.bad{border-color:rgba(255,93,93,.5);color:#ffb0b0}
-.overlay.wait{background:rgba(5,9,13,.62)}
-.waitcard{max-width:440px;width:100%;background:var(--slate);border:1px solid var(--side);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px;text-align:center;box-shadow:0 30px 80px -20px #000}
-.waitcard h2{margin:0;font:800 34px/1 var(--f-display);text-transform:uppercase;letter-spacing:.03em;color:var(--side)}
-.waitcard p{margin:0;font:500 15px/1.45 var(--f-body);color:var(--soft)}
-.waitcard p.fine{font-size:13px;color:var(--muted)}
-.waitcard .ready{flex:none;min-height:48px;font-size:19px}
+.codebox label{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap;margin-right:4px}
+.codebox input{flex:1;width:0;min-width:0;height:44px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--ink);color:var(--paper);font:900 24px/1 var(--f-display);letter-spacing:.35em;text-transform:uppercase;text-align:center;padding:0 8px;user-select:text;-webkit-user-select:text}
+.codebox .mini{height:44px}
+.netstatus{font:500 11.5px/1.45 var(--f-ui);color:var(--muted);min-height:17px}
+.netstatus.bad{color:#ffb4b4} .netstatus.ok{color:#a8e6b0}
+.netpill{flex:none;font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;padding:5px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
+.netpill.ok{border-color:rgba(168,230,176,.45);color:#a8e6b0} .netpill.bad{border-color:rgba(255,90,90,.45);color:#ffb4b4}
+.overlay.wait{background:rgba(4,6,9,.6)}
+.waitcard{max-width:420px;width:100%;background:var(--slate);border:1px solid var(--line-2);border-top:2px solid var(--side);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:12px;text-align:center;box-shadow:0 40px 120px -30px #000}
+.waitcard h2{margin:0;font:900 34px/1 var(--f-display);letter-spacing:.04em;color:var(--side)}
+.waitcard p{margin:0;font:400 14px/1.5 var(--f-body);color:var(--soft)}
+.waitcard p.fine{font:500 11px/1.45 var(--f-ui);color:var(--muted)}
+.waitcard .ready{flex:none;min-height:46px}
 .dots::after{content:"";animation:dots 1.4s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
-#tip{position:fixed;z-index:80;max-width:280px;padding:8px 11px;border-radius:8px;background:#060a0e;border:1px solid var(--line);
-  font:500 13px/1.4 var(--f-body);color:var(--paper);pointer-events:none;box-shadow:0 10px 30px -10px #000}
+#tip{position:fixed;z-index:80;max-width:280px;padding:8px 11px;border-radius:var(--r);background:#05070a;border:1px solid var(--line-2);
+  font:400 12.5px/1.45 var(--f-body);color:var(--soft);pointer-events:none;box-shadow:0 10px 30px -10px #000}
 
 /* ---------- Portrait / narrow ---------- */
 @media (orientation:portrait),(max-width:720px){
   #app{gap:8px;padding-block:8px}
   #stage{flex-direction:column;gap:8px}
   #panel,#panel.wide{width:auto}
-  .pane{flex:none;gap:7px}
+  .pane{flex:none;gap:8px}
   .pane-head,.note:not(.show),.blegend,.lhd span:last-child,.xl,.ksub,.coins .clbl,.hint{display:none}
   .coins{margin-left:auto}
   .scroll{flex:none;max-height:34vh;overflow-y:auto;padding:0}
   .pane.drill .browse{display:flex}
-  .steps button{padding:7px 2px;font-size:11.5px;gap:3px;letter-spacing:.02em}
-  .steps button .n{width:16px;height:16px}
-  .budget{padding:6px 10px}
+  .steps button{padding:9px 2px 10px;font-size:10px;gap:4px;letter-spacing:.1em}
+  .budget{padding:7px 10px}
   .bfree b{font-size:24px}
   .tool{min-height:46px;padding:7px 10px}
-  .tool .ico{width:24px;height:24px}
-  .bigstat{padding:7px 10px} .bigstat b{font-size:26px}
-  .irow{min-height:40px;padding:4px 8px}
+  .tool .ico{width:20px;height:20px}
+  .bigstat{padding:7px 10px} .bigstat b{font-size:24px}
+  .irow{min-height:40px;padding:4px 9px}
   .irow .rsub{display:none}
   .rrow{min-height:42px;padding:3px 5px 3px 3px}
-  .rpick .ico{width:26px;height:26px}
-  .rpick{grid-template-columns:26px minmax(0,1fr);gap:7px}
-  .rname{font-size:15px}
-  .rsub{font-size:12px}
-  .step{width:32px;height:32px;font-size:20px}
-  .count{min-width:20px;font-size:19px}
+  .rpick .ico{width:22px;height:22px}
+  .rpick{grid-template-columns:22px minmax(0,1fr);gap:8px}
+  .rname{font-size:13.5px}
+  .rsub{font-size:10px}
+  .step{width:32px;height:32px;font-size:18px}
+  .count{min-width:20px;font-size:18px}
   .abtn{min-height:40px;padding:5px 9px}
   .abtn small{display:none}
   .back,.ready{min-height:48px}
-  .ready{font-size:20px}
-  .breach{padding:8px 10px;gap:6px}
+  .breach{padding:9px 10px;gap:7px}
   .brow b,.brow em{font-size:19px}
   .breach .fine{display:none}
-  .tiles .tile{padding:5px 8px}
+  .tiles .tile{padding:6px 9px;gap:6px}
   .tile .val{font-size:20px}
   .tl-grid{grid-template-columns:76px minmax(0,1fr);gap:5px 8px}
-  .trk-lbl{grid-template-columns:20px minmax(0,1fr);gap:5px}
-  .trk-lbl .ico{width:20px;height:20px}
+  .trk-lbl{grid-template-columns:18px minmax(0,1fr);gap:5px}
+  .trk-lbl .ico{width:18px;height:18px}
   .lane{height:46px}
-  .tl-dens{height:26px}
+  .tl-dens{height:24px}
   .sumcell b{font-size:20px}
-  #toast{top:6px;bottom:auto;transform:translate(-50%,-8px)}
+  .sodesc{font-size:12px}
+  #toast{top:6px;bottom:auto;transform:translate(-50%,-6px)}
   #toast.show{transform:translate(-50%,0)}
   #wave-ctx .d-only{display:none} #wave-ctx .m-only{display:block;white-space:normal}
   /* cards become bottom sheets */
   .ctx:not(:empty){position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:30;
-    max-height:min(60vh,560px);overflow-y:auto;overscroll-behavior:contain;background:var(--slate-2);border:1px solid var(--side);
-    border-radius:14px;padding:11px;box-shadow:0 -14px 50px -10px #000}
-  .ctx .srow,.ctx .segrow,.ctx .countrow,.ctx .fxrow{background:var(--slate)}
+    max-height:min(60vh,560px);overflow-y:auto;overscroll-behavior:contain;background:var(--slate);border:1px solid var(--line-2);border-top:2px solid var(--side);
+    border-radius:8px;padding:12px;box-shadow:0 -20px 60px -10px #000}
+  .ctx .srow,.ctx .segrow,.ctx .countrow,.ctx .fxrow{background:var(--slate-2)}
 }
 @media (max-width:560px){
   .modes{grid-template-columns:minmax(0,1fr);padding:14px 16px 16px}
-  .netpill{font-size:10.5px;padding:4px 6px}
+  .netpill{font-size:9.5px;padding:4px 6px}
   .brand{display:none}
-  .hud-row{gap:6px}
-  .roundchip{padding:5px 9px}
-  .roundchip .val{font-size:22px}
-  .keepbox{padding:6px 10px;gap:8px}
-  .keepbox .kico{width:26px;height:26px}
-  .klbl{font-size:15px}
-  .knum{font-size:21px} .knum small{display:none}
+  .hud-row{gap:6px;min-height:46px}
+  .roundchip{padding:0 10px}
+  .roundchip .val{font-size:20px}
+  .keepbox{padding:0 10px;gap:9px}
+  .keepbox .kico{display:none}
+  .knum{font-size:20px} .knum small{display:none}
   #btn-info{width:44px}
   .key{grid-template-columns:1fr}
   .ledger{grid-template-columns:1fr}
-  .sum-title{font-size:36px}
+  .sum-title{font-size:27px}
   /* online end screen: three buttons don't fit one row, so Replay takes its own */
   #ov-end .sum-foot:has(#end-swap:not([hidden])),#ov-end .sum-foot:has(#end-menu:not([hidden])){flex-wrap:wrap}
   #ov-end .sum-foot:has(#end-swap:not([hidden])) #end-replay,#ov-end .sum-foot:has(#end-menu:not([hidden])) #end-replay{flex-basis:100%;min-height:44px}
-  .logo{font-size:38px}
+  .logo{font-size:40px}
   .fxgrid{grid-template-columns:1fr}
-  .sheet-head{padding:16px 16px 12px} .sheet-body{padding:0 16px 18px} .howto{margin:0 -16px;padding:16px 16px 4px!important}
+  .sheet-head{padding:18px 16px 14px} .sheet-body{padding:0 16px 20px} .sum-body{padding:18px 16px 6px} .sum-foot{padding:14px 16px 16px}
 }
 /* short landscape (phones on their side) */
 @media (orientation:landscape) and (max-height:520px){
   #app{gap:6px;padding-block:6px}
   .brand{font-size:22px}
-  .roundchip{padding:3px 10px} .roundchip .val{font-size:20px}
-  .keepbox{padding:4px 10px} .ksub{display:none} .knum{font-size:20px}
-  #turnbar{min-height:24px}
-  .who{font-size:13px;padding:4px 8px}
+  .hud-row{min-height:40px}
+  .roundchip .val{font-size:18px}
+  .keepbox .kico{display:none} .knum{font-size:18px}
+  #turnbar{min-height:22px}
+  .who{font-size:9.5px;padding:4px 8px}
   .hint{display:none}
   #panel{width:300px} #panel.wide{width:min(520px,52vw)}
   .pane{gap:6px}
   .pane-head,.note:not(.show),.shint,.blegend{display:none}
-  .steps button{padding:5px 2px;font-size:11px}
+  .steps button{padding:7px 2px 8px;font-size:9.5px}
   .budget{padding:5px 10px} .bfree b{font-size:22px}
   .tool{min-height:40px;padding:5px 8px}
-  .tool .ico{width:22px;height:22px}
-  .bigstat b{font-size:24px}
+  .tool .ico{width:20px;height:20px}
+  .bigstat b{font-size:22px}
   .rrow,.irow{min-height:40px}
   .step{width:30px;height:30px}
-  .back,.ready{min-height:44px} .ready{font-size:19px}
-  .tile .val{font-size:20px}
+  .back,.ready{min-height:44px}
+  .tile .val{font-size:19px}
   .breach .fine{display:none}
   .lane{height:44px} .tl-dens{height:22px}
 }
 /* the wave speed control stays reachable on small screens */
 @media (orientation:portrait),(max-width:720px),(orientation:landscape) and (max-height:520px){
   #pane-wave .pane-head{display:flex;align-items:center}
-  #pane-wave .pane-title{font-size:18px}
-  .speed button{height:28px;min-width:38px;font-size:13px}
+  #pane-wave .pane-title{font-size:20px}
+  .speed button{height:28px;min-width:36px;font-size:11px}
 }
 @media (prefers-reduced-motion:reduce){
-  .hand-cta,.keepbox.hit,.dots::after{animation:none}
+  .hand-cta,.keepbox.hit,.dots::after,.overlay:not([hidden]) > *{animation:none}
   .dots::after{content:"..."}
 }
 </style>
@@ -553,28 +563,28 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 <div id="app">
   <header id="hud">
     <div class="hud-row">
-      <div class="brand" aria-hidden="true"><span class="w">Siege</span><span class="c">line</span></div>
+      <div class="brand" aria-hidden="true"><i class="mark"></i>TPTD</div>
       <div class="roundchip"><span class="lbl">Round</span><span class="val"><span id="v-round">1</span><small>of 8</small></span></div>
       <div class="keepbox" id="keepbox" data-tip="The keep is the defender's base and the score that matters. Every unit that gets through knocks off its strength. When it reaches 0 the attacker wins; if it survives 8 rounds the defender wins.">
         <span class="kico" id="kico"></span>
         <div class="kmain">
-          <div class="ktop"><span class="klbl">The Keep</span><span class="ksub">Units that get through damage it. At zero, the attacker wins.</span><span class="knum"><span id="v-keep">1000</span><small>/ 1000</small></span></div>
+          <div class="ktop"><span class="klbl">Keep</span><span class="knum"><span id="v-keep">1000</span><small>/ 1000</small></span></div>
           <div class="kbar"><i id="v-keepbar" style="width:100%"></i></div>
         </div>
       </div>
-      <button id="btn-info" aria-label="About Siegeline and how to play" data-tip="How to play, and what this project is">i</button>
+      <button id="btn-info" aria-label="How to play" data-tip="How to play">?</button>
     </div>
     <div id="turnbar">
       <span class="who" id="t-who">Defender</span>
       <span class="hint" id="t-hint"></span>
       <span class="netpill" id="netpill" hidden></span>
-      <span class="coins" data-tip="What each side owns in total: free coins plus coins parked in towers, walls, the army, and bridges or charges planned for the next wave."><span class="clbl">Total coins</span><b class="c" id="v-dworth">DEF 300</b><b class="w" id="v-aworth">ATK 300</b></span>
+      <span class="coins" data-tip="What each side owns in total: free coins plus coins parked in towers, walls, the army, and bridges or charges planned for the next wave."><span class="clbl">Worth</span><b class="c" id="v-dworth">DEF 300</b><b class="w" id="v-aworth">ATK 300</b></span>
     </div>
   </header>
 
   <main id="stage">
     <div id="boardwrap">
-      <canvas id="board" aria-label="Siegeline battlefield grid"></canvas>
+      <canvas id="board" aria-label="Battlefield grid"></canvas>
       <div id="toast" role="status" aria-live="polite"></div>
     </div>
 
@@ -614,7 +624,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <div class="brow"><span>Got through to the keep</span><b id="w-y">0</b><em id="w-pct">0%</em></div>
           <div class="splitbar" aria-hidden="true"><i class="d" id="w-sd"></i><i class="a" id="w-sa"></i></div>
           <div class="splitlbl"><span class="c" id="w-ld">Defender 30%</span><span class="w" id="w-la">Attacker 70%</span></div>
-          <p class="fine">How the 200-coin pot would split if the wave ended now. The more strength gets through, the bigger the defender's share.</p>
         </div>
         <div class="tiles">
           <div class="tile"><span class="lbl">Marching</span><span class="val w" id="w-left">0</span></div>
@@ -622,7 +631,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
           <div class="tile"><span class="lbl">Got through</span><span class="val w" id="w-leaks">0</span></div>
         </div>
         <div class="scroll">
-          <div class="browse"><p class="note" id="wave-note">Tap any unit or tower to see how the other side built it.</p></div>
+          <div class="browse"><p class="note" id="wave-note">Tap a unit or tower to inspect it.</p></div>
           <div class="ctx" id="wave-ctx"></div>
         </div>
         <div class="navrow" id="replay-bar" hidden><button class="back" id="rp-again">Restart</button><button class="ready neutral" id="rp-close">Close replay</button></div>
@@ -636,8 +645,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
   <div class="sheet">
     <header class="sheet-head">
       <div>
-        <h1 class="logo" id="info-title"><span class="w">Siege</span><span class="c">line</span></h1>
-        <p class="tagline">Asymmetric 1v1 tower defense · prototype v12 (bridges test)</p>
+        <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
+        <p class="tagline">Two Player Tower Defence · v13</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -645,117 +654,84 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
       <section class="howto">
         <h2>How to play</h2>
         <div class="key">
-          <div class="kd"><b>Defender</b>Cool colours. Walls and one tunable tower type.</div>
-          <div class="ka"><b>Attacker</b>Warm colours. A custom army, a wave you choreograph, bridges and charges.</div>
-          <div class="kk"><b>The Keep</b>The score. 1,000 points. The attacker wins if it falls.</div>
+          <div class="kd"><b>Defender</b>Walls and one tunable tower. Hold the keep for 8 rounds.</div>
+          <div class="ka"><b>Attacker</b>Design an army, time the wave, sabotage the maze. Break the keep.</div>
+          <div class="kk"><b>Keep</b>1,000 points. Whatever gets through comes off it.</div>
         </div>
-        <p>Play on one device and take turns, looking away while the other side plans. Or play online, each on your own device: you both plan at the same time and the wave starts once both sides are ready. Or play alone against the computer, on either side. Either way you keep your role all match.</p>
         <ol>
-          <li><strong>The Defender builds in secret, in three steps.</strong> Maze: walls (5 coins) bend the route. Towers: place them and tap one to tune it. Ready: check the build and what attacked last time.</li>
-          <li><strong>The Attacker plans in secret, in four steps.</strong> Army: pick units and how many. Wave: arrange when each one leaves the breach on a 20-second timeline. Sabotage, if you want it: bridge a wall you’ve seen, or knock out a tower. Ready: check and send.</li>
-          <li><strong>The wave.</strong> Everything is revealed. Bridges go down and charges go off, units take the cheapest route to the keep, towers fire. Tap any unit or tower to inspect it. Afterwards either side can replay it, from the round summary or from the Ready step while planning.</li>
-          <li><strong>The split.</strong> Every round adds a 200-coin pot. The more of the army's strength gets through, the bigger the defender's share, from 30% up to 70%. The side that's losing gets more to recover with.</li>
+          <li><strong>Defender, in secret.</strong> Maze: walls bend the route. Towers: place and tune them. Ready.</li>
+          <li><strong>Attacker, in secret.</strong> Army: pick units. Wave: time them on a 20-second track. Sabotage, if you want it: bridge a wall or knock out a tower. Ready.</li>
+          <li><strong>The wave.</strong> Everything is revealed and plays out. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
+          <li><strong>The split.</strong> Each round adds a 200-coin pot. The more gets through, the bigger the defender’s share, from 30% to 70%.</li>
         </ol>
-        <p><strong>Controls.</strong> Tap or click to build, and drag to draw a line of walls. On touch screens a tower needs a second tap to place, so you can check its range first. On the wave timeline, drag the handles or the dots. When tuning a tower or a unit, the <strong>+</strong> next to each slider is what the next step up costs; it turns red when you can’t afford it.</p>
+        <p>Play on one device and take turns, online on two, or against the computer. Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. The <strong>+</strong> beside a slider is what the next step costs.</p>
       </section>
 
       <section>
-        <h2>The concept</h2>
-        <p>Siegeline is an asymmetric 1v1 PvP tower defense game. One player defends, the other attacks, and each keeps that role for the whole match.</p>
-        <p>There is no fixed path. The map is contested terrain that both sides reshape every round: the Defender builds a maze, and the Attacker lays bridges through it that stay for the rest of the match, or knocks towers out. Every bridge is ground the Defender can never build on again, so the map fills up with the history of the match. And no two matches start on the same ground: each one scatters rough ground and rock across the board. Neither side picks from a fixed menu either. The Defender tunes every tower and the Attacker designs every unit and choreographs every wave, so each round is a new answer to what the other side did last time. Nobody can settle into one dominant habit, and there is always a move that can swing the match.</p>
+        <h2>Towers</h2>
+        <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee, so moving one is free.</p>
+        <div class="callout"><p><code>40 × range × damage × splash × frost × poison × chain + fee</code></p></div>
       </section>
 
       <section>
-        <h2>Core mechanics</h2>
-        <h3>One tower, any build</h3>
-        <p>There is a single tower type. Its tuning starts at 40 coins and every slider or effect multiplies that price. Because the multipliers multiply each other, raising three things at once costs far more than raising each one alone. Range is priced by its square, since a bigger circle covers much more of a winding maze. Fire rate is free: it trades many small hits for a few big ones at the same damage.</p>
-        <p>Each tower also has a build fee that rises with how many towers you already own: the first is free, then 10, 20, 30 and so on. Removing a tower gives back its tuning and the highest fee you’ve paid, so moving a tower and rebuilding it the same way costs nothing, whichever tower it is. Walls stay at 5, so by the middle of a match walls are the cheap way to stretch the route.</p>
-        <div class="callout"><p><code>tower price = 40 × range × damage × splash × frost × poison × chain + build fee</code></p></div>
-        <h3>A permanent army, a choreographed wave</h3>
-        <p>The Attacker keeps up to four unit designs. Each design's price is 15 coins times multipliers for health, speed, armor, dodge, regeneration and resistance. The army is like the Defender's towers: coins stay parked in it, every unit marches every wave, and units that die come back for the next one.</p>
-        <p>The wave timeline decides when each unit leaves the breach. Each design is a track and each unit is a dot; the gap between dots is the gap in time. Bunch a group and it hits the towers in one burst that single-target towers can't handle. Against splash and chain, fewer and tougher units in a looser wave hold up better. Mixing speeds pulls a group apart, so launch slow units earlier if you want everything to arrive together.</p>
-        <div class="callout"><p><code>unit price = 15 × health × speed × armor × dodge × regen × resist</code></p><p>Above 60 coins a big-unit surcharge applies: <code>60 × (price ÷ 60)<sup>1.5</sup></code>. A fully maxed unit costs about 1,060 instead of 407. One giant unit gives towers only seconds to shoot and nothing for splash to hit, so stacking everything onto it has to cost more.</p></div>
-        <h3>Every trait has a counter</h3>
+        <h2>Army</h2>
+        <p>Up to four permanent designs; units that die come back next wave. Health, speed, armor, dodge, regeneration and resistance multiply the price, and above 60 coins a surcharge applies, so one giant unit costs more than its parts. Regeneration only heals out of fire, and resistances cut one kind of damage by 60%.</p>
+        <div class="callout"><p><code>15 × health × speed × armor × dodge × regen × resist</code></p></div>
+        <p>On the timeline each design is a track and each unit a dot. Bunched units overwhelm single-target towers; fewer, tougher units in a looser wave beat splash.</p>
+      </section>
+
+      <section>
+        <h2>Counters</h2>
         <div class="tablewrap">
           <table>
             <thead><tr><th>Tower trait</th><th>Attacker counter</th><th>That counter loses to</th></tr></thead>
             <tbody>
               <tr><td class="d">Rapid fire</td><td class="a">Armor</td><td class="d">Heavy, slow shots</td></tr>
               <tr><td class="d">Single target</td><td class="a">Bunched waves and swarms</td><td class="d">Splash and chain</td></tr>
-              <tr><td class="d">Splash and chain</td><td class="a">Fewer, tougher units in a looser wave</td><td class="d">Single target</td></tr>
-              <tr><td class="d">Direct shots</td><td class="a">Dodge chance</td><td class="d">Splash (an area can't be dodged)</td></tr>
-              <tr><td class="d">Poison</td><td class="a">Regeneration</td><td class="d">Steady direct fire (it only heals out of fire)</td></tr>
-              <tr><td class="d">One huge tower</td><td class="a">A tower charge</td><td class="d">Spreading damage across towers</td></tr>
-              <tr><td class="d">A long maze</td><td class="a">A bridge through one of its walls</td><td class="d">A wall across its far end, or towers beside it</td></tr>
+              <tr><td class="d">Splash and chain</td><td class="a">Fewer, tougher units, spread out</td><td class="d">Single target</td></tr>
+              <tr><td class="d">Direct shots</td><td class="a">Dodge</td><td class="d">Splash</td></tr>
+              <tr><td class="d">Poison</td><td class="a">Regeneration</td><td class="d">Steady direct fire</td></tr>
+              <tr><td class="d">One huge tower</td><td class="a">A tower charge</td><td class="d">Spreading damage</td></tr>
+              <tr><td class="d">A long maze</td><td class="a">A bridge through a wall</td><td class="d">A wall across its far end</td></tr>
             </tbody>
           </table>
         </div>
-        <p>Regeneration heals 1, 2 or 3% of a unit's health per second, but only once it has gone 3 seconds without a direct hit, and only up to 10, 20 or 30% of its health per wave. It patches units up between towers rather than making them immortal.</p>
-        <p>Units can also take a resistance that cuts splash or poison damage by 60%, or makes frost 60% weaker. Resistances are never full immunities.</p>
-        <h3>Routes: units dodge tower fire</h3>
-        <p>Units take the cheapest route to the keep. Every cell costs one step, and every working tower that can hit a cell adds half a step more. So units walk around tower range whenever the detour is short, and towers standing on open ground mostly get bypassed. Walls are how the Defender forces the route through the kill zones. The dashed line always shows the route the units will take, and it updates as you build.</p>
-        <div class="callout"><p><code>cell cost = 1 step + ½ step × towers in range</code></p></div>
-        <h3>Terrain: rough ground and rock</h3>
-        <p>Every match starts on a new map. About <span data-rule="roughShare%">5</span>% of the board is <strong>rough ground</strong> (patches of bare brown earth and gravel): units walk across it like open ground, but nothing can be built on it, so it’s a lane the Defender can never wall. About <span data-rule="rockShare%">5</span>% is <strong>rock</strong> (grey boulders): it blocks units like a wall, and the Defender can build a maze around it for free, but it can’t be removed, built on or bridged.</p>
-        <p>Both kinds are spread evenly across the board in small clusters of one to three tiles, the gates and the cells around them are always clear, and every map is checked before play: there is always a route, and room for a real maze. Online, both devices build the same map from the match code. A rematch gets a new one.</p>
-        <h3>Bridges, charges and the staged rule</h3>
-        <p>A bridge goes on a wall the Attacker has seen. When the wave starts the wall comes down, its coins go back to the Defender, and the cell is open ground for the rest of the match. Nobody can build on it again. Units treat it like any other open cell, and when two routes cost exactly the same they take the one over the bridge. Towers next to it cover it as usual, and the Defender can wall off either end, as long as a route stays open. Taking the wall down first doesn't stop a bridge. Only a tower built on that cell by then does, because the tower is new: the bridge misses and its coins are lost.</p>
-        <p>A bridge costs <span data-rule="bridgeBase">50</span> coins plus <span data-rule="bridgeFee">20</span> for every bridge already on the map, and at most <span data-rule="bridgeCap">1</span> can go down per wave.</p>
-        <div class="callout"><p><code>bridge price = <span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">20</span> × bridges on the map</code></p></div>
-        <p>A charge on a tower knocks it offline for one to three waves (25, 55 or 90 coins). An offline tower can't shoot, can't be removed and can't be retuned, but it still blocks its cell. The Defender sees that it's offline, never for how long. No more than half the towers the Attacker has seen, rounded up, can be offline in the same wave, counting towers still offline from earlier charges.</p>
-        <p>There are no bridges or charges in the first wave, when nothing has been seen yet, or in the final wave: the last round is the army against the defense as built. Both only work on things the Attacker has seen, which means things built before this round. New defenses always get one round of value. Tearing something down and rebuilding it on the same cell doesn't count as new.</p>
-        <h3>Breach, the keep and the shared pot</h3>
-        <p>There is one currency. An army's strength is what it cost. When a unit reaches the keep it carries its cost times the health it has left, so a unit that limps in at 10% health counts for 10%. The breach is the share of the army's strength that got through. It decides two things:</p>
-        <ul>
-          <li>The keep loses exactly that much strength.</li>
-          <li>The 200-coin pot is split by it. A clean hold gives the Defender 30% and the Attacker 70%. A 25% breach splits it evenly. A breach of 50% or more gives the Defender 70%.</li>
-        </ul>
-        <div class="callout"><p><code>defender share = 30% + 40% × (breach ÷ 50%)</code>, kept between 30% and 70%</p></div>
-        <p>Losing a round pays more, so the side that's behind can rebuild. The keep is the real score.</p>
       </section>
 
       <section>
-        <h2>What this demo is</h2>
-        <p>A prototype that proves the core loop, on one screen, across two devices or against the computer. The computer opponent only knows what a human in its seat would know. Each round it tries out dozens of plans in a hidden copy of the wave and plays the one that did best, then explains its choice after the wave. The Attacker always sees the defense as it stood after the last wave, and the Defender sees only the army from the last wave. Online, each side's plan stays private until both lock in; then both devices play the same wave, and the Defender's device settles the result. There is no server and nothing is saved, so reloading the page ends the match. Every number is a rough placeholder, not a balanced value.</p>
+        <h2>Route and terrain</h2>
+        <p>Units take the cheapest route: a step per cell, plus half a step for every tower that can hit it. They walk around tower range when the detour is short, so walls are how you force them through fire. The dashed line always shows the route.</p>
+        <p>Every match gets a new map. <strong>Rough ground</strong> (dotted, about <span data-rule="roughShare%">5</span>%) is open to units but nothing can be built on it. <strong>Rock</strong> (hatched, about <span data-rule="rockShare%">5</span>%) blocks like a free wall and can’t be removed, built on or bridged.</p>
+      </section>
+
+      <section>
+        <h2>Sabotage</h2>
+        <p><strong>Bridge.</strong> Goes on a wall you’ve seen. When the wave starts the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. A tower built on the cell first makes it miss. It costs <span data-rule="bridgeBase">50</span> plus <span data-rule="bridgeFee">20</span> for every bridge on the map, at most <span data-rule="bridgeCap">1</span> a wave.</p>
+        <p><strong>Tower charge.</strong> Knocks a tower you’ve seen offline for 1, 2 or 3 waves (25, 55 or 90). It hits the spot: a tower rebuilt there still goes down, a tower moved away is safe. At most half the towers you’ve seen can be offline at once.</p>
+        <p>No sabotage in the first or the final wave.</p>
+      </section>
+
+      <section>
+        <h2>Rules at a glance</h2>
         <div class="tablewrap">
           <table>
             <thead><tr><th>Rule</th><th>Value</th><th>Note</th></tr></thead>
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal</td></tr>
-              <tr><td>Pot per round</td><td class="n">200</td><td>Split 30–70% by breach</td></tr>
+              <tr><td>Pot per round</td><td class="n">200</td><td>Defender gets 30% + 40% × (breach ÷ 50%), capped at 70%</td></tr>
               <tr><td>Keep</td><td class="n">1,000</td><td>Loses the strength that gets through</td></tr>
-              <tr><td>Rounds</td><td class="n">8</td><td>Defender wins by surviving them</td></tr>
-              <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when it’s bridged</td></tr>
-              <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower owned; removing any tower refunds its tuning and the top fee, so moving one is free</td></tr>
-              <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Health, speed and traits multiply; surcharge above 60</td></tr>
-              <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">20</span> each</td><td>Turns a seen wall into open ground for the rest of the match; +<span data-rule="bridgeFee">20</span> for every bridge already on the map; at most <span data-rule="bridgeCap">1</span> per wave; none in the first or final wave</td></tr>
-              <tr><td class="a">Tower charge</td><td class="n">25 / 55 / 90</td><td>Offline for 1 / 2 / 3 waves; at most half the towers (rounded up) per wave; none in the final wave</td></tr>
-              <tr><td>Rough ground</td><td class="n">~<span data-rule="roughShare%">5</span>%</td><td>Units cross it; nothing can be built on it; new each match</td></tr>
-              <tr><td>Rock</td><td class="n">~<span data-rule="rockShare%">5</span>%</td><td>Blocks like a wall; can’t be removed, built on or bridged; new each match</td></tr>
-              <tr><td class="a">Wave length</td><td class="n">20 s</td><td>Width of the timeline</td></tr>
+              <tr><td>Rounds</td><td class="n">8</td><td>The defender wins by surviving them</td></tr>
+              <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
+              <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower; moving one is free</td></tr>
+              <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Traits multiply; surcharge above 60</td></tr>
+              <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">50</span> + <span data-rule="bridgeFee">20</span> × n</td><td>At most <span data-rule="bridgeCap">1</span> a wave</td></tr>
+              <tr><td class="a">Tower charge</td><td class="n">25 / 55 / 90</td><td>Offline for 1 / 2 / 3 waves</td></tr>
+              <tr><td>Rough ground</td><td class="n">~<span data-rule="roughShare%">5</span>%</td><td>Walkable, unbuildable</td></tr>
+              <tr><td>Rock</td><td class="n">~<span data-rule="rockShare%">5</span>%</td><td>A permanent wall</td></tr>
             </tbody>
           </table>
         </div>
-      </section>
-
-      <section>
-        <h2>Planned tech stack</h2>
-        <p>The full game is a browser game, so it runs on any device and mobile-versus-PC cross-play comes for free. Rendering uses Canvas, moving to PixiJS on WebGL. Multiplayer runs on an authoritative Node.js server over WebSockets. The server owns the game state and only sends each player the other side's moves once both press Ready, so planning is truly simultaneous and nobody can peek.</p>
-        <p>The static frontend is hosted on Cloudflare Pages or Vercel, and the game servers on Fly.io, Railway or Render. A Postgres database such as Supabase holds accounts, ratings and cosmetics, kept separate from the game servers.</p>
-        <p>This setup costs close to nothing to start and scales by adding server instances, with no rewrite. The phase-based rounds make syncing simple, and the same architecture can carry real-time mechanics later.</p>
-      </section>
-
-      <section>
-        <h2>Future directions</h2>
-        <ul>
-          <li>Separate Attacker Elo and Defender Elo for every player, since skill in one role says little about the other.</li>
-          <li>Matchmaking, lobbies, rankings and leagues.</li>
-          <li>More traits on both sides, each with a counter and a counter to that, so the match plays out as an arms race.</li>
-          <li>Real-time mechanics, such as detonating charges in the middle of a wave.</li>
-          <li>Monetization that is fair to the community: cosmetic only, never pay-to-win.</li>
-        </ul>
-        <p>The guiding rule: a fun game first, a business second.</p>
-        <p class="colophon">Siegeline is a working title. Prototype v12 (bridges test), single file, Canvas 2D.</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v13</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -791,31 +767,31 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--paper);outline-
 <!-- How to play: this device or online -->
 <div class="overlay" id="ov-mode" hidden role="dialog" aria-modal="true" aria-labelledby="mode-title">
   <div class="sheet">
-    <header class="sheet-head"><div><h1 class="logo" id="mode-title"><span class="w">Siege</span><span class="c">line</span></h1><p class="tagline">Choose how to play</p></div></header>
+    <header class="sheet-head"><div><h1 class="logo" id="mode-title"><i class="mark"></i>TPTD</h1><p class="tagline">Two Player Tower Defence</p></div></header>
     <div class="modes">
       <div class="modecol">
         <div class="mode">
-          <h3>This device</h3>
-          <p>Pass and play. Take turns on one screen and look away while the other side plans.</p>
+          <h3><span class="idx">01</span>This device</h3>
+          <p>Pass and play on one screen. Look away while the other side plans.</p>
           <button class="ready neutral" id="mode-local">Play here</button>
         </div>
         <div class="mode">
-          <h3>Versus computer</h3>
-          <p>Play alone against the computer. Like a human opponent, it only sees the defense or the army from the last wave. It tests plans before it commits, and tells you its thinking after each wave.</p>
+          <h3><span class="idx">02</span>Versus computer</h3>
+          <p>Either side, three levels. It only sees what a human in its seat would.</p>
           <div class="pick" role="group" aria-label="Your side against the computer"><button data-side="def" aria-pressed="true">Defender</button><button data-side="atk" aria-pressed="false">Attacker</button></div>
           <div class="pick lv" role="group" aria-label="Difficulty"><button data-level="easy" aria-pressed="true">Easy</button><button data-level="normal" aria-pressed="false">Normal</button><button data-level="hard" aria-pressed="false">Hard</button></div>
           <button class="ready neutral" id="mode-solo">Play the computer</button>
         </div>
       </div>
       <div class="mode">
-        <h3>Online</h3>
-        <p>Each player on their own device. Pick your side and share the match code. Your opponent opens this same page, picks the other side and types the same code.</p>
+        <h3><span class="idx">03</span>Online</h3>
+        <p>Each on your own device. Pick a side and share the code; your opponent picks the other side and enters it.</p>
         <div class="rolepick" role="group" aria-label="Your side"><button data-role="def" aria-pressed="false">Defender</button><button data-role="atk" aria-pressed="false">Attacker</button></div>
         <div class="codebox"><label for="mode-code">Code</label><input id="mode-code" maxlength="6" autocomplete="off" spellcheck="false"><button class="mini" id="mode-new">New</button></div>
         <button class="ready neutral" id="mode-online" disabled>Connect</button>
         <div class="netstatus" id="mode-status" role="status"></div>
         <button class="ready neutral" id="mode-restart" hidden>Start a new match</button>
-        <p class="fine">Inside Claude, both players must be signed in and the artifact shared with your opponent directly; a public link can’t connect. Hosted anywhere else, it goes through your relay server if one is set up, or peer to peer.</p>
+        <p class="fine">Inside Claude, both players must be signed in and the artifact shared directly; a public link can’t connect.</p>
       </div>
     </div>
   </div>
@@ -900,7 +876,7 @@ const TKEYS = ['range', 'dps', 'rate', 'splash'];
 const TFX = {
   slow: { name: 'Frost', mult: 1.35, color: '#bff3ff', hint: 'Slows each unit it hits by 40% for 1.5s.' },
   poison: { name: 'Poison', mult: 1.45, color: '#8fe388', hint: 'Adds 60% more damage over 3s, ignoring armor.' },
-  chain: { name: 'Chain', mult: 1.5, color: '#b69cff', hint: 'Each hit jumps to 2 nearby units for half damage.' },
+  chain: { name: 'Chain', mult: 1.5, color: '#a98bff', hint: 'Each hit jumps to 2 nearby units for half damage.' },
 };
 const FXK = ['slow', 'poison', 'chain'];
 const defaultTower = () => ({ range: 2, dps: 2, rate: 3, splash: 0, slow: false, poison: false, chain: false });
@@ -1358,7 +1334,7 @@ function tryBuild(cell, kind, loud) {
     S.dFree -= towerCost(cfg) + fee;
     S.grid[cell] = { t: 'tower', cfg, fee, off: 0, fresh: !seenAs(cell, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
     S.sel = { k: 'tower', cell };
-    puff(x, y, '#5fd0f0');
+    puff(x, y, '#4fd6ee');
   }
   S.gridVer++; recompute();
   refreshUI();
@@ -1374,7 +1350,7 @@ function removeAt(cell) {
   S.grid[cell] = null;
   S.gridVer++; recompute();
   const [x, y] = center(cell);
-  floatText(x, y - 0.1, '+' + val, '#5fd0f0', 15);
+  floatText(x, y - 0.1, '+' + val, '#4fd6ee', 15);
   puff(x, y, '#8b9daa');
   if (S.sel && S.sel.k === 'tower' && S.sel.cell === cell) S.sel = null;
   refreshUI();
@@ -1456,7 +1432,7 @@ function plantBridge(cell) {
   if (S.aFree < cost) { toast(`Not enough coins. This bridge costs ${cost} and you have ${S.aFree} free.`, 'bad'); return; }
   S.charges.set(cell, { kind: 'bridge', waves: 0, cost });
   S.aFree -= cost; S.chargeVer++;
-  const [x, y] = center(cell); puff(x, y, '#ff9142');
+  const [x, y] = center(cell); puff(x, y, '#ff8a3d');
   refreshUI();
 }
 // Planned bridges are priced in the order they were planned; taking one back re-prices the rest.
@@ -1483,7 +1459,7 @@ function plantTower(cell, waves) {
   if (delta > S.aFree) { toast(`That costs ${delta} more and you have ${S.aFree} free.`, 'bad'); return false; }
   S.aFree -= delta;
   S.charges.set(cell, { kind: 'tower', waves, cost }); S.chargeVer++;
-  if (!cur) { const [x, y] = center(cell); puff(x, y, '#b69cff'); }
+  if (!cur) { const [x, y] = center(cell); puff(x, y, '#a98bff'); }
   refreshUI();
   return true;
 }
@@ -1641,7 +1617,7 @@ function updateTowers(dt) {
       S.shots.push({ x: mx, y: my, tgt: best, tx: bx, ty: by, spd: 8, dmg: hit, g, r: TS.splash.steps[c.splash] });
       fx.push({ k: 'smoke', x: mx, y: my, vx: Math.cos(a) * 0.6, vy: Math.sin(a) * 0.6, life: 0.35, max: 0.35, size: 0.1, drag: 0.1 });
     } else {
-      const col = c.poison ? '143,227,136' : c.slow ? '191,243,255' : c.chain ? '182,156,255' : '205,225,255';
+      const col = c.poison ? '143,227,136' : c.slow ? '191,243,255' : c.chain ? '169,139,255' : '205,225,255';
       fx.push({ k: 'tracer', x1: mx, y1: my, x2: bx, y2: by, life: 0.16, max: 0.16, color: col, w: 0.03 + Math.min(0.07, hit / 400) });
       if (strike(best, hit, 'direct', g) && c.chain) chainFrom(best, hit, g);
     }
@@ -1675,8 +1651,8 @@ function detonate(i) {
       g.off = Math.max(g.off || 0, ch.waves);
       S.wave.jammed++; S.totals.jammed++;
       S.gridVer++; recompute(); S.pathFlash = 1.2;
-      fx.push({ k: 'ring', x: cx, y: cy, r0: 0.2, r1: 1.4, life: 0.55, max: 0.55, w: 0.12, color: '182,156,255' });
-      fx.push({ k: 'flash', x: cx, y: cy, r: 1.1, life: 0.25, max: 0.25, color: '182,156,255' });
+      fx.push({ k: 'ring', x: cx, y: cy, r0: 0.2, r1: 1.4, life: 0.55, max: 0.55, w: 0.12, color: '169,139,255' });
+      fx.push({ k: 'flash', x: cx, y: cy, r: 1.1, life: 0.25, max: 0.25, color: '169,139,255' });
       for (let k = 0; k < 14; k++) { const a = Math.random() * TAU, s = 2 + Math.random() * 4; fx.push({ k: 'spark', x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.4, max: 0.4, color: '#d9ccff', drag: 0.05 }); }
       floatText(cx, cy - 0.6, 'TOWER OFFLINE', '#d9ccff', 13);
       addShake(5);
@@ -1735,20 +1711,20 @@ function waveStep(dt) {
    Round flow
    ===================================================================== */
 const DEF_STEPS = [
-  { name: 'Maze', tool: 'wall', hint: 'Step 1 of 3 · Shape the route with walls. Units steer around tower range, so walls are how you force them through it.' },
-  { name: 'Towers', tool: 'tower', hint: 'Step 2 of 3 · Place towers, then tap one to tune it. Watch the route bend away from their range.' },
-  { name: 'Ready', tool: 'inspect', hint: 'Step 3 of 3 · Check your build and what attacked last time.' },
+  { name: 'Maze', tool: 'wall', hint: 'Shape the route with walls.' },
+  { name: 'Towers', tool: 'tower', hint: 'Place towers, then tap one to tune it.' },
+  { name: 'Ready', tool: 'inspect', hint: 'Check your build and what attacked last time.' },
 ];
 const ATK_STEPS = [
-  { name: 'Army', hint: 'Step 1 of 4 · Choose which units march and how many.' },
-  { name: 'Wave', hint: 'Step 2 of 4 · Arrange when each unit leaves the breach.' },
-  { name: 'Sabotage', hint: 'Step 3 of 4 · Optional: bridge a wall you’ve seen, or knock out a tower.' },
-  { name: 'Ready', hint: 'Step 4 of 4 · Check your plan, then start the wave.' },
+  { name: 'Army', hint: 'Choose which units march.' },
+  { name: 'Wave', hint: 'Time when each unit leaves the breach.' },
+  { name: 'Sabotage', hint: 'Optional: bridge a wall or knock out a tower.' },
+  { name: 'Ready', hint: 'Check your plan, then send it.' },
 ];
 const PHASE_UI = {
   defend: { side: 'def', who: 'Defender' },
   attack: { side: 'atk', who: 'Attacker' },
-  wave: { side: 'both', who: 'Wave', hint: 'Everything is revealed. Tap units and towers to inspect them.' },
+  wave: { side: 'both', who: 'Wave', hint: 'Everything is revealed. Tap anything to inspect it.' },
   handoff: { side: 'both', who: 'Handoff', hint: '' },
   summary: { side: 'both', who: 'Debrief', hint: '' },
   over: { side: 'both', who: 'Match over', hint: '' },
@@ -1784,8 +1760,8 @@ function startRound() {
   if (SOLO.on) { soloStartRound(); return; }
   S.next = 'defend';
   setPhase('handoff');
-  showHandoff('def', `Round ${S.round} of ${RULES.rounds}`, 'Defender’s turn',
-    'Attacker, look away. The defender builds and tunes in secret.', 'Defender, tap to start', startDefend);
+  showHandoff('def', `Round ${S.round} of ${RULES.rounds}`, 'Defender',
+    'Attacker, look away.', 'Tap to start', startDefend);
 }
 function startDefend() { S.next = null; setPhase('defend'); }
 function defenderReady() {
@@ -1793,8 +1769,8 @@ function defenderReady() {
   if (SOLO.on) { soloReady(); return; }
   S.next = 'attack';
   setPhase('handoff');
-  showHandoff('atk', `Round ${S.round} of ${RULES.rounds}`, 'Pass to Attacker',
-    'Defender, hand over the device and look away. Attacker, you plan in secret.', 'Attacker, tap to take command', startAttack);
+  showHandoff('atk', `Round ${S.round} of ${RULES.rounds}`, 'Attacker',
+    'Pass the device. Defender, look away.', 'Tap to start', startAttack);
 }
 function startAttack() { S.next = null; setPhase('attack'); }
 function attackerReady() {
@@ -1807,7 +1783,7 @@ function attackerReady() {
   setPhase('handoff');
   const n = armyCount(S.designs), c = sabotageWords();
   showHandoff('both', `Round ${S.round} of ${RULES.rounds}`, `Wave ${S.round}`,
-    `Both players watch. ${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${c}` : ''} against the defense. Tap anything on the board to inspect it.`, 'Start the wave', startWave);
+    `${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${c}` : ''} against the defense.`, 'Start the wave', startWave);
 }
 // "a bridge and 2 charges", for the cards that announce a wave
 function sabotageWords() {
@@ -1945,16 +1921,15 @@ function showSummary() {
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">+${L.dGain}</span>
         <ul><li><span>Pot share ${Math.round(L.share * 100)}%</span><span>+${L.dGain}</span></li>
-        <li><span>Walls bridged, refunded (${L.bridges})</span><span>${L.bridgeRefund ? '+' + L.bridgeRefund : '0'}</span></li>
+        <li><span>Bridged walls refunded (${L.bridges})</span><span>${L.bridgeRefund ? '+' + L.bridgeRefund : '0'}</span></li>
         <li><span>Towers knocked out</span><span>${L.jammed}</span></li>
-        <li><span>Total coins now</span><span>${defWorth()}</span></li></ul></div>
+        <li><span>Worth now</span><span>${defWorth()}</span></li></ul></div>
       <div class="led a"><h3>Attacker</h3><span class="big">+${L.aGain}</span>
         <ul><li><span>Pot share ${100 - Math.round(L.share * 100)}%</span><span>+${L.aGain}</span></li>
         <li><span>Bridges and charges (${L.charges})${L.missed ? `, ${L.missed} missed` : ''}</span><span>${L.chargeCoins ? '−' + L.chargeCoins : '0'}</span></li>
         <li><span>Units through / killed</span><span>${L.leaks} / ${L.kills}</span></li>
-        <li><span>Total coins now</span><span>${atkWorth()}</span></li></ul></div>
-    </div>
-    <p class="fml">The army comes back at full strength next wave. Both sides now spend their new coins in secret.</p>`;
+        <li><span>Worth now</span><span>${atkWorth()}</span></li></ul></div>
+    </div>`;
   $('#sum-next').textContent = `Start round ${S.round + 1}`;
   $('#sum-replay').hidden = !S.lastWave;
   show(el.ovSum);
@@ -1966,14 +1941,13 @@ function showEnd() {
   $('#end-body').innerHTML = `
     <p class="sum-kicker">${d ? `Survived all ${RULES.rounds} rounds` : `The keep fell in round ${S.round}`}</p>
     <h2 class="sum-title end-title ${d ? 'd' : 'a'}" id="end-title">${title}</h2>
-    <p class="fml">${d ? `The keep held with ${Math.ceil(S.keep)} of ${RULES.keep} points left.` : 'The keep is down to zero. The siege line broke through.'}</p>
+    ${d ? `<p class="fml">The keep held with ${Math.ceil(S.keep)} of ${RULES.keep} points left.</p>` : ''}
     ${S.last && d ? splitViz(S.last) : ''}
     <div class="ledger">
-      <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Total kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li><li><span>Total coins</span><span>${defWorth()}</span></li></ul></div>
-      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges laid / towers knocked out</span><span>${t.bridges} / ${t.jammed}</span></li><li><span>Total coins</span><span>${atkWorth()}</span></li></ul></div>
+      <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li><li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
+      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li><li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
     </div>
-    <p class="fml">${online() ? 'Either player can start the next match for both of you. Rematch keeps your sides; Swap sides trades them.'
-      : SOLO.on ? 'Rematch plays the same side again. Open the menu to switch sides or difficulty.' : 'Swap seats for the rematch to try the other side.'}</p>`;
+    ${online() ? '<p class="fml">Either player can start the next match for both.</p>' : ''}`;
   $('#end-swap').hidden = !online();
   $('#end-menu').hidden = !SOLO.on;
   $('#end-replay').hidden = !S.lastWave;
@@ -3158,8 +3132,8 @@ function soloBeginWave() {
   S.next = 'wave';
   setPhase('handoff');
   showHandoff('both', `Round ${S.round} of ${RULES.rounds}`, `Wave ${S.round}`, SOLO.side === 'def'
-    ? `The computer has locked in: ${army} against your defense. Tap anything on the board to inspect it.`
-    : `The computer has built its defense. Your ${army} march on it. Tap anything on the board to inspect it.`,
+    ? `The computer locked in ${army}.`
+    : `The computer has built its defense. Your ${army} march on it.`,
   'Start the wave', startWave);
 }
 // For the simulators: one plan for `side`, thought through to the end at once.
@@ -3381,17 +3355,17 @@ function defBodyHTML(step) {
   if (step === 0) return `
     <div class="tools">${toolBtn('wall', 'Wall', '5 coins')}${toolBtn('remove', 'Remove', 'full refund')}</div>
     <div class="bigstat"><span class="lbl">Route length</span><b id="d-route">15</b><span>steps</span></div>
-    <p class="note show">Units take the shortest route but steer around tower range when the detour is short. Walls force them through your fire. Drag to draw a line of walls.</p>
+    <p class="note show">Drag to draw walls. Units avoid tower range when they can, so walls are what force them through your fire.</p>
     ${bridgeDefNote()}${groundNote()}
-    <p class="note">Glowing walls are new this round. The attacker hasn’t seen them, so it can’t bridge them yet.</p>`;
+    <p class="note">Bright walls are new this round: the attacker hasn’t seen them and can’t bridge them.</p>`;
   if (step === 1) return `
     <div class="tools">${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span> coins')}${toolBtn('remove', 'Remove', 'full refund')}</div>
     <p class="note show" id="d-fee"></p>
     <div class="list" id="d-tlist"></div>`;
   return `<div class="sumgrid" id="d-sum"></div>${bridgeDefNote()}${replayRow()}<div class="list" id="def-intel"></div>`;
 }
-const groundNote = () => (S.terrain.some(v => v) ? `<p class="note show"><b>Brown, stony ground</b> is rough: units cross it and nothing can be built on it. <b>Grey boulders</b> are rock: they block like a wall for free, but can’t be removed.</p>` : '');
-const bridgeDefNote = () => (S.bridges.size ? `<p class="note show"><b>${S.bridges.size === 1 ? 'The orange bridge is' : `The ${S.bridges.size} orange bridges are`} the attacker’s</b>: open ground for the rest of the match. You can’t build on ${S.bridges.size === 1 ? 'it' : 'them'}, but you can wall off either end, or put towers beside ${S.bridges.size === 1 ? 'it' : 'them'}.</p>` : '');
+const groundNote = () => (S.terrain.some(v => v) ? `<p class="note show"><b>Dotted ground</b> is rough: walkable, unbuildable. <b>Hatched</b> is rock: a free wall.</p>` : '');
+const bridgeDefNote = () => (S.bridges.size ? `<p class="note show"><b>${S.bridges.size === 1 ? 'The orange bridge' : `The ${S.bridges.size} orange bridges`}</b> stay open for good. Wall off an end, or cover ${S.bridges.size === 1 ? 'it' : 'them'} with towers.</p>` : '');
 function towerRows() {
   const rows = [];
   S.grid.forEach((g, i) => {
@@ -3423,7 +3397,7 @@ function renderDef() {
   if (S.step === 1) {
     const fee = nextFee();
     $('#d-tprice').textContent = newTowerPrice();
-    $('#d-fee').innerHTML = `Next tower: <b>40 + ${fee} build fee</b>. Each tower you own adds ${RULES.towerFee} to the next fee, so walls are the cheap way to stretch the route. Removing any tower gives back the top fee, so moving one costs nothing.${offline ? ` <b>${plural(offline, 'tower')} offline</b>: knocked out by a charge, locked until it comes back.` : ''}`;
+    $('#d-fee').innerHTML = `Next tower <b>40 + ${fee}</b> fee. Each tower adds ${RULES.towerFee} to the fee; moving one is free.${offline ? ` <b>${plural(offline, 'tower')} offline</b>, locked until it comes back.` : ''}`;
     $('#d-tlist').innerHTML = towerRows();
   }
   if (S.step === 2) {
@@ -3565,7 +3539,7 @@ function timelineHTML() {
         <div class="lane" data-i="${i}"><i class="rng"></i>${Array.from({ length: d.count }, (_, k) => `<span class="clip" data-k="${k}" style="--c:${d.color}"></span>`).join('')}<span class="hdl s" data-h="s" aria-label="Start of ${d.name}"></span><span class="hdl e" data-h="e" aria-label="End of ${d.name}"></span></div>`).join('')}
       <span></span><div class="tl-ruler"><span>0s</span><span>5s</span><span>10s</span><span>15s</span><span>20s</span></div>
     </div>
-    <p class="note show">Each dot is one unit leaving the breach. Drag a track’s orange tabs to squeeze or stretch the whole group, or drag a single dot. Units bunched together hit the towers in one burst; splash and chain punish that.</p>`;
+    <p class="note show">Each dot is a unit leaving the breach. Drag the tabs to squeeze a group, or drag a dot. Bunched units hit in one burst; splash punishes that.</p>`;
 }
 function updateTimeline() {
   const root = $('#tl'); if (!root) return;
@@ -3666,7 +3640,7 @@ function renderAtk() {
     $('#roster').innerHTML = `<div class="lhd"><span>Your army · ${plural(n, 'unit')}, ${av} strength</span><span>tap a design to edit</span></div>` + rosterHTML();
     $('#add-design').disabled = S.designs.length >= RULES.maxDesigns;
     $('#add-sub').textContent = `${S.designs.length} of ${RULES.maxDesigns} designs`;
-    $('#atk-note').innerHTML = 'Your army is permanent. Units that die come back next wave, and removing one refunds it.';
+    $('#atk-note').innerHTML = 'Your army is permanent: units that die come back next wave.';
   }
   if (S.step === 1) updateTimeline();
   if (S.step === 2) renderSabotage();
@@ -3907,131 +3881,65 @@ function rr(c, x, y, w, h, r) {
   c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 
-/* terrain: survey-sheet contours with every fourth line heavier (index contours) */
+/* terrain layer: a flat field with a dot at every cell corner, then rough ground and rock */
 const terr = document.createElement('canvas'), tctx = terr.getContext('2d');
 function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const hills = (() => {
-  const rnd = mulberry32(1610), out = [];
-  for (let k = 0; k < 7; k++) out.push({ x: rnd() * COLS, y: rnd() * ROWS, n: 4 + (rnd() * 6 | 0), s: 0.42 + rnd() * 0.22, a1: 0.07 + rnd() * 0.1, a2: 0.03 + rnd() * 0.06, p1: rnd() * TAU, p2: rnd() * TAU, f1: 2 + (rnd() * 2 | 0), f2: 4 + (rnd() * 3 | 0) });
-  return out;
-})();
 function drawTerrain() {
   if (!S || !canvas.width) return;
   terr.width = canvas.width; terr.height = canvas.height;
   const c = tctx, px = 1 / view.cs;
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, terr.width, terr.height);
   setWorld(c);
-  c.fillStyle = '#15202a'; c.fillRect(0, 0, COLS, ROWS);
-  c.fillStyle = 'rgba(255,255,255,0.016)';
-  for (let r = 0; r < ROWS; r++) for (let q = 0; q < COLS; q++) if ((r + q) % 2) c.fillRect(q, r, 1, 1);
-  c.save(); c.beginPath(); c.rect(0, 0, COLS, ROWS); c.clip();
-  for (const h of hills) {
-    for (let k = 1; k <= h.n; k++) {
-      const R = k * h.s; c.beginPath();
-      for (let s = 0; s <= 90; s++) {
-        const th = s / 90 * TAU, rr2 = R * (1 + h.a1 * Math.sin(h.f1 * th + h.p1) + h.a2 * Math.sin(h.f2 * th + h.p2));
-        const x = h.x + Math.cos(th) * rr2, y = h.y + Math.sin(th) * rr2 * 0.82;
-        s ? c.lineTo(x, y) : c.moveTo(x, y);
-      }
-      const index = k % 4 === 0;
-      c.strokeStyle = index ? 'rgba(128,190,214,0.13)' : 'rgba(128,190,214,0.055)';
-      c.lineWidth = (index ? 1.5 : 1) * px; c.stroke();
-    }
-  }
-  c.restore();
+  c.fillStyle = '#0a0d11'; c.fillRect(0, 0, COLS, ROWS);
+  c.fillStyle = 'rgba(150,172,190,0.2)';
+  const d = Math.max(px, 0.022);
+  for (let x = 1; x < COLS; x++) for (let y = 1; y < ROWS; y++) c.fillRect(x - d, y - d, 2 * d, 2 * d);
   drawGround(c, px);
-  c.strokeStyle = 'rgba(160,205,225,0.16)'; c.lineWidth = px; c.beginPath();
-  for (let x = 1; x < COLS; x++) for (let y = 1; y < ROWS; y++) { c.moveTo(x - 0.07, y); c.lineTo(x + 0.07, y); c.moveTo(x, y - 0.07); c.lineTo(x, y + 0.07); }
-  c.stroke();
 }
 
-// Terrain, drawn once into the terrain layer; each cell's shapes come from its own seed, so a map always looks the
-// same. Rough ground: bare earth with an uneven rim, cracks, gravel and tufts of dry grass. Rock: a faceted boulder
-// lit from the top left, with a smaller stone, on a bed of rubble. Both run into neighbouring cells of their kind.
+// Terrain in map conventions: rough ground is stippled (walkable), rock is a hatched slab (solid). Cells of one
+// kind that touch merge into one shape, outlined only on its outer edges.
 function drawGround(c, px) {
-  const T = S.terrain, kindAt = (q, r) => (q >= 0 && q < COLS && r >= 0 && r < ROWS ? T[r * COLS + q] : 0);
-  const cells = K => { const out = []; for (let i = 0; i < N; i++) if (T[i] === K) out.push([i, i % COLS, (i / COLS) | 0]); return out; };
-  // A kind's ground as circles: a jittered 3×3 in each cell, plus circles on the edges (and corner) it shares with
-  // its own kind. Filled as one path the circles join into one patch.
-  const blobsOf = (K, r0) => {
-    const out = [], F = [0.28, 0.5, 0.72];
-    for (const [i, q, r] of cells(K)) {
-      const rnd = mulberry32(S.mapSeed ^ (i * 7919)), same = (dq, dr) => kindAt(q + dq, r + dr) === K;
-      for (const fy of F) for (const fx of F) out.push([q + fx + (rnd() - 0.5) * 0.04, r + fy + (rnd() - 0.5) * 0.04, r0 + rnd() * 0.05]);
-      if (same(1, 0)) for (const fy of F) out.push([q + 1, r + fy, r0 + 0.03]);
-      if (same(0, 1)) for (const fx of F) out.push([q + fx, r + 1, r0 + 0.03]);
-      if (same(1, 0) && same(0, 1) && same(1, 1)) out.push([q + 1, r + 1, 0.3]);
+  const T = S.terrain, at = (q, r) => (q >= 0 && q < COLS && r >= 0 && r < ROWS ? T[r * COLS + q] : 0);
+  const region = (K, I) => {
+    const cells = [];
+    for (let i = 0; i < N; i++) if (T[i] === K) {
+      const q = i % COLS, r = (i / COLS) | 0, L = at(q - 1, r) === K, R = at(q + 1, r) === K, U = at(q, r - 1) === K, D = at(q, r + 1) === K;
+      cells.push({ q, r, L, R, U, D, x0: q + (L ? 0 : I), x1: q + 1 - (R ? 0 : I), y0: r + (U ? 0 : I), y1: r + 1 - (D ? 0 : I) });
     }
-    return out;
+    return cells;
   };
-  const blobPath = (B, grow) => { c.beginPath(); for (const [x, y, rad] of B) { c.moveTo(x + rad + grow, y); c.arc(x, y, rad + grow, 0, TAU); } };
-  const mix = (A, B, t) => `rgb(${A.map((v, k) => Math.round(v + (B[k] - v) * t)).join(',')})`;
-  // A faceted stone lit from the top left: each facet runs from an off-centre peak to one edge, shaded by the way it faces.
-  const stone = (x, y, R, rnd, dark, light, edge) => {
-    const n = 7 + ((rnd() * 3) | 0), pts = [];
-    for (let k = 0; k < n; k++) { const a = (k / n) * TAU + rnd() * 0.35, rad = R * (0.86 + rnd() * 0.22); pts.push([x + Math.cos(a) * rad, y + Math.sin(a) * rad * 0.86]); }
-    const poly = (dx, dy) => { c.beginPath(); pts.forEach(([X, Y], k) => (k ? c.lineTo(X + dx, Y + dy) : c.moveTo(X + dx, Y + dy))); c.closePath(); };
-    poly(R * 0.16, R * 0.22); c.fillStyle = 'rgba(0,0,0,0.45)'; c.fill();
-    const pk = [x - R * 0.2, y - R * 0.26];
-    for (let k = 0; k < n; k++) {
-      const [ax, ay] = pts[k], [bx, by] = pts[(k + 1) % n], mx = (ax + bx) / 2 - pk[0], my = (ay + by) / 2 - pk[1], l = Math.sqrt(mx * mx + my * my) || 1;
-      const lit = (-0.6 * mx - 0.8 * my) / l;
-      c.beginPath(); c.moveTo(pk[0], pk[1]); c.lineTo(ax, ay); c.lineTo(bx, by); c.closePath();
-      c.fillStyle = mix(dark, light, Math.min(1, Math.max(0, 0.45 + 0.5 * lit + (rnd() - 0.5) * 0.12))); c.fill();
-      c.lineWidth = px * 0.8; c.strokeStyle = c.fillStyle; c.stroke(); // closes hairline gaps between facets
+  const shape = cells => { c.beginPath(); for (const k of cells) c.rect(k.x0, k.y0, k.x1 - k.x0, k.y1 - k.y0); };
+  const edges = cells => {
+    c.beginPath();
+    for (const k of cells) {
+      if (!k.U) { c.moveTo(k.x0, k.y0); c.lineTo(k.x1, k.y0); }
+      if (!k.D) { c.moveTo(k.x0, k.y1); c.lineTo(k.x1, k.y1); }
+      if (!k.L) { c.moveTo(k.x0, k.y0); c.lineTo(k.x0, k.y1); }
+      if (!k.R) { c.moveTo(k.x1, k.y0); c.lineTo(k.x1, k.y1); }
     }
-    if (edge) { poly(0, 0); c.lineWidth = Math.max(px * 1.2, R * 0.09); c.lineJoin = 'round'; c.strokeStyle = edge; c.stroke(); }
-    return pts;
   };
-  // Rough ground
-  const RB = blobsOf(ROUGH, 0.21);
-  if (RB.length) {
-    blobPath(RB, 0.035); c.fillStyle = '#2f251a'; c.fill();
-    blobPath(RB, 0); c.fillStyle = '#5b4732'; c.fill();
-    c.save(); blobPath(RB, 0); c.clip();
-    blobPath(RB, -0.09); c.fillStyle = '#654f37'; c.fill();
-    for (const [i, q, r] of cells(ROUGH)) {
-      const rnd = mulberry32(S.mapSeed ^ (i * 104723));
-      for (let k = 0; k < 4; k++) {
-        c.beginPath(); c.ellipse(q + 0.2 + rnd() * 0.6, r + 0.2 + rnd() * 0.6, 0.08 + rnd() * 0.12, 0.05 + rnd() * 0.07, rnd() * 3, 0, TAU);
-        c.fillStyle = rnd() < 0.5 ? 'rgba(140,112,74,0.35)' : 'rgba(40,30,20,0.3)'; c.fill();
-      }
-      for (let k = 0, n = 1 + (rnd() < 0.6 ? 1 : 0); k < n; k++) {
-        let x = q + 0.25 + rnd() * 0.5, y = r + 0.25 + rnd() * 0.5, a = rnd() * TAU;
-        c.beginPath(); c.moveTo(x, y);
-        for (let s = 0; s < 3; s++) { a += (rnd() - 0.5) * 1.6; x += Math.cos(a) * 0.1; y += Math.sin(a) * 0.1; c.lineTo(x, y); }
-        c.lineWidth = 0.022; c.lineCap = 'round'; c.strokeStyle = 'rgba(33,25,17,0.85)'; c.stroke();
-      }
-      for (let k = 0, n = 4 + ((rnd() * 3) | 0); k < n; k++) {
-        const x = q + 0.16 + rnd() * 0.68, y = r + 0.16 + rnd() * 0.68, R = 0.035 + rnd() * 0.03;
-        stone(x, y, R, rnd, [120, 100, 72], [222, 204, 166], null); // gravel: no outline, so it stays light when small
-      }
-      for (let k = 0, n = rnd() < 0.7 ? 1 + (rnd() < 0.4 ? 1 : 0) : 0; k < n; k++) {
-        const x = q + 0.2 + rnd() * 0.6, y = r + 0.3 + rnd() * 0.55;
-        c.beginPath();
-        for (let b = 0; b < 5; b++) { const a = -Math.PI / 2 + (b - 2) * 0.32 + (rnd() - 0.5) * 0.2, h = 0.09 + rnd() * 0.06; c.moveTo(x, y); c.quadraticCurveTo(x + Math.cos(a) * h * 0.4, y + Math.sin(a) * h * 0.6, x + Math.cos(a) * h, y + Math.sin(a) * h); }
-        c.lineWidth = 0.018; c.lineCap = 'round'; c.strokeStyle = rnd() < 0.5 ? '#a99a5a' : '#c2b16c'; c.stroke();
-      }
-    }
+  const rough = region(ROUGH, 0.05);
+  if (rough.length) {
+    shape(rough); c.fillStyle = 'rgba(214,180,112,0.06)'; c.fill();
+    c.save(); shape(rough); c.clip();
+    c.fillStyle = 'rgba(214,180,112,0.62)';
+    const sp = Math.max(0.125, 1 / Math.floor(1 / (px * 5))), dot = Math.max(px * 0.8, 0.016);
+    for (const k of rough) for (let y = k.r + sp / 2, row = 0; y < k.r + 1; y += sp, row++) for (let x = k.q + sp / 2 + (row % 2 ? sp / 2 : 0); x < k.q + 1; x += sp) c.fillRect(x - dot, y - dot, 2 * dot, 2 * dot);
     c.restore();
+    edges(rough); c.setLineDash([0.06, 0.05]); c.lineWidth = px; c.strokeStyle = 'rgba(214,180,112,0.55)'; c.stroke(); c.setLineDash([]);
   }
-  // Rock
-  const KB = blobsOf(ROCK, 0.22);
-  if (KB.length) {
-    blobPath(KB, 0.03); c.fillStyle = '#14181c'; c.fill();
-    blobPath(KB, 0); c.fillStyle = '#2b3137'; c.fill();
-    for (const [i, q, r] of cells(ROCK)) {
-      const rnd = mulberry32(S.mapSeed ^ (i * 104729)), [x, y] = center(i);
-      for (let k = 0; k < 5; k++) stone(q + 0.14 + rnd() * 0.72, r + 0.14 + rnd() * 0.72, 0.035 + rnd() * 0.03, rnd, [52, 58, 64], [110, 117, 124], '#15191d');
-      const sx = rnd() < 0.5 ? -1 : 1;
-      const main = stone(x - 0.03 * sx + (rnd() - 0.5) * 0.04, y - 0.05, 0.36 + rnd() * 0.04, rnd, [62, 67, 74], [184, 190, 197], '#121518');
-      stone(x + 0.27 * sx, y + 0.27, 0.11 + rnd() * 0.03, rnd, [62, 67, 74], [168, 174, 181], '#121518');
-      const [ax, ay] = main[(rnd() * main.length) | 0];
-      c.beginPath(); c.moveTo(x - 0.06, y - 0.12); c.lineTo(x + (ax - x) * 0.45 + 0.03, y + (ay - y) * 0.45); c.lineTo(x + (ax - x) * 0.8, y + (ay - y) * 0.8);
-      c.lineWidth = 0.025; c.lineCap = 'round'; c.strokeStyle = 'rgba(18,21,24,0.75)'; c.stroke();
-    }
+  const rock = region(ROCK, 0.06);
+  if (rock.length) {
+    shape(rock); c.fillStyle = '#151b22'; c.fill();
+    c.save(); shape(rock); c.clip();
+    c.beginPath();
+    const hs = Math.max(0.12, 1 / Math.floor(1 / (px * 4.5)));
+    for (const k of rock) for (let s2 = -1; s2 < 2; s2 += hs) { c.moveTo(k.q + s2, k.r + 1); c.lineTo(k.q + s2 + 1, k.r); }
+    c.lineWidth = px; c.strokeStyle = 'rgba(160,178,196,0.3)'; c.stroke();
+    c.restore();
+    edges(rock); c.lineWidth = px * 1.4; c.strokeStyle = 'rgba(160,178,196,0.62)'; c.stroke();
   }
-  c.lineCap = 'butt'; c.lineJoin = 'miter';
 }
 
 /* =====================================================================
@@ -4054,7 +3962,7 @@ function bridgeFx(x, y) {
   }
   for (let k = 0; k < 16; k++) {
     const a = Math.random() * TAU, s = 2 + Math.random() * 4;
-    fx.push({ k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.3 + Math.random() * 0.25, max: 0.55, color: Math.random() < 0.5 ? '#ffd27a' : '#ff9142', drag: 0.05 });
+    fx.push({ k: 'spark', x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.3 + Math.random() * 0.25, max: 0.55, color: Math.random() < 0.5 ? '#ffd27a' : '#ff8a3d', drag: 0.05 });
   }
   addShake(5);
 }
@@ -4103,31 +4011,35 @@ function render(t) {
   drawLabels(c, G);
 }
 function drawFrame(c) {
-  const side = document.body.dataset.side;
-  c.lineWidth = 2 / view.cs;
-  c.strokeStyle = side === 'def' ? 'rgba(95,208,240,0.55)' : side === 'atk' ? 'rgba(255,145,66,0.55)' : 'rgba(170,200,215,0.3)';
-  if (S.phase === 'attack') c.setLineDash([0.25, 0.15]);
+  const side = document.body.dataset.side, px = 1 / view.cs;
+  const col = side === 'def' ? '79,214,238' : side === 'atk' ? '255,138,61' : '200,214,226';
+  c.lineWidth = px;
+  c.strokeStyle = `rgba(${col},0.22)`;
+  if (S.phase === 'attack') c.setLineDash([0.12, 0.1]);
   c.strokeRect(0, 0, COLS, ROWS);
   c.setLineDash([]);
+  // corner ticks
+  const L = 0.42; c.beginPath();
+  for (const [x, y, sx, sy] of [[0, 0, 1, 1], [COLS, 0, -1, 1], [0, ROWS, 1, -1], [COLS, ROWS, -1, -1]]) { c.moveTo(x + sx * L, y); c.lineTo(x, y); c.lineTo(x, y + sy * L); }
+  c.lineWidth = px * 2; c.strokeStyle = `rgba(${col},0.9)`; c.stroke();
 }
 function drawGates(c, t) {
-  c.beginPath(); c.moveTo(-GATE + 0.04, MID - 0.32); c.lineTo(0, MID + 0.02); c.lineTo(0, MID + 0.98); c.lineTo(-GATE + 0.04, MID + 1.32); c.closePath();
-  c.fillStyle = 'rgba(255,145,66,0.16)'; c.fill();
-  c.lineWidth = 0.05; c.strokeStyle = 'rgba(255,145,66,0.85)'; c.stroke();
-  for (let k = 0; k < 2; k++) {
-    const ph = ((t * 1.2 + k * 0.5) % 1);
-    const x = -GATE + 0.12 + ph * 0.42;
-    c.beginPath(); c.moveTo(x - 0.1, MID + 0.32); c.lineTo(x + 0.06, MID + 0.5); c.lineTo(x - 0.1, MID + 0.68);
-    c.strokeStyle = `rgba(255,190,120,${0.85 * Math.sin(ph * Math.PI)})`; c.lineWidth = 0.06; c.stroke();
+  const px = 1 / view.cs;
+  // the breach: an orange opening on the left edge, with chevrons drifting in
+  c.fillStyle = 'rgba(255,138,61,0.95)'; c.fillRect(-0.06, MID + 0.08, 0.06, 0.84);
+  for (let k = 0; k < 3; k++) {
+    const ph = reduceMotion ? k / 3 : (t * 0.9 + k / 3) % 1, x = -GATE + 0.1 + ph * (GATE - 0.12);
+    c.beginPath(); c.moveTo(x - 0.08, MID + 0.36); c.lineTo(x + 0.04, MID + 0.5); c.lineTo(x - 0.08, MID + 0.64);
+    c.lineWidth = px * 1.6; c.strokeStyle = `rgba(255,138,61,${0.9 * Math.sin(ph * Math.PI)})`; c.stroke();
   }
   // the keep, in its own gold so it never reads as a tower or a coin count
-  const kx = COLS + 0.06, kw = GATE - 0.1;
-  c.beginPath(); rr(c, kx, MID - 0.25, kw, 1.5, 0.08);
-  c.fillStyle = keepHit > 0 ? `rgba(255,93,93,${0.25 + keepHit * 0.4})` : '#3a2f16'; c.fill();
-  c.lineWidth = 0.05; c.strokeStyle = keepHit > 0 ? '#ff7a7a' : 'rgba(242,212,138,0.95)'; c.stroke();
-  c.fillStyle = 'rgba(242,212,138,0.95)';
-  for (let k = 0; k < 3; k++) c.fillRect(kx + kw - 0.13, MID - 0.18 + k * 0.52, 0.13, 0.3);
-  c.fillStyle = '#0b1219'; c.beginPath(); rr(c, kx + 0.08, MID + 0.28, 0.22, 0.44, 0.1); c.fill();
+  const kx = COLS + 0.1, kw = GATE - 0.16, ky = MID + 0.5 - kw / 2 - 0.12, kh = kw + 0.24, hit = keepHit > 0;
+  c.fillStyle = hit ? `rgba(255,90,90,${0.2 + keepHit * 0.4})` : 'rgba(232,200,115,0.1)'; c.fillRect(kx, ky, kw, kh);
+  c.lineWidth = px * 1.5; c.strokeStyle = hit ? '#ff7a7a' : 'rgba(232,200,115,0.95)'; c.strokeRect(kx, ky, kw, kh);
+  const cx = kx + kw / 2, cy = MID + 0.5, dm = kw * 0.26;
+  c.beginPath(); c.moveTo(cx, cy - dm); c.lineTo(cx + dm, cy); c.lineTo(cx, cy + dm); c.lineTo(cx - dm, cy); c.closePath();
+  c.fillStyle = hit ? '#ff7a7a' : '#e8c873'; c.fill();
+  c.fillStyle = hit ? '#ff7a7a' : 'rgba(232,200,115,0.95)'; c.fillRect(COLS, MID + 0.08, 0.06, 0.84);
 }
 function strokePath(c, p, color, w, t, dash) {
   if (!p) return;
@@ -4158,73 +4070,64 @@ function drawPaths(c, t) {
     if (cell >= 0 && !S.grid[cell] && canBuild(cell, S.tool).ok) hyp = pathWithBlock(cell, S.tool);
   }
   strokePath(c, S.path, hyp ? 'rgba(200,228,242,0.22)' : 'rgba(200,228,242,0.5)', 0.06, t);
-  if (hyp) strokePath(c, hyp, 'rgba(95,208,240,0.95)', 0.075, t, [0.22, 0.12]);
+  if (hyp) strokePath(c, hyp, 'rgba(79,214,238,0.95)', 0.075, t, [0.22, 0.12]);
 }
 function drawWalls(c, t, G) {
-  c.fillStyle = '#263d50';
-  for (let i = 0; i < N; i++) {
-    const g = G[i]; if (!g || g.t !== 'wall') continue;
-    const q = i % COLS, r = (i / COLS) | 0;
-    if (q < COLS - 1) { const n = G[i + 1]; if (n && n.t === 'wall') c.fillRect(q + 0.8, r + 0.22, 0.4, 0.56); }
-    if (r < ROWS - 1) { const n = G[i + COLS]; if (n && n.t === 'wall') c.fillRect(q + 0.22, r + 0.8, 0.56, 0.4); }
-  }
+  const px = 1 / view.cs, I = 0.08;
+  // walls that touch join into one slab
   for (let pass = 0; pass < 2; pass++) {
     const fresh = pass === 1;
-    if (fresh) { c.shadowColor = 'rgba(120,220,255,0.75)'; c.shadowBlur = view.cs * 0.45 * view.dpr * (0.8 + 0.2 * Math.sin(t * 3)); }
-    for (let i = 0; i < N; i++) {
-      const g = G[i]; if (!g || g.t !== 'wall' || !!g.fresh !== fresh) continue;
-      const q = i % COLS, r = (i / COLS) | 0;
-      c.beginPath(); rr(c, q + 0.07, r + 0.07, 0.86, 0.86, 0.13);
-      c.fillStyle = fresh ? '#7cc4e2' : '#33526b'; c.fill();
-    }
-    c.shadowBlur = 0; c.shadowColor = 'transparent';
-    c.lineWidth = 0.04; c.strokeStyle = fresh ? '#d9f6ff' : '#5b82a1';
+    c.fillStyle = fresh ? '#2a5068' : '#1f3242';
     c.beginPath();
     for (let i = 0; i < N; i++) {
       const g = G[i]; if (!g || g.t !== 'wall' || !!g.fresh !== fresh) continue;
       const q = i % COLS, r = (i / COLS) | 0;
-      rr(c, q + 0.13, r + 0.13, 0.74, 0.74, 0.08);
+      c.rect(q + I, r + I, 1 - 2 * I, 1 - 2 * I);
+      if (q < COLS - 1) { const n = G[i + 1]; if (n && n.t === 'wall') c.rect(q + 1 - I, r + 0.3, 2 * I, 0.4); }
+      if (r < ROWS - 1) { const n = G[i + COLS]; if (n && n.t === 'wall') c.rect(q + 0.3, r + 1 - I, 0.4, 2 * I); }
     }
-    c.stroke();
-    c.strokeStyle = fresh ? 'rgba(20,70,95,0.55)' : 'rgba(10,20,30,0.55)';
-    c.lineWidth = 0.035; c.beginPath();
+    c.fill();
+    c.beginPath();
     for (let i = 0; i < N; i++) {
       const g = G[i]; if (!g || g.t !== 'wall' || !!g.fresh !== fresh) continue;
       const q = i % COLS, r = (i / COLS) | 0;
-      c.moveTo(q + 0.16, r + 0.5); c.lineTo(q + 0.84, r + 0.5);
-      c.moveTo(q + 0.5, r + 0.16); c.lineTo(q + 0.5, r + 0.5);
-      c.moveTo(q + 0.32, r + 0.5); c.lineTo(q + 0.32, r + 0.84);
-      c.moveTo(q + 0.68, r + 0.5); c.lineTo(q + 0.68, r + 0.84);
+      c.rect(q + 0.2, r + 0.2, 0.6, 0.6);
     }
-    c.stroke();
+    c.lineWidth = px; c.strokeStyle = fresh ? 'rgba(170,236,250,0.45)' : 'rgba(140,175,200,0.18)'; c.stroke();
+    if (fresh) {
+      c.beginPath();
+      for (let i = 0; i < N; i++) {
+        const g = G[i]; if (!g || g.t !== 'wall' || !g.fresh) continue;
+        const q = i % COLS, r = (i / COLS) | 0;
+        c.rect(q + I, r + I, 1 - 2 * I, 1 - 2 * I);
+      }
+      c.lineWidth = px * 1.2; c.strokeStyle = `rgba(79,214,238,${0.55 + 0.25 * Math.sin(t * 3)})`; c.stroke();
+    }
   }
 }
 // Bridges have no direction: each is a square deck, and a side that touches another bridge runs to the cell
 // edge with no rail, so neighbouring bridges join into one deck (auto-tiled like walls). Boards run the same
 // way on every deck so joined ones read as one surface. planned: an outline for a bridge not laid yet.
 function drawBridgeShape(c, i, planned, t = 0) {
-  const q = i % COLS, r = (i / COLS) | 0, I = 0.07;
+  const q = i % COLS, r = (i / COLS) | 0, I = 0.08, px = 1 / view.cs;
   const has = (dq, dr) => { const qq = q + dq, r2 = r + dr; return !planned && qq >= 0 && qq < COLS && r2 >= 0 && r2 < ROWS && S.bridges.has(r2 * COLS + qq); };
   const L = has(-1, 0), R = has(1, 0), U = has(0, -1), D = has(0, 1);
   const x0 = q + (L ? 0 : I), x1 = q + 1 - (R ? 0 : I), y0 = r + (U ? 0 : I), y1 = r + 1 - (D ? 0 : I);
   if (planned) {
-    c.beginPath(); rr(c, x0, y0, x1 - x0, y1 - y0, 0.1);
-    c.fillStyle = 'rgba(217,138,61,0.4)'; c.fill();
-    c.setLineDash([0.1, 0.07]); c.lineDashOffset = reduceMotion ? 0 : -t * 0.3; c.lineWidth = 0.05; c.strokeStyle = '#ffd27a'; c.stroke(); c.setLineDash([]);
+    c.fillStyle = 'rgba(255,138,61,0.12)'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+    c.setLineDash([0.08, 0.06]); c.lineDashOffset = reduceMotion ? 0 : -t * 0.3; c.lineWidth = px * 1.5; c.strokeStyle = '#ff8a3d'; c.strokeRect(x0, y0, x1 - x0, y1 - y0); c.setLineDash([]);
     return;
   }
-  c.fillStyle = '#b06a2c'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
+  c.fillStyle = 'rgba(255,138,61,0.14)'; c.fillRect(x0, y0, x1 - x0, y1 - y0);
   c.beginPath();
   for (let k = 1; k < 6; k++) { const y = r + k / 6; if (y > y0 + 0.02 && y < y1 - 0.02) { c.moveTo(x0, y); c.lineTo(x1, y); } }
-  c.lineWidth = 0.028; c.strokeStyle = 'rgba(60,24,6,0.8)'; c.stroke();
+  c.lineWidth = px; c.strokeStyle = 'rgba(255,138,61,0.38)'; c.stroke();
   c.beginPath(); // rails on the open sides
   if (!U) { c.moveTo(x0, y0); c.lineTo(x1, y0); }
   if (!D) { c.moveTo(x0, y1); c.lineTo(x1, y1); }
   if (!L) { c.moveTo(x0, y0); c.lineTo(x0, y1); }
   if (!R) { c.moveTo(x1, y0); c.lineTo(x1, y1); }
-  c.lineWidth = 0.06; c.lineCap = 'square'; c.strokeStyle = '#ffd27a'; c.stroke(); c.lineCap = 'butt';
-  c.fillStyle = '#ffd27a'; // posts where two rails meet
-  for (const [px, py, a, b] of [[x0, y0, !L, !U], [x1, y0, !R, !U], [x0, y1, !L, !D], [x1, y1, !R, !D]]) if (a && b) c.fillRect(px - 0.06, py - 0.06, 0.12, 0.12);
+  c.lineWidth = px * 2; c.lineCap = 'square'; c.strokeStyle = '#ff8a3d'; c.stroke(); c.lineCap = 'butt';
 }
 function drawBridges(c, t) {
   for (const i of S.bridges) drawBridgeShape(c, i, false);
@@ -4238,36 +4141,35 @@ function drawTowers(c, t, G) {
   }
 }
 function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0) {
-  c.beginPath(); rr(c, x - 0.43, y - 0.43, 0.86, 0.86, 0.16);
-  c.fillStyle = off ? '#1a1a22' : '#0d1922'; c.fill();
-  c.lineWidth = 0.035; c.strokeStyle = off ? 'rgba(182,156,255,0.6)' : 'rgba(95,208,240,0.45)'; c.stroke();
+  const px = 1 / view.cs, line = off ? 'rgba(169,139,255,0.7)' : 'rgba(79,214,238,0.55)';
+  c.fillStyle = off ? '#14121c' : '#0b151c'; c.fillRect(x - 0.42, y - 0.42, 0.84, 0.84);
+  c.lineWidth = px * 1.2; c.strokeStyle = line; c.strokeRect(x - 0.42, y - 0.42, 0.84, 0.84);
   const fxs = FXK.filter(k => cfg[k]);
   if (!off) fxs.forEach((k, n) => {
-    const span = TAU / fxs.length, a0 = -Math.PI / 2 + n * span + 0.18;
-    c.beginPath(); c.arc(x, y, 0.36, a0, a0 + span - 0.36);
-    c.lineWidth = 0.065; c.strokeStyle = TFX[k].color; c.stroke();
+    const span = TAU / fxs.length, a0 = -Math.PI / 2 + n * span + 0.2;
+    c.beginPath(); c.arc(x, y, 0.34, a0, a0 + span - 0.4);
+    c.lineWidth = px * 2; c.strokeStyle = TFX[k].color; c.stroke();
   });
-  const col = off ? '#56606b' : '#5fd0f0', rate = TS.rate.steps[cfg.rate], len = 0.2 + 0.035 * cfg.range - kick * 0.1;
+  const col = off ? '#5a5f6a' : '#4fd6ee', rate = TS.rate.steps[cfg.rate], len = 0.2 + 0.035 * cfg.range - kick * 0.1;
   c.save(); c.translate(x, y); c.rotate(off ? ang + 0.6 : ang);
+  c.fillStyle = col;
   if (cfg.splash > 0) {
-    const R = 0.19 + 0.025 * cfg.splash;
-    c.fillStyle = col; c.fillRect(0.02, -0.11, len, 0.22);
-    c.fillStyle = '#0d1922'; c.fillRect(len - 0.04, -0.07, 0.06, 0.14);
-    c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fillStyle = off ? '#22252b' : '#18394b'; c.fill(); c.lineWidth = 0.055; c.strokeStyle = col; c.stroke();
+    const R = 0.18 + 0.025 * cfg.splash;
+    c.fillRect(0.02, -0.09, len, 0.18);
+    c.beginPath(); c.arc(0, 0, R, 0, TAU); c.fillStyle = off ? '#1d1c24' : '#0f2630'; c.fill(); c.lineWidth = px * 1.6; c.strokeStyle = col; c.stroke();
   } else {
-    c.fillStyle = col;
-    if (rate >= 2.5) { c.fillRect(0.05, -0.1, len + 0.04, 0.06); c.fillRect(0.05, 0.04, len + 0.04, 0.06); }
-    else if (rate <= 0.6) c.fillRect(0.05, -0.075, len + 0.06, 0.15);
-    else c.fillRect(0.05, -0.05, len + 0.04, 0.1);
-    c.beginPath(); c.arc(0, 0, 0.18, 0, TAU); c.fillStyle = off ? '#22252b' : '#18394b'; c.fill(); c.lineWidth = 0.05; c.strokeStyle = col; c.stroke();
+    if (rate >= 2.5) { c.fillRect(0.05, -0.085, len + 0.04, 0.05); c.fillRect(0.05, 0.035, len + 0.04, 0.05); }
+    else if (rate <= 0.6) c.fillRect(0.05, -0.065, len + 0.06, 0.13);
+    else c.fillRect(0.05, -0.04, len + 0.04, 0.08);
+    c.beginPath(); c.arc(0, 0, 0.17, 0, TAU); c.fillStyle = off ? '#1d1c24' : '#0f2630'; c.fill(); c.lineWidth = px * 1.6; c.strokeStyle = col; c.stroke();
   }
-  c.beginPath(); c.arc(0, 0, 0.065, 0, TAU); c.fillStyle = col; c.fill();
+  c.beginPath(); c.arc(0, 0, 0.05, 0, TAU); c.fillStyle = col; c.fill();
   c.restore();
   if (off) {
-    // jammed: a crackling violet bolt across the tower
+    // jammed: a flickering violet bolt across the tower
     const fl = 0.55 + 0.45 * Math.abs(Math.sin(t * 7 + x * 3));
-    c.beginPath(); c.moveTo(x + 0.06, y - 0.3); c.lineTo(x - 0.1, y + 0.02); c.lineTo(x + 0.05, y + 0.02); c.lineTo(x - 0.08, y + 0.3);
-    c.lineWidth = 0.07; c.strokeStyle = `rgba(182,156,255,${fl})`; c.lineJoin = 'round'; c.stroke();
+    c.beginPath(); c.moveTo(x + 0.06, y - 0.28); c.lineTo(x - 0.09, y + 0.02); c.lineTo(x + 0.05, y + 0.02); c.lineTo(x - 0.07, y + 0.28);
+    c.lineWidth = px * 2; c.strokeStyle = `rgba(169,139,255,${fl})`; c.lineJoin = 'round'; c.stroke();
   }
 }
 function drawCharges(c, t) {
@@ -4315,7 +4217,7 @@ function drawUnits(c, t) {
 function drawShots(c) {
   for (const s of S.shots) {
     c.beginPath(); c.arc(s.x, s.y, 0.09, 0, TAU); c.fillStyle = '#e8f8ff'; c.fill();
-    c.beginPath(); c.arc(s.x, s.y, 0.16, 0, TAU); c.fillStyle = 'rgba(95,208,240,0.3)'; c.fill();
+    c.beginPath(); c.arc(s.x, s.y, 0.16, 0, TAU); c.fillStyle = 'rgba(79,214,238,0.3)'; c.fill();
   }
 }
 function drawFx(c) {
@@ -4346,14 +4248,14 @@ function drawFx(c) {
       const nx = -(p.y2 - p.y1), ny = p.x2 - p.x1;
       for (let s = 1; s < 5; s++) { const f = s / 5, j = (rnd() - 0.5) * 0.3; c.lineTo(p.x1 + (p.x2 - p.x1) * f + nx * j, p.y1 + (p.y2 - p.y1) * f + ny * j); }
       c.lineTo(p.x2, p.y2);
-      c.lineWidth = 0.05 * l + 0.01; c.strokeStyle = `rgba(182,156,255,${l})`; c.lineJoin = 'round'; c.stroke();
+      c.lineWidth = 0.05 * l + 0.01; c.strokeStyle = `rgba(169,139,255,${l})`; c.lineJoin = 'round'; c.stroke();
     }
   }
 }
 function drawRange(c, x, y, R, ok = true) {
   c.beginPath(); c.arc(x, y, R, 0, TAU);
-  c.fillStyle = ok ? 'rgba(95,208,240,0.09)' : 'rgba(255,93,93,0.08)'; c.fill();
-  c.setLineDash([0.13, 0.1]); c.lineWidth = 0.04; c.strokeStyle = ok ? 'rgba(95,208,240,0.8)' : 'rgba(255,93,93,0.8)'; c.stroke(); c.setLineDash([]);
+  c.fillStyle = ok ? 'rgba(79,214,238,0.09)' : 'rgba(255,93,93,0.08)'; c.fill();
+  c.setLineDash([0.13, 0.1]); c.lineWidth = 0.04; c.strokeStyle = ok ? 'rgba(79,214,238,0.8)' : 'rgba(255,93,93,0.8)'; c.stroke(); c.setLineDash([]);
 }
 function drawX(c, cell) {
   const q = cell % COLS, r = (cell / COLS) | 0;
@@ -4410,9 +4312,9 @@ function drawInteraction(c, t, G) {
       if (mine) {
         c.beginPath(); rr(c, q + 0.05, r + 0.05, 0.9, 0.9, 0.16);
         c.setLineDash([0.14, 0.09]); c.lineDashOffset = reduceMotion ? 0 : -t * 0.3;
-        c.lineWidth = 0.06; c.strokeStyle = wall ? `rgba(255,145,66,${pulse})` : `rgba(182,156,255,${pulse})`; c.stroke(); c.setLineDash([]);
+        c.lineWidth = 0.06; c.strokeStyle = wall ? `rgba(255,138,61,${pulse})` : `rgba(169,139,255,${pulse})`; c.stroke(); c.setLineDash([]);
       }
-      c.beginPath(); c.arc(q + 0.5, r + 0.5, wall ? 0.07 : 0.09, 0, TAU); c.fillStyle = wall ? 'rgba(255,145,66,0.8)' : 'rgba(182,156,255,0.9)'; c.fill();
+      c.beginPath(); c.arc(q + 0.5, r + 0.5, wall ? 0.07 : 0.09, 0, TAU); c.fillStyle = wall ? 'rgba(255,138,61,0.8)' : 'rgba(169,139,255,0.9)'; c.fill();
     }
     if (hoverType === 'mouse' && hover >= 0) {
       const g = S.seenGrid[hover];
@@ -4444,7 +4346,7 @@ function drawFloaters(c) {
   for (const f of floaters) {
     const l = f.life / f.max, [sx, sy] = w2s(f.x, f.y);
     const y = sy - (1 - l) * 24;
-    c.font = `700 ${f.size}px "Barlow Semi Condensed", "Arial Narrow", sans-serif`;
+    c.font = `600 ${f.size - 1}px "Geist Mono", ui-monospace, monospace`;
     c.globalAlpha = Math.min(1, l * 2);
     c.lineWidth = 3; c.strokeStyle = 'rgba(6,10,14,0.85)'; c.strokeText(f.text, sx, y);
     c.fillStyle = f.color; c.fillText(f.text, sx, y);
@@ -4452,40 +4354,37 @@ function drawFloaters(c) {
   c.globalAlpha = 1;
 }
 function pill(c, x, y, txt, fg, bg, align = 'left') {
-  c.font = '700 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
+  c.font = '500 10px "Geist Mono", ui-monospace, monospace';
+  if ('letterSpacing' in c) c.letterSpacing = '0.8px';
   const w = c.measureText(txt).width + 14;
-  const bx = align === 'left' ? x : x - w / 2;
-  c.fillStyle = bg; c.beginPath(); rr(c, bx, y, w, 20, 5); c.fill();
-  c.fillStyle = fg; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(txt, bx + 7, y + 10.5);
+  const bx = Math.round(align === 'left' ? x : x - w / 2);
+  c.fillStyle = bg; c.fillRect(bx, y, w, 19);
+  c.fillStyle = fg; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(txt, bx + 7, y + 10);
+  if ('letterSpacing' in c) c.letterSpacing = '0px';
 }
 function drawLabels(c, G) {
   if (removeLabel) {
     const [x, y] = center(removeLabel.cell), [sx, sy0] = w2s(x, y), sy = sy0 - view.cs * 0.66 - 14;
-    pill(c, sx, sy, `Remove +${removeLabel.val}`, '#ffb0b0', 'rgba(6,10,14,0.92)', 'center');
+    pill(c, sx, sy, `REMOVE +${removeLabel.val}`, '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
   }
   if (S.phase === 'attack' && view.cs >= 18) for (const [i, ch] of S.charges) {
     const [x, y] = center(i), [sx, sy] = w2s(x, y - 0.62);
-    if (ch.kind === 'bridge') pill(c, sx, sy - 10, `BRIDGE \u00b7 ${ch.cost}`, '#2c1004', 'rgba(255,190,110,0.95)', 'center');
-    else pill(c, sx, sy - 10, `CHARGE \u00b7 ${ch.waves} WAVE${ch.waves > 1 ? 'S' : ''}`, '#1a1030', 'rgba(182,156,255,0.95)', 'center');
+    if (ch.kind === 'bridge') pill(c, sx, sy - 10, `BRIDGE \u00b7 ${ch.cost}`, '#1f0b02', 'rgba(255,138,61,0.95)', 'center');
+    else pill(c, sx, sy - 10, `CHARGE \u00b7 ${ch.waves}W`, '#140c2a', 'rgba(169,139,255,0.95)', 'center');
   }
   // offline towers: the defender sees "?", the attacker (whose charge it was) sees the waves left
   if (view.cs >= 18) for (let i = 0; i < N; i++) {
     const g = G[i]; if (!g || g.t !== 'tower' || !(g.off > 0)) continue;
     const [x, y] = center(i), [sx, sy] = w2s(x, y + 0.62);
     const txt = S.phase === 'attack' ? `OFF ${g.off}` : S.phase === 'wave' ? 'OFFLINE' : 'OFFLINE ?';
-    pill(c, sx, sy - 10, txt, '#e3d9ff', 'rgba(40,24,80,0.92)', 'center');
+    pill(c, sx, sy - 10, txt, '#d9ccff', 'rgba(20,14,40,0.92)', 'center');
   }
   const tags = {
-    defend: ['YOUR LIVE BUILD · HIDDEN FROM THE ATTACKER', 'LIVE BUILD · HIDDEN', '#5fd0f0'],
-    attack: S.seenRound ? [`DEFENSE AS LAST SEEN AFTER WAVE ${S.seenRound}`, `LAST SEEN · WAVE ${S.seenRound}`, '#ff9142']
-      : ['DEFENSE NOT SEEN YET · REVEALED WHEN YOUR WAVE STARTS', 'DEFENSE NOT SEEN YET', '#ff9142'],
-    wave: replay ? [`REPLAY OF WAVE ${S.round}`, `REPLAY · WAVE ${S.round}`, '#e2e9ee'] : [`WAVE ${S.round} · EVERYTHING REVEALED`, `WAVE ${S.round} · REVEALED`, '#e2e9ee'],
+    defend: ['LIVE BUILD · HIDDEN', '#4fd6ee'],
+    attack: [S.seenRound ? `LAST SEEN · WAVE ${S.seenRound}` : 'NOT SEEN YET', '#ff8a3d'],
+    wave: [replay ? `REPLAY · WAVE ${S.round}` : `WAVE ${S.round}`, '#b3bdc6'],
   }[S.phase];
-  if (tags && view.cs >= 14) {
-    c.font = '700 11px "Barlow Semi Condensed", "Arial Narrow", sans-serif';
-    const room = (view.rot ? ROWS : COLS) * view.cs - 12;
-    pill(c, view.ox + 6, view.oy + 6, c.measureText(tags[0]).width + 14 <= room ? tags[0] : tags[1], tags[2], 'rgba(6,10,14,0.78)');
-  }
+  if (tags && view.cs >= 14) pill(c, view.ox + 8, view.oy + 8, tags[0], tags[1], 'rgba(7,9,12,0.82)');
 }
 
 /* =====================================================================

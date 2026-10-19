@@ -1,6 +1,6 @@
-# Siegeline: notes for Claude Code
+# TPTD (Two Player Tower Defence): notes for Claude Code
 
-Siegeline (working title) is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v12, the bridges-and-terrain test build, on the `bridges` branch. `main` still runs v9 (wall charges) for the friends' Render link.**
+TPTD, Two Player Tower Defence (called Siegeline until v13), is an asymmetric 1v1 tower defense played in the browser. One player defends the keep with walls and towers. The other attacks with an army they design and choreograph. The game started in a long claude.ai chat and moves here now. This file carries over what that chat learned: how the game works, why the rules are what they are, where balance stands, and how to test changes. **Current build: v13 on `main` (what the friends play on Render) and on `bridges` (which GitHub Pages serves). Both carry bridges, terrain and the v13 redesign.**
 
 ## Working with the user
 
@@ -9,6 +9,17 @@ Siegeline (working title) is an asymmetric 1v1 tower defense played in the brows
 - Explain in plain words: what the player sees and feels, not code internals.
 - They deploy by pushing to this repo. Keep the game a single `index.html` that works opened as a file, on GitHub Pages and on Render.
 - Phones matter. Every UI change must work in portrait (the board transposes) and at 390 px wide.
+
+## Look and feel (v13)
+
+The user asked for a minimal, designed look in the game's tech style, with no clutter and no unnecessary text. Keep new UI in this language:
+
+- **Type:** Doto (dot-matrix) only for the wordmark and big numerals (`--f-display`); Geist Mono for labels, buttons, tabs and small numbers (`--f-ui`, usually uppercase, letter-spaced, 10–12 px); Geist for prose (`--f-body`). Loaded from Google Fonts; the fallbacks are system mono and sans.
+- **Colour:** near-black field (`--ink`, `--slate`), hairline borders (`--line`, `--line-2`), cyan for the defender (`--cool`), orange for the attacker (`--warm`), gold only for the keep (`--keep`), violet for tower charges (`--chain`). `--side` follows whose turn it is.
+- **Shape:** 4–6 px radii, 1 px lines, flat fills, no glows or gradients on controls. Accent lines (a 2 px top or left edge, the active tab's underline) carry the side colour.
+- **Board:** a flat field with a dot at each cell corner, a hairline frame with corner ticks (dashed in the attacker's last-seen view). Walls are flat slate blocks joined by narrow links (new ones brighter with a cyan edge); towers are a hairline square with a turret; bridges an orange-railed deck; the keep a gold square with a diamond; terrain stippled or hatched. Canvas text is Geist Mono via `pill()`.
+- **Copy:** one short line where a paragraph used to be. Helper notes on phones hide unless they carry `.show`.
+- **Name:** the player sees TPTD everywhere. Internal identifiers keep the old name on purpose (`window.siegeline`, `SIEGE_RELAY`, `SIEGE_PEER_OPTS`, `siege-p…` rooms, `siegeline-` peer ids), since tests, the relay and the artifact copy rely on them.
 
 ## Repo layout and deploy
 
@@ -22,7 +33,7 @@ Siegeline (working title) is an asymmetric 1v1 tower defense played in the brows
 - **Render** (free web service): Build `npm install`, Start `npm start`. Free instances sleep after 15 minutes without inbound traffic and take about a minute to wake. The page shows "Waking the game server" and retries for 90 s. Pages send a heartbeat every 15 s, so a match keeps the server awake.
 - **GitHub Pages** serves the same `index.html`. Pages hosted elsewhere only use the relay if `const RELAY_HOST = ''` near the top of the script holds the Render URL. With it empty they fall back to PeerJS, which fails between different networks. The players currently use the Render link.
 - **claude.ai artifact:** there is also a copy published as a Claude artifact, where online play uses the claude.ai room capability (`window.claude.use('room')`). That code path is inert elsewhere. Keep it working, but the repo is the source of truth now.
-- **Branches:** `main` is what the friends play on Render (v9, wall charges). `bridges` is a test branch (v12: bridges, terrain, order-free tower fees) that GitHub Pages serves for solo testing. Don't touch `main` from the bridges work; it merges only once the user approves. The builds speak different protocol versions (`PROTO` 1 on main, 4 on bridges) and use protocol-named rooms, so a bridges page can never join a main match.
+- **Branches:** `main` is what the friends play on Render. At the user's request `bridges` was merged into `main` with v13, so both run the same build (`PROTO` 4). `bridges` stays the branch GitHub Pages serves for solo testing; new test work goes there first and reaches `main` only when the user says so. Builds with different `PROTO` numbers use different room names, so an old cached page can never join a newer match.
 
 ## How index.html is organised
 
@@ -30,7 +41,7 @@ Search for these names; the file is long.
 
 - **Rules:** `RULES` (all tunable numbers), `TS` (tower sliders), `US` (unit sliders), `RESIST`, `TPRESETS`/`UPRESETS`, `towerCost`, `unitCost`/`unitRaw`.
 - **Pathing:** `flow` (Dijkstra cost field from the exit, in 1/`FK` units so equal routes prefer bridges), `dangerField`, `nextStep`, `tracePath`, `recompute`, `routeOpenWithout` (connectivity check for "path must stay open").
-- **Terrain:** `ROUGH`/`ROCK`, `S.terrain` (one value per cell) and `S.mapSeed`, `makeTerrain` (seeded, with rerolls), `scatterTerrain` (zones and clusters), `mazeRoom` (the validity check), `startMap`, `withRocks` (puts `{ t: 'rock' }` into a grid), `newMapSeed`, `terrainKey`, `drawGround` (drawn into the terrain layer: rough ground as bare earth with gravel and dry grass, rock as faceted boulders on a rubble bed; both join into neighbouring cells of their kind).
+- **Terrain:** `ROUGH`/`ROCK`, `S.terrain` (one value per cell) and `S.mapSeed`, `makeTerrain` (seeded, with rerolls), `scatterTerrain` (zones and clusters), `mazeRoom` (the validity check), `startMap`, `withRocks` (puts `{ t: 'rock' }` into a grid), `newMapSeed`, `terrainKey`, `drawGround` (drawn into the terrain layer in map conventions: rough ground stippled, rock a hatched slab; touching cells of one kind merge into one outlined shape).
 - **Defender actions:** `canBuild` (also refuses bridges, rough ground and rock), `tryBuild`, `removeAt`, `setTowerCfg`, `seenAs`. Tower fees: `nextFee`, `topFee`, `sellValue`, `sellTower` (refund and fee hand-over), `sellOff`/`keepFees` (selling everything but the offline towers, for the computer and the sim bots).
 - **Attacker actions:** `setDesign`, `changeCount`, `plantBridge`, `canBridge`, `bridgeCost`/`nextBridgePrice`, `plannedBridges`, `repriceBridges`, `plantTower`, `canChargeTower`, `towerCap`, `offlineNext`, `chargeStatus`, `renderSabotage` (step 3's two cards, Bridge a wall and Knock out a tower; `saboMode` is the picked card, which frames its targets on the map). Planned bridges live in `S.charges` with `kind: 'bridge'`; laid ones in `S.bridges` (a Set of cells, shared by both sides).
 - **Wave simulation:** `startWave` (UI) and `prepWave` (setup), `buildSpawns`, `makeUnit`, `waveStep`, `moveUnit`, `updateTowers`, `strike`, `damage`, `leak`, `detonate` (tower charges and laying bridges), `endRound`.
@@ -146,7 +157,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - All missions open, nothing saved (no localStorage).
 - **Never:** the computer never peeks at the player's current plan, at any difficulty.
 
-## The game as it stands (v12, bridges branch)
+## The game as it stands (v13)
 
 - **Modes:** pass-and-play on one device, online on two, or versus the computer on either side. The rules are identical in all three. Since v6 the rule changes are the one-wall charge (v7) and then bridges replacing wall charges (v10).
 
@@ -230,6 +241,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
   - `PROTO` 2 and protocol-named rooms keep it apart from v9 matches.
 - **v11 (bridges branch):** at the user's request, bridges are drawn as direction-free square decks that join with their neighbours, and every match gets random terrain: 5% rough ground and 5% rock, spread evenly, validated, the same on both online devices (rules under "The game as it stands"). The computer's mazes shift a column to use rock and dodge rough ground. `PROTO` 3.
 - **v12 (bridges branch):** at the user's request: tower fees count towers, not which one you sell (the meta moves towers a cell or two each round, and selling an old tower used to cost the fee gap; selling everything and rebuilding was already free, so it only taxed players who didn't know that); rock and rough ground redrawn (faceted boulders, bare earth with gravel); the Sabotage step split into two cards so new players see both options. Same bots and seeds give identical match results to v11 (they already sold and rebuilt everything each round). `PROTO` 4.
+- **v13:** renamed TPTD (Two Player Tower Defence) and redesigned at the user's request: the look described under "Look and feel", terrain redrawn in map conventions, shorter copy everywhere, and the info screen cut to a rules reference. No rule changes, so `PROTO` stays 4. Merged into `main`.
 
 **Where it stands (measured on v6 with the tools below; since then only wall charges changed, see v7 and the single-player measurements):**
 
@@ -259,7 +271,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
 - **The sim's defender bot is crude.** It only counters by rule: splash against cheap or dodging armies, slow heavy shots against armor. It has no answer to regen or high-health bunches. The game's own computer defender (`--defenders game:hard`) is stronger and makes a better baseline, though regen bruisers and high-health designs still beat it.
 - **The sim attacker bot's wall charges were naive** (fixed in v9). It charged a wall beside the middle of each column, next to a tower, which with one-wall charges badly undersold them. v9 gave it the game's wall picks; v10's bots lay bridges with the game's `bridgePicks`.
 - **Terrain (v11) is untested by humans.** Open questions: is 5% + 5% the right amount, do players read the map (the sims say a defender who doesn't adapt to it loses more), and should rough ground slow units or stay plain open ground.
-- **Bridges (v10, test branch) are untested by humans.** Open questions for playtests: do defenders relocate or only wall bridges off (the sims say that choice decides whether bridging every wave pays), is 50 + 20 × n right, and does the kill-zone option ever matter (the computer tests it but never picked it in the sims).
+- **Bridges (v10) are untested by humans.** Open questions for playtests: do defenders relocate or only wall bridges off (the sims say that choice decides whether bridging every wave pays), is 50 + 20 × n right, and does the kill-zone option ever matter (the computer tests it but never picked it in the sims).
 - **Possible features, not built:**
   - Tower targeting modes and a decoy unit trait (postponed by the user).
   - Single-player phase C (campaign). Phases A (v7) and B (v8, the thinking computer) are done.
@@ -296,7 +308,7 @@ npm install                      # repo root: ws, for server.js and the relay te
 
 - The fixed scenarios in the local, online and solo suites click known cells, so they set `roughShare` and `rockShare` to 0 through `window.siegeline.rules`; each suite then has its own terrain section.
 - `test_local.py`: pass-and-play. Covers moving a tuned tower (the oldest, then back) leaving the coins unchanged, the two Sabotage cards, terrain (9 rough and 9 rock tiles, gates clear, 0–2 per zone, the route around rock, no wall or tower on rough ground or rock, rock can't be removed or bridged, the attacker sees rock in round 1, a replay keeps the map, a rematch gets a new one, portrait), building, pricing, tuning, bridges (price 50/70/90, one a wave, the wall refund, nothing built on one, a bridge on a removed wall still lands, one on a wall turned tower misses, the tie-break toward the bridge, planning one by touch on a phone), the charge cap, offline towers, the timeline, win and loss, and phone layout.
-- `test_online.py`: online play. Covers the lobby, ready gating, hidden plans, identical waves on both devices (also at 10×, with a bridge and a tower charge), desync adoption, rematch with swap, drop and rejoin, both devices building the same map and playing the same wave on it (and a new shared map after a rematch), a `main` build with another `PROTO` never joining (skipped if `origin/main` speaks the same protocol), and peer-to-peer. It uses a stand-in for the claude.ai room (`mockroom.js`) and a local PeerJS server.
+- `test_online.py`: online play. Covers the lobby, ready gating, hidden plans, identical waves on both devices (also at 10×, with a bridge and a tower charge), desync adoption, rematch with swap, drop and rejoin, both devices building the same map and playing the same wave on it (and a new shared map after a rematch), a build with another `PROTO` never joining (it takes `origin/main`, so since v13 it is skipped until the two differ again), and peer-to-peer. It uses a stand-in for the claude.ai room (`mockroom.js`) and a local PeerJS server.
 - `test_solo.py`: versus computer. Covers:
   - the mode card, and both sides at every level
   - that thinking leaves the live game untouched, and that the plan is identical whatever the player does while it thinks (same seed)

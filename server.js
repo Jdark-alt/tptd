@@ -1,4 +1,4 @@
-// Siegeline relay server.
+// TPTD (Two Player Tower Defence) relay server.
 // Serves the game (index.html) and passes each player's state to the other players in the same match.
 // The game itself runs in the players' browsers; this server only forwards messages and keeps no game data,
 // so a restart mid-match is harmless: both pages reconnect and resend their state.
@@ -87,4 +87,4 @@ setInterval(() => {
   }
 }, 20000);
 
-server.listen(PORT, () => console.log(`Siegeline server listening on ${PORT}`));
+server.listen(PORT, () => console.log(`TPTD server listening on ${PORT}`));

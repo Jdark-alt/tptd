@@ -1,4 +1,4 @@
-"""Shared helpers for the Siegeline tools. Everything is relative to the repo, so the tools work in any checkout.
+"""Shared helpers for the TPTD tools. Everything is relative to the repo, so the tools work in any checkout.
 
 The game is one file (index.html). Tools never edit it: they write modified copies into tools/.build/ and load
 those in headless Chromium through Playwright.

@@ -1,8 +1,8 @@
 {
-  "name": "siegeline",
+  "name": "tptd",
   "version": "1.0.0",
   "private": true,
-  "description": "Siegeline: serves the game and relays online matches",
+  "description": "TPTD (Two Player Tower Defence): serves the game and relays online matches",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
