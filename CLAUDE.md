@@ -167,7 +167,8 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
 **Measured on v15 (dodge 30%, rising tower charges; `match.py`, the same bots and seeds as v14):**
 - Attacker wins: against the `counter` bot 33/54 → 31/54 ("counter + tower charges" 3/3 → 2/3, "alternate + bridges & towers" 2/3 → 1/3); against `basic` and Normal 43/72 both; the computer attacker 14/18 both.
 - Tower charges per match about halve (against `counter` 10.7 → 5.3–6.3, against Normal 13 → 6; the computer Normal and Hard attackers against Normal 8 → 3 and 6.3 → 2), and charge-heavy attackers leave far more keep against Normal (counter + tower charges 143 → 498, counter + bridges & towers 156 → 512).
-- Dodge barely shows in these runs: the bots use dodge level 2 at most ("ghosts only" keep 216 → 241 against `counter`, 586 → 543 against Normal). The v6 scan's top designs used dodge 3 (now 30%); `scan.py --dodge 3` was not re-run yet.
+- Dodge barely shows in these runs: the bots use dodge level 2 at most ("ghosts only" keep 216 → 241 against `counter`, 586 → 543 against Normal).
+- Where dodge does matter, the top-dodge designs (`scan.py --dodge 3 --hp 6,9 --speed 0,4,7 --armor 0,3 --regen 0,3`, 34 runs, v14 → v15): runs where even the best defense lets more than 30% through 14 → 11, more than 50% 4 → 2. The giant regen dodger (hp9 speed4 dodge3 regen3) 64% → 55%, the armored one (hp9 speed0 armor3 dodge3 regen3) 61% → 43%. Splash numbers don't move (splash can't be dodged), so splash is no longer the only answer to them.
 
 **Roadmap the user chose (hybrid: principles for how it plays, templates for who it is):**
 - **Phase B, the smart brain:** done in v8 (above).
