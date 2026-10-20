@@ -178,28 +178,29 @@
     let worth = S.aFree;
     for (const d of S.designs) worth += d.count * I.unitCost(d);
     S.charges = new Map();
-    const budget = Math.floor(worth * (opt.chargeShare || 0)), k0 = S.totals.sabotage || 0, list = [];
-    let spent = 0, k = k0; // each attempt costs more than the one before it in the match
+    // prices rise with the attempts of each kind in earlier waves; this wave's targets don't raise each other's
+    const budget = Math.floor(worth * (opt.chargeShare || 0)), tries = { bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0 }, list = [];
+    let spent = 0;
     if (budget > 0 && !(S.round >= I.RULES.rounds && opt.noLastCharges)) {
       const tw = [];
-      S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([I.towerValue(g), i, g]); });
+      S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([I.towerCost(g.cfg), i, g]); }); // slider price, as sabotage counts it
       tw.sort((a, b) => b[0] - a[0]);
       const cap = opt.cap ? I.RULES.towerCapShare * tw.reduce((v, [x]) => v + x, 0) : Infinity;
       let tv = 0;
       if (opt.charges === 'towers' || opt.charges === 'both') {
         for (const [v, i, g] of tw) { // knock out the most valuable towers that fit the value cap
           if (g.off > 0) continue;
-          const c = I.towerChargeCost(v, k);
+          const c = I.towerChargeCost(v, tries.koTries);
           if ((tv && tv + v > cap) || spent + c > budget * (opt.charges === 'both' ? 0.6 : 1)) break;
-          list.push([i, 'tower']); spent += c; tv += v; k++;
+          list.push([i, 'tower']); spent += c; tv += v;
         }
       }
       if (opt.charges === 'bridges' || opt.charges === 'both') {
         // the walls that shorten the seen route most, picked like the game's computer does
         for (const i of I.bridgePicks(S.seenGrid, I.bridgeSpots(S.seenGrid, S.bridges), I.RULES.bridgesPerWave, S.bridges)) {
-          const c = I.bridgeCost(k);
+          const c = I.bridgeCost(tries.bridgeTries);
           if (spent + c > budget) break;
-          list.push([i, 'bridge']); spent += c; k++;
+          list.push([i, 'bridge']); spent += c;
         }
       }
     }
@@ -213,7 +214,7 @@
     const last = S.designs[S.designs.length - 1]; // spend leftovers on the last design so coins aren't wasted
     if (last && spec.length > 1) { const extra = Math.floor(left / I.unitCost(last)); last.count += extra; left -= extra * I.unitCost(last); }
     S.aFree = left;
-    if (list.length) S.charges = I.sapPlan(S.seenGrid, S.bridges, list, I.sapT(S.designs, opt.sapTime || 'early'), k0);
+    if (list.length) S.charges = I.sapPlan(S.seenGrid, S.bridges, list, I.sapT(S.designs, opt.sapTime || 'early'), tries);
     return key;
   }
 

@@ -177,14 +177,14 @@ try:
             wait(A, "S.phase==='defend'"); wait(B, "S.phase==='attack'")
             # the attacker's plan also carries a bridge on a wall away from the route: both devices must drop it
             off = B.evaluate('()=>{const S=window.siegeline.state; return S.seenGrid.findIndex((g,i)=>g&&g.t==="wall"&&!S.bridges.has(i)&&!window.siegeline.canBridgeAt(i));}')
-            # and a knock-out priced as if it were the first: both devices price it as the third attempt of the match
+            # and a knock-out priced at 1: both devices price it by the rules, on the tower's slider price with one knock-out sent before
             stale = f"S.charges.set({idx(13, 4)},{{kind:'tower',t:0,cost:1}}); S.aFree-=1;"
-            v13 = ev(B, f"window.siegeline.towerValue(S.seenGrid[{idx(13, 4)}])"); want = int((15 + 0.2 * v13) * 1.25 ** 2 + 0.5)
+            v13 = ev(B, f"window.siegeline.towerCost(S.seenGrid[{idx(13, 4)}].cfg)"); want = int((15 + 0.2 * v13) * 1.25 + 0.5)
             defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else '') + stale)
             A.evaluate("()=>document.querySelector('#def-next').click()"); B.evaluate("()=>document.querySelector('#atk-next').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
-            check(f'a knock-out is priced by the rules on both devices (the third attempt: {want})', ev(A, "S.wave.chargeCoins") == want and ev(B, "S.wave.chargeCoins") == want, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
+            check(f'a knock-out is priced by the rules on both devices (the second knock-out: {want})', ev(A, "S.wave.chargeCoins") == want and ev(B, "S.wave.chargeCoins") == want, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
             # the charges each device started the wave with (the live list empties as they go off, sooner on the 10x device)
             pre = "S.preWave.charges.map(c => c[0])"
             if off >= 0: check('a bridge off the route in a plan is dropped on both devices', ev(A, pre) == ev(B, pre) and off not in ev(A, pre), f'{ev(A, pre)} / {ev(B, pre)}')

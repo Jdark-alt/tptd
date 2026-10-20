@@ -157,6 +157,11 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .routebar b{font:600 13px/1 var(--f-ui);letter-spacing:.02em;color:var(--paper)}
 .routebar i{font-style:normal;letter-spacing:.02em}
 .routebar .up{color:var(--cool)} .routebar .dn{color:#ffb4b4}
+/* auto-tune: one button and what it did */
+.tunerow{display:flex;align-items:center;gap:10px;min-height:28px}
+.tunemsg{flex:1;min-width:0;font:500 10.5px/1.3 var(--f-ui);letter-spacing:.04em;color:var(--muted);font-variant-numeric:tabular-nums}
+.tunemsg b{color:var(--paper);font-weight:600}
+.tunerow .tunebtn{border-color:color-mix(in srgb,var(--side) 55%,transparent);color:var(--side)}
 /* shapes: four pieces, then rotate and flip */
 .shapegrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 38px;gap:6px}
 .shp{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px 7px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;min-width:0;
@@ -246,9 +251,16 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .sodesc{font:400 12.5px/1.45 var(--f-body);color:var(--muted)}
 .socost{font:500 10.5px/1.3 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.02em;margin-top:auto}
 .socost b{color:var(--paper);font-weight:600}
-/* the tower value cap filling as towers are targeted */
-.capbar{display:block;height:3px;background:rgba(255,255,255,.06);overflow:hidden}
-.capbar i{display:block;height:100%;width:0;background:var(--chain);transition:width .2s}
+/* the knock-out cap: the targets' slider prices filling toward half of all the towers seen, and the tapped tower's */
+.capwrap{display:flex;flex-direction:column;gap:6px}
+.caphead{display:flex;justify-content:space-between;gap:8px;font:500 10.5px/1.2 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-variant-numeric:tabular-nums}
+.caphead b{color:var(--paper);font-weight:600}
+.caphead .over{color:#ffb4b4}
+.capbar{display:flex;height:8px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden}
+.capbar i{display:block;height:100%;width:0;transition:width .2s}
+.capbar .fill{background:var(--chain)}
+.capbar .ext{background:rgba(169,139,255,.38)}
+.capbar .ext.over{background:rgba(255,90,90,.6)}
 
 /* editor cards */
 .ed{display:flex;flex-direction:column;gap:10px}
@@ -344,6 +356,16 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .lane .clip{position:absolute;top:31px;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--c);border:2px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
 .lane .clip:nth-of-type(3n){top:26px} .lane .clip:nth-of-type(3n+1){top:36px}
 .lane .clip:hover{transform:scale(1.3)}
+/* auto-align: a row of controls above the tracks, and a tick box before each track's name */
+.align{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line)}
+.alrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.altitle{font:500 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--soft)}
+.alcell{flex:1;min-width:0;font:500 10.5px/1.2 var(--f-ui);color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.align .mini:disabled{opacity:.4;cursor:default}
+.align .mini[aria-pressed=true]{border-color:var(--side);color:var(--side)}
+.align .fine b{color:var(--soft);font-weight:500}
+.alck{width:12px;height:12px;margin:0 6px 0 0;padding:0;vertical-align:-1px;border-radius:2px;border:1px solid var(--muted);background:transparent;cursor:pointer;flex:none}
+.alck[aria-pressed=true]{border-color:var(--warm);background:var(--warm)}
 /* a sapper's track: one diamond to slide */
 .lane.sap{height:34px}
 .lane.sap .clip,.lane.sap .clip:nth-of-type(n){top:16px;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:2px;transform:rotate(45deg)}
@@ -540,8 +562,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
   .tiles .tile{padding:6px 9px;gap:6px}
   .tile .val{font-size:20px}
   .tl-grid{grid-template-columns:76px minmax(0,1fr);gap:5px 8px}
-  .trk-lbl{grid-template-columns:18px minmax(0,1fr);gap:5px}
-  .trk-lbl .ico{width:18px;height:18px}
+  .trk-lbl{grid-template-columns:minmax(0,1fr);gap:5px}
+  .trk-lbl .ico{display:none} /* the dots' colour tells the tracks apart; the align tick needs the room */
   .lane{height:46px}
   .tl-dens{height:24px}
   .sumcell b{font-size:20px}
@@ -703,7 +725,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v17</p>
+        <p class="tagline">Two Player Tower Defence · v18</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -766,8 +788,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
         <h2>Sabotage</h2>
         <p>Each target gets a <strong>sapper</strong> that marches with the army. It walks the route like any unit, towers shoot it like any unit, and it only does its job if it gets there: shot down, its coins are lost. It does nothing at the keep. Time each sapper on the wave track; units walking ahead of it draw the fire.</p>
         <p><strong>Bridge.</strong> Goes on a wall you’ve seen beside the route you saw, or beside one of your bridges. Its sapper lays it on reaching the marked tile beside the wall: the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. If the route no longer passes that tile, or a tower stands where the wall was, it misses. From <span data-rule="bridgeBase">25</span> coins, at most <span data-rule="bridgesPerWave">1</span> a wave.</p>
-        <p><strong>Knock-out.</strong> Goes on a tower you’ve seen. Its sapper stops it shooting for the rest of the wave the moment it walks into the tower’s range. It hits the spot: a tower moved away is safe. It costs <span data-rule="towerOffBase">15</span> plus <span data-rule="towerOffShare%">20</span>% of the tower’s value, and the towers you target in one wave can be worth up to <span data-rule="towerCapShare%">50</span>% of all the towers you saw; one tower always fits.</p>
-        <p>Every attempt, landed or not, makes the next one <span data-rule="sabotageRise+%">25</span>% dearer this match.</p>
+        <p><strong>Knock-out.</strong> Goes on a tower you’ve seen. Its sapper stops it shooting for the rest of the wave the moment it walks into the tower’s range. It hits the spot: a tower moved away is safe. It costs <span data-rule="towerOffBase">15</span> plus <span data-rule="towerOffShare%">20</span>% of the tower’s slider price (its tuning, not its build fee), and the towers you target in one wave can add up to <span data-rule="towerCapShare%">50</span>% of the slider prices of all the towers you saw; one tower always fits.</p>
+        <p>Each bridge costs <span data-rule="bridgeRise%">25</span>% of its base more for every bridge you sent in earlier waves, and each knock-out <span data-rule="towerOffRise%">25</span>% more for every earlier knock-out, landed or not. Targets in the same wave don’t raise each other’s price.</p>
         <p>No sabotage in the first or the final wave.</p>
       </section>
 
@@ -784,14 +806,14 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower; moving one is free</td></tr>
               <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Traits multiply; surcharge above 60</td></tr>
-              <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">25</span> × <span data-rule="sabotageRise">1.25</span>ⁿ</td><td>At most <span data-rule="bridgesPerWave">1</span> a wave, touching the route or a bridge; n counts your earlier sabotage</td></tr>
-              <tr><td class="a">Knock-out</td><td class="n">(<span data-rule="towerOffBase">15</span> + <span data-rule="towerOffShare%">20</span>%) × <span data-rule="sabotageRise">1.25</span>ⁿ</td><td>% of the tower’s value; for the rest of the wave; targets up to <span data-rule="towerCapShare%">50</span>% of the tower value seen</td></tr>
+              <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">25</span> × (1 + <span data-rule="bridgeRise%">25</span>% × b)</td><td>b: your bridges in earlier waves. At most <span data-rule="bridgesPerWave">1</span> a wave, touching the route or a bridge</td></tr>
+              <tr><td class="a">Knock-out</td><td class="n">(<span data-rule="towerOffBase">15</span> + <span data-rule="towerOffShare%">20</span>% × C) × (1 + <span data-rule="towerOffRise%">25</span>% × t)</td><td>C: the tower’s slider price; t: your earlier knock-outs. For the rest of the wave; targets up to <span data-rule="towerCapShare%">50</span>% of the C seen</td></tr>
               <tr><td>Rough ground</td><td class="n">~<span data-rule="roughShare%">5</span>%</td><td>Walkable, unbuildable</td></tr>
               <tr><td>Rock</td><td class="n">~<span data-rule="rockShare%">5</span>%</td><td>A permanent wall</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v17</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v18</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -896,13 +918,14 @@ const RULES = {
   wall: 5, towerBase: 40, towerFee: 10, unitBase: 15, maxDesigns: 4, waveLen: 20,
   // Sabotage marches with the army: each bridge or tower knock-out is carried by a sapper (fixed stats, slider indexes
   // like a unit design) and only happens if the sapper gets there. A bridge turns a wall the attacker saw into open
-  // ground for the rest of the match: it starts at bridgeBase, at most bridgesPerWave go down in one wave, and each must
-  // touch the route as the attacker saw it, or a bridge that does. A knock-out stops a tower for the rest of the wave:
-  // towerOffBase plus towerOffShare of the tower's value as seen. Every attempt in the match, landed or not, makes the
-  // next one sabotageRise times dearer. Towers targeted in one wave are worth at most towerCapShare of the tower value
-  // seen, though one tower can always be targeted.
+  // ground for the rest of the match: bridgeBase, plus bridgeRise of that for every bridge attempt in earlier waves; at
+  // most bridgesPerWave go down in one wave, and each must touch the route as the attacker saw it, or a bridge that
+  // does. A knock-out stops a tower for the rest of the wave: towerOffBase plus towerOffShare of the tower's slider price
+  // as seen (C, no build fee), plus towerOffRise of that for every knock-out attempt in earlier waves. Attempts count
+  // landed or not; targets in the same wave don't raise each other's price. Towers targeted in one wave are worth at
+  // most towerCapShare of the slider prices of the towers seen, though one tower can always be targeted.
   sapper: { hp: 2, speed: 4 }, // 112 HP at 1.6 cells/s: in the sims they land 44-65% of the time, the spec's healthy band
-  bridgeBase: 25, bridgesPerWave: 1, towerOffBase: 15, towerOffShare: 0.2, sabotageRise: 1.25, towerCapShare: 0.5,
+  bridgeBase: 25, bridgeRise: 0.25, bridgesPerWave: 1, towerOffBase: 15, towerOffShare: 0.2, towerOffRise: 0.25, towerCapShare: 0.5,
   // terrain, new each match: shares of the board that are rough ground (units cross it, nothing can be built on
   // it) and rock (blocks like a wall that can't be removed, built on or bridged)
   roughShare: 0.05, rockShare: 0.05,
@@ -1110,8 +1133,9 @@ function newState() {
     terrain: new Uint8Array(N), mapSeed: 0, // ROUGH and ROCK cells for this match (startMap); rock also sits in the grids
     tool: 'wall', sel: null,
     units: [], shots: [], spawnList: [], spawnIdx: 0, waveT: 0, spawnStart: 0, endDelay: 0,
-    // sabotage: attempts in the match (it prices the next one), towerCharges the tower ones, sapOk the ones that landed
-    wave: blankWave(), totals: { kills: 0, leaks: 0, bridges: 0, charges: 0, sabotage: 0, towerCharges: 0, sapOk: 0, through: 0, jammed: 0 },
+    // bridgeTries and koTries: sabotage attempts of each kind in earlier waves, landed or not (they price the next ones);
+    // sapOk the ones that landed
+    wave: blankWave(), totals: { kills: 0, leaks: 0, bridges: 0, charges: 0, bridgeTries: 0, koTries: 0, sapOk: 0, through: 0, jammed: 0 },
     path: null, pathFlash: 0, over: false, overT: 0, winner: null, confirmEmpty: false, last: null, preWave: null, lastWave: null,
   };
 }
@@ -1257,19 +1281,20 @@ function routeOpenWithout(cell) { bfs(tmpA, i => i !== cell && !S.grid[i]); retu
    A bridge goes on a wall the attacker saw: its sapper lays it on reaching its tile beside the wall, the wall's coins
    go back to the defender, and the cell is open ground for the rest of the match. Nobody can build on it, and taking
    the wall down first doesn't stop it; only a tower standing there by then makes it miss, because that tower is new.
-   Prices rise with every attempt in the match, landed or not: the k-th costs sabotageRise^k times its base,
-   multiplied out step by step so both online devices round alike. */
-function rise(k) { let m = 1; for (let n = 0; n < k; n++) m *= RULES.sabotageRise; return m; }
-const bridgeCost = k => Math.round(RULES.bridgeBase * rise(k)); // k: sabotage attempts before it in the match
-const towerChargeCost = (value, k) => Math.round((RULES.towerOffBase + RULES.towerOffShare * value) * rise(k)); // value: the tower as seen
+   Prices rise in a straight line with the attempts of the same kind in earlier waves of the match, landed or not; the
+   sabotage planned this round is all priced off the counts as they stood when the round began, so plan order doesn't
+   matter. A knock-out is priced on the tower's slider price as the attacker saw it (C, towerCost), not its build fee,
+   so identical towers cost the same to knock out. */
+const bridgeCost = b => Math.round(RULES.bridgeBase * (1 + RULES.bridgeRise * b)); // b: bridge attempts in earlier waves
+const towerChargeCost = (C, t) => Math.round((RULES.towerOffBase + RULES.towerOffShare * C) * (1 + RULES.towerOffRise * t)); // t: knock-out attempts in earlier waves
+const sabC = g => towerCost(g.cfg); // what sabotage counts of a tower: its slider price, no fee
 const plannedBridges = () => [...S.charges].filter(([, c]) => c.kind === 'bridge').map(([i]) => i);
 const towerChargeCells = () => [...S.charges].filter(([, c]) => c.kind === 'tower').map(([i]) => i);
-const chargesBefore = () => S.totals.sabotage || 0; // attempts in earlier waves
-const nextBridgePrice = () => bridgeCost(chargesBefore() + S.charges.size);
-// What sabotage on cell would cost: its own place in the order if it's planned, else the next one's.
+const nextBridgePrice = () => bridgeCost(S.totals.bridgeTries || 0);
+// What sabotage on cell costs this round.
 function chargePrice(cell) {
-  const order = [...S.charges.keys()], k = order.indexOf(cell), g = S.seenGrid[cell], n = chargesBefore() + (k >= 0 ? k : order.length);
-  return g && g.t === 'tower' ? towerChargeCost(towerValue(g), n) : bridgeCost(n);
+  const g = S.seenGrid[cell];
+  return g && g.t === 'tower' ? towerChargeCost(sabC(g), S.totals.koTries || 0) : bridgeCost(S.totals.bridgeTries || 0);
 }
 // Where a bridge's sapper has to stand: the first tile of the route (cells in walking order) beside the wall, or beside
 // a bridge joined to it, so a wall behind a bridge can be bridged next. Never a bridge itself; -1 if there's none.
@@ -1470,6 +1495,58 @@ function setTowerCfg(cell, patch) {
   refreshUI();
   return true;
 }
+/* ---------- auto-tune ----------
+   One button spends the defender's free coins on upgrades to the towers already placed: a greedy heavy spender, not an
+   optimiser. Each step is one notch up on one tower (range, damage or splash, or frost, poison or chain switched on),
+   priced as the slider would. A tower's score is damage per second × route cells in its range × (1 + splash radius),
+   +25% for each effect, on the route as it was when the button was pressed. The step with the best gain per coin goes
+   first, until none that adds anything fits; then the cheapest step anywhere, until nothing fits. It never moves, adds or
+   removes anything, lowers a slider, or touches fire rate (free, and the player's call against armor). Undo puts every
+   tower's settings and the coins back while the build is as auto-tune left it. */
+function tuneScore(i, cfg, onRoute) {
+  let n = 0; coverCells(i, cfg, j => { if (onRoute.has(j)) n++; });
+  return TS.dps.steps[cfg.dps] * n * (1 + TS.splash.steps[cfg.splash]) * (1 + 0.25 * FXK.filter(k => cfg[k]).length);
+}
+function tuneSteps(cfg) {
+  const out = [];
+  for (const k of ['range', 'dps', 'splash']) if (cfg[k] < TS[k].steps.length - 1) out.push({ ...cfg, [k]: cfg[k] + 1 });
+  for (const k of FXK) if (!cfg[k]) out.push({ ...cfg, [k]: true });
+  return out;
+}
+let tune = null; // { S, key, before: [[cell, cfg]], spent, n }: what Undo restores
+function autoTune() {
+  const onRoute = new Set(S.path || []), towers = [];
+  S.grid.forEach((g, i) => { if (g && g.t === 'tower' && !(g.off > 0)) towers.push(i); });
+  if (!towers.length) return;
+  const before = towers.map(i => [i, { ...S.grid[i].cfg }]), free0 = S.dFree;
+  const pick = useful => {
+    let best = null;
+    for (const i of towers) {
+      const g = S.grid[i], c0 = towerCost(g.cfg), s0 = useful ? tuneScore(i, g.cfg, onRoute) : 0;
+      for (const cfg of tuneSteps(g.cfg)) {
+        const cost = towerCost(cfg) - c0;
+        if (cost > S.dFree) continue;
+        if (!useful) { if (!best || cost < best.cost) best = { i, cfg, cost }; continue; }
+        const gain = tuneScore(i, cfg, onRoute) - s0, r = gain / Math.max(cost, 1e-9);
+        if (gain > 0 && (!best || r > best.r)) best = { i, cfg, cost, r };
+      }
+    }
+    return best;
+  };
+  let n = 0;
+  for (const useful of [true, false]) for (let st; (st = pick(useful));) { S.dFree -= st.cost; S.grid[st.i].cfg = st.cfg; n++; }
+  if (!n) { toast(`No upgrade fits in ${S.dFree} coins.`, 'def'); return; }
+  S.gridVer++; recompute();
+  tune = { S, key: buildKey(), before, spent: free0 - S.dFree, n };
+  refreshUI();
+}
+function tuneUndo() {
+  if (!tuneFresh()) return;
+  for (const [i, cfg] of tune.before) { const g = S.grid[i]; if (g && g.t === 'tower') g.cfg = cfg; }
+  S.dFree += tune.spent; tune = null;
+  S.gridVer++; recompute(); refreshUI();
+}
+const tuneFresh = () => !!(tune && tune.S === S && tune.key === buildKey());
 // Several cells at once (a shape, or the hint's wall set), all or nothing: cells are [cell, 'wall' | 'tower'] pairs
 // on empty, buildable cells. Walls cost RULES.wall, towers the usual new-tower price (defaultTower, the fee rising
 // with each one), with no discount; afterwards they're ordinary walls and towers.
@@ -1730,25 +1807,19 @@ function plantBridge(cell) {
   const [x, y] = center(cell); puff(x, y, '#ff8a3d');
   refreshUI();
 }
-// Planned sabotage is priced in the order it was planned; taking one back re-prices the rest.
-function repriceCharges() {
-  let k = chargesBefore();
-  for (const [i, c] of S.charges) {
-    const p = c.kind === 'bridge' ? bridgeCost(k++) : towerChargeCost(towerValue(S.seenGrid[i]), k++);
-    S.aFree += c.cost - p; c.cost = p;
-  }
-}
-// The towers targeted in one wave can be worth at most towerCapShare of the tower value the attacker saw, so no wave
-// can black out the whole defense; one tower can always be targeted, however much it's worth.
+// The towers targeted in one wave can be worth at most towerCapShare of the slider prices (C, the same measure as the
+// price) of the towers the attacker saw, so no wave can black out the whole defense; one tower can always be targeted,
+// however much it's worth.
 const seenTowers = () => S.seenGrid.reduce((k, g) => k + (g && g.t === 'tower' ? 1 : 0), 0);
-const towerCap = () => RULES.towerCapShare * towersValue(S.seenGrid);
-const targetValue = (map = S.charges) => { let v = 0; for (const [i, c] of map) if (c.kind === 'tower') v += towerValue(S.seenGrid[i]); return v; };
-const capRoom = (v, map = S.charges) => ![...map.values()].some(c => c.kind === 'tower') || targetValue(map) + v <= towerCap();
-const canChargeTower = cell => { const g = S.seenGrid[cell]; return !!(g && g.t === 'tower' && !(g.off > 0)) && (S.charges.has(cell) || capRoom(towerValue(g))); };
+const sabTotal = G => G.reduce((v, g) => v + (g && g.t === 'tower' ? sabC(g) : 0), 0);
+const towerCap = () => RULES.towerCapShare * sabTotal(S.seenGrid);
+const targetValue = (map = S.charges) => { let v = 0; for (const [i, c] of map) if (c.kind === 'tower') v += sabC(S.seenGrid[i]); return v; };
+const capRoom = (C, map = S.charges) => ![...map.values()].some(c => c.kind === 'tower') || targetValue(map) + C <= towerCap();
+const canChargeTower = cell => { const g = S.seenGrid[cell]; return !!(g && g.t === 'tower' && !(g.off > 0)) && (S.charges.has(cell) || capRoom(sabC(g))); };
 function plantTower(cell) {
   if (!chargeStatus().ok) { toast(chargeStatus().reason, 'atk'); return false; }
   if (S.charges.has(cell)) return true;
-  if (!canChargeTower(cell)) { toast(`Over the cap: the towers you target in one wave can be worth at most ${Math.floor(towerCap())}, half the ${towersValue(S.seenGrid)} you saw.`, 'bad'); return false; }
+  if (!canChargeTower(cell)) { toast(`Over the cap by ${Math.ceil(targetValue() + sabC(S.seenGrid[cell]) - towerCap())}.`, 'bad'); return false; }
   const cost = chargePrice(cell);
   if (cost > S.aFree) { toast(`That costs ${cost} and you have ${S.aFree} free.`, 'bad'); return false; }
   S.aFree -= cost;
@@ -1761,7 +1832,6 @@ function removeCharge(cell) {
   const c = S.charges.get(cell);
   if (!c) return;
   S.charges.delete(cell); S.aFree += c.cost; S.chargeVer++;
-  repriceCharges();
   toast(`${c.kind === 'bridge' ? 'Bridge' : 'Knock-out'} called off · ${c.cost} refunded`, 'atk');
   refreshUI();
 }
@@ -2172,8 +2242,9 @@ function prepWave(seed) {
   S.wave = blankWave();
   S.wave.x = armyValue(S.designs);
   S.wave.charges = S.charges.size; S.wave.chargeCoins = chargesValue(); S.totals.charges += S.charges.size;
-  S.totals.sabotage = chargesBefore() + S.charges.size; // every attempt counts, landed or not
-  S.totals.towerCharges = (S.totals.towerCharges || 0) + towerChargeCells().length;
+  // every attempt counts toward the next one's price, landed or not
+  S.totals.bridgeTries = (S.totals.bridgeTries || 0) + plannedBridges().length;
+  S.totals.koTries = (S.totals.koTries || 0) + towerChargeCells().length;
   // one sapper per planned sabotage, in plan order: its target, its tile (bridges), when it leaves, and how it went
   S.sapList = [...S.charges].map(([cell, c]) => ({ cell, kind: c.kind, at: c.kind === 'bridge' && c.at != null ? c.at : -1, t: clamp(+c.t || 0, 0, 1), state: 'wait' }));
   S.spawnList = buildSpawns(S.sentArmy, S.sapList); S.spawnIdx = 0;
@@ -2379,7 +2450,7 @@ function showEnd() {
     ${S.last && d ? splitViz(S.last) : ''}
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li><li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
-      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li>${t.sabotage ? `<li><span>Sappers landed</span><span>${t.sapOk} / ${t.sabotage}</span></li>` : ''}<li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
+      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li>${t.bridgeTries + t.koTries ? `<li><span>Sappers landed</span><span>${t.sapOk} / ${t.bridgeTries + t.koTries}</span></li>` : ''}<li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
     </div>
     ${online() ? '<p class="fml">Either player can start the next match for both.</p>' : ''}`;
   $('#end-swap').hidden = !online();
@@ -2411,7 +2482,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 7; // 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage. Builds with a different number never see each other
+const PROTO = 8; // 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price. Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10),
@@ -2482,23 +2553,23 @@ function decodeArmy(list) {
 }
 // [cell, kind (1 tower, 2 bridge), launch time (0..1295 of the wave), cost]. Bridges must sit on walls the attacker saw,
 // beside the route it saw or a bridge joined to it, within the cap; tower targets on towers it saw, within the value
-// cap. Everything is priced here by the rules and each bridge gets its sapper's tile, so both devices agree whatever
-// the plan says.
+// cap. Everything is priced here by the rules (off the attempts in earlier waves) and each bridge gets its sapper's
+// tile, so both devices agree whatever the plan says.
 function decodeCharges(list) {
   const m = new Map();
   if (S.round >= RULES.rounds) return m;
-  let nb = 0, k = chargesBefore();
+  let nb = 0;
   if (Array.isArray(list)) for (const a of list) {
     if (!Array.isArray(a)) continue;
     const i = int(a[0], -1, N - 1, -1); if (i < 0 || m.has(i)) continue;
     const kind = a[1] === 1 ? 'tower' : a[1] === 2 ? 'bridge' : null, g = S.seenGrid[i], t = int(a[2], 0, 1295) / 1295;
     if (kind === 'tower') {
-      if (!(g && g.t === 'tower') || g.off > 0 || !capRoom(towerValue(g), m)) continue;
-      m.set(i, { kind, cost: towerChargeCost(towerValue(g), k++), t });
+      if (!(g && g.t === 'tower') || g.off > 0 || !capRoom(sabC(g), m)) continue;
+      m.set(i, { kind, cost: chargePrice(i), t });
     } else if (kind === 'bridge') {
       if (nb >= RULES.bridgesPerWave || !bridgeSpot(i)) continue;
       nb++;
-      m.set(i, { kind, cost: bridgeCost(k++), t, at: seenAnchors().get(i) });
+      m.set(i, { kind, cost: chargePrice(i), t, at: seenAnchors().get(i) });
     }
   }
   return m;
@@ -2961,7 +3032,7 @@ const THINK_MS = 3000; // in the game it stops looking for better plans after th
 const copyDesign = d => ({ ...d, tl: { ...d.tl, pos: null } });
 function soloKnows(side) {
   const K = { side, round: S.round, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null,
-    bridges: [...S.bridges], terrain: S.terrain.slice(), mapKey: terrainKey(S.terrain), sabotage: chargesBefore(), towerCharges: S.totals.towerCharges || 0, deadline: Infinity }; // bridges, terrain and sappers sent are public
+    bridges: [...S.bridges], terrain: S.terrain.slice(), mapKey: terrainKey(S.terrain), bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0, deadline: Infinity }; // bridges, terrain and sappers sent are public
   if (side === 'atk') { K.designs = S.designs.map(copyDesign); K.aFree = S.aFree; }
   else { K.grid = S.grid.map(cloneCell); K.dFree = S.dFree; K.towerSeq = S.towerSeq; }
   return K;
@@ -3101,18 +3172,19 @@ function towerPicks(G, n, br) {
   });
   return list.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
 }
-// Sabotage as the computer and the sim bots plan it, on the defense G as the attacker sees it: list is [[cell, kind]] in
-// plan order, every sapper leaving at t, priced from attempt k on; each bridge gets its sapper's tile on G's route.
-function sapPlan(G, br, list, t, k) {
+// Sabotage as the computer and the sim bots plan it, on the defense G as the attacker sees it: list is [[cell, kind]],
+// every sapper leaving at t, priced off the attempts of each kind in earlier waves (tries: { bridgeTries, koTries });
+// each bridge gets its sapper's tile on G's route.
+function sapPlan(G, br, list, t, tries) {
   const route = routeOn(G, br), m = new Map();
-  for (const [i, kind] of list) m.set(i, kind === 'bridge' ? { kind, cost: bridgeCost(k++), t, at: anchorOf(i, route, br) } : { kind, cost: towerChargeCost(towerValue(G[i]), k++), t });
+  for (const [i, kind] of list) m.set(i, kind === 'bridge' ? { kind, cost: bridgeCost(tries.bridgeTries || 0), t, at: anchorOf(i, route, br) } : { kind, cost: towerChargeCost(sabC(G[i]), tries.koTries || 0), t });
   return m;
 }
 // The best of the seen towers picked (best first) that fit the value cap together; the first always fits.
 function capFit(G, picks) {
-  const cap = RULES.towerCapShare * towersValue(G), out = [];
+  const cap = RULES.towerCapShare * sabTotal(G), out = [];
   let v = 0;
-  for (const i of picks) { const x = towerValue(G[i]); if (!out.length || v + x <= cap) { out.push(i); v += x; } }
+  for (const i of picks) { const x = sabC(G[i]); if (!out.length || v + x <= cap) { out.push(i); v += x; } }
   return out;
 }
 // When the computer's sappers leave: early in the first group of its army, or halfway into it, so units walk ahead.
@@ -3161,11 +3233,11 @@ function* thinkAttack(K, L, rng) {
   const fallback = { plan: { aFree: K.aFree, a: encodeArmy(K.designs, false), c: [] }, note: '' };
   // sabotage is [['b' | 't', cell]], priced in plan order
   const kinds = ch => ch.map(([k, i]) => [i, k === 'b' ? 'bridge' : 'tower']);
-  const sabCost = ch => ch.reduce((v, [k, i], n) => v + (k === 'b' ? bridgeCost(K.sabotage + n) : towerChargeCost(towerValue(seen[i]), K.sabotage + n)), 0);
+  const sabCost = ch => ch.reduce((v, [k, i]) => v + (k === 'b' ? bridgeCost(K.bridgeTries) : towerChargeCost(sabC(seen[i]), K.koTries)), 0);
   let tried = 0, W = [];
   const done = c => {
     const { designs, left } = aiArmy(c.key, c.tm, worth - c.cost);
-    const map = sapPlan(seen, BR, kinds(c.charges), sapT(designs, c.st || 'early'), K.sabotage);
+    const map = sapPlan(seen, BR, kinds(c.charges), sapT(designs, c.st || 'early'), K);
     return { plan: { aFree: left, a: encodeArmy(designs, false), c: encodeCharges(map) }, note: attackNote(K, D, c, designs, tried, W) };
   };
   if (K.round === 1) { // nothing seen yet: an opening, picked at random
@@ -3212,7 +3284,7 @@ function* thinkAttack(K, L, rng) {
       const bs = ch.filter(([k]) => k === 'b').map(([, i]) => i), cost = sabCost(ch);
       if (cost > worth / 2) continue; // most of the coins stay in the army
       const { designs } = aiArmy(c.key, c.tm, worth - cost);
-      const map = sapPlan(seen, BR, kinds(ch), sapT(designs, st), K.sabotage);
+      const map = sapPlan(seen, BR, kinds(ch), sapT(designs, st), K);
       const Y = run(seen, designs, map, 0).Y; yield;
       const counterY = L.foresight ? run(retuneAgainst(seen, designs), designs, map, 1).Y : Y;
       if (L.foresight) yield;
@@ -3466,10 +3538,10 @@ function* thinkDefend(K, L, rng, mem) {
   // value cap, their sappers leaving early in the last army it saw. Targets are tied to the cell, so a dodged version
   // moves those towers to cells the attacker saw as walls. Expecting them from an attacker who never sends any cost
   // Hard keep in the sims, so neither level does.
-  const expect = K.round > 1 && K.round < RULES.rounds && L.foresight > 0 && K.towerCharges > 0;
+  const expect = K.round > 1 && K.round < RULES.rounds && L.foresight > 0 && K.koTries > 0;
   const targets = expect ? capFit(K.seenGrid, towerPicks(K.seenGrid, 2, K.bridgeSet)) : [];
   const sapAt = sapT(threats[0], 'early');
-  const charged = sapPlan(K.seenGrid, K.bridgeSet, targets.map(i => [i, 'tower']), sapAt, K.sabotage);
+  const charged = sapPlan(K.seenGrid, K.bridgeSet, targets.map(i => [i, 'tower']), sapAt, K);
   if (L.foresight) {
     for (const f of fin.slice()) for (const [guard, mode, avoid] of [[-1, 'kill'], [target, f.mode], [targets.length ? -1 : null, f.mode, targets]]) {
       if (guard == null || (mode === 'kill' && f.mode !== 'around') || performance.now() > K.deadline) continue;
@@ -3495,7 +3567,7 @@ function* thinkDefend(K, L, rng, mem) {
     for (let k = 1; k < threats.length; k++) { ys.push(run(b, threats[k], [], k)); yield; }
     if (L.foresight === 2 && K.seenArmy && K.round < RULES.rounds && RULES.bridgesPerWave) { // and the last army with a bridge on its best wall
       const w = bridgePicks(b.G, i => seenWall(i) && !!(b.G[i] && b.G[i].t === 'wall' && !b.G[i].fresh), 1, K.bridgeSet);
-      if (w.length) { ys.push(run(b, threats[0], sapPlan(K.seenGrid, K.bridgeSet, [[w[0], 'bridge']], sapAt, K.sabotage), 0)); yield; }
+      if (w.length) { ys.push(run(b, threats[0], sapPlan(K.seenGrid, K.bridgeSet, [[w[0], 'bridge']], sapAt, K), 0)); yield; }
     }
     if (L.foresight === 2 && b.Yc != null) ys.push(b.Yc); // the charged wave counts toward the worst case too
     const mean = ys.reduce((a, v) => a + v, 0) / ys.length, worst = Math.max(...ys);
@@ -3714,6 +3786,8 @@ function buildPanels() {
   // defender body
   el.defBody.addEventListener('click', e => {
     if (e.target.closest('[data-act=replay]')) { startReplay(); return; }
+    if (e.target.closest('[data-act=tune]')) { autoTune(); return; }
+    if (e.target.closest('[data-act=tune-undo]')) { tuneUndo(); return; }
     const t = e.target.closest('.tool');
     if (t) { S.tool = S.tool === t.dataset.tool && t.dataset.tool === 'remove' ? DEF_STEPS[S.step].tool : t.dataset.tool; pending = -1; pendingRemove = -1; if (S.tool === 'remove') S.sel = null; refreshUI(); return; }
     const sh = e.target.closest('[data-shape]');
@@ -3749,6 +3823,10 @@ function buildPanels() {
     if (t.id === 'add-design') { addDesign(); return; }
     if (t.dataset.act === 'replay') { startReplay(); return; }
     if (t.dataset.rm) { removeCharge(+t.dataset.rm); return; }
+    if (t.dataset.al) { alignState().sel[t.dataset.al] = !alignOn(t.dataset.al); refreshUI(); return; }
+    if (t.dataset.act === 'align') { alignHere(); return; }
+    if (t.dataset.act === 'align-undo') { alignUndo(); return; }
+    if (t.dataset.act === 'align-view') { const A = alignState(); A.seen = !A.seen; refreshUI(); return; }
     if (t.dataset.sabo) { saboMode = saboMode === t.dataset.sabo ? '' : t.dataset.sabo; if (S.sel) S.sel = null; refreshUI(); return; }
     if (t.dataset.act === 'even' || t.dataset.act === 'rush' || t.dataset.act === 'stagger') {
       S.designs.forEach((d, k) => {
@@ -3856,6 +3934,7 @@ function defBodyHTML(step) {
   if (step === 0) return `
     <div class="tools bar">${toolBtn('wall', 'Wall', `${RULES.wall} coins`)}${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span> coins')}${toolBtn('remove', 'Remove', 'refund')}${toolBtn('shape', 'Shapes', '<span id="d-shname"></span>')}</div>
     <div class="routebar" id="d-route"></div>
+    <div class="tunerow" id="d-tune" hidden></div>
     <div id="d-shapes" hidden></div>
     <p class="note" id="d-toolnote"></p>
     ${bridgeDefNote()}${groundNote()}
@@ -3928,6 +4007,10 @@ function renderDef() {
     $('#d-tprice').textContent = newTowerPrice();
     $('#d-shname').textContent = SEGMENTS[shapeSel.k].name;
     $('#d-route').innerHTML = routeBarHTML(); hudCache.route = null;
+    const tr = $('#d-tune'), towers = towerCount(S.grid) > 0;
+    tr.hidden = !towers;
+    if (towers) tr.innerHTML = tuneFresh() ? `<span class="tunemsg">Spent <b>${tune.spent}</b> coins on ${plural(tune.n, 'upgrade')}, <b>${S.dFree}</b> left</span><button class="mini" data-act="tune-undo">Undo</button>`
+      : `<button class="mini tunebtn" data-act="tune" data-tip="Spends your free coins on upgrades to the towers you've placed. Never lowers a slider or changes fire rate.">Auto-tune towers</button><span class="tunemsg">${S.dFree} coins free</span>`;
     const sh = $('#d-shapes');
     sh.hidden = S.tool !== 'shape';
     if (!sh.hidden) sh.innerHTML = shapesHTML();
@@ -4053,8 +4136,9 @@ function atkBodyHTML(step) {
       <button class="sopt" data-sabo="bridge" aria-pressed="false"><span class="sohead"><span class="ico bridge">${ICON.bridge}</span><span class="tname">Bridge a wall</span></span>
         <span class="sodesc">A sapper opens the wall for the rest of the match: a shortcut through the maze.</span><span class="socost" id="a-sabo-bridge"></span></button>
       <button class="sopt" data-sabo="tower" aria-pressed="false"><span class="sohead"><span class="ico jam">${ICON.jam}</span><span class="tname">Knock out a tower</span></span>
-        <span class="sodesc">A sapper stops the tower for the rest of the wave once it walks into range.</span><span class="socost" id="a-sabo-tower"></span><span class="capbar" aria-hidden="true"><i id="a-capbar"></i></span></button>
+        <span class="sodesc">A sapper stops the tower for the rest of the wave once it walks into range.</span><span class="socost" id="a-sabo-tower"></span></button>
     </div>
+    ${capHTML('a-cap')}
     <div class="callout2" id="a-chg-note"></div><div class="list" id="a-charges"></div>`;
   return `<div class="sumgrid" id="a-sum"></div><p class="note show" id="a-seen-note"></p>${replayRow()}`;
 }
@@ -4073,16 +4157,82 @@ function timelineHTML() {
   if (!active.length && !saps.length) return '<p class="note show">Your army is empty. Add units in step 1, then come back here to arrange them.</p>';
   return `<div class="tl-head"><span class="tl-title">Wave timeline</span><span class="tl-len">${RULES.waveLen} seconds</span>
       <button class="mini" data-act="even">Even</button><button class="mini" data-act="stagger">One after another</button><button class="mini" data-act="rush">All at once</button></div>
+    <div class="align" id="a-align">
+      <div class="alrow"><span class="altitle">Align</span><span class="alcell" id="al-cell"></span>
+        <button class="mini" data-act="align" id="al-go">Align here</button><button class="mini" data-act="align-undo" id="al-undo">Undo</button><button class="mini" data-act="align-view" id="al-view" aria-pressed="false" data-tip="Show the route as you saw it instead of the one with your sabotage landed. Alignment always uses the latter.">Seen route</button></div>
+      <p class="fine" id="al-note"></p>
+    </div>
     <div class="tl-grid">
       <div class="tl-peaklbl" id="tl-peak"></div>
       <div class="tl-dens" id="tl-dens">${'<i></i>'.repeat(20)}</div>
-      ${active.map(({ d, i }) => `<div class="trk-lbl"><span class="ico">${unitSVG(d)}</span><span class="rmain"><span class="rname">${d.name}</span><span class="rsub" id="trk-sub-${i}"></span></span></div>
+      ${active.map(({ d, i }) => `<div class="trk-lbl"><span class="ico">${unitSVG(d)}</span><span class="rmain"><span class="rname"><button class="alck" data-al="d${i}" aria-pressed="false" aria-label="Align ${d.name}"></button>${d.name}</span><span class="rsub" id="trk-sub-${i}"></span></span></div>
         <div class="lane" data-i="${i}"><i class="rng"></i>${Array.from({ length: d.count }, (_, k) => `<span class="clip" data-k="${k}" style="--c:${d.color}"></span>`).join('')}<span class="hdl s" data-h="s" aria-label="Start of ${d.name}"></span><span class="hdl e" data-h="e" aria-label="End of ${d.name}"></span></div>`).join('')}
-      ${saps.map(([cell, c]) => `<div class="trk-lbl"><span class="ico ${c.kind === 'bridge' ? 'bridge' : 'jam'}">${c.kind === 'bridge' ? ICON.bridge : ICON.jam}</span><span class="rmain"><span class="rname">${c.kind === 'bridge' ? 'Bridge' : 'Knock-out'}</span><span class="rsub" id="sap-sub-${cell}"></span></span></div>
+      ${saps.map(([cell, c]) => `<div class="trk-lbl"><span class="ico ${c.kind === 'bridge' ? 'bridge' : 'jam'}">${c.kind === 'bridge' ? ICON.bridge : ICON.jam}</span><span class="rmain"><span class="rname"><button class="alck" data-al="s${cell}" aria-pressed="false" aria-label="Align this sapper"></button>${c.kind === 'bridge' ? 'Bridge' : 'Knock-out'}</span><span class="rsub" id="sap-sub-${cell}"></span></span></div>
         <div class="lane sap" data-sap="${cell}"><span class="clip" data-k="0" style="--c:${c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)'}" aria-label="Sapper"></span></div>`).join('')}
       <span></span><div class="tl-ruler"><span>0s</span><span>5s</span><span>10s</span><span>15s</span><span>20s</span></div>
     </div>
     <p class="note show">Each dot is a unit leaving the breach. Drag the tabs to squeeze a group, or drag a dot.${saps.length ? ' Towers shoot whoever is nearest the keep, so units ahead of a sapper draw the fire.' : ' Bunched units hit in one burst; splash punishes that.'}</p>`;
+}
+/* ---------- auto-align ----------
+   The attacker taps a cell on the route and presses Align here: the timeline is rewritten so the ticked tracks (every
+   army design by default, no sappers) arrive at that cell as close to the same moment as the estimate allows. It uses
+   the projected route (the seen defense with the planned bridges laid and the knocked-out towers silent), and the
+   timeline's walking estimate: a unit leaving at share p of the wave reaches the cell at 0.35 + p × waveLen + d ÷ v,
+   with d = 1.05 + the cell's place on the route. The slowest leaves at 0 and the rest wait for it; a design's units
+   are spread ALIGN_GAP apart around its time. A unit that would have to leave after the wave ends is left at the end
+   and counted. An estimate only: frost, slows and deaths aren't in it, and the test run is how to check it. */
+const ALIGN_GAP = 0.2 / RULES.waveLen; // 0.2 s between units of one design
+const align = { S: null, round: 0, cell: -1, seen: false, sel: {}, undo: null, note: '' };
+function alignState() {
+  if (align.S !== S || align.round !== S.round) Object.assign(align, { S, round: S.round, cell: -1, seen: false, sel: {}, undo: null, note: '' });
+  return align;
+}
+const alignOn = key => { const A = alignState(); return key in A.sel ? A.sel[key] : key[0] === 'd'; };
+function pickAlign(cell) {
+  const A = alignState();
+  if (!(projected() || []).includes(cell)) { toast('Tap a cell on the route: alignment uses the route with your sabotage landed.', 'atk'); return; }
+  A.cell = A.cell === cell ? -1 : cell; A.note = '';
+  refreshUI();
+}
+function alignHere() {
+  const A = alignState(), route = projected() || [], k = route.indexOf(A.cell), W = RULES.waveLen;
+  if (k < 0) { toast('Tap a cell on the route first.', 'atk'); return; }
+  const dist = 1.05 + k, units = [];
+  S.designs.forEach((d, i) => { if (d.count && alignOn('d' + i)) units.push({ d, n: d.count, v: US.speed.steps[d.speed] }); });
+  for (const [cell, c] of S.charges) if (alignOn('s' + cell)) units.push({ c, n: 1, v: US.speed.steps[RULES.sapper.speed] });
+  if (!units.length) { toast('Tick at least one track to align.', 'atk'); return; }
+  A.undo = { tl: S.designs.map(d => ({ ...d.tl, pos: d.tl.pos ? d.tl.pos.slice() : null })), t: [...S.charges].map(([i, c]) => [i, c.t]) };
+  const tmax = Math.max(...units.map(u => dist / u.v)), T = 0.35 + tmax, arrive = [];
+  let late = 0;
+  for (const u of units) {
+    const lead = (tmax - dist / u.v) / W, start = Math.max(0, lead - (u.n - 1) / 2 * ALIGN_GAP);
+    const pos = Array.from({ length: u.n }, (_, k) => { const p = start + k * ALIGN_GAP; if (p > 1) late++; return Math.min(1, p); });
+    for (const p of pos) arrive.push(0.35 + p * W + dist / u.v);
+    if (u.d) u.d.tl = { s: pos[0], e: pos[pos.length - 1], pos };
+    else u.c.t = pos[0];
+  }
+  const near = arrive.filter(a => Math.abs(a - T) <= 1).length;
+  A.note = `~${plural(near, 'unit')} arrive within ~2 s, around ${fmtNum(T)} s.${late ? ` ${late === 1 ? '1 unit can’t' : `${late} units can’t`} reach this point in time.` : ''}`;
+  A.T = T;
+  bodyKey.atk = null; refreshUI();
+}
+function alignUndo() {
+  const A = alignState();
+  if (!A.undo) return;
+  A.undo.tl.forEach((tl, i) => { if (S.designs[i]) S.designs[i].tl = tl; });
+  for (const [i, t] of A.undo.t) { const c = S.charges.get(i); if (c) c.t = t; }
+  A.undo = null; A.note = '';
+  bodyKey.atk = null; refreshUI();
+}
+function renderAlign() {
+  const box = $('#a-align'); if (!box) return;
+  const A = alignState(), on = (projected() || []).includes(A.cell);
+  $('#al-cell').textContent = on ? `Cell ${A.cell % COLS + 1}, ${((A.cell / COLS) | 0) + 1}` : 'Tap a cell on the route';
+  $('#al-go').disabled = !on;
+  $('#al-undo').hidden = !A.undo;
+  $('#al-view').setAttribute('aria-pressed', A.seen);
+  $('#al-note').innerHTML = (A.note ? `<b>${A.note}</b> ` : '') + 'Estimate: ignores frost, slow effects and units dying.';
+  for (const b of box.closest('#tl').querySelectorAll('[data-al]')) b.setAttribute('aria-pressed', alignOn(b.dataset.al));
 }
 /* Rough arrival times on the route as last seen, ignoring frost and the sabotage itself: walking starts 0.35 s into the
    wave, 1.05 cells outside the entry, and the keep is 0.95 cells past the exit. */
@@ -4168,6 +4318,7 @@ function tlUp(e) {
   if (!tlDrag || e.pointerId !== tlDrag.id) return;
   tlDrag = null;
   document.body.classList.remove('dragging');
+  alignState().note = ''; // hand-moved: the alignment estimate no longer holds
   refreshUI(); // a test result for the old timing goes
 }
 // Step 2 offers two things, each on its own card: bridge a wall, or knock out a tower. Picking a card (or tapping a
@@ -4175,18 +4326,17 @@ function tlUp(e) {
 let saboMode = '';
 function renderSabotage() {
   const cs = chargeStatus(), walls = S.seenGrid.some(g => g && g.t === 'wall'), spots = seenAnchors().size > 0;
-  const total = towersValue(S.seenGrid), cap = towerCap(), used = targetValue(), pct = Math.round((RULES.sabotageRise - 1) * 100);
   const open = [];
   S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower' && !S.charges.has(i) && canChargeTower(i)) open.push(chargePrice(i)); });
   if (!cs.ok) saboMode = '';
-  $('#a-sabo-lead').innerHTML = cs.ok ? `Optional. Each target gets a sapper that marches with your army: if it dies on the way, the coins are lost. Every attempt costs ${pct}% more than the last.` : 'Two ways to spend coins against the defense:';
+  const rb = Math.round(RULES.bridgeRise * 100), rt = Math.round(RULES.towerOffRise * 100);
+  $('#a-sabo-lead').innerHTML = cs.ok ? `Optional. Each target gets a sapper that marches with your army: if it dies on the way, the coins are lost. Each costs ${rb === rt ? `${rb}%` : `${rb}% (bridges) or ${rt}% (knock-outs)`} more for every one of its kind sent in earlier waves.` : 'Two ways to spend coins against the defense:';
   const bridgeOk = cs.ok && spots && canBridge(), towerOk = cs.ok && open.length > 0;
   $('#a-sabo-bridge').innerHTML = !RULES.bridgesPerWave ? 'Off in this game'
     : plannedBridges().length >= RULES.bridgesPerWave ? `<b>Planned</b> · ${perWaveText()}`
     : `<b>${nextBridgePrice()} coins</b> · ${RULES.bridgesPerWave} a wave`;
   $('#a-sabo-tower').innerHTML = !seenTowers() ? 'no towers seen'
-    : `<b>${open.length ? (Math.min(...open) === Math.max(...open) ? open[0] : `${Math.min(...open)}–${Math.max(...open)}`) + ' coins' : 'Cap reached'}</b> · ${Math.round(used)} of ${Math.floor(cap)} value`;
-  $('#a-capbar').style.width = (cap ? Math.min(1, used / cap) * 100 : 0) + '%';
+    : open.length ? `<b>${Math.min(...open) === Math.max(...open) ? open[0] : `${Math.min(...open)}–${Math.max(...open)}`} coins</b> · by tower` : '<b>Cap reached</b>';
   for (const b of document.querySelectorAll('[data-sabo]')) {
     b.setAttribute('aria-pressed', saboMode === b.dataset.sabo);
     b.classList.toggle('off', b.dataset.sabo === 'bridge' ? !bridgeOk : !towerOk);
@@ -4199,15 +4349,41 @@ function renderSabotage() {
       : !canBridge() ? `<b>${perWaveText()}</b> Tap your bridge again to call it off.`
       : !spots ? 'None of the walls you saw touch the route.'
       : `<b>Tap a marked wall on the map.</b> Bridges must connect to the current path, or to one of your bridges. The sapper lays it on reaching the marked tile beside the wall; if the route no longer passes there, it misses.`)
-    : saboMode === 'tower' ? (seenTowers() ? `<b>Tap a marked tower on the map.</b> Its sapper knocks it out on walking into its range. The towers you target in one wave can be worth up to half the <b>${total}</b> you saw; one tower always fits.` : 'There were no towers in the defense you saw.')
+    : saboMode === 'tower' ? (seenTowers() ? `<b>Tap a marked tower on the map.</b> Its sapper knocks it out on walking into its range. Each tower's price is on the map; the cap below counts their slider prices.` : 'There were no towers in the defense you saw.')
     : '<b>Pick one</b> to see where it can go, or tap a wall or a tower on the map. You can skip this step.';
   $('#a-charges').innerHTML = chargeRows();
+}
+// The knock-out cap as a labelled bar: the targets picked (their slider prices), and the tower tapped but not yet
+// planted as a lighter extension, red if it would pass the cap. One tower always fits.
+function capState() {
+  const cap = towerCap(), used = targetValue(), n = towerChargeCells().length, sel = S.sel && S.sel.k === 'tower' ? S.sel.cell : -1, g = S.seenGrid[sel];
+  const C = g && g.t === 'tower' && !S.charges.has(sel) && !(g.off > 0) ? sabC(g) : 0;
+  const full = n > 0 && !S.seenGrid.some((h, i) => h && h.t === 'tower' && !S.charges.has(i) && !(h.off > 0) && used + sabC(h) <= cap);
+  return { cap, used, n, C, over: C && n > 0 && used + C > cap ? Math.ceil(used + C - cap) : 0, one: n === 1 && used > cap, full,
+    coins: towerChargeCells().reduce((v, i) => v + S.charges.get(i).cost, 0) };
+}
+// The bar sits under the knock-out card, and in a tapped tower's card too, where its preview is seen.
+const capHTML = id => `<div class="capwrap" id="${id}" hidden><div class="caphead"><span class="cap-l"></span><span class="cap-r"></span></div>
+      <div class="capbar" aria-hidden="true"><i class="fill"></i><i class="ext"></i></div></div>`;
+function renderCap() {
+  const ok = chargeStatus().ok && seenTowers() > 0, c = ok ? capState() : null, pc = v => (c.cap ? clamp(v / c.cap, 0, 1) * 100 : 100) + '%';
+  for (const box of el.paneAtk.querySelectorAll('.capwrap')) {
+    box.hidden = !ok;
+    if (!ok) continue;
+    box.querySelector('.cap-l').innerHTML = c.one ? '<b>One tower always fits</b>' : c.over ? `<span class="over">Over the cap by ${c.over}</span>`
+      : c.full ? '<b>Cap reached</b>' : `Knock-out cap: <b>${Math.round(c.used)}</b> of ${Math.floor(c.cap)}`;
+    box.querySelector('.cap-r').innerHTML = c.coins ? `<b>${c.coins}</b> coins` : '';
+    box.querySelector('.fill').style.width = c.one ? '100%' : pc(c.used);
+    const ext = box.querySelector('.ext');
+    ext.classList.toggle('over', !!c.over);
+    ext.style.width = !c.C || c.one ? '0%' : c.over ? pc(c.cap - c.used) : pc(Math.min(c.C, Math.max(c.cap, c.C) - c.used));
+  }
 }
 function chargeRows() {
   const rows = [];
   for (const [cell, c] of S.charges) {
     const g = S.seenGrid[cell], b = c.kind === 'bridge';
-    const sub = b ? 'Open ground through this wall, for the rest of the match' : `A ${g ? towerValue(g) : '?'}-coin tower, for the rest of the wave`;
+    const sub = b ? 'Open ground through this wall, for the rest of the match' : `Slider price ${g ? sabC(g) : '?'}; stops it for the rest of the wave`;
     rows.push(`<div class="rrow"><span class="rpick" style="cursor:default"><span class="ico ${b ? 'bridge' : 'charge'}">${b ? ICON.bridge : ICON.jam}</span><span class="rmain"><span class="rname">${b ? 'Bridge' : 'Knock-out'} · ${c.cost}</span><span class="rsub">${sub}</span></span></span><button class="xbtn" data-rm="${cell}" aria-label="Call off this sapper">×</button></div>`);
   }
   return rows.length ? `<div class="lhd"><span>Sappers · time them in step 3</span><span>tap × to refund</span></div>${rows.join('')}` : '';
@@ -4226,7 +4402,7 @@ function renderAtk() {
     $('#add-sub').textContent = `${S.designs.length} of ${RULES.maxDesigns} designs`;
     $('#atk-note').innerHTML = 'Your army is permanent: units that die come back next wave.';
   }
-  if (S.step === A_WAVE) updateTimeline();
+  if (S.step === A_WAVE) { updateTimeline(); renderAlign(); }
   if (S.step === A_SABO) renderSabotage();
   if (S.step === A_READY) {
     const peak = Math.max(0, ...densityBins(S.designs));
@@ -4247,6 +4423,7 @@ function renderAtk() {
   }
   el.paneAtk.classList.toggle('drill', !!key);
   if (key.startsWith('design:')) updateDesigner(S.sel.i);
+  if (S.step === A_SABO) renderCap();
   renderNav(ATK_STEPS, el.atkBack, el.atkNext, 'atk');
   $('#atk-test').hidden = !canTest();
   const card = $('#a-test'), r = freshTest();
@@ -4259,10 +4436,10 @@ function seenTowerHTML(cell) {
   let extra = '';
   if (S.step === A_SABO && !chargeStatus().ok) extra = `<div class="callout2 locked"><b>Locked this round.</b> ${chargeStatus().reason}</div>`;
   else if (S.step === A_SABO) {
-    extra = ch ? `<button class="cta ghost" data-act="unplant">Call off the sapper · refund ${ch.cost}</button>`
+    extra = capHTML('a-cap-card') + (ch ? `<button class="cta ghost" data-act="unplant">Call off the sapper · refund ${ch.cost}</button>`
       : canChargeTower(cell) ? `<button class="cta" data-act="plant">Send a sapper · ${chargePrice(cell)} coins</button>
         <div class="shint show">It knocks the tower out for the rest of the wave the moment it walks into range. An offline tower still blocks its cell.</div>`
-      : `<button class="cta ghost" disabled>Over the cap · ${Math.round(targetValue())} of ${Math.floor(towerCap())}</button><div class="shint show">The towers you target in one wave can be worth at most half the tower value you saw. Call off another target to make room.</div>`;
+      : `<button class="cta ghost" disabled>Over the cap by ${Math.ceil(targetValue() + sabC(g) - towerCap())}</button><div class="shint show">The towers you target in one wave can add up to half the slider prices of all the towers you saw. Call off another target to make room.</div>`);
   } else extra = '<p class="fnote">To knock this tower out, go to step 2, Sabotage.</p>';
   return towerCardHTML(g, { tag: `As last seen after wave ${S.seenRound}`, extra });
 }
@@ -4657,7 +4834,7 @@ function ghostCell() { return hoverType === 'mouse' ? hover : pending; }
 function drawPaths(c, t) {
   if (S.phase === 'attack') {
     const extra = (S.step === A_SABO && hoverType === 'mouse' && hover >= 0 && S.seenGrid[hover] && !S.charges.has(hover) && (S.seenGrid[hover].t === 'wall' ? canBridge() && bridgeSpot(hover) : canChargeTower(hover))) ? hover : -1;
-    const hyp = (S.charges.size || extra >= 0) ? projected(extra) : null;
+    const hyp = (S.charges.size || extra >= 0) && !(S.step === A_WAVE && alignState().seen) ? projected(extra) : null;
     strokePath(c, seenPath(), hyp ? 'rgba(200,228,242,0.22)' : 'rgba(200,228,242,0.5)', 0.06, t);
     if (hyp) strokePath(c, hyp, 'rgba(255,150,70,0.95)', 0.075, t, [0.22, 0.12]);
     return;
@@ -4976,9 +5153,11 @@ function drawInteraction(c, t, G) {
   }
   if (S.phase === 'attack' && S.step === A_SABO) {
     // mark every wall the attacker can bridge and every tower it can charge; the picked card's targets get a frame
-    const walls = canBridge(), pulse = reduceMotion ? 0.8 : 0.6 + 0.4 * Math.sin(t * 4);
+    const walls = canBridge(), pulse = reduceMotion ? 0.8 : 0.6 + 0.4 * Math.sin(t * 4), live = chargeStatus().ok;
     for (let i = 0; i < N; i++) {
       const g = S.seenGrid[i];
+      // towers that no longer fit the knock-out cap dim (all of them once the cap is reached)
+      if (live && g && g.t === 'tower' && !S.charges.has(i) && !canChargeTower(i) && saboMode !== 'bridge') { const q = i % COLS, r = (i / COLS) | 0; c.fillStyle = 'rgba(7,9,12,0.62)'; c.fillRect(q + 0.06, r + 0.06, 0.88, 0.88); }
       if (!g || g.t === 'rock' || S.charges.has(i) || (g.t === 'wall' && !(walls && bridgeSpot(i))) || (g.t === 'tower' && !canChargeTower(i))) continue;
       const q = i % COLS, r = (i / COLS) | 0, wall = g.t === 'wall', mine = saboMode === (wall ? 'bridge' : 'tower');
       if (saboMode && !mine) continue;
@@ -4996,6 +5175,14 @@ function drawInteraction(c, t, G) {
         else if (walls && bridgeSpot(hover)) { drawBridgeShape(c, hover, true, t); drawAnchor(c, seenAnchors().get(hover), hover, 0.7); }
         else if (walls && saboMode !== 'tower') drawX(c, hover); // off the route: the usual red
       }
+    }
+  }
+  if (S.phase === 'attack' && S.step === A_WAVE) { // the cell the wave is aligned on
+    const A = alignState();
+    if (A.cell >= 0 && (projected() || []).includes(A.cell)) {
+      const [x, y] = center(A.cell), px = 1 / view.cs;
+      c.beginPath(); c.arc(x, y, 0.36, 0, TAU); c.lineWidth = px * 2; c.strokeStyle = '#e2e9ee'; c.stroke();
+      c.beginPath(); c.moveTo(x - 0.5, y); c.lineTo(x - 0.2, y); c.moveTo(x + 0.2, y); c.lineTo(x + 0.5, y); c.moveTo(x, y - 0.5); c.lineTo(x, y - 0.2); c.moveTo(x, y + 0.2); c.lineTo(x, y + 0.5); c.stroke();
     }
   }
   if (badFlash) {
@@ -5049,6 +5236,19 @@ function drawLabels(c, G) {
     for (const i of pv.kind === 'hot' ? pv.cells.map(([j]) => j) : [pv.cell]) { const [x, y] = center(i), [px, py] = w2s(x, y); if (py < top) { top = py; sx = px; } }
     const half = pv.kind === 'shape' ? (SEGMENTS[shapeSel.k].rows.length / 2) * view.cs : view.cs * 0.5;
     pill(c, sx, Math.max(4, top - half - 24), txt, v.ok ? '#d9f6ff' : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
+  }
+  if (S.phase === 'attack' && S.step === A_WAVE && view.cs >= 14) {
+    const A = alignState();
+    if (A.cell >= 0 && (projected() || []).includes(A.cell)) {
+      const [x, y] = center(A.cell), [sx, sy] = w2s(x, y - 0.62);
+      pill(c, sx, sy - 10, A.note ? `ARRIVE ~${fmtNum(A.T)}S` : 'ALIGN HERE', '#07090c', 'rgba(226,233,238,0.95)', 'center');
+    }
+  }
+  // on the Sabotage step each tower that can still be targeted shows its knock-out price
+  if (S.phase === 'attack' && S.step === A_SABO && saboMode !== 'bridge' && view.cs >= 18 && chargeStatus().ok) for (let i = 0; i < N; i++) {
+    const g = S.seenGrid[i]; if (!g || g.t !== 'tower' || S.charges.has(i) || !canChargeTower(i)) continue;
+    const [x, y] = center(i), [sx, sy] = w2s(x, y + 0.62);
+    pill(c, sx, sy - 10, String(chargePrice(i)), '#d9ccff', 'rgba(20,14,40,0.88)', 'center');
   }
   if (S.phase === 'attack' && view.cs >= 18) for (const [i, ch] of S.charges) {
     const [x, y] = center(i), [sx, sy] = w2s(x, y - 0.62);
@@ -5129,6 +5329,7 @@ function pressAttack(cell) {
   if (cell < 0) { if (S.sel) { S.sel = null; refreshUI(); } return null; }
   const g = S.seenGrid[cell];
   if (g && g.t === 'tower') { if (S.step === A_SABO && chargeStatus().ok) saboMode = 'tower'; selectTower(cell); return null; }
+  if (S.step === A_WAVE && !g) { pickAlign(cell); return null; } // a cell on the route to align the wave on
   if (S.terrain[cell] === ROCK) { toast('Rock can’t be bridged. Units go around it.', 'atk'); return null; }
   if (S.terrain[cell] === ROUGH) { toast('Rough ground is already open: units cross it, and the defender can’t build on it.', 'atk'); return null; }
   if (S.step === A_SABO) {
@@ -5319,10 +5520,7 @@ function restore(d) {
 }
 
 function start(data) {
-  for (const n of document.querySelectorAll('[data-rule]')) { // info text follows the rules: "k%" a share, "k+%" a rise
-    const k = n.dataset.rule, v = RULES[k.replace(/\+?%$/, '')];
-    n.textContent = k.endsWith('+%') ? Math.round((v - 1) * 100) : k.endsWith('%') ? Math.round(v * 100) : v;
-  }
+  for (const n of document.querySelectorAll('[data-rule]')) { const k = n.dataset.rule, pct = k.endsWith('%'); n.textContent = pct ? Math.round(RULES[k.slice(0, -1)] * 100) : RULES[k]; } // info text follows the rules
   newMatch();
   buildPanels();
   layout();
@@ -5347,6 +5545,7 @@ window.siegeline = {
   get hot() { return hotTiles(); }, get hints() { return hintsOn; }, // the hint's wall set (null until it's worked out)
   underFire: () => underFire(S.path, S.grid), avgSpeed, shapeSel, canBridgeAt: i => bridgeSpot(i), // where the attacker may lay a bridge
   seenRoute: () => (seenPath() || []).slice(), // the route as the attacker last saw it
+  bridgePrice: bridgeCost, knockPrice: towerChargeCost, // sabotage prices: (b), and (C, t)
   view,
 };
 

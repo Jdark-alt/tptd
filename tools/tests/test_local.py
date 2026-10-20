@@ -1,7 +1,7 @@
 """Pass-and-play suite: building, tuning, pricing, sappers (bridges and knock-outs), the timeline, test runs, win/loss,
    phone layout, and terrain (rough ground and rock). The fixed scenarios switch terrain off; the terrain checks come last.
    python tools/tests/test_local.py   (screenshots land in tools/.build/shots/local)"""
-import os, sys
+import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import game_html, write_build, BUILD, ROOT, TOOLS, launch
 from playwright.sync_api import sync_playwright
@@ -224,23 +224,28 @@ with sync_playwright() as p:
     towers = page.evaluate('() => window.siegeline.state.seenGrid.map((g, i) => g && g.t === "tower" ? [i, g.cfg.range] : null).filter(Boolean)')
     near = lambda i, R: min(((j % COLS - i % COLS) ** 2 + (j // COLS - i // COLS) ** 2) ** 0.5 for j in route) <= R - 0.3
     T95 = next(i for i, rg in towers if near(i, RANGES[rg]))
-    val = lambda i: page.evaluate(f'() => window.siegeline.towerValue(window.siegeline.state.seenGrid[{i}])')
-    values = page.evaluate('() => window.siegeline.state.seenGrid.filter(g => g && g.t === "tower").map(g => window.siegeline.towerValue(g))')
+    # sabotage counts a tower by its slider price (C), not its build fee
+    val = lambda i: page.evaluate(f'() => window.siegeline.towerCost(window.siegeline.state.seenGrid[{i}].cfg)')
+    values = page.evaluate('() => window.siegeline.state.seenGrid.filter(g => g && g.t === "tower").map(g => window.siegeline.towerCost(g.cfg))')
     v95, cap = val(T95), sum(values) / 2
-    p95 = round(15 + 0.2 * v95)
+    p95 = int(15 + 0.2 * v95 + 0.5)
     click_cell(page, T95 % COLS, T95 // COLS)
-    check(f'send a sapper · {p95} coins' in page.inner_text('#atk-ctx').lower(), f'tapping a seen tower opens the knock-out card: 15 + 20% of its {v95} ({p95})')
+    check(f'send a sapper · {p95} coins' in page.inner_text('#atk-ctx').lower(), f'tapping a seen tower opens the knock-out card: 15 + 20% of its slider price {v95} ({p95})')
+    check(f'knock-out cap: 0 of {int(cap)}' in page.inner_text('#a-cap-card').lower() and S(page, 'parseFloat(document.querySelector("#a-cap-card .ext").style.width)') > 0,
+          f'the tapped tower previews its slider price on the cap bar ({page.inner_text("#a-cap-card")})')
     page.click('#atk-ctx [data-act=plant]')
     check(S(page, f'S.charges.get({T95}).kind') == 'tower' and S(page, f'S.charges.get({T95}).cost') == p95 and S(page, 'S.aFree') == 500 - p95, f'knock-out planned for {p95}')
     page.screenshot(path=f'{OUT}/a2_sabotage.png')
     page.click('#atk-ctx [data-act=close]')
     over = next(i for i, _ in towers if i != T95 and v95 + val(i) > cap)
     click_cell(page, over % COLS, over // COLS); page.wait_for_timeout(100)
-    check('over the cap' in page.inner_text('#atk-ctx').lower() and not page.is_visible('#atk-ctx [data-act=plant]'),
-          f'a second tower over the value cap is refused ({v95} + {val(over)} > half of {sum(values)})')
+    by = int(v95 + val(over) - cap + 0.999)
+    check(f'over the cap by {by}' in page.inner_text('#atk-ctx').lower() and not page.is_visible('#atk-ctx [data-act=plant]') and 'over' in page.get_attribute('#a-cap-card .ext', 'class'),
+          f'a second tower over the cap is refused, and the bar says by how much ({v95} + {val(over)} > half of {sum(values)})')
     page.click('#atk-ctx [data-act=close]')
-    check(f'{v95} of {int(cap)} value' in page.inner_text('#a-sabo-tower') and S(page, 'parseFloat(document.querySelector("#a-capbar").style.width)') > 0,
-          f'the knock-out card shows the cap filling ({page.inner_text("#a-sabo-tower")})')
+    cap_l = page.inner_text('#a-cap').lower()
+    check(page.is_visible('#a-cap') and (f'knock-out cap: {v95} of {int(cap)}' in cap_l or 'cap reached' in cap_l) and f'{p95} coins' in cap_l
+          and S(page, 'parseFloat(document.querySelector("#a-cap .fill").style.width)') > 0, f'the cap bar under the knock-out card fills with the target and shows its coins ({cap_l})')
     # a wall away from the route can't take a bridge: bridges are shortcuts on the route
     away = page.evaluate(f'() => {{ const S = window.siegeline.state; for (let r = 0; r < 10; r++) {{ const i = r * {COLS} + 7; if (S.seenGrid[i] && S.seenGrid[i].t === "wall" && !window.siegeline.canBridgeAt(i)) return i; }} return -1; }}')
     a0 = S(page, 'S.aFree')
@@ -250,8 +255,8 @@ with sync_playwright() as p:
     else: print('SKIP every wall in column 7 touches the route')
     BW = spot(page, 7); bw = idx(*BW)
     click_cell(page, *BW)
-    check(S(page, f'S.charges.get({bw}).kind') == 'bridge' and S(page, f'S.charges.get({bw}).cost') == 31 and S(page, 'S.aFree') == 500 - p95 - 31,
-          f'the bridge (on {BW}, beside the route) is the second attempt: 25 × 1.25 = 31')
+    check(S(page, f'S.charges.get({bw}).kind') == 'bridge' and S(page, f'S.charges.get({bw}).cost') == 25 and S(page, 'S.aFree') == 500 - p95 - 25,
+          f'the bridge (on {BW}, beside the route) costs 25: a knock-out planned with it doesn’t raise its price')
     at = S(page, f'S.charges.get({bw}).at')
     check(at in S(page, 'window.siegeline.state.seenGrid && (() => { const S = window.siegeline.state; return [...S.seenGrid.keys()].filter(i => !S.seenGrid[i]); })()')
           and abs(at % COLS - bw % COLS) + abs(at // COLS - bw // COLS) == 1, f'its sapper’s tile is an open cell beside the wall ({at % COLS}, {at // COLS})')
@@ -263,10 +268,9 @@ with sync_playwright() as p:
     click_cell(page, *other)
     check(not S(page, f'S.charges.has({idx(*other)})') and S(page, 'S.aFree') == a0 and toast(page) == 'One bridge per wave.', f'one bridge per wave ({toast(page)})')
     page.click(f'[data-rm="{T95}"]')
-    check(not S(page, f'S.charges.has({T95})') and S(page, f'S.charges.get({bw}).cost') == 25 and S(page, 'S.aFree') == 500 - 25, 'calling off the knock-out refunds it and re-prices the bridge down to 25')
+    check(not S(page, f'S.charges.has({T95})') and S(page, f'S.charges.get({bw}).cost') == 25 and S(page, 'S.aFree') == 500 - 25, 'calling off the knock-out refunds it; the bridge stays 25')
     click_cell(page, T95 % COLS, T95 // COLS); page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
-    p95b = round((15 + 0.2 * v95) * 1.25)
-    check(S(page, f'S.charges.get({T95}).cost') == p95b and S(page, 'S.aFree') == 500 - 25 - p95b, f'planned again the knock-out comes second: ×1.25 ({p95b})')
+    check(S(page, f'S.charges.get({T95}).cost') == p95 and S(page, 'S.aFree') == 500 - 25 - p95, f'planned again after the bridge, the knock-out still costs {p95}: plan order doesn’t matter')
     page.screenshot(path=f'{OUT}/a2_bridge_planned.png')
     # step 3: each sapper is a track with one dot
     page.click('#atk-next'); page.wait_for_timeout(300)
@@ -340,7 +344,8 @@ with sync_playwright() as p:
     page.click('#def-next'); hand(page)
     page.click('#atk-next'); page.wait_for_timeout(300)
     a0 = S(page, 'S.aFree'); click_cell(page, *W2)
-    check(S(page, 'S.totals.sabotage') == 2 and S(page, f'S.charges.get({w2}).cost') == 39 and S(page, 'S.aFree') == a0 - 39, 'two attempts so far: this bridge costs 25 × 1.25² = 39')
+    check(S(page, 'S.totals.bridgeTries') == 1 and S(page, 'S.totals.koTries') == 1 and S(page, f'S.charges.get({w2}).cost') == 31 and S(page, 'S.aFree') == a0 - 31,
+          'one bridge and one knock-out sent so far: this bridge costs 25 × (1 + 0.25) = 31')
     at2 = S(page, f'S.charges.get({w2}).at')
     on_route = S(page, f'S.path.includes({at2})')  # the defender's real route, after taking the wall down
     page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next')
@@ -362,7 +367,7 @@ with sync_playwright() as p:
     for _ in range(15): page.click('.step.plus[data-i="0"]')
     page.click('#atk-next'); page.wait_for_timeout(300)
     a0 = S(page, 'S.aFree'); click_cell(page, *W3)
-    check(S(page, f'S.charges.get({w3}).cost') == 49 and S(page, 'S.aFree') == a0 - 49, 'the fourth attempt costs 25 × 1.25³ = 49')
+    check(S(page, f'S.charges.get({w3}).cost') == 38 and S(page, 'S.aFree') == a0 - 38, 'the third bridge costs 25 × (1 + 2 × 0.25) = 38')
     page.click('#atk-next'); page.click('.mini[data-act=rush]'); page.click('#atk-next'); page.click('#atk-next'); hand(page)
     check(advance_until(page, f'S.sapList[0].state !== "go" && S.sapList[0].state !== "wait"'), 'the sapper gets to the end of its job')
     check(S(page, f'S.grid[{w3}].t') == 'tower' and not S(page, f'S.bridges.has({w3})') and S(page, 'S.wave.missed + S.wave.sapMissed') >= 1, 'a bridge on a wall that became a tower misses')
@@ -631,6 +636,103 @@ with sync_playwright() as p:
     check(r['sapLost'] == 1 and r['bridges'] == 0 and r['kills'] == 0, f'a sapper shot down is lost with its sabotage (not counted as an army kill) ({r})')
     page.evaluate('() => { window.siegeline.rules.sapper.hp = 2; }')
     check(not errors, f'sapper rules: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v18: sabotage prices per kind, on slider price; the cap bar; auto-align; auto-tune
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    PRESETS = {'basic': {}, 'cannon': {'rate': 4, 'splash': 2}, 'sniper': {'range': 5, 'rate': 5}, 'mid': {'range': 4, 'dps': 4, 'splash': 1}, 'big': {'range': 7, 'dps': 6, 'splash': 3, 'slow': True}}
+    cost = lambda k: page.evaluate(f'() => {{ const sl = window.siegeline; return sl.towerCost({{ range: 2, dps: 2, rate: 3, splash: 0, slow: false, poison: false, chain: false, ...{json.dumps(PRESETS[k])} }}); }}')
+    C = {k: cost(k) for k in PRESETS}
+    check([C[k] for k in ('basic', 'cannon', 'sniper', 'mid')] == [40, 76, 102, 212], f'slider prices of the spec’s towers: {C}')
+    table = {k: page.evaluate(f'() => [0, 1, 2, 3, 4].map(t => window.siegeline.knockPrice({C[k]}, t))') for k in C}
+    want = {'basic': [23, 29, 35, 40, 46], 'cannon': [30, 38, 45, 53, 60], 'sniper': [35, 44, 53, 62, 71], 'mid': [57, 72, 86, 100, 115]}
+    check(all(table[k] == want[k] for k in want), f'knock-out prices by earlier knock-outs match the spec’s table {table}')
+    check(page.evaluate('() => [0, 1, 2, 3, 4].map(b => window.siegeline.bridgePrice(b))') == [25, 31, 38, 44, 50], 'bridge prices by earlier bridges: 25, 31, 38, 44, 50')
+    print(f'   (the spec’s “Big” tower, range 5, 48 dps, splash 1.3, frost, has slider price {C["big"]} here: knock-out {table["big"]})')
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    page.click('#def-next'); page.click('#def-next'); hand(page)
+    for _ in range(3): page.click('.step.plus[data-i="0"]')
+    for _ in range(3): page.click('.step.plus[data-i="1"]')
+    # a hand-made defense as if seen last wave: a Sniper, a Mid and a Big tower (with fees, which sabotage ignores) beside a wall
+    seen = f'''([towers, tries]) => {{ const S = window.siegeline.state, T = (cfg, fee) => ({{ t: 'tower', cfg: {{ range: 2, dps: 2, rate: 3, splash: 0, slow: false, poison: false, chain: false, ...cfg }}, fee, off: 0, n: 1, fresh: false, cd: 0, ang: 0, kick: 0, dealt: 0 }});
+      S.seenGrid = S.seenGrid.map(() => null); for (const [i, cfg, fee] of towers) S.seenGrid[i] = T(cfg, fee);
+      for (let r = 0; r < 10; r++) S.seenGrid[r * 16 + 7] = {{ t: 'wall', fresh: false }};
+      S.seenVer++; S.seenRound = 1; Object.assign(S.totals, tries); S.aFree = 2000; }}'''
+    SN, MI, BG = idx(4, 3), idx(4, 7), idx(11, 2)
+    page.evaluate(seen, [[[SN, PRESETS['sniper'], 30], [MI, PRESETS['mid'], 20], [BG, PRESETS['big'], 10]], {'bridgeTries': 0, 'koTries': 2}])
+    page.click('#atk-next'); page.wait_for_timeout(250)
+    def plant(i):
+        click_cell(page, i % COLS, i // COLS); page.wait_for_timeout(60)
+        if page.is_visible('#atk-ctx [data-act=plant]'): page.click('#atk-ctx [data-act=plant]')
+        page.click('#atk-ctx [data-act=close]')
+    plant(SN); plant(MI); one = [S(page, f'S.charges.get({SN}).cost'), S(page, f'S.charges.get({MI}).cost')]
+    page.click(f'[data-rm="{SN}"]'); page.click(f'[data-rm="{MI}"]')
+    plant(MI); plant(SN); two = [S(page, f'S.charges.get({SN}).cost'), S(page, f'S.charges.get({MI}).cost')]
+    check(one == [53, 86] and two == [53, 86] and S(page, 'S.aFree') == 2000 - 139, f'two knock-outs already sent: a Sniper and a Mid this round cost 53 + 86 = 139, in either order ({one}, {two})')
+    over = C["sniper"] + C["mid"] + C["big"] - (C["sniper"] + C["mid"] + C["big"]) / 2
+    check('139 coins' in page.inner_text('#a-cap').lower() and 'cap reached' in page.inner_text('#a-cap').lower(),
+          f'with the Big tower too dear to fit, the cap is reached; the bar shows this round’s knock-out coins ({page.inner_text("#a-cap")})')
+    click_cell(page, BG % COLS, BG // COLS); page.wait_for_timeout(60)
+    check(f'over the cap by {int(over + 0.999)}' in page.inner_text('#a-cap-card').lower(), f'the cap counts slider prices, not fees: the Big tower is over by {over:.0f} ({page.inner_text("#a-cap-card")})')
+    page.click('#atk-ctx [data-act=close]')
+    check(page.inner_text('#a-sabo-bridge').startswith('25 coins'), f'knock-outs don’t raise the bridge price: separate counters ({page.inner_text("#a-sabo-bridge")})')
+    page.screenshot(path=f'{OUT}/v18_cap.png')
+    # three knock-outs sent before: the next bridge still costs 25, the next knock-out on a Basic tower 23 × 1.75
+    page.click(f'[data-rm="{SN}"]'); page.click(f'[data-rm="{MI}"]')
+    page.evaluate(seen, [[[idx(4, 3), {}, 0], [idx(4, 7), {}, 10]], {'bridgeTries': 0, 'koTries': 3}])
+    page.click('#atk-back'); page.click('#atk-next'); page.wait_for_timeout(200)
+    check(page.inner_text('#a-sabo-bridge').startswith('25 coins') and page.inner_text('#a-sabo-tower').startswith('40 coins'),
+          f'three knock-outs sent: the next bridge still costs 25, a Basic knock-out 40 ({page.inner_text("#a-sabo-bridge")} / {page.inner_text("#a-sabo-tower")})')
+    # one tower always fits, even past the cap; after it nothing else can be added
+    page.evaluate(seen, [[[BG, PRESETS['big'], 0], [SN, {}, 0]], {'bridgeTries': 0, 'koTries': 0}])
+    page.click('#atk-back'); page.click('#atk-next'); page.wait_for_timeout(200)
+    plant(BG)
+    check(S(page, f'S.charges.has({BG})') and 'one tower always fits' in page.inner_text('#a-cap').lower() and S(page, 'document.querySelector("#a-cap .fill").style.width') == '100%',
+          f'a first target worth more than the cap still fits, and the bar says so ({page.inner_text("#a-cap")})')
+    plant(SN)
+    check(not S(page, f'S.charges.has({SN})'), 'with the one-tower exception used, nothing else can be added')
+    page.click(f'[data-rm="{BG}"]')
+    # auto-align: tap a cell on the route, Align here: the slowest unit leaves at 0, faster ones wait; Undo puts it back
+    page.click('#atk-next'); page.wait_for_timeout(250)
+    route = page.evaluate('() => window.siegeline.seenRoute()'); cell = route[len(route) // 2]
+    tl0 = S(page, 'JSON.stringify(S.designs.map(d => d.tl))')
+    check(S(page, '[...document.querySelectorAll("#tl [data-al]")].map(b => b.getAttribute("aria-pressed")).join()') == 'true,true', 'auto-align: both army tracks ticked by default')
+    click_cell(page, cell % COLS, cell // COLS); page.wait_for_timeout(80)
+    page.click('#al-go'); page.wait_for_timeout(80)
+    tl = S(page, 'S.designs.map(d => d.count ? [window.siegeline.state.designs.indexOf(d), d.speed, d.tl.pos] : null).filter(Boolean)')
+    slow = min(tl, key=lambda x: x[1]); fast = max(tl, key=lambda x: x[1])
+    k = route.index(cell); spd = [0.7, 0.9, 1.1, 1.3, 1.6, 1.9, 2.3, 2.8]
+    arr = lambda d, p: 0.35 + p * 20 + (1.05 + k) / spd[d[1]]
+    check(min(slow[2]) == 0 and min(fast[2]) > 0 and abs(arr(slow, slow[2][0]) - arr(fast, fast[2][-1])) < 1.5 and 'arrive within' in page.inner_text('#al-note'),
+          f'auto-align: the slowest unit leaves at 0 and the faster ones wait to arrive together ({page.inner_text("#al-note")})')
+    page.screenshot(path=f'{OUT}/v18_align.png')
+    page.click('#al-undo')
+    check(S(page, 'JSON.stringify(S.designs.map(d => d.tl))') == tl0, 'auto-align: Undo puts the timeline back')
+    check(not errors, f'v18 attacker: no errors {errors[:3]}')
+    ctx.close()
+    # auto-tune: spends free coins on the towers placed, never lowers a slider or touches fire rate; Undo refunds it
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    for r in range(0, 10): click_cell(page, 7, r)
+    page.click('.tool[data-tool=tower]'); click_cell(page, 6, 9); set_slider(page, '#te-range', 6); set_slider(page, '#te-rate', 0); page.click('[data-act=close]')
+    click_cell(page, 8, 8); page.click('[data-act=close]')
+    page.evaluate('() => { window.siegeline.state.dFree += 300; }'); page.click('.tool[data-tool=wall]')
+    cfg0, f0, n0 = S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)'), S(page, 'S.dFree'), S(page, 'S.grid.filter(Boolean).length')
+    page.click('#d-tune [data-act=tune]')
+    cfg1, f1 = S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)'), S(page, 'S.dFree')
+    nolower = all(c0 is None or all(c1[k] >= c0[k] for k in ('range', 'dps', 'splash')) and c1['rate'] == c0['rate'] and all(c1[k] or not c0[k] for k in ('slow', 'poison', 'chain')) for c0, c1 in zip(cfg0, cfg1))
+    check(nolower and cfg1 != cfg0 and f1 < f0 and S(page, 'S.grid.filter(Boolean).length') == n0, f'auto-tune spends coins on upgrades, never lowers a slider or changes fire rate, adds nothing ({f0} → {f1})')
+    check(f'spent {f0 - f1} coins' in page.inner_text('#d-tune').lower() and f'{f1} left' in page.inner_text('#d-tune').lower(), f'auto-tune says what it spent ({page.inner_text("#d-tune")})')
+    page.screenshot(path=f'{OUT}/v18_tune.png')
+    page.click('#d-tune [data-act=tune-undo]')
+    check(S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)') == cfg0 and S(page, 'S.dFree') == f0, 'auto-tune: Undo restores every tower and the coins')
+    check(not errors, f'v18 auto-tune: no errors {errors[:3]}')
     ctx.close()
 
     ctx = b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
