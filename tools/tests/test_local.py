@@ -1,5 +1,5 @@
-"""Pass-and-play suite: building, tuning, pricing, bridges, charges, offline towers, timeline, win/loss, phone layout,
-   and terrain (rough ground and rock). The fixed scenarios switch terrain off; the terrain checks come last.
+"""Pass-and-play suite: building, tuning, pricing, sappers (bridges and knock-outs), the timeline, test runs, win/loss,
+   phone layout, and terrain (rough ground and rock). The fixed scenarios switch terrain off; the terrain checks come last.
    python tools/tests/test_local.py   (screenshots land in tools/.build/shots/local)"""
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,6 +26,12 @@ def set_slider(page, sel, v):
 def no_terrain(page):
     """The fixed scenarios click known cells, so their matches start without rough ground or rock."""
     page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; }')
+def sure_sappers(page):
+    """The fixed scenarios check what sappers do on arrival, so theirs get top health and always arrive."""
+    page.evaluate('() => { window.siegeline.rules.sapper.hp = 9; }')
+def advance_until(page, cond, most=40):
+    """Play the wave half a second at a time until cond holds (or most seconds pass); returns whether it held."""
+    return page.evaluate(f'() => {{ const sl = window.siegeline; for (let k = 0; k < {most * 2}; k++) {{ const S = sl.state; if ({cond}) return true; sl.advance(0.5); }} const S = sl.state; return !!({cond}); }}')
 def hints_off(page):
     """The fixed scenarios click known cells; with hints on, a glowing tile would place the hint's whole set."""
     if page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true': page.click('#def-steps [data-act=hints]')
@@ -137,8 +143,12 @@ with sync_playwright() as p:
     check(page.inner_text('#ue-hp-n') == f'+{up}', f'unit slider prices the next step for every unit of the design ({page.inner_text("#ue-hp-n")})')
     page.click('#atk-ctx [data-act=close]')
     page.screenshot(path=f'{OUT}/a0_army.png')
+    page.click('#atk-next')
+    check(S(page, 'S.step') == 1 and 'sabotage' in page.inner_text('#atk-steps [aria-current=step]').lower() and 'locked' in page.get_attribute('#a-chg-note', 'class'),
+          'Sabotage is step 2, before the wave, and locked in round 1')
+    check(page.is_hidden('#atk-test'), 'no attacker Test in round 1: nothing seen yet')
     page.click('#atk-next'); page.wait_for_timeout(300)
-    check(S(page, 'S.step') == 1 and page.is_visible('#tl .lane'), 'Wave step shows the timeline')
+    check(S(page, 'S.step') == 2 and page.is_visible('#tl .lane'), 'Wave step (3) shows the timeline')
     check(S(page, 'S.designs[0].tl.e') == 0.3, 'default timeline window is 6 seconds')
     # drag the end handle of track 0 to the far right
     hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box()
@@ -159,8 +169,6 @@ with sync_playwright() as p:
     page.click('.mini[data-act=even]')
     check(S(page, 'S.designs.every(d=>d.tl.s===0 && d.tl.e===1)'), 'Even spreads every track')
     page.click('.mini[data-act=rush]')
-    page.click('#atk-next')
-    check('locked' in page.get_attribute('#a-chg-note', 'class'), 'Sabotage locked in round 1')
     page.click('#atk-next')
     check(page.is_visible('#a-sum') and page.inner_text('#atk-next').lower() == 'ready', 'Ready step')
     army = S(page, 'S.designs.reduce((v,d)=>v+d.count*window.siegeline.unitCost(d),0)')
@@ -196,12 +204,13 @@ with sync_playwright() as p:
     page.click('.tool[data-tool=tower]'); click_cell(page, 13, 5); page.click('[data-act=close]')
     check(S(page, f'S.grid[{idx(13,5)}].fresh') is False, 'tower torn down and rebuilt on the same cell is not new')
     page.click('#def-next'); page.click('#def-next'); hand(page)
-    page.evaluate('() => { window.siegeline.state.aFree = 500; }')
-    page.click('#atk-next'); page.click('#atk-next')
+    page.evaluate('() => { window.siegeline.state.aFree = 500; }'); sure_sappers(page)
+    page.click('#atk-next')
     page.wait_for_timeout(300)
-    check(S(page, 'S.step') == 2 and 'locked' not in page.get_attribute('#a-chg-note', 'class'), 'Sabotage open in round 2')
+    check(S(page, 'S.step') == 1 and 'locked' not in page.get_attribute('#a-chg-note', 'class'), 'Sabotage open in round 2')
     check(page.is_visible('[data-sabo=bridge]') and page.is_visible('[data-sabo=tower]') and 'pick one' in page.inner_text('#a-chg-note').lower(),
           'Sabotage shows two options: bridge a wall, knock out a tower')
+    check('sapper' in page.inner_text('#a-sabo-lead').lower() and '25% more' in page.inner_text('#a-sabo-lead'), f'the lead says sappers carry it and each attempt costs 25% more ({page.inner_text("#a-sabo-lead")})')
     page.click('[data-sabo=bridge]')
     check(page.get_attribute('[data-sabo=bridge]', 'aria-pressed') == 'true' and 'marked wall' in page.inner_text('#a-chg-note'), 'picking Bridge a wall explains it and marks the walls')
     page.click('[data-sabo=tower]')
@@ -209,37 +218,43 @@ with sync_playwright() as p:
           and 'marked tower' in page.inner_text('#a-chg-note'), 'picking Knock out a tower switches the card')
     page.click('[data-sabo=tower]')
     check(page.get_attribute('[data-sabo=tower]', 'aria-pressed') == 'false', 'tapping the picked card again unpicks it')
-    click_cell(page, 9, 5)
-    check(page.is_visible('#atk-ctx [data-waves]'), 'tapping a seen tower opens the knock-out card')
-    page.click('#atk-ctx [data-waves="2"]')
+    # the knock-out goes on a tower whose range the seen route walks through (units steer round tower range when they can)
+    RANGES = [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+    route = page.evaluate('() => window.siegeline.seenRoute()')
+    towers = page.evaluate('() => window.siegeline.state.seenGrid.map((g, i) => g && g.t === "tower" ? [i, g.cfg.range] : null).filter(Boolean)')
+    near = lambda i, R: min(((j % COLS - i % COLS) ** 2 + (j // COLS - i // COLS) ** 2) ** 0.5 for j in route) <= R - 0.3
+    T95 = next(i for i, rg in towers if near(i, RANGES[rg]))
+    val = lambda i: page.evaluate(f'() => window.siegeline.towerValue(window.siegeline.state.seenGrid[{i}])')
+    values = page.evaluate('() => window.siegeline.state.seenGrid.filter(g => g && g.t === "tower").map(g => window.siegeline.towerValue(g))')
+    v95, cap = val(T95), sum(values) / 2
+    p95 = round(15 + 0.2 * v95)
+    click_cell(page, T95 % COLS, T95 // COLS)
+    check(f'send a sapper · {p95} coins' in page.inner_text('#atk-ctx').lower(), f'tapping a seen tower opens the knock-out card: 15 + 20% of its {v95} ({p95})')
     page.click('#atk-ctx [data-act=plant]')
-    check(S(page, f'S.charges.get({idx(9,5)}).waves') == 2 and S(page, 'S.aFree') == 500 - 55, 'tower charge for 2 waves costs 55')
+    check(S(page, f'S.charges.get({T95}).kind') == 'tower' and S(page, f'S.charges.get({T95}).cost') == p95 and S(page, 'S.aFree') == 500 - p95, f'knock-out planned for {p95}')
     page.screenshot(path=f'{OUT}/a2_sabotage.png')
     page.click('#atk-ctx [data-act=close]')
-    check(page.inner_text('#a-sabo-tower').startswith('35 / 65 / 100 coins'), f'each tower charge costs 10 more than the one before it ({page.inner_text("#a-sabo-tower")})')
-    click_cell(page, 13, 5)
-    check('plant charge · 35 coins' in page.inner_text('#atk-ctx').lower(), 'the second charge’s card asks 25 + 10')
-    page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
-    check(S(page, f'S.charges.get({idx(13,5)}).cost') == 35 and S(page, 'S.aFree') == 500 - 55 - 35, 'second tower charge, 1 wave: 35')
-    page.click(f'[data-rm="{idx(9,5)}"]')
-    check(S(page, f'S.charges.get({idx(13,5)}).cost') == 25 and S(page, 'S.aFree') == 500 - 25, 'taking the first charge back re-prices the next one down to 25')
-    click_cell(page, 9, 5); page.click('#atk-ctx [data-waves="2"]'); page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
-    check(S(page, f'S.charges.get({idx(9,5)}).cost') == 65 and S(page, 'S.aFree') == 500 - 25 - 65, 'planted again it comes second: 55 + 10')
-    click_cell(page, 4, 3); page.wait_for_timeout(100)
-    check('limit reached' in page.inner_text('#atk-ctx').lower() and not page.is_visible('#atk-ctx [data-act=plant]'), 'third tower charge blocked: 2 of 3 seen towers max')
+    over = next(i for i, _ in towers if i != T95 and v95 + val(i) > cap)
+    click_cell(page, over % COLS, over // COLS); page.wait_for_timeout(100)
+    check('over the cap' in page.inner_text('#atk-ctx').lower() and not page.is_visible('#atk-ctx [data-act=plant]'),
+          f'a second tower over the value cap is refused ({v95} + {val(over)} > half of {sum(values)})')
     page.click('#atk-ctx [data-act=close]')
-    check('2 of 3' in page.inner_text('#a-chg-note'), 'charge note shows the cap')
-    check(page.inner_text('#a-sabo-bridge').startswith('50 coins') and '2 of 2 used' in page.inner_text('#a-sabo-tower'), 'the cards show the next bridge price and the towers used')
+    check(f'{v95} of {int(cap)} value' in page.inner_text('#a-sabo-tower') and S(page, 'parseFloat(document.querySelector("#a-capbar").style.width)') > 0,
+          f'the knock-out card shows the cap filling ({page.inner_text("#a-sabo-tower")})')
     # a wall away from the route can't take a bridge: bridges are shortcuts on the route
     away = page.evaluate(f'() => {{ const S = window.siegeline.state; for (let r = 0; r < 10; r++) {{ const i = r * {COLS} + 7; if (S.seenGrid[i] && S.seenGrid[i].t === "wall" && !window.siegeline.canBridgeAt(i)) return i; }} return -1; }}')
     a0 = S(page, 'S.aFree')
     if away >= 0:
         click_cell(page, away % COLS, away // COLS)
-        check(S(page, 'S.charges.size') == 2 and S(page, 'S.aFree') == a0 and toast(page) == 'Bridges must connect to the current path.', f'a wall off the route is refused ({toast(page)})')
+        check(S(page, 'S.charges.size') == 1 and S(page, 'S.aFree') == a0 and toast(page) == 'Bridges must connect to the current path.', f'a wall off the route is refused ({toast(page)})')
     else: print('SKIP every wall in column 7 touches the route')
     BW = spot(page, 7); bw = idx(*BW)
     click_cell(page, *BW)
-    check(S(page, f'S.charges.get({bw}).kind') == 'bridge' and S(page, 'S.aFree') == 500 - 25 - 65 - 50, f'first bridge 50 (on {BW}, beside the route), tower charges cost the same with it')
+    check(S(page, f'S.charges.get({bw}).kind') == 'bridge' and S(page, f'S.charges.get({bw}).cost') == 31 and S(page, 'S.aFree') == 500 - p95 - 31,
+          f'the bridge (on {BW}, beside the route) is the second attempt: 25 × 1.25 = 31')
+    at = S(page, f'S.charges.get({bw}).at')
+    check(at in S(page, 'window.siegeline.state.seenGrid && (() => { const S = window.siegeline.state; return [...S.seenGrid.keys()].filter(i => !S.seenGrid[i]); })()')
+          and abs(at % COLS - bw % COLS) + abs(at // COLS - bw // COLS) == 1, f'its sapper’s tile is an open cell beside the wall ({at % COLS}, {at // COLS})')
     check(page.get_attribute('[data-sabo=bridge]', 'aria-pressed') == 'true' and page.inner_text('#a-sabo-bridge').startswith('Planned'),
           'tapping a wall picks the bridge card, which then shows the bridge planned')
     check('One bridge per wave.' in page.inner_text('#a-sabo-bridge') and 'off' in page.get_attribute('[data-sabo=bridge]', 'class'), 'with one planned the bridge card greys out: One bridge per wave.')
@@ -247,29 +262,61 @@ with sync_playwright() as p:
     other = next(c for c in ((7, 7), (7, 6), (7, 2)) if idx(*c) != bw)
     click_cell(page, *other)
     check(not S(page, f'S.charges.has({idx(*other)})') and S(page, 'S.aFree') == a0 and toast(page) == 'One bridge per wave.', f'one bridge per wave ({toast(page)})')
-    page.click(f'[data-rm="{bw}"]')
-    check(not S(page, f'S.charges.has({bw})') and S(page, 'S.aFree') == 500 - 90, 'sabotage list remove refunds')
-    click_cell(page, *BW)
+    page.click(f'[data-rm="{T95}"]')
+    check(not S(page, f'S.charges.has({T95})') and S(page, f'S.charges.get({bw}).cost') == 25 and S(page, 'S.aFree') == 500 - 25, 'calling off the knock-out refunds it and re-prices the bridge down to 25')
+    click_cell(page, T95 % COLS, T95 // COLS); page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
+    p95b = round((15 + 0.2 * v95) * 1.25)
+    check(S(page, f'S.charges.get({T95}).cost') == p95b and S(page, 'S.aFree') == 500 - 25 - p95b, f'planned again the knock-out comes second: ×1.25 ({p95b})')
     page.screenshot(path=f'{OUT}/a2_bridge_planned.png')
-    page.click('#atk-next'); page.click('#atk-next'); hand(page)
+    # step 3: each sapper is a track with one dot
+    page.click('#atk-next'); page.wait_for_timeout(300)
+    check(S(page, 'S.step') == 2 and page.locator('.lane.sap').count() == 2 and 'there ~' in page.inner_text('#tl'), 'Wave step: a track for each sapper, with when it gets there')
+    t0 = S(page, f'S.charges.get({bw}).t')
+    db = page.locator(f'.lane.sap[data-sap="{bw}"] .clip').bounding_box(); lb = page.locator(f'.lane.sap[data-sap="{bw}"]').bounding_box()
+    drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25, db['y'] + db['height'] / 2)
+    t1 = S(page, f'S.charges.get({bw}).t')
+    check(abs(t1 - 0.25) < 0.03 and t1 != t0, f'dragging a sapper’s dot sets when it leaves ({t0:.3f} → {t1:.3f})')
+    page.evaluate(f'() => {{ const S = window.siegeline.state; S.charges.get({bw}).t = 0.02; S.charges.get({T95}).t = 0.02; }}')
+    page.screenshot(path=f'{OUT}/a3_sapper_tracks.png')
+    # the attacker's test run: the planned wave against the defense as seen
+    plan = S(page, 'JSON.stringify([S.aFree, [...S.charges], S.designs.map(d => d.count), S.round])')
+    check(page.is_visible('#atk-test'), 'the Wave step offers Test from round 2')
+    page.click('#atk-test')
+    check(page.evaluate('() => window.siegeline.testing') and S(page, 'S.phase') == 'wave' and S(page, 'JSON.stringify(S.grid.map(g => g && g.t))') == S(page, 'JSON.stringify(S.seenGrid.map(g => g && g.t))')
+          and S(page, 'S.units.length + S.spawnList.length') > 0, 'Test plays the planned wave, sappers included, against the defense as last seen')
+    check(page.is_visible('#pane-wave .speed') and page.get_attribute('#pane-wave .speed [data-speed="5"]', 'aria-pressed') == 'true', 'a test run has 1×, 5×, 10× and starts at 5×')
+    page.click('#pane-wave .speed [data-speed="10"]')
+    check(page.get_attribute('#pane-wave .speed [data-speed="10"]', 'aria-pressed') == 'true', 'the test speed can be changed')
+    page.wait_for_timeout(1200); page.screenshot(path=f'{OUT}/a4_atk_test.png')
+    page.click('#test-skip')
+    r = page.evaluate('() => window.siegeline.testResult')
+    check(not page.evaluate('() => window.siegeline.testing') and S(page, 'S.phase') == 'attack' and S(page, 'S.step') == 2
+          and S(page, 'JSON.stringify([S.aFree, [...S.charges], S.designs.map(d => d.count), S.round])') == plan, 'after the test the plan is exactly as it was')
+    check(r and r['side'] == 'atk' and r['sappers'] == 2 and page.is_visible('#a-test') and f"Sappers {r['sapOk']}/2 landed" in page.inner_text('#a-test'),
+          f'the result card says how many sappers landed ({page.inner_text("#a-test")})')
+    page.click('#atk-next')
+    page.click('#atk-next'); hand(page)
+    check(page.get_attribute('#pane-wave .speed [data-speed="1"]', 'aria-pressed') == 'true' and page.evaluate('() => window.siegeline.speed') == 1, 'the real wave keeps its own speed (1×), whatever the test ran at')
     d0 = S(page, 'S.dFree')
-    page.evaluate('() => window.siegeline.advance(3)')
-    check(S(page, f'S.grid[{idx(9,5)}].off') == 2, 'charged tower goes offline for 2 waves')
-    check(S(page, f'S.grid[{idx(13,5)}].off') == 1, 'rebuilding on the same cell does not dodge a charge')
-    check(S(page, f'S.grid[{bw}]') is None and S(page, f'S.bridges.has({bw})'), 'the bridge replaced the wall')
-    check(S(page, 'S.dFree') == d0 + 5 and S(page, 'S.wave.bridgeRefund') == 5, 'the bridged wall is refunded to the defender')
+    check(S(page, 'S.units.some(u => u.sap)') or S(page, 'S.spawnList.some(e => e.sk != null)'), 'sappers march with the army')
+    check(advance_until(page, f'S.grid[{T95}].off > 0'), 'the knock-out sapper takes its tower offline on walking into range')
+    sap_gone = S(page, f'!S.units.some(u => u.sap && u.sap.cell === {T95})') and S(page, f'S.sapList.find(sp => sp.cell === {T95}).state') == 'done'
+    check(sap_gone and S(page, 'S.wave.jammed') == 1, 'that sapper is used up')
+    check(all(S(page, f'S.grid[{i}].off') == 0 for i, _ in towers if i != T95), 'the other towers keep shooting')
+    check(advance_until(page, f'S.bridges.has({bw})'), 'the bridge goes down when its sapper reaches its tile')
+    check(S(page, f'S.grid[{bw}]') is None and S(page, 'S.dFree') == d0 + 5 and S(page, 'S.wave.bridgeRefund') == 5, 'the bridge replaced the wall and the wall is refunded to the defender')
     check(S(page, f'[{bw - COLS}, {bw + COLS}].every(j => !S.seenGrid[j] || S.seenGrid[j].t !== "wall" || (S.grid[j] && S.grid[j].t === "wall"))') and S(page, f'!!S.grid[{bw - COLS}]'),
-          f'a bridge leaves the walls next to it standing (bridge on {BW}, the end of the column: the only wall there beside the route)')
-    check(S(page, f'S.path.includes({bw})'), 'units route over the bridge')
+          f'a bridge leaves the walls next to it standing (bridge on {BW})')
     page.wait_for_timeout(300)
     page.screenshot(path=f'{OUT}/w2_bridge.png')
     page.evaluate('() => window.siegeline.advance(200)')
-    check(S(page, f'S.grid[{idx(9,5)}].off') == 1, 'one wave later: 1 wave left')
     L2, before = S(page, 'S.last'), S(page, match)
-    check(L2['bridges'] == 1 and 'bridged' in page.inner_text('#ov-sum').lower(), 'summary counts the bridge')
+    check(L2['bridges'] == 1 and L2['sapOk'] == 2 and L2['sappers'] == 2 and 'bridged' in page.inner_text('#ov-sum').lower() and 'Sappers landed' in page.inner_text('#ov-sum'),
+          'summary counts the bridge and the sappers that landed')
+    check(S(page, f'S.grid[{T95}].off') == 0 and S(page, 'S.charges.size') == 0, 'a knock-out lasts the wave; the plan is spent')
     page.click('#sum-replay'); page.evaluate('() => window.siegeline.advance(200)')
     R = S(page, 'S.wave')
-    check([R[k] for k in ['x', 'y', 'kills', 'bridges', 'jammed']] == [L2[k] for k in ['X', 'Y', 'kills', 'bridges', 'jammed']], 'replay with a bridge and charges matches the real wave')
+    check([R[k] for k in ['x', 'y', 'kills', 'bridges', 'jammed', 'sapOk']] == [L2[k] for k in ['X', 'Y', 'kills', 'bridges', 'jammed', 'sapOk']], 'replay with sappers matches the real wave')
     page.click('#rp-close')
     check(S(page, match) == before and S(page, 'S.bridges.size') == 1, 'replaying changes nothing in the match')
     page.click('#sum-next'); hand(page)
@@ -282,11 +329,8 @@ with sync_playwright() as p:
     W2 = spot(page, 7); w2 = idx(*W2)  # a wall beside the route the attacker saw
     page.click('.tool[data-tool=remove]'); click_cell(page, *W2)
     check(S(page, f'S.grid[{w2}]') is None, 'defender takes down a wall the attacker saw')
-    click_cell(page, 9, 5)
-    check(S(page, f'S.grid[{idx(9,5)}]') is not None and 'offline' in toast(page).lower(), 'offline tower cannot be removed')
-    page.click('.tool[data-tool=tower]'); click_cell(page, 9, 5)
-    check(page.is_visible('#def-ctx .callout2') and not page.is_visible('#te-price'), 'offline tower shows a locked card, no sliders')
-    page.screenshot(path=f'{OUT}/d4_offline.png')
+    page.click('.tool[data-tool=tower]'); click_cell(page, T95 % COLS, T95 // COLS)
+    check(page.is_visible('#te-price'), 'the knocked-out tower is back: it can be retuned')
     page.click('#def-ctx [data-act=close]')
     page.click('#def-next')
     page.click('#def-body [data-act=replay]')
@@ -294,16 +338,16 @@ with sync_playwright() as p:
     page.keyboard.press('Escape')
     check(S(page, 'S.phase') == 'defend' and S(page, 'S.step') == 1 and S(page, 'S.round') == 3, 'Escape closes the replay back to planning')
     page.click('#def-next'); hand(page)
-    check(S(page, f'S.seenGrid[{idx(9,5)}].off') == 1, 'attacker sees how long it stays offline')
-    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(300)  # the board re-lays out after the wide timeline panel
+    page.click('#atk-next'); page.wait_for_timeout(300)
     a0 = S(page, 'S.aFree'); click_cell(page, *W2)
-    check(S(page, f'S.charges.get({w2}).cost') == 70 and S(page, 'S.aFree') == a0 - 70, 'the second bridge on the map costs 50 + 20')
-    check(S(page, 'S.totals.towerCharges') == 2 and page.inner_text('#a-sabo-tower').startswith('45 / 75 / 110 coins'), f'two tower charges planted last wave: the next costs 25 + 20 ({page.inner_text("#a-sabo-tower")})')
-    page.click('#atk-next'); page.click('#atk-next')
+    check(S(page, 'S.totals.sabotage') == 2 and S(page, f'S.charges.get({w2}).cost') == 39 and S(page, 'S.aFree') == a0 - 39, 'two attempts so far: this bridge costs 25 × 1.25² = 39')
+    at2 = S(page, f'S.charges.get({w2}).at')
+    on_route = S(page, f'S.path.includes({at2})')  # the defender's real route, after taking the wall down
+    page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next')
     hand(page)
     page.evaluate('() => window.siegeline.advance(200)')
-    check(S(page, f'S.grid[{idx(9,5)}].off') == 0, 'tower back online after its waves')
-    check(S(page, f'S.bridges.has({w2}) && S.bridges.has({bw})') and S(page, 'S.last.bridgeRefund') == 0, 'taking the wall down first does not stop a bridge (and refunds nothing more)')
+    if on_route: check(S(page, f'S.bridges.has({w2}) && S.bridges.has({bw})') and S(page, 'S.last.bridgeRefund') == 0, 'taking the wall down first does not stop a bridge whose sapper still reaches its tile (and refunds nothing more)')
+    else: check(not S(page, f'S.bridges.has({w2})') and S(page, 'S.last.sapMissed') == 1, 'with the wall gone the route skips the sapper’s tile: the bridge misses')
     page.click('#sum-next')
     # attacker win + rematch
     page.evaluate('() => { window.siegeline.state.keep = 3; }')
@@ -316,12 +360,12 @@ with sync_playwright() as p:
     page.click('#def-next'); page.click('#def-next'); hand(page)
     page.evaluate('() => { const S = window.siegeline.state; S.aFree = 3000; }')
     for _ in range(15): page.click('.step.plus[data-i="0"]')
-    page.click('#atk-next'); page.click('.mini[data-act=rush]'); page.click('#atk-next'); page.wait_for_timeout(300)
+    page.click('#atk-next'); page.wait_for_timeout(300)
     a0 = S(page, 'S.aFree'); click_cell(page, *W3)
-    check(S(page, f'S.charges.get({w3}).cost') == 90 and S(page, 'S.aFree') == a0 - 90, 'the third bridge costs 50 + 2 × 20')
-    page.click('#atk-next'); page.click('#atk-next'); hand(page)
-    page.evaluate('() => window.siegeline.advance(1.5)')
-    check(S(page, f'S.grid[{w3}].t') == 'tower' and not S(page, f'S.bridges.has({w3})') and S(page, 'S.wave.missed') == 1, 'a bridge on a wall that became a tower misses')
+    check(S(page, f'S.charges.get({w3}).cost') == 49 and S(page, 'S.aFree') == a0 - 49, 'the fourth attempt costs 25 × 1.25³ = 49')
+    page.click('#atk-next'); page.click('.mini[data-act=rush]'); page.click('#atk-next'); page.click('#atk-next'); hand(page)
+    check(advance_until(page, f'S.sapList[0].state !== "go" && S.sapList[0].state !== "wait"'), 'the sapper gets to the end of its job')
+    check(S(page, f'S.grid[{w3}].t') == 'tower' and not S(page, f'S.bridges.has({w3})') and S(page, 'S.wave.missed + S.wave.sapMissed') >= 1, 'a bridge on a wall that became a tower misses')
     page.evaluate('() => window.siegeline.advance(120)'); page.wait_for_timeout(2000)
     check(S(page, 'S.winner') == 'attacker' and page.is_visible('#ov-end'), 'attacker wins when the keep falls')
     page.click('#end-again')
@@ -329,11 +373,11 @@ with sync_playwright() as p:
     # defender win
     for rnd in range(1, 9):
         hand(page); page.click('#def-next'); page.click('#def-next'); hand(page)
-        page.click('#atk-next'); page.click('#atk-next')
+        page.click('#atk-next')
         if rnd == 8:
             page.wait_for_timeout(150)
-            check('locked' in page.get_attribute('#a-chg-note', 'class') and 'final wave' in page.inner_text('#a-chg-note'), 'no charges in the final wave')
-        page.click('#atk-next')
+            check('locked' in page.get_attribute('#a-chg-note', 'class') and 'final wave' in page.inner_text('#a-chg-note'), 'no sabotage in the final wave')
+        page.click('#atk-next'); page.click('#atk-next')
         page.click('#atk-next')
         if rnd == 1: check('nothing' in page.inner_text('#atk-next').lower(), 'empty army needs confirm')
         page.click('#atk-next'); hand(page)
@@ -366,7 +410,7 @@ with sync_playwright() as p:
     for _ in range(4): page.tap('.step.plus[data-i="0"]')
     for _ in range(6): page.tap('.step.plus[data-i="2"]')
     page.screenshot(path=f'{OUT}/m2_army.png')
-    page.tap('#atk-next'); page.wait_for_timeout(200)
+    page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(200)
     hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box(); lb = page.locator('.lane[data-i="0"]').bounding_box()
     cdp = ctx.new_cdp_session(page)
     x0, y0 = hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2
@@ -379,7 +423,7 @@ with sync_playwright() as p:
     page.screenshot(path=f'{OUT}/m3_wave.png')
     ov = page.evaluate('() => document.documentElement.scrollWidth > innerWidth')
     check(not ov, 'phone: no horizontal overflow')
-    page.tap('#atk-next'); page.tap('#atk-next'); page.wait_for_timeout(100)
+    page.tap('#atk-next'); page.wait_for_timeout(100)
     page.screenshot(path=f'{OUT}/m4_ready.png')
     page.tap('#atk-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(2500)
     page.screenshot(path=f'{OUT}/m5_live.png')
@@ -393,13 +437,17 @@ with sync_playwright() as p:
     # round 2 on the phone: the attacker taps a seen wall to plan a bridge, and it shows on the transposed board
     page.tap('#sum-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
     page.tap('#def-next'); page.wait_for_timeout(100); page.tap('#def-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
-    page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(300)
+    sure_sappers(page)
+    page.tap('#atk-next'); page.wait_for_timeout(300)
     check(page.evaluate(f'() => window.siegeline.canBridgeAt({idx(4,4)})'), 'phone: the wall at (4,4) sits beside the route')
     tap_cell(4, 4)
     check(S(page, f'S.charges.has({idx(4,4)}) && S.charges.get({idx(4,4)}).kind') == 'bridge', 'phone: tapping a seen wall plans a bridge')
     page.screenshot(path=f'{OUT}/m7_bridge_planned.png')
+    page.tap('#atk-next'); page.wait_for_timeout(300)
+    check(page.is_visible('.lane.sap') and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'), 'phone: the sapper’s track fits the Wave step')
+    page.screenshot(path=f'{OUT}/m7b_sapper_track.png')
     page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(1200)
-    check(S(page, f'S.bridges.has({idx(4,4)})'), 'phone: the bridge goes down in the wave')
+    check(advance_until(page, f'S.bridges.has({idx(4,4)})'), 'phone: the bridge goes down when its sapper gets there')
     page.screenshot(path=f'{OUT}/m8_bridge_wave.png')
     page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(200)
     page.tap('#sum-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
@@ -478,8 +526,8 @@ with sync_playwright() as p:
     keep, free, grid = S(page, 'S.keep'), S(page, 'S.dFree'), S(page, 'JSON.stringify(S.grid.map(g => g && g.t))')
     check(page.is_visible('#def-test'), 'round 2: the build step offers Test')
     page.click('#def-test')
-    check(page.evaluate('() => window.siegeline.testing') and S(page, 'S.phase') == 'wave' and page.is_visible('#test-skip') and page.is_hidden('#pane-wave .speed'),
-          'Test plays last wave’s army on the board, input locked, with a Skip button')
+    check(page.evaluate('() => window.siegeline.testing') and S(page, 'S.phase') == 'wave' and page.is_visible('#test-skip') and page.is_visible('#pane-wave .speed'),
+          'Test plays last wave’s army on the board, input locked, with speed controls and a Skip button')
     page.wait_for_timeout(500)
     check(page.inner_text('#v-keep') == str(int(-(-keep // 1))), 'the HUD keeps showing the real keep during a test')
     page.screenshot(path=f'{OUT}/h1_testing.png')
@@ -548,6 +596,43 @@ with sync_playwright() as p:
     check(idx(8, 3) in path, 'without the bridge the same tie goes the other way')
     ctx.close()
 
+    # ---------- sapper rules on hand-built defenses, played in hidden test waves (the same simulation as a real wave)
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page)
+    # a wall three thick (columns 7-9, gap at the bottom) with a bridge laid in its first layer: (7,5) leads nowhere
+    thick = [idx(c, r) for c in (7, 8, 9) for r in range(10)]
+    setup = f'''() => {{ const S = window.siegeline.state; S.seenGrid = S.seenGrid.map(() => null); for (const i of {thick}) S.seenGrid[i] = {{ t: 'wall', fresh: false }};
+      S.seenGrid[{idx(7,5)}] = null; S.bridges = new Set([{idx(7,5)}]); S.grid = S.seenGrid.map(g => g && {{ ...g }}); S.seenVer++; S.seenRound = 1; S.gridVer++; }}'''
+    page.evaluate(setup)
+    check(page.evaluate(f'() => window.siegeline.canBridgeAt({idx(8,5)})') and not page.evaluate(f'() => window.siegeline.canBridgeAt({idx(8,4)})'),
+          'chaining: a wall behind a bridge can be bridged though it doesn’t touch the route; one beside neither can’t')
+    sap = lambda body: page.evaluate(f'''() => {{ const sl = window.siegeline, S = sl.state; return (() => {{ {body} }})(); }}''')
+    r = sap(f'''const at = sl.seenRoute().find(p => p === {idx(6,5)});
+      return sl.trial(S.seenGrid, [], new Map([[{idx(8,5)}, {{ kind: 'bridge', t: 0, cost: 0, at }}]]), 5, [...S.bridges]);''')
+    check(r['bridges'] == 1 and r['sapOk'] == 1, f'the sapper stands on the route beside the old bridge and bridges the wall behind it ({r})')
+    # the same sapper whose tile is off the route: the sabotage fails at once, the sapper walks on and does nothing at the keep
+    r = sap(f'''const route = sl.seenRoute(), off = [...Array(176).keys()].find(i => !S.seenGrid[i] && !S.bridges.has(i) && !route.includes(i) && i % 16 === 12);
+      return sl.trial(S.seenGrid, [], new Map([[{idx(8,5)}, {{ kind: 'bridge', t: 0, cost: 0, at: off }}]]), 5, [...S.bridges]);''')
+    check(r['bridges'] == 0 and r['sapMissed'] == 1 and r['Y'] == 0 and r['leaks'] == 0, f'path changed: a bridge sapper whose tile is off the route misses and deals no damage at the keep ({r})')
+    # knock-outs: a tower whose range covers the entry goes down; one whose range the route never enters can't
+    page.evaluate(f'''() => {{ const S = window.siegeline.state, T = (i, range) => ({{ t: 'tower', cfg: {{ range, dps: 2, rate: 3, splash: 0 }}, fee: 0, off: 0, n: i, fresh: false, cd: 0, ang: 0, kick: 0, dealt: 0 }});
+      S.seenGrid[{idx(2,6)}] = T({idx(2,6)}, 2); S.seenGrid[{idx(12,0)}] = T({idx(12,0)}, 0); S.seenVer++; }}''')
+    r = sap(f'''return sl.trial(S.seenGrid, [], new Map([[{idx(2,6)}, {{ kind: 'tower', t: 0, cost: 0 }}]]), 5, [...S.bridges]);''')
+    check(r['jammed'] == 1 and r['sapOk'] == 1, f'a knock-out sapper walking into a tower’s range takes it offline ({r})')
+    r = sap(f'''return sl.trial(S.seenGrid, [], new Map([[{idx(12,0)}, {{ kind: 'tower', t: 0, cost: 0 }}]]), 5, [...S.bridges]);''')
+    check(r['jammed'] == 0 and r['sapMissed'] == 1, f'a tower whose range the route never enters can’t be knocked out ({r})')
+    # a sapper on its own in front of strong towers is shot down, and its sabotage with it
+    page.evaluate('() => { window.siegeline.rules.sapper.hp = 0; }')
+    r = sap(f'''const G = S.seenGrid.map(g => g && (g.t === 'tower' ? {{ ...g, cfg: {{ ...g.cfg, range: 7, dps: 8 }} }} : g));
+      return sl.trial(G, [], new Map([[{idx(8,5)}, {{ kind: 'bridge', t: 0, cost: 0, at: {idx(6,5)} }}]]), 5, [...S.bridges]);''')
+    check(r['sapLost'] == 1 and r['bridges'] == 0 and r['kills'] == 0, f'a sapper shot down is lost with its sabotage (not counted as an army kill) ({r})')
+    page.evaluate('() => { window.siegeline.rules.sapper.hp = 2; }')
+    check(not errors, f'sapper rules: no errors {errors[:3]}')
+    ctx.close()
+
     ctx = b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
     page = ctx.new_page()
     page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
@@ -591,13 +676,13 @@ with sync_playwright() as p:
     check(S(page, '[...S.terrain].join("")') == live and S(page, f'S.grid[{j}].t') == 'rock', 'the replay plays on the same map')
     page.click('#rp-close'); page.click('#sum-next'); hand(page)
     page.click('#def-next'); page.click('#def-next'); hand(page)
-    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(300)
+    page.click('#atk-next'); page.wait_for_timeout(300)
     click_cell(page, j % COLS, j // COLS)
     check(S(page, 'S.charges.size') == 0 and 'can’t be bridged' in toast(page), f'rock can’t be bridged ({toast(page)})')
     click_cell(page, i % COLS, i // COLS)
     check(S(page, 'S.charges.size') == 0 and 'rough ground' in toast(page).lower(), f'rough ground needs no bridge ({toast(page)})')
     page.evaluate('() => { window.siegeline.state.keep = 1; }')
-    page.click('#atk-next'); page.click('#atk-next'); hand(page)
+    page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next'); hand(page)
     page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_selector('#ov-end', state='visible', timeout=5000)
     page.click('#end-again')
     check(S(page, '[...S.terrain].join("")') != live and S(page, 'S.terrain.filter(v => v).length') == len(rough) + len(rock), 'a rematch gets a new map')

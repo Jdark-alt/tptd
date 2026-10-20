@@ -32,7 +32,7 @@ def write_build(name, html):
 
 # Internals the simulators need. Exposed only in the tools' copy of the page, never in the shipped game.
 SIM_HOOK = ("window.siegeline = { _i: { startWave, recompute, newState, defaultTower, unitCost, towerCost, towerValue, "
-            "UPRESETS, makeDesign, COLORS, pathLen, RULES, TS, US, brainPlan, decodeGrid, decodeArmy, decodeCharges, bridgePicks, bridgeSpots, bridgeCost, towerChargeCost, blockBridges, SOLO, makeTerrain, startMap, mazeRoom, ROUGH, ROCK, sellOff, keepFees, "
+            "UPRESETS, makeDesign, COLORS, pathLen, RULES, TS, US, brainPlan, decodeGrid, decodeArmy, decodeCharges, bridgePicks, bridgeSpots, bridgeCost, towerChargeCost, sapPlan, sapT, blockBridges, SOLO, makeTerrain, startMap, mazeRoom, ROUGH, ROCK, sellOff, keepFees, "
             "get S(){return S}, set S(v){S=v} },")
 
 # Optional test-only knobs: each one rewrites a line of the copy so a sim can scale something without editing the
@@ -40,7 +40,7 @@ SIM_HOOK = ("window.siegeline = { _i: { startWave, recompute, newState, defaultT
 KNOBS = [
     ('hit = dps / rate', 'hit = dps * (RULES.dmgScale || 1) / rate', 'dmgScale: multiply all tower damage'),
     ('speed: US.speed.steps[d.speed]', 'speed: US.speed.steps[d.speed] * (RULES.spdScale || 1)', 'spdScale: multiply all unit speed'),
-    ('const d = S.sentArmy[di], hp = US.hp.steps[d.hp];', 'const d = S.sentArmy[di], hp = US.hp.steps[d.hp] * (RULES.hpScale || 1);', 'hpScale: multiply all unit health'),
+    ('const d = sd || S.sentArmy[di], hp = US.hp.steps[d.hp];', 'const d = sd || S.sentArmy[di], hp = US.hp.steps[d.hp] * (RULES.hpScale || 1);', 'hpScale: multiply all unit health (sappers too)'),
     ('d = Math.max(d * 0.2, d - u.armor);', 'd = Math.max(d * (RULES.armorFloor || 0.2), d - u.armor);', 'armorFloor: share of a hit that always gets through armor'),
 ]
 

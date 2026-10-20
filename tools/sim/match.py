@@ -63,7 +63,7 @@ def main():
         b = launch(p); pg = b.new_page()
         pg.goto('file://' + page_path); pg.wait_for_timeout(300)
         print(f'rules {json.dumps(rules)}  attacker opts {json.dumps({**GAME_RULES_OPTS, **extra})}', flush=True)
-        total = wins = 0
+        total = wins = sent_all = landed_all = 0
         for dn in a.defenders.split(','):
             for an, ao in atk.items():
                 opts = {**GAME_RULES_OPTS, **ao, **extra}
@@ -73,6 +73,9 @@ def main():
                 br = [x['breach'] for r in res for x in r['log'] if 'breach' in x]
                 bridges = sum(x.get('bridges') or 0 for r in res for x in r['log']) / len(res)
                 jams = sum(x.get('jammed') or 0 for r in res for x in r['log']) / len(res)
+                sent = sum(x.get('sappers') or 0 for r in res for x in r['log'])
+                landed = sum(x.get('sapOk') or 0 for r in res for x in r['log']); shot = sum(x.get('sapLost') or 0 for r in res for x in r['log'])
+                saps = f'  sappers landed {landed}/{sent} ({100 * landed / sent:.0f}%, {shot} shot down)' if sent else ''
                 # how the defender dealt with the bridges on the map, over every round that had one
                 resp = {}
                 for r in res:
@@ -81,10 +84,12 @@ def main():
                 rs = ' '.join(f'{k} {v}' for k, v in sorted(resp.items()))
                 print(f'  defender {dn:11s} vs {an:28s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
                       f'  avg breach {sum(br)/max(1, len(br)):4.1f}%  bridges/match {bridges:3.1f}  towers out/match {jams:3.1f}'
-                      + (f'  fell in rounds {fell}' if fell else '') + (f'  defender vs bridges: {rs}' if rs else ''), flush=True)
+                      + saps + (f'  fell in rounds {fell}' if fell else '') + (f'  defender vs bridges: {rs}' if rs else ''), flush=True)
+                sent_all += sent; landed_all += landed
                 if a.log:
                     for x in res[0]['log']: print('      ', x)
         print(f'ATTACKER WINS {wins}/{total} = {100 * wins / max(1, total):.0f}%')
+        if sent_all: print(f'SAPPERS LANDED {landed_all}/{sent_all} = {100 * landed_all / sent_all:.0f}%')
         b.close()
 
 

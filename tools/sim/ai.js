@@ -129,9 +129,10 @@
      opt.army: a strategy name below, or opt.armySpec = [[stats or preset name, share, start, end], ...]
        stats are slider indexes, e.g. { hp: 6, speed: 4, regen: 3 }; start/end are the wave-timeline window (0..1).
      opt.charges: 'bridges' | 'towers' | 'both' (with opt.chargeShare = share of worth spent on them). Bridges go on
-       the walls that shorten the seen route most (the game's bridgePicks), up to the per-wave cap; tower charges on
-       the most valuable towers.
-     opt.cap: respect the "half the seen towers offline per wave" cap; opt.noLastCharges: none in the final wave.
+       the walls that shorten the seen route most (the game's bridgePicks), up to the per-wave cap; knock-outs on
+       the most valuable towers. Each is carried by a sapper leaving early in the army's first group (opt.sapTime:
+       'early' or 'mid', the game's sapT).
+     opt.cap: respect the tower value cap per wave; opt.noLastCharges: none in the final wave.
      opt.game: 'easy' | 'normal' | 'hard' plays the game's own computer attacker (brainPlan in index.html) instead. */
   const DESIGNS = {
     Tank: { hp: 9, speed: 7, armor: 3 },          // everything maxed
@@ -177,30 +178,28 @@
     let worth = S.aFree;
     for (const d of S.designs) worth += d.count * I.unitCost(d);
     S.charges = new Map();
-    const budget = Math.floor(worth * (opt.chargeShare || 0));
-    let spent = 0;
+    const budget = Math.floor(worth * (opt.chargeShare || 0)), k0 = S.totals.sabotage || 0, list = [];
+    let spent = 0, k = k0; // each attempt costs more than the one before it in the match
     if (budget > 0 && !(S.round >= I.RULES.rounds && opt.noLastCharges)) {
       const tw = [];
       S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([I.towerValue(g), i, g]); });
       tw.sort((a, b) => b[0] - a[0]);
-      const cap = opt.cap ? Math.ceil(tw.length / 2) : tw.length;
-      let off = tw.filter(([, , g]) => g.off > 0).length;
+      const cap = opt.cap ? I.RULES.towerCapShare * tw.reduce((v, [x]) => v + x, 0) : Infinity;
+      let tv = 0;
       if (opt.charges === 'towers' || opt.charges === 'both') {
-        let k = S.totals.towerCharges || 0; // each charge costs more than the one before it in the match
-        for (const [, i, g] of tw) { // knock out the most valuable towers for one wave
+        for (const [v, i, g] of tw) { // knock out the most valuable towers that fit the value cap
           if (g.off > 0) continue;
-          const c = I.towerChargeCost(1, k++);
-          if (off >= cap || spent + c > budget * (opt.charges === 'both' ? 0.6 : 1)) break;
-          S.charges.set(i, { kind: 'tower', waves: 1, cost: c }); spent += c; off++;
+          const c = I.towerChargeCost(v, k);
+          if ((tv && tv + v > cap) || spent + c > budget * (opt.charges === 'both' ? 0.6 : 1)) break;
+          list.push([i, 'tower']); spent += c; tv += v; k++;
         }
       }
       if (opt.charges === 'bridges' || opt.charges === 'both') {
         // the walls that shorten the seen route most, picked like the game's computer does
-        let k = 0;
         for (const i of I.bridgePicks(S.seenGrid, I.bridgeSpots(S.seenGrid, S.bridges), I.RULES.bridgesPerWave, S.bridges)) {
-          const c = I.bridgeCost(S.bridges.size + k);
+          const c = I.bridgeCost(k);
           if (spent + c > budget) break;
-          S.charges.set(i, { kind: 'bridge', waves: 0, cost: c }); spent += c; k++;
+          list.push([i, 'bridge']); spent += c; k++;
         }
       }
     }
@@ -214,6 +213,7 @@
     const last = S.designs[S.designs.length - 1]; // spend leftovers on the last design so coins aren't wasted
     if (last && spec.length > 1) { const extra = Math.floor(left / I.unitCost(last)); last.count += extra; left -= extra * I.unitCost(last); }
     S.aFree = left;
+    if (list.length) S.charges = I.sapPlan(S.seenGrid, S.bridges, list, I.sapT(S.designs, opt.sapTime || 'early'), k0);
     return key;
   }
 
@@ -233,12 +233,13 @@
       const army = attack(S, aOpt, seed * 104729 + S.round);
       I.startWave(seed * 101 + S.round);
       window.siegeline.advance(900);
-      if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: S.wave.x, Y: Math.round(S.wave.y), keep: 0, bridges: S.wave.bridges, jammed: S.wave.jammed, response }); return { winner: 'attacker', round: S.round, keep: 0, log }; }
+      const W = S.wave, saps = { sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed };
+      if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: W.x, Y: Math.round(W.y), keep: 0, bridges: W.bridges, jammed: W.jammed, ...saps, response }); return { winner: 'attacker', round: S.round, keep: 0, log }; }
       const L = S.last;
       log.push({ r: S.round, army, X: L.X, Y: Math.round(L.Y), breach: Math.round(L.breach * 100), keep: Math.round(S.keep),
         defWorth: Math.round(S.dFree + S.grid.reduce((v, g) => v + (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? I.RULES.wall : I.towerValue(g)), 0)),
         atkWorth: S.aFree + S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0), charges: L.charges, bridges: L.bridges, missed: L.missed, jammed: L.jammed,
-        onMap: S.bridges.size, response });
+        onMap: S.bridges.size, ...saps, response });
       if (S.over) return { winner: S.winner, round: S.round, keep: Math.round(S.keep), log };
       S.round++;
     }

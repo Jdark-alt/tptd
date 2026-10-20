@@ -42,7 +42,8 @@ def snap(pg):
       grid:S.grid.map(g=>g?(g.t==="wall"?"w":"t"+g.off):0).join(","), bridges:[...S.bridges].sort((a,b)=>a-b).join(","), army:JSON.stringify(S.designs.map(d=>[d.name,d.count,d.hp,d.speed,d.tl.s,d.tl.e,d.tl.pos]))}}''')
 
 def no_terrain(*pgs):
-    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0;}')
+    """Known cells are clicked, so no terrain; and sappers get top health so the planned sabotage always arrives."""
+    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.sapper.hp=9;}')
 def join(pg, role, code):
     pg.click('#info-go')
     pg.wait_for_selector('#ov-mode:not([hidden])')
@@ -141,13 +142,13 @@ try:
             B.click('#sum-next')
             same(A, B, 'replay leaves the online match untouched')
 
-            # ---------- round 2: a bridge and a charge, unlock and relock, real-time wave ----------
+            # ---------- round 2: a bridge and a knock-out, unlock and relock, real-time wave ----------
             wait(B, "S.phase==='attack'")
             tower_cell = idx(5, 4)
             # a bridge has to touch the route the attacker saw: take a wall of column 3 beside it
             bcell = B.evaluate('()=>{const S=window.siegeline.state; const ok=S.seenGrid.map((g,i)=>i).filter(i=>window.siegeline.canBridgeAt(i)); return ok.find(i=>i%16===3) ?? ok[0];}')
             attack_round(B, [10, 2, 6], lock=False,
-                         extra=f"S.charges.set({tower_cell},{{kind:'tower',waves:2,cost:55}}); S.aFree-=55; S.charges.set({bcell},{{kind:'bridge',waves:0,cost:50}}); S.aFree-=50;")
+                         extra=f"S.charges.set({tower_cell},{{kind:'tower',t:0.02,cost:23}}); S.aFree-=23; S.charges.set({bcell},{{kind:'bridge',t:0.05,cost:31}}); S.aFree-=31;")
             B.click('#atk-next')
             B.wait_for_timeout(200)
             check('attacker locks in first', B.is_visible('#ov-wait'))
@@ -167,7 +168,7 @@ try:
             print(f'   real-time wave took {ta:.1f}s at 10x, {tb:.1f}s at 1x')
             check('10x finishes much sooner', ta * 3 < tb)
             s2 = same(A, B, 'round 2 identical with one device at 10x')
-            check('tower charge landed on both', ev(A, f"S.grid[{tower_cell}].off") == 1 and ev(B, f"S.grid[{tower_cell}].off") == 1)
+            check('knock-out landed on both', s2['last']['jammed'] == 1 and s2['last']['sapOk'] == 2 and ev(B, "S.last.sapOk") == 2, s2['last'])
             check('bridge laid on both', s2['last']['bridges'] == 1 and ev(A, f"S.bridges.has({bcell})") and ev(B, f"S.bridges.has({bcell})"), s2['bridges'])
             A.screenshot(path=f'{SHOTS}/o3_summary_def.png'); B.screenshot(path=f'{SHOTS}/o3_summary_atk.png')
             A.click('#sum-next'); B.click('#sum-next')
@@ -176,13 +177,14 @@ try:
             wait(A, "S.phase==='defend'"); wait(B, "S.phase==='attack'")
             # the attacker's plan also carries a bridge on a wall away from the route: both devices must drop it
             off = B.evaluate('()=>{const S=window.siegeline.state; return S.seenGrid.findIndex((g,i)=>g&&g.t==="wall"&&!S.bridges.has(i)&&!window.siegeline.canBridgeAt(i));}')
-            # and a tower charge priced 25 though one was planted last round: both devices price it 25 + 10
-            stale = f"S.charges.set({idx(13, 4)},{{kind:'tower',waves:1,cost:25}}); S.aFree-=25;"
+            # and a knock-out priced as if it were the first: both devices price it as the third attempt of the match
+            stale = f"S.charges.set({idx(13, 4)},{{kind:'tower',t:0,cost:1}}); S.aFree-=1;"
+            v13 = ev(B, f"window.siegeline.towerValue(S.seenGrid[{idx(13, 4)}])"); want = int((15 + 0.2 * v13) * 1.25 ** 2 + 0.5)
             defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else '') + stale)
             A.evaluate("()=>document.querySelector('#def-next').click()"); B.evaluate("()=>document.querySelector('#atk-next').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
-            check('a tower charge is priced by the rules on both devices (the second of the match: 35)', ev(A, "S.wave.chargeCoins") == 35 and ev(B, "S.wave.chargeCoins") == 35, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
+            check(f'a knock-out is priced by the rules on both devices (the third attempt: {want})', ev(A, "S.wave.chargeCoins") == want and ev(B, "S.wave.chargeCoins") == want, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
             # the charges each device started the wave with (the live list empties as they go off, sooner on the 10x device)
             pre = "S.preWave.charges.map(c => c[0])"
             if off >= 0: check('a bridge off the route in a plan is dropped on both devices', ev(A, pre) == ev(B, pre) and off not in ev(A, pre), f'{ev(A, pre)} / {ev(B, pre)}')
