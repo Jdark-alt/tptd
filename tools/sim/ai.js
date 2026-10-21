@@ -187,7 +187,7 @@
     // prices rise with the attempts of each kind in earlier waves; this wave's targets don't raise each other's
     const budget = Math.floor(worth * (opt.chargeShare || 0)), tries = { bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0 }, list = [];
     let spent = 0;
-    if (budget > 0 && !(S.round >= I.RULES.rounds && opt.noLastCharges)) {
+    if (budget > 0 && !(S.round >= S.rounds && opt.noLastCharges)) {
       const tw = [];
       S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([I.towerCost(g.cfg), i, g]); }); // slider price, as sabotage counts it
       tw.sort((a, b) => b[0] - a[0]);

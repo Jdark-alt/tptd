@@ -71,6 +71,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
   color:var(--side);background:var(--side-wash);border:1px solid color-mix(in srgb,var(--side) 40%,transparent);white-space:nowrap}
 .who::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--side);box-shadow:0 0 8px var(--side)}
 .hint{flex:1;min-width:0;color:var(--muted);font:400 13px/1.2 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clock{flex:none;font:600 11px/1 var(--f-ui);letter-spacing:.08em;font-variant-numeric:tabular-nums;padding:5px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--soft);white-space:nowrap}
+.clock.low{color:var(--bad);border-color:rgba(255,90,90,.45)}
 .coins{flex:none;display:flex;align-items:baseline;gap:12px;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .coins b{font:600 12.5px/1 var(--f-ui);letter-spacing:.06em;font-variant-numeric:tabular-nums}
 .coins b.c{color:var(--cool)} .coins b.w{color:var(--warm)}
@@ -511,11 +513,15 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
 .modecol{display:flex;flex-direction:column;gap:10px;min-width:0}
 .rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
 .pick.lv{grid-template-columns:repeat(3,minmax(0,1fr))}
+.matchrow{grid-column:1/-1;display:flex;align-items:center;gap:12px;min-width:0}
+.matchrow .mlbl,.matchrow .mkeep{flex:none;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.matchrow .mkeep b{color:var(--keep);font-weight:600;letter-spacing:.06em}
+.pick.waves{flex:1;max-width:340px;grid-template-columns:repeat(5,minmax(0,1fr))}
 .rolepick button,.pick button{min-height:40px;border:0;background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--muted)}
 .rolepick button+button,.pick button+button{border-left:1px solid var(--line-2)}
 .rolepick button[data-role=def][aria-pressed=true],.pick button[data-side=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink)}
 .rolepick button[data-role=atk][aria-pressed=true],.pick button[data-side=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink)}
-.pick button[data-level][aria-pressed=true]{background:var(--paper);color:var(--ink)}
+.pick button[data-level][aria-pressed=true],.pick button[data-rounds][aria-pressed=true]{background:var(--paper);color:var(--ink)}
 .codebox{display:flex;gap:6px;align-items:center}
 .codebox label{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap;margin-right:4px}
 .codebox input{flex:1;width:0;min-width:0;height:44px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--ink);color:var(--paper);font:900 24px/1 var(--f-display);letter-spacing:.35em;text-transform:uppercase;text-align:center;padding:0 8px;user-select:text;-webkit-user-select:text}
@@ -524,6 +530,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
 .netstatus.bad{color:#ffb4b4} .netstatus.ok{color:#a8e6b0}
 .netpill{flex:none;font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;padding:5px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
 .netpill.ok{border-color:rgba(168,230,176,.45);color:#a8e6b0} .netpill.bad{border-color:rgba(255,90,90,.45);color:#ffb4b4}
+.netpill .sm{display:none}
 .overlay.wait{background:rgba(4,6,9,.6)}
 .waitcard{max-width:420px;width:100%;background:var(--slate);border:1px solid var(--line-2);border-top:2px solid var(--side);border-radius:8px;padding:24px;display:flex;flex-direction:column;gap:12px;text-align:center;box-shadow:0 40px 120px -30px #000}
 .waitcard h2{margin:0;font:900 34px/1 var(--f-display);letter-spacing:.04em;color:var(--side)}
@@ -596,7 +603,13 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
 }
 @media (max-width:560px){
   .modes{grid-template-columns:minmax(0,1fr);padding:14px 16px 16px}
-  .netpill{font-size:9.5px;padding:4px 6px}
+  .netpill{font-size:9.5px;padding:4px 6px;letter-spacing:.08em}
+  .netpill .lg{display:none} .netpill .sm{display:inline}
+  /* the turn bar holds who plans, the clock, the net pill and both worths */
+  #turnbar{gap:5px}
+  .who{letter-spacing:.08em;padding:5px 8px}
+  .clock{padding:4px 6px;letter-spacing:0}
+  .coins{gap:8px} .coins b{font-size:11.5px;letter-spacing:0}
   .brand{display:none}
   .hud-row{gap:6px;min-height:46px}
   .roundchip{padding:0 10px}
@@ -657,11 +670,11 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
   <header id="hud">
     <div class="hud-row">
       <div class="brand" aria-hidden="true"><i class="mark"></i>TPTD</div>
-      <div class="roundchip"><span class="lbl">Round</span><span class="val"><span id="v-round">1</span><small>of 8</small></span></div>
-      <div class="keepbox" id="keepbox" data-tip="The keep is the defender's base and the score that matters. Every unit that gets through knocks off its strength. When it reaches 0 the attacker wins; if it survives 8 rounds the defender wins.">
+      <div class="roundchip"><span class="lbl">Round</span><span class="val"><span id="v-round">1</span><small id="v-rounds">of 8</small></span></div>
+      <div class="keepbox" id="keepbox" data-tip="The keep is the defender's base and the score that matters. Every unit that gets through knocks off its strength. When it reaches 0 the attacker wins; if it survives every round the defender wins.">
         <span class="kico" id="kico"></span>
         <div class="kmain">
-          <div class="ktop"><span class="klbl">Keep</span><span class="knum"><span id="v-keep">1000</span><small>/ 1000</small></span></div>
+          <div class="ktop"><span class="klbl">Keep</span><span class="knum"><span id="v-keep">1000</span><small id="v-keepmax">/ 1000</small></span></div>
           <div class="kbar"><i id="v-keepbar" style="width:100%"></i></div>
         </div>
       </div>
@@ -669,6 +682,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
     </div>
     <div id="turnbar">
       <span class="who" id="t-who">Defender</span>
+      <span class="clock" id="t-clock" hidden data-tip="Planning time left this round. When it runs out, your plan goes as it stands.">3:00</span>
       <span class="hint" id="t-hint"></span>
       <span class="netpill" id="netpill" hidden></span>
       <span class="coins" data-tip="What each side owns in total: free coins plus coins parked in towers, walls, the army, and sabotage planned for the next wave."><span class="clbl">Worth</span><b class="c" id="v-dworth">DEF 300</b><b class="w" id="v-aworth">ATK 300</b></span>
@@ -742,7 +756,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v19</p>
+        <p class="tagline">Two Player Tower Defence · v20</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -750,9 +764,9 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
       <section class="howto">
         <h2>How to play</h2>
         <div class="key">
-          <div class="kd"><b>Defender</b>Walls and one tunable tower. Hold the keep for 8 rounds.</div>
+          <div class="kd"><b>Defender</b>Walls and one tunable tower. Hold the keep through every wave.</div>
           <div class="ka"><b>Attacker</b>Design an army, send sappers, time the wave. Break the keep.</div>
-          <div class="kk"><b>Keep</b>1,000 points. Whatever gets through comes off it.</div>
+          <div class="kk"><b>Keep</b><span data-rule="keepPerRound">125</span> points a wave, plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Whatever gets through comes off it.</div>
         </div>
         <ol>
           <li><strong>Defender, in secret.</strong> Build: walls bend the route, towers shoot it, shapes drop in ready-made pieces. Tap a tower to tune it. From round 2, <strong>Test</strong> plays last wave’s army against your build. Ready.</li>
@@ -760,13 +774,13 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
           <li><strong>The wave.</strong> Everything is revealed and plays out. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
           <li><strong>The split.</strong> Each round adds a 200-coin pot. The more gets through, the bigger the defender’s share, from 30% to 70%.</li>
         </ol>
-        <p>Play on one device and take turns, online on two, or against the computer. Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. The <strong>+</strong> beside a slider is what the next step costs.</p>
+        <p>Play on one device and take turns, online on two, or against the computer; pick how many waves the match lasts at the start (online the defender’s pick counts). Each side has <span data-rule="planSecs:min">3</span> minutes to plan each round; when the clock runs out, the plan goes as it stands. Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. Drag a tower to move it, or onto a wall or another tower to swap them, free. The <strong>+</strong> beside a slider is what the next step costs.</p>
         <p><strong>Hints</strong> (on by default, switch beside the build tabs): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire.</p>
       </section>
 
       <section>
         <h2>Towers</h2>
-        <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee, so moving one is free.</p>
+        <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee, and dragging one to a new cell is free.</p>
         <div class="callout"><p><code>40 × range × damage × accuracy × splash × frost × poison × chain + fee</code></p></div>
         <p><strong>Accuracy.</strong> Every tower starts at 80%. The Accuracy slider raises it to 87, 94 or 100% (×1.15, ×1.35, ×1.6), and fire rate shifts each shot: heavy shots hit more often, rapid fire less.</p>
         <div class="tablewrap"><table class="acc"><thead><tr><th>Shots per second</th></tr></thead><tbody><tr><td>Accuracy</td></tr></tbody></table></div>
@@ -777,7 +791,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
         <h2>Army</h2>
         <p>Up to four permanent designs; units that die come back next wave. Health, speed, armor, regeneration and resistance multiply the price, and above 60 coins a surcharge applies, so one giant unit costs more than its parts. Regeneration only heals out of fire, and resistances cut one kind of damage by 60%.</p>
         <div class="callout"><p><code>15 × health × speed × armor × regen × resist</code></p></div>
-        <p>On the timeline each design is a track and each unit a dot. Bunched units overwhelm single-target towers; fewer, tougher units in a looser wave beat splash.</p>
+        <p>On the timeline each design is a track and each unit a dot. Units leave within the first 20 seconds; the bar under each track shows when that wave is on the map, and dragging a whole track moves the wave, so two can meet where you want them. Bunched units overwhelm single-target towers; fewer, tougher units in a looser wave beat splash.</p>
         <p>Above the tracks, a time slider previews the wave on the defense you saw: scrub to any moment and every unit and sapper shows where it will be. Pause, drag a group along the route, and its release time moves so it’s there at that moment.</p>
       </section>
 
@@ -801,7 +815,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
 
       <section>
         <h2>Route and terrain</h2>
-        <p>Units take the cheapest route: a step per cell, plus half a step for every tower that can hit it. They walk around tower range when the detour is short, so walls are how you force them through fire. The dashed line always shows the route.</p>
+        <p>Units take the cheapest route: a step per cell, plus half a step for every tower that can hit it. They walk around tower range when the detour is short, so walls are how you force them through fire. A tower knocked out mid-wave still counts, so a knock-out never changes the route. The dashed line always shows the route.</p>
         <p>Every match gets a new map. <strong>Rough ground</strong> (dotted, about <span data-rule="roughShare%">5</span>%) is open to units but nothing can be built on it. <strong>Rock</strong> (hatched, about <span data-rule="rockShare%">5</span>%) blocks like a free wall and can’t be removed, built on or bridged.</p>
       </section>
 
@@ -809,7 +823,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
         <h2>Sabotage</h2>
         <p>Each target gets a <strong>sapper</strong> that marches with the army. It walks the route like any unit, towers shoot it like any unit, and it only does its job if it gets there: shot down, its coins are lost. It does nothing at the keep. Time each sapper on the wave track; units walking ahead of it draw the fire.</p>
         <p><strong>Bridge.</strong> Goes on a wall you’ve seen beside the route you saw, or beside one of your bridges. Its sapper lays it on reaching the marked tile beside the wall: the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. If the route no longer passes that tile, or a tower stands where the wall was, it misses. From <span data-rule="bridgeBase">25</span> coins, at most <span data-rule="bridgesPerWave">1</span> a wave.</p>
-        <p><strong>Knock-out.</strong> Goes on a tower you’ve seen. Its sapper stops it shooting for the rest of the wave the moment it walks into the tower’s range. It hits the spot: a tower moved away is safe. It costs <span data-rule="towerOffBase">15</span> plus <span data-rule="towerOffShare%">20</span>% of the tower’s slider price (its tuning, not its build fee), and the towers you target in one wave can add up to <span data-rule="towerCapShare%">50</span>% of the slider prices of all the towers you saw; one tower always fits.</p>
+        <p><strong>Knock-out.</strong> Goes on a tower you’ve seen. Its sapper stops it shooting for the rest of the wave the moment it walks into the tower’s range; units keep their route. It hits the spot: a tower moved away is safe. It costs <span data-rule="towerOffBase">15</span> plus <span data-rule="towerOffShare%">20</span>% of the tower’s slider price (its tuning, not its build fee), and the towers you target in one wave can add up to <span data-rule="towerCapShare%">50</span>% of the slider prices of all the towers you saw; one tower always fits.</p>
         <p>Each bridge costs <span data-rule="bridgeRise%">25</span>% of its base more for every bridge you sent in earlier waves, and each knock-out <span data-rule="towerOffRise%">25</span>% more for every earlier knock-out, landed or not. Targets in the same wave don’t raise each other’s price.</p>
         <p>No sabotage in the first or the final wave.</p>
       </section>
@@ -822,8 +836,9 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal</td></tr>
               <tr><td>Pot per round</td><td class="n">200</td><td>Defender gets 30% + 40% × (breach ÷ 50%), capped at 70%</td></tr>
-              <tr><td>Keep</td><td class="n">1,000</td><td>Loses the strength that gets through</td></tr>
-              <tr><td>Rounds</td><td class="n">8</td><td>The defender wins by surviving them</td></tr>
+              <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
+              <tr><td>Waves</td><td class="n"><span data-rule="roundChoices:range">4–12</span></td><td>Picked at the start, <span data-rule="rounds">8</span> by default. The defender wins by surviving them</td></tr>
+              <tr><td>Planning</td><td class="n"><span data-rule="planSecs:min">3</span> min</td><td>Each side, each round; then the plan goes as it stands</td></tr>
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower; moving one is free</td></tr>
               <tr><td class="d">Accuracy</td><td class="n">80% → 100%</td><td>Slider ×1.15 / ×1.35 / ×1.6; fire rate shifts each shot, <span id="acc-span"></span></td></tr>
@@ -835,7 +850,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v19</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v20</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -873,6 +888,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
   <div class="sheet">
     <header class="sheet-head"><div><h1 class="logo" id="mode-title"><i class="mark"></i>TPTD</h1><p class="tagline">Two Player Tower Defence</p></div></header>
     <div class="modes">
+      <div class="matchrow"><span class="mlbl">Waves</span><div class="pick waves" id="mode-waves" role="group" aria-label="Waves in the match"></div><span class="mkeep" id="mode-keep"></span></div>
       <div class="modecol">
         <div class="mode">
           <h3><span class="idx">01</span>This device</h3>
@@ -889,7 +905,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
       </div>
       <div class="mode">
         <h3><span class="idx">03</span>Online</h3>
-        <p>Each on your own device. Pick a side and share the code; your opponent picks the other side and enters it.</p>
+        <p>Each on your own device. Pick a side and share the code; your opponent picks the other side and enters it. The defender’s number of waves is used.</p>
         <div class="rolepick" role="group" aria-label="Your side"><button data-role="def" aria-pressed="false">Defender</button><button data-role="atk" aria-pressed="false">Attacker</button></div>
         <div class="codebox"><label for="mode-code">Code</label><input id="mode-code" maxlength="6" autocomplete="off" spellcheck="false"><button class="mini" id="mode-new">New</button></div>
         <button class="ready neutral" id="mode-online" disabled>Connect</button>
@@ -935,7 +951,11 @@ const DX = [1, 0, 0, -1], DY = [0, -1, 1, 0]; // right, up, down, left
 const RULES = {
   bigUnit: 60, // units priced above this pay a surcharge: bigUnit × (price ÷ bigUnit)^1.5
   regenDelay: 3, regenCap: 10, // regen waits this many seconds after a direct hit; heals at most cap% of max health per 1%/s, per wave
-  rounds: 8, keep: 1000, startDef: 300, startAtk: 300, pot: 200,
+  // a match lasts `rounds` waves unless the players pick another length from roundChoices at the start; the keep gets
+  // keepPerRound points for every wave, plus keepShort for every wave short of keepShortOf (600 for 4 waves, 800 for 6,
+  // 1,000 for 8, 1,500 for 12): short matches lean to the attacker otherwise (see CLAUDE.md, "Measured on v19, main")
+  rounds: 8, roundChoices: [4, 6, 8, 10, 12], keepPerRound: 125, keepShort: 25, keepShortOf: 8, startDef: 300, startAtk: 300, pot: 200,
+  planSecs: 180, // each side's planning time per round (0: no limit); when it runs out the plan goes as it stands
   shareMin: 0.3, shareMax: 0.7, breachCap: 0.5,
   wall: 5, towerBase: 40, towerFee: 10, unitBase: 15, maxDesigns: 4, waveLen: 20,
   // Sabotage marches with the army: each bridge or tower knock-out is carried by a sapper (fixed stats, slider indexes
@@ -951,7 +971,7 @@ const RULES = {
   // terrain, new each match: shares of the board that are rough ground (units cross it, nothing can be built on
   // it) and rock (blocks like a wall that can't be removed, built on or bridged)
   roughShare: 0.05, rockShare: 0.05,
-  danger: 5, // extra route cost (in tenths of a step) for each working tower that can hit a cell
+  danger: 5, // extra route cost (in tenths of a step) for each tower that can hit a cell (knocked out or not)
   // tower accuracy: each shot hits with the Accuracy slider's chance (TS.accuracy) plus this offset for the tower's fire
   // rate (one per TS.rate step, 4/s down to 0.4/s), clamped to 0-100%. A miss is drawn missOffset cells beside the target.
   rateAcc: [-8, -5, -2, 0, 3, 6], missOffset: 0.3,
@@ -1131,7 +1151,7 @@ const $ = s => document.querySelector(s);
 const canvas = $('#board'), ctx = canvas.getContext('2d');
 const wrap = $('#boardwrap');
 const el = {
-  round: $('#v-round'), keep: $('#v-keep'), keepbar: $('#v-keepbar'), keepbox: $('#keepbox'), dworth: $('#v-dworth'), aworth: $('#v-aworth'),
+  round: $('#v-round'), rounds: $('#v-rounds'), keep: $('#v-keep'), keepMax: $('#v-keepmax'), clock: $('#t-clock'), keepbar: $('#v-keepbar'), keepbox: $('#keepbox'), dworth: $('#v-dworth'), aworth: $('#v-aworth'),
   who: $('#t-who'), hint: $('#t-hint'), panel: $('#panel'),
   paneDef: $('#pane-def'), paneAtk: $('#pane-atk'), paneWave: $('#pane-wave'),
   defSteps: $('#def-steps'), defBody: $('#def-body'), defCtx: $('#def-ctx'), defBack: $('#def-back'), defNext: $('#def-next'),
@@ -1149,15 +1169,22 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let S = null, uid = 0, tipsOn = false;
 // Versus computer: the player's side, the difficulty, and the computer's plan for this round.
 const SOLO = { on: false, side: 'def', level: 'easy', plan: null, pending: '', note: '', fallback: null, think: null, timer: 0, locked: false, rng: Math.random, mem: { atk: {}, def: {} }, seed: null };
+// The match length picked on the mode screen (0: RULES.rounds). Online both devices use the defender's (NET.n).
+let pickRounds = 0;
+const chosenRounds = () => pickRounds || RULES.rounds;
+const validRounds = n => RULES.roundChoices.includes(n);
 // While a replay runs, S is a scratch copy of the match and the real state waits in replay.live.
 let replay = null;
 const real = () => (replay ? replay.live : S);
 // sappers: sent this wave; sapOk landed, sapLost shot down on the way, sapMissed failed (route changed, target gone);
 // misses: tower shots that missed
 const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, bridges: 0, bridgeRefund: 0, missed: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0, sappers: 0, sapOk: 0, sapLost: 0, sapMissed: 0, misses: 0 });
-function newState() {
+// The keep for a match of n waves.
+const keepFor = n => RULES.keepPerRound * n + RULES.keepShort * Math.max(0, RULES.keepShortOf - n);
+// rounds: how many waves this match lasts; the keep follows (keepFor)
+function newState(rounds = RULES.rounds) {
   return {
-    round: 1, keep: RULES.keep, dFree: RULES.startDef, aFree: RULES.startAtk,
+    round: 1, rounds, keepMax: keepFor(rounds), keep: keepFor(rounds), dFree: RULES.startDef, aFree: RULES.startAtk,
     phase: 'defend', step: 0, next: null,
     grid: new Array(N).fill(null), gridVer: 0, towerSeq: 0,
     seenGrid: new Array(N).fill(null), seenVer: 0, seenRound: 0,
@@ -1218,10 +1245,12 @@ const splitFor = (X, Y) => {
 
 /* =====================================================================
    Pathing: a cost field from the exit. Each cell costs one step (10),
-   plus RULES.danger for every working tower whose range covers it, so
-   units take the shortest route but steer around tower fire when the
-   detour is short. Units walk downhill on the field, so any change to
-   the map re-routes everyone from the cell they are in. Costs are
+   plus RULES.danger for every tower whose range covers it, so units
+   take the shortest route but steer around tower fire when the detour
+   is short. A tower knocked out mid-wave still counts: a knock-out
+   silences a tower, it never changes the route. Units walk downhill on
+   the field, so a change to the walls (a bridge going down) re-routes
+   everyone from the cell they are in. Costs are
    integers, which keeps both online devices in exact agreement.
    The field is kept in 1/FK units: each bridge cell costs one unit
    less, so of two routes that cost exactly the same, units take the
@@ -1236,13 +1265,13 @@ function coverCells(i, cfg, fn) {
     for (let c = Math.max(0, c0 - k); c <= Math.min(COLS - 1, c0 + k); c++)
       if ((c - c0) * (c - c0) + (r - r0) * (r - r0) <= R * R) fn(r * COLS + c);
 }
-// How many working towers can hit each cell. `offline` holds cells to treat as knocked out.
-function dangerField(G, offline) {
+// How many towers can hit each cell. Knocked-out towers count too, so units keep their route when one goes down.
+function dangerField(G) {
   DZ.fill(0);
   const bump = j => { DZ[j]++; };
   for (let i = 0; i < N; i++) {
     const g = G[i];
-    if (g && g.t === 'tower' && !(g.off > 0) && !(offline && offline.has(i))) coverCells(i, g.cfg, bump);
+    if (g && g.t === 'tower') coverCells(i, g.cfg, bump);
   }
   return DZ;
 }
@@ -1450,14 +1479,14 @@ function seenAnchors() {
   }
   return anchorCache.map;
 }
-// The route as it would run with the planned bridges laid and the tower charges gone off (plus one hovered target).
+// The route as it would run with the planned bridges laid (plus one hovered wall). Knock-outs don't move it.
 let projCache = { S: null, key: '', path: null };
 function projected(extra = -1) {
   const key = S.seenVer + ':' + S.bridges.size + ':' + S.chargeVer + ':' + extra;
   if (projCache.S !== S || projCache.key !== key) {
-    const open = new Set(plannedBridges()), off = new Set(towerChargeCells());
-    if (extra >= 0) { const g = S.seenGrid[extra]; if (g && g.t === 'tower') off.add(extra); else open.add(extra); }
-    flow(tmpB, i => !S.seenGrid[i] || open.has(i), dangerField(S.seenGrid, off), new Set([...S.bridges, ...open]));
+    const open = new Set(plannedBridges());
+    if (extra >= 0) { const g = S.seenGrid[extra]; if (!(g && g.t === 'tower')) open.add(extra); }
+    flow(tmpB, i => !S.seenGrid[i] || open.has(i), dangerField(S.seenGrid), new Set([...S.bridges, ...open]));
     projCache = { S, key, path: tracePath(tmpB) };
   }
   return projCache.path;
@@ -1472,12 +1501,18 @@ const pathLen = p => (p ? p.length - 1 : 0);
 // "New" means the attacker hasn't seen it. Tearing something down and rebuilding it on the same
 // cell doesn't hide it again, so charges planted there still land.
 const seenAs = (cell, kind) => !!(S.seenGrid[cell] && S.seenGrid[cell].t === kind);
-function canBuild(cell, kind) {
-  if (cell < 0) return { ok: false, quiet: true };
+// Why nothing can stand on a cell (the gates, a bridge, rock, rough ground), or null.
+function siteBlock(cell) {
   if (cell === ENTRY || cell === EXIT) return { ok: false, reason: 'Keep the gates clear. Nothing can be built on the entry or exit cell.' };
   if (S.bridges.has(cell)) return { ok: false, reason: 'That’s the attacker’s bridge. Nothing can be built on it, but you can wall off either end.' };
   if (S.terrain[cell] === ROCK) return { ok: false, reason: 'Rock. Nothing can be built on it, but it already blocks the route like a wall.' };
   if (S.terrain[cell] === ROUGH) return { ok: false, reason: 'Rough ground. Units can cross it, but nothing can be built on it.' };
+  return null;
+}
+function canBuild(cell, kind) {
+  if (cell < 0) return { ok: false, quiet: true };
+  const site = siteBlock(cell);
+  if (site) return site;
   if (S.grid[cell]) return { ok: false, quiet: true };
   const cost = kind === 'wall' ? RULES.wall : newTowerPrice();
   if (S.dFree < cost) return { ok: false, reason: `Not enough coins. A ${kind} costs ${cost} and you have ${S.dFree} free.`, gold: true };
@@ -1517,6 +1552,43 @@ function removeAt(cell) {
   puff(x, y, '#8b9daa');
   if (S.sel && S.sel.k === 'tower' && S.sel.cell === cell) S.sel = null;
   refreshUI();
+}
+/* Moving a tower: drag it onto an open cell, or onto a wall or another tower to swap the two. It keeps its tuning,
+   fee and number, so no coins move (the same as removing it and rebuilding it with the same tuning, which fees made
+   free in v12). Like a rebuilt tower it's new where the attacker didn't see a tower, so a knock-out planned on its old
+   spot finds nothing; a wall or tower it swaps with is new where the attacker didn't see one of its kind. */
+function canMove(from, to) {
+  const g = S.grid[from], h = to >= 0 ? S.grid[to] : null;
+  if (!g || g.t !== 'tower' || to < 0 || to === from) return { ok: false, quiet: true };
+  if (g.off > 0) return { ok: false, reason: 'This tower is offline. It can’t be moved until it comes back.' };
+  if (h && h.t === 'tower' && h.off > 0) return { ok: false, reason: 'That tower is offline. It can’t be moved until it comes back.' };
+  if (h && h.t === 'rock') return siteBlock(to);
+  if (h) return { ok: true, swap: h.t }; // the same cells stay blocked, so the route stays open
+  const site = siteBlock(to);
+  if (site) return site;
+  bfs(tmpA, i => i !== to && (i === from || !S.grid[i]));
+  if (tmpA[ENTRY] < 0) return { ok: false, reason: 'Path must stay open', block: true };
+  return { ok: true, swap: '' };
+}
+function moveTower(from, to) {
+  const v = canMove(from, to);
+  if (!v.ok) { if (!v.quiet) explain(v, to); return false; }
+  const g = S.grid[from], h = S.grid[to];
+  S.grid[to] = g; g.fresh = !seenAs(to, 'tower');
+  S.grid[from] = h; if (h) h.fresh = !seenAs(from, h.t);
+  if (S.sel && S.sel.k === 'tower') S.sel = { k: 'tower', cell: S.sel.cell === from ? to : S.sel.cell === to ? from : S.sel.cell };
+  S.gridVer++; recompute();
+  puff(...center(to), '#4fd6ee');
+  refreshUI();
+  return true;
+}
+// The route units would take with the tower on `from` moved to `to` (swapped with whatever stands there).
+function routeMoved(from, to) {
+  const H = S.grid.slice();
+  [H[from], H[to]] = [H[to], H[from]];
+  flow(tmpA, i => !H[i], dangerField(H), S.bridges);
+  const path = tracePath(tmpA);
+  return { path, len: pathLen(path), fire: underFire(path, H) };
 }
 function setTowerCfg(cell, patch) {
   const g = S.grid[cell];
@@ -1745,8 +1817,23 @@ function placeHot() {
 /* ---------- what the pointer would build ----------
    For the cell under the mouse (or the pending tap on touch): the ghost, the route preview and the readout's change. */
 let hypCache = { key: '', S: null, pv: null };
+// A tower being dragged to a new cell (on either step), or null.
+const towerDrag = () => (drag && drag.mode === 'tower' && drag.moved && S.phase === 'defend' && S.grid[drag.from] && S.grid[drag.from].t === 'tower' ? drag : null);
 function buildPreview() {
-  if (S.phase !== 'defend' || S.step !== 0) return null;
+  if (S.phase !== 'defend') return null;
+  const td = towerDrag();
+  if (td) {
+    const key = ['move', S.gridVer, td.from, td.cell].join(':');
+    if (hypCache.key === key && hypCache.S === S) return hypCache.pv;
+    let pv = null;
+    if (td.cell >= 0 && td.cell !== td.from) {
+      pv = { kind: 'move', cell: td.cell, from: td.from, v: canMove(td.from, td.cell) };
+      if (pv.v.ok) pv.r = routeMoved(td.from, td.cell);
+    }
+    hypCache = { key, S, pv };
+    return pv;
+  }
+  if (S.step !== 0) return null;
   const cell = ghostCell(), tool = S.tool, set = hotNow();
   if (cell < 0 || (tool !== 'wall' && tool !== 'tower' && tool !== 'shape')) return null;
   const key = [S.gridVer, S.dFree, tool, cell, shapeSel.k, shapeSel.rot, shapeSel.flip, view.rot, set ? set.join(',') : '-'].join(':');
@@ -1813,7 +1900,7 @@ function deleteDesign(i) {
   refreshUI();
 }
 function chargeStatus() {
-  if (S.round >= RULES.rounds) return { ok: false, reason: 'No sabotage in the final wave. The last round is army against the defense as built.' };
+  if (S.round >= S.rounds) return { ok: false, reason: 'No sabotage in the final wave. The last round is army against the defense as built.' };
   if (S.seenGrid.some(g => g && g.t !== 'rock')) return { ok: true };
   return S.seenRound
     ? { ok: false, reason: 'Nothing was standing when you last saw the defense, so there is nothing to sabotage.' }
@@ -2130,10 +2217,10 @@ function sapRange(u) {
   const [x, y] = center(sp.cell), R = TS.range.steps[g.cfg.range], dx = u.x + u.ox - x, dy = u.y + u.oy - y;
   if (dx * dx + dy * dy > R * R) return;
   u.gone = true; sp.state = 'done'; S.wave.sapOk++; S.totals.sapOk++;
-  if (S.ghost) return; // the scrubber doesn't preview knock-outs: the sapper is used up, the tower stays
-  g.off = Math.max(g.off || 0, 1);
+  if (S.ghost) return; // the scrubber's ghost wave: the sapper is used up; towers don't fire there anyway
+  g.off = Math.max(g.off || 0, 1); // silent for the rest of the wave; the route stays as it was (dangerField)
   S.wave.jammed++; S.totals.jammed++;
-  S.gridVer++; recompute(); S.pathFlash = 1.2;
+  S.gridVer++;
   fx.push({ k: 'bolt', x1: u.x + u.ox, y1: u.y + u.oy, x2: x, y2: y, life: 0.4, max: 0.4, seed: Math.random() * 100 });
   fx.push({ k: 'ring', x, y, r0: 0.2, r1: 1.4, life: 0.55, max: 0.55, w: 0.12, color: '169,139,255' });
   fx.push({ k: 'flash', x, y, r: 1.1, life: 0.25, max: 0.25, color: '169,139,255' });
@@ -2195,7 +2282,7 @@ function waveStep(dt) {
    Round flow
    ===================================================================== */
 const DEF_STEPS = [
-  { name: 'Build', tool: 'wall', hint: 'Walls bend the route, towers shoot it. Tap a tower to tune it.' },
+  { name: 'Build', tool: 'wall', hint: 'Walls bend the route, towers shoot it. Tap a tower to tune it, drag it to move it.' },
   { name: 'Ready', tool: 'inspect', hint: 'Check your build and what attacked last time.' },
 ];
 // The sabotage screen decides what to hit; the wave screen decides how the sappers get there.
@@ -2237,6 +2324,7 @@ function setPhase(p) {
   for (const k in ctxKey) ctxKey[k] = null;
   bodyKey.def = bodyKey.atk = null;
   refreshUI();
+  tickClock(false); // the clock pill follows the phase at once, not on its next tick
 }
 function goStep(n) {
   const steps = S.phase === 'defend' ? DEF_STEPS : ATK_STEPS;
@@ -2250,19 +2338,19 @@ function startRound() {
   if (SOLO.on) { soloStartRound(); return; }
   S.next = 'defend';
   setPhase('handoff');
-  showHandoff('def', `Round ${S.round} of ${RULES.rounds}`, 'Defender',
+  showHandoff('def', `Round ${S.round} of ${S.rounds}`, 'Defender',
     'Attacker, look away.', 'Tap to start', startDefend);
 }
-function startDefend() { S.next = null; setPhase('defend'); }
+function startDefend() { S.next = null; setPhase('defend'); startClock(); }
 function defenderReady() {
   if (online()) { lockIn(); return; }
   if (SOLO.on) { soloReady(); return; }
   S.next = 'attack';
   setPhase('handoff');
-  showHandoff('atk', `Round ${S.round} of ${RULES.rounds}`, 'Attacker',
-    'Pass the device. Defender, look away.', 'Tap to start', startAttack);
+  showHandoff('atk', `Round ${S.round} of ${S.rounds}`, 'Attacker',
+    `${clock.out ? 'The defender’s time ran out. ' : ''}Pass the device. Defender, look away.`, 'Tap to start', startAttack);
 }
-function startAttack() { S.next = null; setPhase('attack'); }
+function startAttack() { S.next = null; setPhase('attack'); startClock(); }
 function attackerReady() {
   if (!armyCount(S.designs) && !S.charges.size && !S.confirmEmpty) {
     S.confirmEmpty = true; refreshUI(); toast('Your army is empty. Tap Ready again to send nothing.', 'atk'); return;
@@ -2272,8 +2360,40 @@ function attackerReady() {
   S.next = 'wave';
   setPhase('handoff');
   const n = armyCount(S.designs), c = sabotageWords();
-  showHandoff('both', `Round ${S.round} of ${RULES.rounds}`, `Wave ${S.round}`,
-    `${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${c}` : ''} against the defense.`, 'Start the wave', startWave);
+  showHandoff('both', `Round ${S.round} of ${S.rounds}`, `Wave ${S.round}`,
+    `${clock.out ? 'The attacker’s time ran out. ' : ''}${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${c}` : ''} against the defense.`, 'Start the wave', startWave);
+}
+/* ---------- planning clock ----------
+   Each side gets RULES.planSecs to plan each round, from when its planning screen opens (after the handoff tap in
+   pass-and-play; when the round starts online). Test runs and replays count. When time runs out the plan goes as it
+   stands, as if Ready were pressed (an empty army is sent empty), and Keep planning is gone for the round. Online each
+   device times only its own player, so nothing about it travels and no wave can depend on it. */
+const clock = { end: 0, on: false, out: false };
+function startClock() { Object.assign(clock, { end: performance.now() + RULES.planSecs * 1000, on: RULES.planSecs > 0, out: false }); tickClock(); }
+const planLocked = () => (online() ? NET.lk === real().round : SOLO.on && SOLO.locked);
+// fire: false only redraws the pill (after a phase change or a lock); time-up fires from the timer alone
+function tickClock(fire = true) {
+  const s = real(), planning = !!s && (s.phase === 'defend' || s.phase === 'attack');
+  if (clock.on && !planning) clock.on = false; // the round moved on: a handoff, the wave, the summary
+  const left = clock.on ? Math.max(0, clock.end - performance.now()) / 1000 : 0;
+  if (clock.on && left <= 0) { if (fire) timeUp(); return; }
+  const show = clock.on && !planLocked();
+  el.clock.hidden = !show;
+  if (!show) return;
+  const sec = Math.ceil(left);
+  setText(el.clock, 'clk', `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
+  el.clock.classList.toggle('low', sec <= 30);
+}
+setInterval(() => tickClock(), 250); // a timer, not the frame loop, so it keeps counting in a background tab
+function timeUp() {
+  Object.assign(clock, { on: false, out: true });
+  el.clock.hidden = true;
+  if (replay) exitReplay(); // a test run or replay ends; the plan is the live one
+  if (S.phase !== 'defend' && S.phase !== 'attack') return;
+  if (planLocked()) { $('#wait-back').hidden = true; return; } // already locked in: it just can't be unlocked now
+  toast('Time’s up. Your plan went as it stood.', S.phase === 'defend' ? 'def' : 'atk');
+  if (S.phase === 'defend') defenderReady();
+  else { S.confirmEmpty = true; attackerReady(); }
 }
 // "2 sappers", for the cards that announce a wave
 const sabotageWords = () => (S.charges.size === 1 ? 'a sapper' : S.charges.size ? `${S.charges.size} sappers` : '');
@@ -2316,7 +2436,7 @@ function endRound() {
   S.seenArmy = S.sentArmy;
   S.charges = new Map(); S.chargeVer++; // the sappers have done what they could; their coins are spent
   S.last = { X, Y, breach: sp.breach, share: sp.share, dGain, aGain, ...S.wave };
-  if (S.round >= RULES.rounds) { S.winner = 'defender'; S.over = true; }
+  if (S.round >= S.rounds) { S.winner = 'defender'; S.over = true; }
   if (online()) netAfterWave();
   if (S.over) { setPhase('over'); showEnd(); } else { setPhase('summary'); showSummary(); }
   if (online() && NET.role === 'atk' && NET.peer) adoptResult(NET.peer.res);
@@ -2324,12 +2444,12 @@ function endRound() {
 function nextRound() {
   hide(el.ovSum);
   S.round++; S.wave = blankWave();
-  if (online()) { setPhase(myPhase()); updateNetUI(); netCheck(); return; }
+  if (online()) { setPhase(myPhase()); startClock(); updateNetUI(); netCheck(); return; }
   startRound();
 }
-function newMatch(mapSeed) {
+function newMatch(mapSeed, rounds) {
   replay = null;
-  S = newState(); uid = 0;
+  S = newState(validRounds(rounds) ? rounds : chosenRounds()); uid = 0;
   startMap(mapSeed != null ? mapSeed : newMapSeed()); // a new map every match, rematches included
   soloStop();
   SOLO.rng = mulberry32(SOLO.seed != null ? SOLO.seed : (Math.random() * 4294967296) >>> 0);
@@ -2388,7 +2508,7 @@ function startTest() {
   replay = { live, done: false, test: { side, srand, uid, offs, key: buildKey(), round: live.round, fire: side === 'def' ? underFire(live.path, live.grid) : 0 } };
   pending = -1; pendingRemove = -1; drag = null;
   S = newState();
-  Object.assign(S, { round: live.round, keep: 1e9, dFree: live.dFree, aFree: live.aFree, seenRound: live.seenRound, towerSeq: live.towerSeq, mapSeed: live.mapSeed, terrain: live.terrain, totals: { ...live.totals } });
+  Object.assign(S, { round: live.round, rounds: live.rounds, keepMax: live.keepMax, keep: 1e9, dFree: live.dFree, aFree: live.aFree, seenRound: live.seenRound, towerSeq: live.towerSeq, mapSeed: live.mapSeed, terrain: live.terrain, totals: { ...live.totals } });
   S.grid = (side === 'def' ? live.grid : live.seenGrid).map(cloneCell); S.seenGrid = live.seenGrid.map(cloneCell); S.seenVer = live.seenVer;
   S.bridges = new Set(live.bridges);
   S.designs = copyArmy(side === 'def' ? live.seenArmy : live.designs);
@@ -2468,10 +2588,10 @@ function showSummary() {
   const L = S.last;
   const title = L.X === 0 ? 'No army sent' : L.Y < 0.5 ? 'Clean hold' : L.breach < 0.15 ? 'Mostly held' : L.breach < 0.35 ? 'Line breached' : 'Heavy breach';
   $('#sum-body').innerHTML = `
-    <p class="sum-kicker">Round ${S.round} of ${RULES.rounds} complete</p>
+    <p class="sum-kicker">Round ${S.round} of ${S.rounds} complete</p>
     <h2 class="sum-title" id="sum-title">${title}</h2>
     ${splitViz(L)}
-    <div class="bx"><div class="bx-row keep"><span>The keep took ${fmtNum(L.Y)} damage</span><b>${Math.ceil(S.keep)} / ${RULES.keep}</b></div></div>
+    <div class="bx"><div class="bx-row keep"><span>The keep took ${fmtNum(L.Y)} damage</span><b>${Math.ceil(S.keep)} / ${S.keepMax}</b></div></div>
     ${SOLO.on && SOLO.note ? `<div class="bx ainote"><h3>The computer’s thinking</h3><p>${SOLO.note}</p></div>` : ''}
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">+${L.dGain}</span>
@@ -2495,9 +2615,9 @@ function showEnd() {
   const d = S.winner === 'defender', t = S.totals;
   const title = SOLO.on ? ((SOLO.side === 'def') === d ? 'You win' : 'The computer wins') : d ? 'Defender wins' : 'Attacker wins';
   $('#end-body').innerHTML = `
-    <p class="sum-kicker">${d ? `Survived all ${RULES.rounds} rounds` : `The keep fell in round ${S.round}`}</p>
+    <p class="sum-kicker">${d ? `Survived all ${S.rounds} rounds` : `The keep fell in round ${S.round}`}</p>
     <h2 class="sum-title end-title ${d ? 'd' : 'a'}" id="end-title">${title}</h2>
-    ${d ? `<p class="fml">The keep held with ${Math.ceil(S.keep)} of ${RULES.keep} points left.</p>` : ''}
+    ${d ? `<p class="fml">The keep held with ${Math.ceil(S.keep)} of ${S.keepMax} points left.</p>` : ''}
     ${S.last && d ? splitViz(S.last) : ''}
     <div class="ledger">
       <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li><li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
@@ -2533,10 +2653,10 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 9; // 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: tower accuracy, no dodge (towers carry accuracy, armies lose a slot). Builds with a different number never see each other
+const PROTO = 10; // 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
-  on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10),
+  on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, // n: waves in the match
   lk: 0, go: 0, at: 0, myPlan: null, revealed: null, res: null, adopted: 0,
   peer: null, link: null, linkUp: false, kind: '', busy: false,
 };
@@ -2608,7 +2728,7 @@ function decodeArmy(list) {
 // tile, so both devices agree whatever the plan says.
 function decodeCharges(list) {
   const m = new Map();
-  if (S.round >= RULES.rounds) return m;
+  if (S.round >= S.rounds) return m;
   let nb = 0;
   if (Array.isArray(list)) for (const a of list) {
     if (!Array.isArray(a)) continue;
@@ -2628,7 +2748,7 @@ function decodeCharges(list) {
 const decodeBridges = list => new Set(Array.isArray(list) ? list.map(v => int(v, -1, N - 1, -1)).filter(i => i >= 0 && i !== ENTRY && i !== EXIT) : []);
 // Nothing stands on a bridge, whatever a plan says.
 const clearBridges = G => { for (const i of S.bridges) G[i] = null; return G; };
-const makeDefPlan = () => ({ r: S.round, ep: NET.ep, ms: S.mapSeed, dFree: S.dFree, ts: S.towerSeq, g: encodeGrid(S.grid) });
+const makeDefPlan = () => ({ r: S.round, ep: NET.ep, ms: S.mapSeed, n: S.rounds, dFree: S.dFree, ts: S.towerSeq, g: encodeGrid(S.grid) });
 const encodeCharges = M => [...M].map(([i, c]) => [i, c.kind === 'tower' ? 1 : 2, Math.round(clamp(+c.t || 0, 0, 1) * 1295), c.cost]);
 const makeAtkPlan = withPos => ({ r: S.round, ep: NET.ep, aFree: S.aFree, a: encodeArmy(S.designs, withPos), c: encodeCharges(S.charges) });
 function makeResult() {
@@ -2636,7 +2756,7 @@ function makeResult() {
   return { r: S.round, ep: NET.ep, keep: S.keep, dFree: S.dFree, aFree: S.aFree, g: encodeGrid(S.grid), br: [...S.bridges].sort((a, b) => a - b), L, T: { ...S.totals }, over: S.over ? 1 : 0, win: S.winner || '' };
 }
 function netState() {
-  return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
+  return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, n: NET.n, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
 }
 const bytes = o => new TextEncoder().encode(JSON.stringify(o)).length;
 function publish() { if (NET.link && NET.on) NET.link.send(netState()); }
@@ -2655,17 +2775,18 @@ function lockIn() {
     toast('Hand-placed unit timings were evened out so the plan fits the connection.', 'atk');
   }
   if (bytes({ ...netState(), plan }) > 3900) { toast('This plan is too large to send. Remove a few walls or units.', 'bad'); return; }
-  NET.myPlan = plan; NET.lk = S.round;
-  publish();
+  NET.myPlan = plan; NET.lk = S.round; drag = null;
+  publish(); tickClock(false);
   show(ovWait);
   netCheck();
 }
 function unlock() {
-  if (SOLO.on) { SOLO.locked = false; hide(ovWait); return; }
+  if (clock.out) return; // time's up: the plan stands
+  if (SOLO.on) { SOLO.locked = false; hide(ovWait); tickClock(false); return; }
   if (NET.go >= S.round) return;
   NET.lk = 0; NET.myPlan = null;
   hide(ovWait);
-  publish(); refreshUI(); updateNetUI();
+  publish(); refreshUI(); updateNetUI(); tickClock(false);
 }
 function netCheck() {
   if (!NET.on || NET.st !== 'play' || !S || replay) return; // exitReplay checks again
@@ -2685,6 +2806,7 @@ function beginOnlineWave(peerPlan) {
   // The map comes from the match code and epoch on both devices; the defender's plan carries its seed too, and
   // that one wins if they ever differ.
   if (dp.ms != null && (dp.ms >>> 0) !== S.mapSeed) { startMap(dp.ms >>> 0); drawTerrain(); }
+  if (NET.role === 'atk') adoptRounds(int(dp.n, 0, 99)); // so is the match length (no sabotage in the last wave)
   // Both devices load both plans from the same encoded data, so the wave is identical.
   S.grid = clearBridges(decodeGrid(dp.g)); S.dFree = int(dp.dFree, 0, 1e6); S.towerSeq = int(dp.ts, 0, 9999);
   S.gridVer++; recompute();
@@ -2716,7 +2838,7 @@ function adoptResult(res) {
   const same = Math.abs(res.keep - S.keep) < 0.01 && !!res.over === !!S.over && res.dFree === S.dFree && res.aFree === S.aFreeAtEnd && sig(res.g) === sig(encodeGrid(S.grid))
     && sig(res.br || []) === sig([...S.bridges].sort((a, b) => a - b));
   if (same) return;
-  S.keep = clamp(+res.keep || 0, 0, RULES.keep); S.dFree = int(res.dFree, 0, 1e6);
+  S.keep = clamp(+res.keep || 0, 0, S.keepMax); S.dFree = int(res.dFree, 0, 1e6);
   S.aFree = Math.max(0, S.aFree + int(res.aFree, 0, 1e6) - S.aFreeAtEnd); S.aFreeAtEnd = int(res.aFree, 0, 1e6);
   S.bridges = decodeBridges(res.br); S.grid = clearBridges(decodeGrid(res.g)); for (const g of S.grid) if (g) g.fresh = false;
   S.gridVer++; recompute(); S.seenGrid = cloneGrid(S.grid); S.seenVer++;
@@ -2733,12 +2855,28 @@ function adoptResult(res) {
 }
 function startOnlineMatch(note) {
   for (const o of [ovMode, ovWait, el.ovEnd, el.ovSum, el.ovHand]) hide(o);
-  newMatch(seedFor('map', NET.code, NET.ep)); // both devices derive the same map from the match code and epoch
+  const P = NET.peer;
+  if (NET.role === 'atk' && P && P.role === 'def' && validRounds(P.n)) NET.n = P.n; // the match lasts as long as the defender picked
+  newMatch(seedFor('map', NET.code, NET.ep), NET.n); // both devices derive the same map from the match code and epoch
   Object.assign(NET, { st: 'play', lk: 0, go: 0, at: 0, myPlan: null, revealed: null, res: null, adopted: 0 });
   document.body.dataset.role = NET.role;
   setPhase(myPhase());
   publish(); updateNetUI();
-  toast(note || `Match on. You are the ${roleName(NET.role)}.`, NET.role);
+  startClock();
+  const len = NET.role === 'atk' && NET.n !== chosenRounds() ? ` The defender picked ${NET.n} waves.` : '';
+  toast((note || `Match on. You are the ${roleName(NET.role)}.`) + len, NET.role);
+}
+// The attacker plays the defender's match length: it's set as the match starts, and this catches a pick that changed
+// just before (or reached this device late).
+function adoptRounds(n) {
+  const s = real();
+  if (!validRounds(n) || !s || s.rounds === n) return;
+  NET.n = n;
+  const fresh = s.round === 1 && s.keep === s.keepMax;
+  s.rounds = n; s.keepMax = keepFor(n);
+  s.keep = fresh ? s.keepMax : Math.min(s.keep, s.keepMax);
+  publish(); refreshUI();
+  toast(`The defender picked ${n} waves.`, '');
 }
 function rematchOnline(swap) {
   NET.ep = Math.max(NET.ep, NET.peer ? NET.peer.ep | 0 : 0) + 1;
@@ -2766,6 +2904,7 @@ function onPeerState(P) {
       return;
     }
   }
+  if (P && NET.role === 'atk' && P.role === 'def' && P.st === 'play' && P.ep === NET.ep) adoptRounds(P.n);
   netCheck();
   if (P && NET.role === 'atk' && P.res && S.doneRound) adoptResult(P.res);
   if (!!(prev && S && prev.ep === NET.ep && (prev.lk === S.round || prev.go === S.round)) !== peerReadyNow()) refreshUI();
@@ -2797,12 +2936,14 @@ function updateNetUI() {
   const P = NET.peer, here = P && P.st === 'play' && P.ep === NET.ep && NET.linkUp;
   const opp = roleName(otherRole(NET.role)).toLowerCase();
   let pill, cls;
+  // phones show the short words (lg/sm), so the planning clock fits the turn bar beside the coins
+  const who = `<span class="lg">${opp}</span><span class="sm">${NET.role === 'def' ? 'atk' : 'def'}</span>`;
   if (!NET.linkUp) { pill = 'Reconnecting'; cls = 'bad'; }
-  else if (!here) { pill = 'Opponent offline'; cls = 'bad'; }
-  else if (real().phase === 'defend' || real().phase === 'attack') { pill = peerReadyNow() ? `${opp} ready` : `${opp} planning`; cls = peerReadyNow() ? 'ok' : ''; }
+  else if (!here) { pill = '<span class="lg">Opponent </span>offline'; cls = 'bad'; }
+  else if (real().phase === 'defend' || real().phase === 'attack') { pill = `${who} ${peerReadyNow() ? 'ready' : 'planning'}`; cls = peerReadyNow() ? 'ok' : ''; }
   else { pill = `Online · ${NET.code}`; cls = 'ok'; }
   netpill.hidden = false;
-  netpill.textContent = pill;
+  netpill.innerHTML = pill;
   netpill.className = 'netpill' + (cls ? ' ' + cls : '');
   netpill.dataset.tip = `Online match ${NET.code}. You are the ${roleName(NET.role)}.`;
   if (!ovWait.hidden) {
@@ -2811,7 +2952,7 @@ function updateNetUI() {
     $('#wait-sub').textContent = !here ? `Your opponent is offline. The wave starts once they are back and ready`
       : committed ? 'Both ready. Starting the wave' : `Waiting for the ${opp} to finish planning`;
     $('#wait-net').textContent = committed ? '' : 'The wave starts the moment both sides are ready. Your plan stays hidden until then.';
-    $('#wait-back').hidden = committed;
+    $('#wait-back').hidden = committed || clock.out;
   }
 }
 
@@ -3003,7 +3144,7 @@ function linkLost(code) {
 async function connect() {
   const code = codeIn.value.trim().toUpperCase();
   if (!NET.role || !/^[A-Z0-9]{3,6}$/.test(code)) return;
-  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.linkUp = false; SOLO.on = false;
+  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.linkUp = false; SOLO.on = false; NET.n = chosenRounds();
   codeIn.disabled = true; $('#mode-new').disabled = true; $('#mode-local').disabled = true; $('#mode-solo').disabled = true;
   modeBtn.textContent = 'Cancel'; modeBtn.disabled = false;
   setModeStatus('Connecting', '', true);
@@ -3082,7 +3223,7 @@ const THINK_MS = 3000; // in the game it stops looking for better plans after th
 // Everything the computer may know this round, copied before the player does anything.
 const copyDesign = d => ({ ...d, tl: { ...d.tl, pos: null } });
 function soloKnows(side) {
-  const K = { side, round: S.round, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null,
+  const K = { side, round: S.round, rounds: S.rounds, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null,
     bridges: [...S.bridges], terrain: S.terrain.slice(), mapKey: terrainKey(S.terrain), bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0, deadline: Infinity }; // bridges, terrain and sappers sent are public
   if (side === 'atk') { K.designs = S.designs.map(copyDesign); K.aFree = S.aFree; }
   else { K.grid = S.grid.map(cloneCell); K.dFree = S.dFree; K.towerSeq = S.towerSeq; }
@@ -3132,9 +3273,9 @@ function retuneAgainst(G, ds) {
 
 /* ---------- routes, bridges and charge targets ---------- */
 const nbrs = i => { const c = i % COLS, out = []; if (c > 0) out.push(i - 1); if (c < COLS - 1) out.push(i + 1); if (i >= COLS) out.push(i - COLS); if (i < N - COLS) out.push(i + COLS); return out; };
-// The route cost units minimise (10 a step), from the entry, with some cells opened and some towers offline; -1 if closed.
-function routeCost(G, open, off, br) {
-  flow(tmpB, i => !G[i] || open.has(i), dangerField(G, off), br);
+// The route cost units minimise (10 a step), from the entry, with some cells opened; -1 if closed.
+function routeCost(G, open, br) {
+  flow(tmpB, i => !G[i] || open.has(i), dangerField(G), br);
   return tmpB[ENTRY] < 0 ? -1 : Math.ceil(tmpB[ENTRY] / FK);
 }
 // How many steps the route takes with some cells opened.
@@ -3154,12 +3295,12 @@ function bridgeSpots(G, br) {
 function bridgePicks(G, ok, n, br) {
   const open = new Set(), picks = [], cells = [];
   for (let i = 0; i < N; i++) if (ok(i)) cells.push(i);
-  let base = routeCost(G, open, null, br);
+  let base = routeCost(G, open, br);
   for (let k = 0; k < n; k++) {
     let best = -1, bestCost = base;
     for (const i of cells) {
       if (open.has(i)) continue;
-      open.add(i); const c = routeCost(G, open, null, br); open.delete(i);
+      open.add(i); const c = routeCost(G, open, br); open.delete(i);
       if (c >= 0 && c < bestCost) { bestCost = c; best = i; }
     }
     if (best < 0 || base - bestCost < 2 * STEPC) break; // saving under two steps isn't worth a bridge
@@ -3177,11 +3318,11 @@ function bridgeBlock(G, holes, i, br) {
   const opts = cand.map(j => [j]);
   if (cand.length > 2 && cand.length <= 4) for (let a = 0; a < cand.length; a++) for (let b = a + 1; b < cand.length; b++) opts.push([cand[a], cand[b]]);
   if (cand.length > 1) opts.push(cand);
-  const base = routeCost(G, new Set(), null, br);
+  const base = routeCost(G, new Set(), br);
   let best = [], bestCost = base;
   for (const o of opts) {
     const H = G.slice(); for (const j of o) H[j] = { t: 'wall' };
-    const c = routeCost(H, new Set(), null, br);
+    const c = routeCost(H, new Set(), br);
     if (c > bestCost) { best = o; bestCost = c; }
   }
   return bestCost - base >= 2 * STEPC ? best : [];
@@ -3318,7 +3459,7 @@ function* thinkAttack(K, L, rng) {
   }
   // 3. with sappers, under the game's rules: none in round 1 or the final round, only on what it saw, knock-outs
   // within the value cap. Each is tested leaving early or halfway into the first group (Easy: early only).
-  if (K.round < RULES.rounds && performance.now() < K.deadline) {
+  if (K.round < K.rounds && performance.now() < K.deadline) {
     W = RULES.bridgesPerWave ? bridgePicks(seen, bridgeSpots(seen, BR), Math.min(2, RULES.bridgesPerWave), BR) : [];
     const T = towerPicks(seen, 3, BR), Tfit = capFit(seen, T);
     // would a wall or two at its ends take the bridge away again? Rough ground next to it counts as a lane the
@@ -3339,7 +3480,7 @@ function* thinkAttack(K, L, rng) {
       const Y = run(seen, designs, map, 0).Y; yield;
       const counterY = L.foresight ? run(retuneAgainst(seen, designs), designs, map, 1).Y : Y;
       if (L.foresight) yield;
-      const later = Math.min(RULES.rounds - K.round, Math.max(0, K.keep / Math.max(1, Y) - 1));
+      const later = Math.min(K.rounds - K.round, Math.max(0, K.keep / Math.max(1, Y) - 1));
       const br = Math.max(0.1, c.base.breach), now = judged(Y, counterY);
       // what the bridges themselves added this wave (beyond the army their coins would have bought), and the
       // share of that it expects to keep in each later wave
@@ -3374,7 +3515,7 @@ function attackNote(K, D, c, designs, tried, W) {
   const ch = [bridgeText, towerText].filter(Boolean).join(', and ');
   const when = c.charges.length ? ` ${c.charges.length === 1 ? 'It left' : 'They left'} ${c.st === 'mid' ? 'halfway into' : 'early in'} the first group, so units walked ahead to draw your fire.` : '';
   const onMap = K.bridges.length ? ` ${K.bridges.length === 1 ? 'The bridge' : `The ${K.bridges.length} bridges`} already on the map counted in every test.` : '';
-  const skipped = !bs.length && W.length && K.round < RULES.rounds ? ' A new bridge didn’t pay for itself this wave.' : '';
+  const skipped = !bs.length && W.length && K.round < K.rounds ? ' A new bridge didn’t pay for itself this wave.' : '';
   return `Your defense had ${D.n ? plural(D.n, 'tower') : 'no towers'}${kind}${D.walls ? `, and ${D.walls} walls` : ''}. I tried ${plural(tried, 'plan')} against it.${onMap} ${c.best ? 'What got the most through' : 'I went with'}: ${army}${ch ? `, plus ${ch}` : ''}.${when}${skipped}`;
 }
 
@@ -3592,13 +3733,13 @@ function* thinkDefend(K, L, rng, mem) {
   // kill-zone versions of the finalists, and guarded versions: a tower on the seen wall a bridge would most
   // likely go on (bridges come in rounds 2-7)
   const seenWall = bridgeSpots(K.seenGrid, K.bridgeSet); // where the attacker may bridge: seen walls beside the seen route
-  const target = K.round > 1 && K.round < RULES.rounds && RULES.bridgesPerWave ? bridgePicks(K.seenGrid, seenWall, 1, K.bridgeSet)[0] : undefined;
+  const target = K.round > 1 && K.round < K.rounds && RULES.bridgesPerWave ? bridgePicks(K.seenGrid, seenWall, 1, K.bridgeSet)[0] : undefined;
   // Knock-outs it expects (rounds 2-7), once the attacker has sent a tower sapper this match (that's public: the
   // defender saw it march): on the seen towers it would target itself in the attacker's place, up to two within the
   // value cap, their sappers leaving early in the last army it saw. Targets are tied to the cell, so a dodged version
   // moves those towers to cells the attacker saw as walls. Expecting them from an attacker who never sends any cost
   // Hard keep in the sims, so neither level does.
-  const expect = K.round > 1 && K.round < RULES.rounds && L.foresight > 0 && K.koTries > 0;
+  const expect = K.round > 1 && K.round < K.rounds && L.foresight > 0 && K.koTries > 0;
   const targets = expect ? capFit(K.seenGrid, towerPicks(K.seenGrid, 2, K.bridgeSet)) : [];
   const sapAt = sapT(threats[0], 'early');
   const charged = sapPlan(K.seenGrid, K.bridgeSet, targets.map(i => [i, 'tower']), sapAt, K);
@@ -3625,7 +3766,7 @@ function* thinkDefend(K, L, rng, mem) {
   if (L.foresight) for (const b of fin) {
     const ys = [];
     for (let k = 1; k < threats.length; k++) { ys.push(run(b, threats[k], [], k)); yield; }
-    if (L.foresight === 2 && K.seenArmy && K.round < RULES.rounds && RULES.bridgesPerWave) { // and the last army with a bridge on its best wall
+    if (L.foresight === 2 && K.seenArmy && K.round < K.rounds && RULES.bridgesPerWave) { // and the last army with a bridge on its best wall
       const w = bridgePicks(b.G, i => seenWall(i) && !!(b.G[i] && b.G[i].t === 'wall' && !b.G[i].fresh), 1, K.bridgeSet);
       if (w.length) { ys.push(run(b, threats[0], sapPlan(K.seenGrid, K.bridgeSet, [[w[0], 'bridge']], sapAt, K), 0)); yield; }
     }
@@ -3705,17 +3846,17 @@ function trial(grid, designs, charges, seed, bridges = []) {
 /* ---------- the wave scrubber's ghost wave ----------
    The attacker's planned wave on the defense it saw (bridges on the map included), played by the real simulation with
    every tower silent: towers still count in the route's danger cost, so units steer round their range as they will,
-   but nobody is shot, slowed or knocked out (a knock-out sapper is used up on reaching its tower's range, and the
-   tower stays). lands: whether a planned bridge goes down the moment its sapper reaches its tile (units already
-   walking re-route from then on, as in a real wave), or its sapper fails at once and walks on. Every unit's and
-   sapper's place is recorded each scrubStep seconds, with where it set out and where it ended, so scrubbing only reads
-   samples. It runs on a scratch copy like trial, with its own seed: the match, the random stream and the plan that
-   goes online are untouched. */
+   but nobody is shot or slowed. A knock-out sapper is used up on reaching its tower's range; knock-outs keep the
+   route, so that's all one does here. lands: whether a planned bridge goes down the moment its sapper reaches its tile
+   (units already walking re-route from then on, as in a real wave), or its sapper fails at once and walks on. Every
+   unit's and sapper's place is recorded each scrubStep seconds, with where it set out and where it ended, so scrubbing
+   only reads samples. It runs on a scratch copy like trial, with its own seed: the match, the random stream and the
+   plan that goes online are untouched. */
 const ghostSeed = round => seedFor('ghost', round);
 function ghostRun(lands) {
   return offstage((real, trim) => {
     S.ghost = { lands };
-    S.round = real.round; S.keep = 1e9;
+    S.round = real.round; S.rounds = real.rounds; S.keep = 1e9;
     S.grid = real.seenGrid.map(cloneCell);
     S.terrain = real.terrain; S.mapSeed = real.mapSeed;
     S.bridges = new Set(real.bridges); for (const i of S.bridges) S.grid[i] = null;
@@ -3783,10 +3924,11 @@ function pumpThink() {
 }
 function soloReady() {
   if (!SOLO.think) { soloBeginWave(); return; }
-  SOLO.locked = true;
+  SOLO.locked = true; drag = null; tickClock(false);
   $('#wait-title').textContent = 'Locked in';
   $('#wait-sub').textContent = 'The computer is finishing its plan';
   $('#wait-net').textContent = '';
+  $('#wait-back').hidden = clock.out;
   show(ovWait);
 }
 function soloBeginWave() {
@@ -3804,7 +3946,7 @@ function soloBeginWave() {
   const army = `${plural(n, 'unit')} worth ${armyValue(S.designs)}${c ? ` and ${c}` : ''}`;
   S.next = 'wave';
   setPhase('handoff');
-  showHandoff('both', `Round ${S.round} of ${RULES.rounds}`, `Wave ${S.round}`, SOLO.side === 'def'
+  showHandoff('both', `Round ${S.round} of ${S.rounds}`, `Wave ${S.round}`, SOLO.side === 'def'
     ? `The computer locked in ${army}.`
     : `The computer has built its defense. Your ${army} march on it.`,
   'Start the wave', startWave);
@@ -3828,16 +3970,28 @@ function showMode() {
     const h = (location.hash || '').replace('#', '').toUpperCase();
     codeIn.value = /^[A-Z0-9]{3,6}$/.test(h) ? h : newCode();
   }
-  syncModeUI();
+  syncModeUI(); syncRoundsUI();
   show(ovMode);
 }
 $('#mode-local').addEventListener('click', () => { hide(ovMode); NET.on = false; SOLO.on = false; document.body.dataset.role = ''; newMatch(); startRound(); });
 function syncSoloUI() {
-  for (const b of document.querySelectorAll('.pick button')) b.setAttribute('aria-pressed', String(b.dataset.side ? b.dataset.side === SOLO.side : b.dataset.level === SOLO.level));
+  for (const b of document.querySelectorAll('.pick button[data-side], .pick button[data-level]')) b.setAttribute('aria-pressed', String(b.dataset.side ? b.dataset.side === SOLO.side : b.dataset.level === SOLO.level));
 }
-for (const b of document.querySelectorAll('.pick button')) b.addEventListener('click', () => {
+for (const b of document.querySelectorAll('.pick button[data-side], .pick button[data-level]')) b.addEventListener('click', () => {
   if (b.dataset.side) SOLO.side = b.dataset.side; else SOLO.level = b.dataset.level;
   syncSoloUI();
+});
+// How many waves the next match lasts, for all three modes (online, the defender's pick counts); the keep follows.
+const fmtK = n => n.toLocaleString('en-US');
+function syncRoundsUI() {
+  const n = chosenRounds();
+  for (const b of document.querySelectorAll('#mode-waves button')) b.setAttribute('aria-pressed', String(+b.dataset.rounds === n));
+  $('#mode-keep').innerHTML = `Keep <b>${fmtK(keepFor(n))}</b>`;
+}
+$('#mode-waves').innerHTML = RULES.roundChoices.map(n => `<button data-rounds="${n}" aria-pressed="false">${n}</button>`).join('');
+for (const b of document.querySelectorAll('#mode-waves button')) b.addEventListener('click', () => {
+  pickRounds = +b.dataset.rounds; syncRoundsUI();
+  if (NET.on && NET.st === 'lobby') { NET.n = chosenRounds(); publish(); }
 });
 $('#mode-solo').addEventListener('click', () => { hide(ovMode); NET.on = false; SOLO.on = true; document.body.dataset.role = ''; newMatch(); startRound(); });
 $('#end-menu').addEventListener('click', () => { hide(el.ovEnd); SOLO.on = false; showMode(); });
@@ -4057,7 +4211,7 @@ function defBodyHTML(step) {
 // One short line for the picked tool.
 function toolNote() {
   const offline = S.grid.filter(g => g && g.t === 'tower' && g.off > 0).length, set = hotNow();
-  if (S.tool === 'tower') return `Next tower <b>${towerCost(defaultTower())} + ${nextFee()}</b> fee. Each tower adds ${RULES.towerFee} to the fee; moving one is free.${offline ? ` <b>${plural(offline, 'tower')} offline</b>, locked until it comes back.` : ''}`;
+  if (S.tool === 'tower') return `Next tower <b>${towerCost(defaultTower())} + ${nextFee()}</b> fee. Each tower adds ${RULES.towerFee} to the fee; drag one to move it, free.${offline ? ` <b>${plural(offline, 'tower')} offline</b>, locked until it comes back.` : ''}`;
   if (S.tool === 'remove') return 'Tap a wall or tower to take it back for a full refund.';
   if (S.tool === 'shape') return matchMedia('(hover: hover)').matches ? 'Click to drop the piece; R rotates, F flips. Red cells can’t be built.' : 'Tap to show the piece, drag to move it, tap it to place. Red cells can’t be built.';
   return set && set.length ? `Drag to draw walls. <b>Glowing tiles</b> place the ${plural(set.length, 'wall')} that lengthen the route most, all at once.` : 'Drag to draw walls. Units avoid tower range when they can, so walls are what force them through your fire.';
@@ -4672,7 +4826,7 @@ function renderAtk() {
       <div class="sumcell"><span class="lbl">Busiest second</span><b>${peak}</b><span class="s">units leaving together</span></div>
       <div class="sumcell"><span class="lbl">Sappers</span><b>${S.charges.size}</b><span class="s">${plannedBridges().length ? `${plural(plannedBridges().length, 'bridge')} · ` : ''}${cv} coins</span></div>
       <div class="sumcell"><span class="lbl">Unspent</span><b>${S.aFree}</b><span class="s">coins carry over</span></div>`;
-    $('#a-seen-note').innerHTML = S.seenRound ? `Route as last seen: <b>${pathLen(seenPath())} steps</b>${S.charges.size ? `, about <b>${pathLen(projected())}</b> if every sapper lands` : ''}.${S.bridges.size ? ` ${plural(S.bridges.size, 'bridge')} already on the map.` : ''}` : 'You haven’t seen the defense yet. Everything is revealed when the wave starts.';
+    $('#a-seen-note').innerHTML = S.seenRound ? `Route as last seen: <b>${pathLen(seenPath())} steps</b>${plannedBridges().length ? `, about <b>${pathLen(projected())}</b> if your ${plannedBridges().length > 1 ? 'bridges land' : 'bridge lands'}` : ''}.${S.bridges.size ? ` ${plural(S.bridges.size, 'bridge')} already on the map.` : ''}` : 'You haven’t seen the defense yet. Everything is revealed when the wave starts.';
   }
   let key = '';
   if (S.sel && S.sel.k === 'design' && S.designs[S.sel.i]) key = 'design:' + S.sel.i + ':' + S.designs.length + ':' + tipsOn;
@@ -4847,9 +5001,11 @@ function updateHUD(dt) {
   if (testing()) S = replay.live;
   try {
     setText(el.round, 'r', String(S.round));
+    setText(el.rounds, 'rn', 'of ' + S.rounds);
     setText(el.keep, 'k', String(Math.ceil(S.keep)));
-    el.keepbar.style.width = (S.keep / RULES.keep * 100) + '%';
-    el.keepbox.classList.toggle('low', S.keep <= RULES.keep * 0.25);
+    setText(el.keepMax, 'km', '/ ' + S.keepMax);
+    el.keepbar.style.width = (S.keep / S.keepMax * 100) + '%';
+    el.keepbox.classList.toggle('low', S.keep <= S.keepMax * 0.25);
     setText(el.dworth, 'dw', 'DEF ' + defWorth());
     setText(el.aworth, 'aw', 'ATK ' + atkWorth());
   } finally { S = T; }
@@ -5101,7 +5257,8 @@ function drawPaths(c, t) {
   }
   if (S.phase === 'attack') {
     const extra = (S.step === A_SABO && hoverType === 'mouse' && hover >= 0 && S.seenGrid[hover] && !S.charges.has(hover) && (S.seenGrid[hover].t === 'wall' ? canBridge() && bridgeSpot(hover) : canChargeTower(hover))) ? hover : -1;
-    const hyp = S.charges.size || extra >= 0 ? projected(extra) : null;
+    const wall = extra >= 0 && S.seenGrid[extra].t === 'wall'; // only bridges move the route
+    const hyp = plannedBridges().length || wall ? projected(wall ? extra : -1) : null;
     strokePath(c, seenPath(), hyp ? 'rgba(200,228,242,0.22)' : 'rgba(200,228,242,0.5)', 0.06, t);
     if (hyp) strokePath(c, hyp, 'rgba(255,150,70,0.95)', 0.075, t, [0.22, 0.12]);
     return;
@@ -5375,6 +5532,22 @@ function drawHot(c, t, cells, on) {
     c.lineWidth = px * 1.3; c.strokeStyle = `rgba(184,242,138,${(on ? 0.7 : 0.28) + 0.25 * a})`; c.stroke();
   }
 }
+// A tower being dragged: its old cell framed, the tower where it would land with its range, and whatever it swaps
+// with shown in the old cell.
+function drawMoveGhost(c, pv) {
+  const g = S.grid[pv.from], h = S.grid[pv.cell], v = pv.v, [fx, fy] = center(pv.from), [x, y] = center(pv.cell);
+  c.beginPath(); rr(c, fx - 0.47, fy - 0.47, 0.94, 0.94, 0.16);
+  c.setLineDash([0.12, 0.08]); c.lineWidth = 0.05; c.strokeStyle = 'rgba(226,233,238,0.75)'; c.stroke(); c.setLineDash([]);
+  if (v.ok && h) {
+    c.globalAlpha = 0.45;
+    if (h.t === 'tower') drawTowerShape(c, h.cfg, fx, fy, Math.PI, 0, false);
+    else { c.beginPath(); rr(c, fx - 0.43, fy - 0.43, 0.86, 0.86, 0.13); c.fillStyle = '#7cc4e2'; c.fill(); }
+    c.globalAlpha = 1;
+  }
+  c.globalAlpha = 0.6; drawTowerShape(c, g.cfg, x, y, g.ang ?? Math.PI, 0, false); c.globalAlpha = 1;
+  drawRange(c, x, y, TS.range.steps[g.cfg.range], v.ok);
+  if (!v.ok) drawX(c, pv.cell);
+}
 function drawWallGhost(c, i, ok) {
   const [x, y] = center(i);
   c.globalAlpha = 0.55; c.beginPath(); rr(c, x - 0.43, y - 0.43, 0.86, 0.86, 0.13); c.fillStyle = ok ? '#7cc4e2' : '#ff7a7a'; c.fill(); c.globalAlpha = 1;
@@ -5421,7 +5594,8 @@ function drawInteraction(c, t, G) {
     } else {
       const set = hotNow(), pv = buildPreview();
       if (set && set.length) drawHot(c, t, set, pv && pv.kind === 'hot');
-      if (pv && pv.kind === 'shape') drawShapeGhost(c, t, pv);
+      if (pv && pv.kind === 'move') drawMoveGhost(c, pv);
+      else if (pv && pv.kind === 'shape') drawShapeGhost(c, t, pv);
       else if (pv && pv.kind === 'hot') for (const [i] of pv.cells) drawWallGhost(c, i, pv.v.ok);
       else if (pv) {
         const cell = pv.cell, v = pv.v, [x, y] = center(cell), br = S.bridges.has(cell);
@@ -5523,6 +5697,11 @@ function drawLabels(c, G) {
     pill(c, sx, sy, `REMOVE +${removeLabel.val}`, '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
   }
   const pv = S.phase === 'defend' ? buildPreview() : null;
+  if (pv && pv.kind === 'move') {
+    const v = pv.v, [x, y] = center(pv.cell), [sx, sy] = w2s(x, y);
+    const txt = v.ok ? (v.swap ? `SWAP WITH ${v.swap === 'tower' ? 'TOWER' : 'WALL'}` : 'MOVE TOWER \u00b7 FREE') : v.block ? 'PATH MUST STAY OPEN' : 'CAN\u2019T GO HERE';
+    pill(c, sx, Math.max(4, sy - view.cs * 0.5 - 24), txt, v.ok ? '#d9f6ff' : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
+  }
   if (pv && (pv.kind === 'shape' || pv.kind === 'hot')) {
     const v = pv.v, name = pv.kind === 'hot' ? `PLACE ${pv.cells.length} WALL${pv.cells.length === 1 ? '' : 'S'}` : SEGMENTS[shapeSel.k].name.toUpperCase();
     const txt = v.ok ? `${name} \u00b7 ${v.cost} COINS` : v.block ? 'PATH MUST STAY OPEN' : v.gold ? `${name} \u00b7 ${v.short} COINS SHORT` : 'NOTHING TO BUILD HERE';
@@ -5593,7 +5772,7 @@ function pressDefend(cell, pt) {
   if (tool === 'shape' && !(g && g.t === 'tower' && !nearPending(cell))) return pressShape(cell, pt);
   if (g) {
     pending = -1;
-    if (g.t === 'tower') { selectTower(cell); return null; }
+    if (g.t === 'tower') return 'tower'; // a tap opens its card, a drag moves it (pointerup decides)
     if (g.t === 'rock' && tool !== 'inspect') explain(canBuild(cell, tool), cell);
     return tool === 'wall' ? 'wall' : null;
   }
@@ -5663,7 +5842,8 @@ function pressShape(cell, pt) {
   return 'shape';
 }
 function paint(cell, mode) {
-  if (cell < 0 || S.phase !== 'defend') return;
+  if (mode === 'tower') return; // the ghost follows drag.cell; pointermove decides when a press became a drag
+  if (cell < 0 || S.phase !== 'defend' || planLocked()) return;
   if (mode === 'shape' || mode === 'shape-tap') {
     pending = clamp(((cell / COLS) | 0) + shapeGrab[1], 0, ROWS - 1) * COLS + clamp(cell % COLS + shapeGrab[0], 0, COLS - 1);
     if (drag) drag.moved = true;
@@ -5680,16 +5860,22 @@ canvas.addEventListener('pointerdown', e => {
   hover = hoverType === 'mouse' ? cell : -1;
   const mode = press(cell, hoverType, p);
   if (mode) {
-    drag = { id: e.pointerId, mode, last: p, cell };
+    drag = { id: e.pointerId, mode, last: p, cell, from: cell, p0: p };
     try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* capture is optional */ }
   }
 });
 canvas.addEventListener('pointermove', e => {
   const p = worldFromEvent(e);
-  if (e.pointerType === 'mouse') { hoverType = 'mouse'; hover = cellOf(p); }
+  if (e.pointerType === 'mouse') {
+    hoverType = 'mouse'; hover = cellOf(p);
+    const g = S && S.phase === 'defend' && S.tool !== 'remove' && hover >= 0 ? S.grid[hover] : null;
+    canvas.style.cursor = drag && drag.mode === 'tower' ? 'grabbing' : g && g.t === 'tower' ? 'grab'
+      : !drag && S && S.phase === 'attack' && S.step === A_WAVE && scrubHit(p, 'mouse') ? 'grab' : ''; // a dot of the wave preview
+  }
   if (drag && e.pointerId === drag.id && drag.mode === 'scrub') { scrubMove(p[0], p[1]); return; }
-  if (e.pointerType === 'mouse' && !drag) canvas.style.cursor = S.phase === 'attack' && S.step === A_WAVE && scrubHit(p, 'mouse') ? 'grab' : '';
   if (drag && e.pointerId === drag.id) {
+    // a tower press becomes a drag only past a little travel, so a wobbly tap near a cell's edge still just opens its card
+    if (drag.mode === 'tower' && !drag.moved && Math.hypot(p[0] - drag.p0[0], p[1] - drag.p0[1]) > (e.pointerType === 'mouse' ? 0.3 : 0.5)) drag.moved = true;
     const [x0, y0] = drag.last, [x1, y1] = p;
     const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.2));
     for (let k = 1; k <= steps; k++) {
@@ -5705,6 +5891,11 @@ canvas.addEventListener('pointerup', e => {
   endDrag(e);
   if (d && d === drag) return; // another pointer's drag
   if (d && d.mode === 'shape-tap' && !d.moved && S.phase === 'defend' && S.tool === 'shape' && pending >= 0 && placeShape(pending)) pending = -1;
+  if (d && d.mode === 'tower' && S.phase === 'defend' && !planLocked()) {
+    if (!d.moved) selectTower(d.from);
+    else if (d.cell >= 0 && d.cell !== d.from) moveTower(d.from, d.cell); // dropped off the board or back home: nothing moves
+    if (e.pointerType === 'mouse') canvas.style.cursor = '';
+  }
 });
 canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = -1; });
@@ -5718,7 +5909,7 @@ el.ovHand.addEventListener('click', handContinue);
 $('#sum-next').addEventListener('click', nextRound);
 for (const id of ['#sum-replay', '#end-replay', '#rp-again']) $(id).addEventListener('click', startReplay);
 $('#rp-close').addEventListener('click', exitReplay);
-$('#end-again').addEventListener('click', () => { hide(el.ovEnd); if (online()) { rematchOnline(); return; } newMatch(); startRound(); });
+$('#end-again').addEventListener('click', () => { hide(el.ovEnd); if (online()) { rematchOnline(); return; } newMatch(null, real().rounds); startRound(); });
 document.addEventListener('keydown', e => {
   if ((e.key === 'r' || e.key === 'R' || e.key === 'f' || e.key === 'F') && S && S.phase === 'defend' && S.tool === 'shape' && !e.metaKey && !e.ctrlKey && !(e.target.closest && e.target.closest('input'))) {
     turnShape(e.key.toLowerCase() === 'r' ? 'rot' : 'flip'); return;
@@ -5776,7 +5967,7 @@ function frame(now) {
 function coreSnapshot(phase) {
   const tw = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n });
   return {
-    v: 6, round: S.round, keep: S.keep, dFree: S.dFree, aFree: S.aFree, phase, towerSeq: S.towerSeq, mapSeed: S.mapSeed, terrain: [...S.terrain],
+    v: 6, round: S.round, rounds: S.rounds, keep: S.keep, dFree: S.dFree, aFree: S.aFree, phase, towerSeq: S.towerSeq, mapSeed: S.mapSeed, terrain: [...S.terrain],
     grid: S.grid.map(g => (g ? (g.t === 'tower' ? tw(g) : { t: g.t, fresh: g.fresh }) : null)),
     seenGrid: S.seenGrid.map(g => (g ? (g.t === 'tower' ? tw(g) : { t: g.t }) : null)), seenRound: S.seenRound,
     designs: S.designs.map(d => ({ ...d, tl: { ...d.tl, pos: d.tl.pos ? d.tl.pos.slice() : null } })), seenArmy: S.seenArmy ? S.seenArmy.map(d => ({ ...d })) : null,
@@ -5796,7 +5987,7 @@ function snapshotData() {
 }
 // A fresh state from a snapshot. Everything is copied, so one snapshot can be replayed again and again.
 function stateFrom(d) {
-  const R = newState();
+  const R = newState(validRounds(d.rounds) ? d.rounds : RULES.rounds);
   Object.assign(R, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, towerSeq: d.towerSeq || 0, bridges: new Set(d.bridges || []), totals: { ...R.totals, ...d.totals } });
   R.mapSeed = d.mapSeed >>> 0; R.terrain = Uint8Array.from(d.terrain || []); if (R.terrain.length !== N) R.terrain = new Uint8Array(N);
   const tw = g => ({ t: 'tower', cfg: { ...defaultTower(), ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n, cd: 0, ang: Math.PI, kick: 0, dealt: 0 });
@@ -5821,7 +6012,10 @@ function restore(d) {
 }
 
 function start(data) {
-  for (const n of document.querySelectorAll('[data-rule]')) { const k = n.dataset.rule, pct = k.endsWith('%'); n.textContent = pct ? Math.round(RULES[k.slice(0, -1)] * 100) : RULES[k]; } // info text follows the rules
+  for (const n of document.querySelectorAll('[data-rule]')) { // info text follows the rules: "key", "key%", "key:min", "key:range"
+    const [k, f] = n.dataset.rule.split(':'), pct = k.endsWith('%'), v = RULES[pct ? k.slice(0, -1) : k];
+    n.textContent = pct ? Math.round(v * 100) : f === 'min' ? fmtNum(v / 60) : f === 'range' ? `${Math.min(...v)}–${Math.max(...v)}` : v;
+  }
   const off = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v); // the fire rate's accuracy offsets, from the rules too
   $('table.acc thead tr').innerHTML = '<th>Shots per second</th>' + TS.rate.steps.map(v => `<th>${v}</th>`).join('');
   $('table.acc tbody tr').innerHTML = '<td>Accuracy</td>' + RULES.rateAcc.map(v => `<td class="n">${off(v)}</td>`).join('');

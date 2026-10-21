@@ -42,11 +42,13 @@ def snap(pg):
       grid:S.grid.map(g=>g?(g.t==="wall"?"w":"t"+g.off):0).join(","), bridges:[...S.bridges].sort((a,b)=>a-b).join(","), army:JSON.stringify(S.designs.map(d=>[d.name,d.count,d.hp,d.speed,d.tl.s,d.tl.e,d.tl.pos]))}}''')
 
 def no_terrain(*pgs):
-    """Known cells are clicked, so no terrain; and sappers get top health so the planned sabotage always arrives."""
-    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.sapper.hp=9;}')
-def join(pg, role, code):
+    """Known cells are clicked, so no terrain; sappers get top health so the planned sabotage always arrives; and no
+    planning clock (it has checks of its own), so a slow machine never sends a plan early."""
+    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.sapper.hp=9; R.planSecs=0;}')
+def join(pg, role, code, waves=None):
     pg.click('#info-go')
     pg.wait_for_selector('#ov-mode:not([hidden])')
+    if waves: pg.click(f'#mode-waves [data-rounds="{waves}"]')
     pg.click(f'.rolepick button[data-role={role}]')
     pg.fill('#mode-code', code)
     pg.click('#mode-online')
@@ -280,6 +282,38 @@ try:
             m2 = ev(C, MAP)
             check('terrain: a rematch brings a new map, the same on both devices', m2 == ev(D, MAP) and m2[1] != m1[1], m2[0])
             for pg in (C, D): pg.close()
+            # ---------- the match length is the defender's pick; the planning clock locks a plan in when it runs out ----------
+            C = ctx.new_page(); D = ctx.new_page()
+            for pg in (C, D): errors_hook(pg, errs); pg.goto('http://127.0.0.1:8765/room.html')
+            C.wait_for_timeout(300); no_terrain(C, D)
+            # the defender's clock has room for building and locking in on a loaded machine; the attacker's runs out later
+            C.evaluate('()=>{window.siegeline.rules.planSecs=6;}'); D.evaluate('()=>{window.siegeline.rules.planSecs=10;}')
+            join(C, 'def', 'LONG', waves=6); join(D, 'atk', 'LONG', waves=10)
+            wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
+            check("match length: both devices play the defender's 6 waves with a keep of 800", ev(C, '[S.rounds,S.keep,S.keepMax]') == [6, 800, 800] and ev(D, '[S.rounds,S.keep,S.keepMax]') == [6, 800, 800],
+                  f"{ev(C, '[S.rounds,S.keep]')} / {ev(D, '[S.rounds,S.keep]')}")
+            for pg in (C, D):  # a page in the background draws its HUD once it's in front
+                pg.bring_to_front()
+                try: pg.wait_for_function("()=>document.querySelector('#v-rounds').textContent==='of 6'", timeout=3000)
+                except Exception: pass
+            check('match length: both HUDs say of 6', C.inner_text('#v-rounds') == D.inner_text('#v-rounds') == 'of 6')
+            check('match length: the attacker is told the defender picked it', '6 waves' in D.inner_text('#toast'), D.inner_text('#toast'))
+            check('planning clock: each device shows its own', C.is_visible('#t-clock') and D.is_visible('#t-clock'), f"{C.inner_text('#t-clock')} / {D.inner_text('#t-clock')}")
+            defend_round(C, walls=[idx(6, r) for r in range(0, 10)], towers=[(idx(8, 5), None)])
+            C.wait_for_timeout(200)
+            check('planning clock: locked in early, Keep planning is there', C.is_visible('#ov-wait') and C.is_visible('#wait-back') and C.is_hidden('#t-clock'))
+            C.wait_for_selector('#wait-back', state='hidden', timeout=9000)
+            check("planning clock: once the defender's time is up Keep planning is gone", ev(C, "S.phase") == 'defend' and ev(D, "S.phase") == 'attack')
+            D.evaluate('(counts)=>{const sl=window.siegeline,S=sl.state; counts.forEach((n,k)=>{ const d=S.designs[k]; S.aFree-=(n-d.count)*sl.unitCost(d); d.count=n; }); }', [5, 1, 2])
+            wait(C, "S.phase==='wave'", 14000); wait(D, "S.phase==='wave'", 14000)
+            check('planning clock: the attacker who never pressed Ready is locked in when time runs out, army as planned', ev(C, "S.designs.map(d=>d.count).join()") == '5,1,2')
+            for pg in (C, D): pg.evaluate('()=>window.siegeline.advance(300)')
+            wait(C, "S.phase==='summary'"); wait(D, "S.phase==='summary'")
+            same(C, D, 'planning clock: the wave is identical on both devices')
+            C.click('#sum-next'); D.click('#sum-next')
+            wait(C, "S.phase==='defend' && S.round===2"); wait(D, "S.phase==='attack' && S.round===2")
+            check('planning clock: a fresh clock next round', C.is_visible('#t-clock') and ev(C, '[S.rounds,S.round]') == [6, 2] and ev(D, '[S.rounds,S.round]') == [6, 2])
+            for pg in (C, D): pg.close()
             # ---------- a build with another protocol version (main) never joins this one ----------
             if OLD:
                 C = ctx.new_page(); D = ctx.new_page()
@@ -352,6 +386,12 @@ try:
         P1.wait_for_timeout(300)
         P1.screenshot(path=f'{SHOTS}/p3_wait.png')
         check('phone: wait card visible', P1.is_visible('#ov-wait'))
+        P2.wait_for_timeout(200)
+        P2.screenshot(path=f'{SHOTS}/p4_attack_clock.png')
+        bx = lambda sel: P2.locator(sel).bounding_box()
+        ck, pill, coins = bx('#t-clock'), bx('#netpill'), bx('#turnbar .coins')
+        check('phone: the planning clock fits the turn bar beside the net pill and coins', bool(ck and pill and coins) and ck['x'] + ck['width'] <= pill['x'] and pill['x'] + pill['width'] <= coins['x'] and coins['x'] + coins['width'] <= 390,
+              f'{ck} {pill} {coins}')
         check('phone: no horizontal overflow', P1.evaluate('()=>document.documentElement.scrollWidth<=innerWidth'))
         ctx.close()
         br.close()
