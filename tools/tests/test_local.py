@@ -173,6 +173,7 @@ with sync_playwright() as p:
     e0 = S(page, 'S.designs[0].tl.e')
     check(e0 > 0.95, f'dragging the end handle stretches the group ({e0:.2f})')
     # drag one clip of the swarm track to the middle
+    page.locator('.lane[data-i="2"]').scroll_into_view_if_needed()  # the wave plan scrolls; a lower track may sit under the nav
     cb = page.locator('.lane[data-i="2"] .clip').nth(0).bounding_box()
     lb2 = page.locator('.lane[data-i="2"]').bounding_box()
     drag(page, cb['x'] + cb['width'] / 2, cb['y'] + cb['height'] / 2, lb2['x'] + lb2['width'] * 0.5, cb['y'] + cb['height'] / 2)  # the spread tracks span 20 s
@@ -180,7 +181,7 @@ with sync_playwright() as p:
     check(pos is not None and abs(pos[0] - 0.5) < 0.05, f'dragging a single dot places it ({pos[0] if pos else None})')
     # the whole group: drag the swarm's track (away from its tab and dots) 5 s later; its spread stays
     s0, e0 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
-    y = lb2['y'] + lb2['height'] - 3
+    y = lb2['y'] + 16  # above the dots, between the knobs
     drag(page, lb2['x'] + lb2['width'] * 0.6, y, lb2['x'] + lb2['width'] * 0.85, y)
     s1, e1 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
     check(abs((s1 - s0) * 20 - 5) < 0.3 and abs((e1 - s1) - (e0 - s0)) < 1e-9, f'sliding a track moves the whole group, keeping its spread ({s0 * 20:.1f}s → {s1 * 20:.1f}s)')
@@ -299,8 +300,9 @@ with sync_playwright() as p:
     page.screenshot(path=f'{OUT}/a2_bridge_planned.png')
     # step 3: each sapper is a track with one dot
     page.click('#atk-next'); page.wait_for_timeout(300)
-    check(S(page, 'S.step') == 2 and page.locator('.lane.sap').count() == 2 and 'there ~' in page.inner_text('#tl'), 'Wave step: a track for each sapper, with when it gets there')
+    check(S(page, 'S.step') == 2 and page.locator('.lane.sap').count() == 2 and 'reaches target' in page.inner_text('#tl'), 'Wave step: a block for each sapper, with when it reaches its target')
     t0 = S(page, f'S.charges.get({bw}).t')
+    page.locator(f'.lane.sap[data-sap="{bw}"]').scroll_into_view_if_needed()
     db = page.locator(f'.lane.sap[data-sap="{bw}"] .clip').bounding_box(); lb = page.locator(f'.lane.sap[data-sap="{bw}"]').bounding_box()
     drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25, db['y'] + db['height'] / 2)
     t1 = S(page, f'S.charges.get({bw}).t')
@@ -464,6 +466,7 @@ with sync_playwright() as p:
     for _ in range(6): page.tap('.step.plus[data-i="2"]')
     page.screenshot(path=f'{OUT}/m2_army.png')
     page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(200)
+    page.locator('.lane[data-i="0"]').scroll_into_view_if_needed()
     hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box(); lb = page.locator('.lane[data-i="0"]').bounding_box()
     cdp = ctx.new_cdp_session(page)
     x0, y0 = hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2
@@ -830,13 +833,13 @@ with sync_playwright() as p:
           'the Wave step opens the scrubber at T = 0 s, no bridge toggle without a bridge, and auto-align is gone')
     check(page.get_attribute('#scrub-t', 'max') == '60' and all(page.locator(f'.lane[data-i="{i}"]').count() == 1 and page.locator(f'.pth[data-g="d{i}"]').count() == 1 for i in (0, 1)),
           'one master time slider (0–60 s), then a row per design with a spread track and a path slider')
-    check(S(page, 'window.siegeline.scrub.view().dots.length') == 0 and '+3 waiting' in page.inner_text('.pth[data-g="d0"]') and '+2 waiting' in page.inner_text('.pth[data-g="d1"]'),
+    check(S(page, 'window.siegeline.scrub.view().dots.length') == 0 and page.inner_text('.pth[data-g="d0"]').strip() == '+3' and page.inner_text('.pth[data-g="d1"]').strip() == '+2',
           'at 0 s nothing has set out: each path slider shows its group waiting at the entry')
     paths = lambda: page.evaluate('() => window.siegeline.scrub.paths()')
     pbox = lambda g: page.locator(f'.pth[data-g="{g}"]').bounding_box()
     def px(box, D, L): return box['x'] + 1 + D / L * (box['width'] - 2)  # a route distance on a path slider (inside its 1 px border)
     # spec test 1: the spread track spans the release window, 0-20 s; spreading keeps the front's release time
-    lane = page.locator('.lane[data-i="0"]').bounding_box(); y = lane['y'] + lane['height'] - 3
+    lane = page.locator('.lane[data-i="0"]').bounding_box(); y = lane['y'] + 16
     drag(page, lane['x'] + lane['width'] * 0.15, y, lane['x'] + lane['width'] * 0.40, y)
     tl = S(page, 'S.designs[0].tl')
     check(abs(tl['s'] - 0.25) < 0.02 and abs((tl['e'] - tl['s']) - 0.3) < 1e-9, f'sliding a band on its spread track moves its release time, spread kept ({tl["s"] * 20:.1f}–{tl["e"] * 20:.1f}s)')
@@ -867,7 +870,7 @@ with sync_playwright() as p:
     page.screenshot(path=f'{OUT}/v201_rows.png')
     # spec test 2: a path drag at T = 10 s puts the front unit within 0.2 cells of the drop point, its spread unchanged
     set_slider(page, '#scrub-t', 10); page.wait_for_timeout(50)
-    P = paths(); f0, L = P['rows']['d0']['front'], P['L']; box = pbox('d0'); y = box['y'] + box['height'] - 15
+    P = paths(); f0, L = P['rows']['d0']['front'], P['L']; box = pbox('d0'); y = box['y'] + box['height'] / 2
     tl0 = S(page, 'S.designs[0].tl'); x0 = px(box, f0, L); dx = -box['width'] * 0.2
     drag(page, x0, y, x0 + dx, y); page.wait_for_timeout(150)
     want = f0 + dx / box['width'] * L
@@ -886,7 +889,7 @@ with sync_playwright() as p:
     check(abs(S(page, 'S.designs[0].tl.s')) < 1e-9 and toast(page) == 'Can’t release before 0 s', f'spec test 4: dragged toward the keep, the group stops when its front would leave before 0 s ({toast(page)})')
     page.wait_for_timeout(150); set_slider(page, '#scrub-t', 40); page.wait_for_timeout(50)
     P = paths()
-    check(P['rows']['d0']['keep'] == 3 and not P['rows']['d0']['on'] and '×3 at keep' in page.inner_text('.pth[data-g="d0"]'), f'at 40 s all three Runners stack at the keep end ({P["rows"]["d0"]})')
+    check(P['rows']['d0']['keep'] == 3 and not P['rows']['d0']['on'] and page.inner_text('.pth[data-g="d0"]').strip() == '×3', f'at 40 s all three Runners stack at the keep end ({P["rows"]["d0"]})')
     drag(page, box['x'] + box['width'] - 4, y, box['x'] + 4, y); page.wait_for_timeout(100)
     check(abs(S(page, 'Math.max(...window.siegeline.tlPositions(window.siegeline.state.designs[0]))') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s',
           f'spec test 4: dragged back from the keep at 40 s, the group stops when its last unit would leave after 20 s ({toast(page)})')
@@ -974,6 +977,174 @@ with sync_playwright() as p:
           f'phone: a group dragged along its path slider by touch leaves later ({s0 * 20:.2f}s → {S(page, "S.designs[0].tl.s") * 20:.2f}s); the rows fit, no horizontal overflow')
     page.screenshot(path=f'{OUT}/m13_scrub.png')
     check(not errors, f'phone path slider: no errors {errors[:3]}')
+    ctx.close()
+    # ---------- v20.2 (the "Wave planner layout" spec), on a device that hasn't seen the wave plan's How to use card
+    ctx = b.new_context_fresh(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.on('console', lambda m: errors.append(m.text) if m.type == 'error' and 'ERR_' not in m.text else None)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    for r in range(4, 9): click_cell(page, 7, r)  # a short wall: the route goes round it, 20 cells
+    page.click('.tool[data-tool=tower]'); click_cell(page, 1, 10); page.click('#def-ctx [data-act=close]')  # a tower the route never comes near
+    page.click('#def-next'); page.click('#def-next'); hand(page)
+    for _ in range(2): page.click('.step.plus[data-i="0"]')
+    page.click('.step.plus[data-i="1"]')
+    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(250)
+    guide = page.inner_text('#ov-guide') if page.is_visible('#ov-guide') else ''
+    lines = ['Plan your wave', 'Press play.', 'Watch your units walk the route. Drag the big slider to jump to any moment.', 'Choose WHEN units leave (top track of each group).',
+             'Drag the left knob to set when the first unit leaves.', 'Drag the right knob to set when the last unit leaves.', 'Close together = a tight bunch. Far apart = a long line.',
+             'Drag the middle to move the whole group earlier or later.', 'Choose WHERE they are (thin strip under it).', 'Stop the big slider at a moment, say 12 s.',
+             'Drag the group along the strip to where you want it at 12 s.', 'The game works out when it has to leave.', 'Line them up.', 'Every strip is the same route, left = entry, right = keep.',
+             'Put groups at the same spot, or one just behind another.', 'Sappers work the same way.', 'Drag a sapper to where you want it, and it leaves at the right time.',
+             'All units must leave between 0 s and 20 s.', 'If a group won’t move further, that’s the limit.', 'Frost and the defender’s changes can still slow you down.']
+    check(all(l.lower() in guide.lower() for l in lines) and page.is_visible('#guide-ok') and page.is_visible('#guide-x'), f'spec test 8: the How to use card opens by itself on the first visit, with the spec’s text ({[l for l in lines if l.lower() not in guide.lower()]})')
+    page.screenshot(path=f'{OUT}/v202_guide.png')
+    page.click('#guide-ok')
+    check(page.is_hidden('#ov-guide'), 'Got it closes the card')
+    page.click('#atk-back'); page.click('#atk-next'); page.wait_for_timeout(150)
+    check(page.is_hidden('#ov-guide'), 'spec test 8: back on the Wave step the card stays closed')
+    page.click('.wp-help'); page.wait_for_timeout(100)
+    check(page.is_visible('#ov-guide'), 'spec test 8: the How to use button opens it')
+    page.mouse.click(20, 20); page.wait_for_timeout(100)
+    check(page.is_hidden('#ov-guide'), 'a tap outside the card closes it')
+    page.click('.wp-help'); page.click('#guide-x'); page.wait_for_timeout(50)
+    check(page.is_hidden('#ov-guide'), 'and so does its ×')
+    # the layout: one column, the master panel first, then a block per design (header, spread track, path strip)
+    play = lambda: page.evaluate('() => window.siegeline.scrub.playing'); T = lambda: page.evaluate('() => window.siegeline.scrub.T')
+    sizes = page.evaluate("() => ['#scrub-lbl', '.wp-title', '.blk-name', '.wp-help', '.wp-pre .mini', '.blk-sub', '.tl-ruler'].map(s => getComputedStyle(document.querySelector(s)).fontSize)")
+    order = page.evaluate("() => ['.wp-head', '.wp-pre', '.wp-master', '.wp-hist', '.wp-route', '.blk'].map(s => Math.round(document.querySelector(s).getBoundingClientRect().top))")
+    check(sizes == ['28px', '18px', '16px', '12px', '12px', '12px', '11px'] and order == sorted(order) and page.inner_text('.wp-title').lower() == 'wave plan',
+          f'the text sizes follow the spec (T 28, title 18, names 16, buttons 12, details 12, axis 11: {sizes}), top to bottom: title, presets, master panel, histogram, route, blocks')
+    play_box = page.locator('#scrub-play').bounding_box()
+    check(abs(play_box['width'] - 56) < 1 and abs(play_box['height'] - 56) < 1 and page.evaluate("() => getComputedStyle(document.querySelector('#scrub-play')).borderRadius") == '50%'
+          and page.locator('.wp-rel').count() == 1 and 'releases end' in page.inner_text('.wp-ticks') and page.inner_text('.wp-ticks').split()[:7] == ['0s', '10s', '20s', '30s', '40s', '50s', '60s'],
+          'the master panel: a 56 px round play button, ticks every 10 s to 60 s and a marker at 20 s, “releases end”')
+    check('nudge' in (page.get_attribute('#scrub-play', 'class') or '') and page.inner_text('#scrub-nudge') == 'Press play, or drag the dot, to watch your wave move.',
+          'until the first touch in a match the play button pulses and the line under the slider says what to do')
+    blocks = page.evaluate("() => [...document.querySelectorAll('#tl .blk')].map(b => [...b.children].map(c => c.className.split(' ')[0]))")
+    check(blocks == [['blk-head', 'lane', 'tl-ruler', 'pth']] * 2 and page.inner_text('#trk-sub-0') == '×2 · leaves 0.0–6.0 s',
+          f'each design is a block: its header (“×2 · leaves 0.0–6.0 s”), its spread track and its path strip under it ({blocks})')
+    # spec test 5: every spread track and path strip starts and ends at the same x
+    boxes = [page.locator(s).nth(k).bounding_box() for s in ('#tl .lane', '#tl .pth') for k in range(2)]
+    check(max(b_['x'] for b_ in boxes) - min(b_['x'] for b_ in boxes) < 0.5 and max(b_['x'] + b_['width'] for b_ in boxes) - min(b_['x'] + b_['width'] for b_ in boxes) < 0.5
+          and all(abs(page.locator('#tl .pth').nth(k).bounding_box()['height'] - 16) < 0.5 for k in range(2)),
+          'spec test 5: spread tracks and path strips all share the same left and right x; the strips are 16 px tall')
+    # spec test 1: play runs T at real speed from where it is, stops at 60 s, and starts again from 0
+    page.click('#scrub-play'); page.wait_for_timeout(1000)
+    t1 = T()
+    check(play() and 0.7 < t1 < 1.6 and 'nudge' not in (page.get_attribute('#scrub-play', 'class') or '') and page.is_hidden('#scrub-nudge'),
+          f'spec test 1: on a fresh match, play runs T at real speed ({t1:.2f} s after 1 s); the pulse and the line are gone')
+    lane = page.locator('.lane[data-i="0"]').bounding_box(); tnow = page.locator('.lane[data-i="0"] .tnow').bounding_box()
+    check(tnow and abs(tnow['x'] - (lane['x'] + 1 + (lane['width'] - 2) * T() / 20)) < 4, 'while T is under 20 s a line on each spread track marks it')
+    set_slider(page, '#scrub-t', 58.5); page.click('#scrub-play'); page.wait_for_timeout(2300)
+    check(T() == 60 and not play() and page.get_attribute('#scrub-play', 'aria-pressed') == 'false' and page.is_hidden('.lane[data-i="0"] .tnow'),
+          f'spec test 1: playback stops at 60 s and shows the play icon (T {T():.1f}); past 20 s the spread tracks’ line is gone')
+    page.click('#scrub-play'); page.wait_for_timeout(250)
+    check(play() and T() < 1, f'spec test 1: pressed at 60 s, play starts again from 0 s ({T():.2f})')
+    # spec test 2: dragging the master slider, a knob, a band or a path strip pauses playback
+    def pauses(label, act):
+        if not play(): page.click('#scrub-play')
+        page.wait_for_timeout(120); was = play(); act(); page.wait_for_timeout(80)
+        check(was and not play(), f'spec test 2: {label} pauses playback')
+    sb = page.locator('#scrub-t').bounding_box()
+    pauses('dragging the master slider', lambda: drag(page, sb['x'] + sb['width'] * 0.2, sb['y'] + sb['height'] / 2, sb['x'] + sb['width'] * 0.3, sb['y'] + sb['height'] / 2))
+    hb = page.locator('.lane[data-i="0"] .hdl.s').bounding_box()
+    pauses('dragging a knob', lambda: drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, hb['x'] + hb['width'] / 2 + 3, hb['y'] + hb['height'] / 2))
+    pauses('dragging a band', lambda: drag(page, lane['x'] + lane['width'] * 0.15, lane['y'] + 16, lane['x'] + lane['width'] * 0.15 + 4, lane['y'] + 16))
+    pb = page.locator('.pth[data-g="d0"]').bounding_box()
+    pauses('dragging a path strip', lambda: drag(page, pb['x'] + pb['width'] * 0.3, pb['y'] + 8, pb['x'] + pb['width'] * 0.3 + 6, pb['y'] + 8))
+    # spec test 3: the space bar plays and pauses; leaving the Wave step pauses, and coming back keeps T
+    page.click('.mini[data-act=rush]'); page.wait_for_timeout(100)
+    page.focus('#scrub-play'); page.keyboard.press(' '); page.wait_for_timeout(100)
+    a = play(); page.keyboard.press(' '); page.wait_for_timeout(100)
+    b_ = play(); page.evaluate('() => document.activeElement.blur()'); page.keyboard.press(' '); page.wait_for_timeout(300)
+    check(a and not b_ and play(), 'spec test 3: the space bar toggles play and pause (once a press, with the play button focused too)')
+    page.click('#atk-back'); page.wait_for_timeout(100); left = T()
+    check(not play(), 'spec test 3: leaving the Wave step pauses the preview')
+    page.click('#atk-next'); page.wait_for_timeout(150)
+    check(not play() and abs(T() - left) < 1e-9 and page.inner_text('#scrub-lbl') == f'T = {left:.1f} s', f'coming back keeps the same T ({left:.1f} s)')
+    # the play button after editing the army
+    page.click('#atk-back'); page.click('#atk-back'); page.click('.step.plus[data-i="0"]'); page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(150)
+    page.click('#scrub-play'); page.wait_for_timeout(200)
+    check(play() and page.locator('.lane[data-i="0"] .clip').count() == 3, 'after editing the army the play button still plays')
+    page.click('#scrub-play')
+    # spec test 4: both knobs on every design's spread track, each moving only its own end
+    page.click('.mini[data-act=even]'); page.wait_for_timeout(100)
+    knobs = page.evaluate("() => [...document.querySelectorAll('#tl .lane:not(.sap)')].map(l => [l.querySelectorAll('.hdl.s').length, l.querySelectorAll('.hdl.e').length])")
+    lane = page.locator('.lane[data-i="1"]').bounding_box()
+    tl0 = S(page, 'S.designs[1].tl'); hb = page.locator('.lane[data-i="1"] .hdl.s').bounding_box()
+    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] * 0.3, hb['y'] + hb['height'] / 2)
+    tl1 = S(page, 'S.designs[1].tl'); hb = page.locator('.lane[data-i="1"] .hdl.e').bounding_box()
+    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] * 0.6, hb['y'] + hb['height'] / 2)
+    tl2 = S(page, 'S.designs[1].tl')
+    check(knobs == [[1, 1], [1, 1]] and page.is_visible('.lane[data-i="0"] .hdl.s') and abs(tl1['s'] - 0.3) < 0.02 and tl1['e'] == tl0['e'] and abs(tl2['e'] - 0.6) < 0.02 and tl2['s'] == tl1['s'],
+          f'spec test 4: both knobs on every spread track; the start knob moves only the first release ({tl0["s"] * 20:.1f} → {tl1["s"] * 20:.1f} s, end kept), the end knob only the last ({tl1["e"] * 20:.1f} → {tl2["e"] * 20:.1f} s)')
+    check(page.inner_text('#trk-sub-1') == f'×1 · leaves {(tl2["s"] + tl2["e"]) / 2 * 20:.1f} s', f'a one-unit group’s header gives its one release time ({page.inner_text("#trk-sub-1")})')
+    page.screenshot(path=f'{OUT}/v202_round1.png')
+    # round 2: the defense seen, a bridge and a knock-out planned
+    page.click('#atk-next'); page.click('#atk-next'); hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
+    page.click('#sum-next'); hand(page); page.click('#def-next'); page.click('#def-next'); hand(page)
+    sure_sappers(page)
+    page.evaluate('() => { const d = window.siegeline.state.designs[0]; d.count = 2; d.tl = { s: 0, e: 10 / 2.3 / 20, pos: null }; }')  # two Runners (2.3 cells/s) leaving 10 cells apart
+    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(250)
+    # spec test 6: a group whose front and rear are 10 cells apart on a 20-cell route fills half its path strip
+    set_slider(page, '#scrub-t', 7); page.wait_for_timeout(100)
+    P = page.evaluate('() => window.siegeline.scrub.paths()'); on = P['rows']['d0']['on']
+    band = page.locator('.pth[data-g="d0"] .dyn .band').bounding_box(); pin = page.locator('.pth[data-g="d0"] .pin').bounding_box()
+    check(P['cells'] == 20 and abs(P['L'] - 20) < 1e-6 and len(on) == 2 and abs(on[1] - on[0] - 10) < 0.25 and abs(band['width'] / (pin['width'] - 2) - 0.5) < 0.015
+          and page.inner_text('#pth-len').lower() == '20 cells',
+          f'spec test 6: two Runners 10 cells apart ({on[1] - on[0] if len(on) == 2 else "?"}) on a {P["cells"]}-cell route fill half the strip ({band["width"] / (pin["width"] - 2):.3f})')
+    page.click('#atk-back'); page.wait_for_timeout(150)
+    w = spot(page)
+    click_cell(page, *w)
+    click_cell(page, 1, 10); page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
+    page.click('#atk-next'); page.wait_for_timeout(250)
+    # spec test 7: sapper blocks: a release knob and a dot; dragging the dot changes the release time; the header says when
+    # it reaches its target, or that it won't
+    bw = w[1] * COLS + w[0]; ko = idx(1, 10)
+    heads = [page.inner_text(f'.blk[data-g="s{c}"] .blk-head') for c in (bw, ko)]
+    check(heads[0].startswith('Sapper · Bridge 1') and 'reaches target' in heads[0] and heads[1].startswith('Sapper · Knock-out: Basic') and 'won’t reach target' in heads[1]
+          and page.locator(f'.blk[data-g="s{ko}"] .blk-sub .bad').count() == 1,
+          f'spec test 7: “Sapper · Bridge 1 … reaches target”, and the knock-out on a tower the route never nears “won’t reach target” in red {heads}')
+    t0 = S(page, f'S.charges.get({bw}).t'); sp = [x for x in page.evaluate('() => window.siegeline.scrub.saps()') if x['cell'] == bw][0]
+    set_slider(page, '#scrub-t', round(sp['t0'] + 1, 1)); page.wait_for_timeout(100)
+    page.locator(f'.blk[data-g="s{bw}"]').scroll_into_view_if_needed()  # the panel scrolls; the strip may sit under the nav
+    P = page.evaluate('() => window.siegeline.scrub.paths()'); pb = page.locator(f'.pth[data-g="s{bw}"]').bounding_box()
+    x0 = pb['x'] + 1 + P['rows'][f's{bw}']['front'] / P['L'] * (pb['width'] - 2)
+    check(page.locator(f'.pth[data-g="s{bw}"] .dyn .tk').count() == 1 and page.locator(f'.pth[data-g="s{bw}"] .brk').count() == 1 and page.locator(f'.lane.sap[data-sap="{bw}"] .clip').count() == 1,
+          'a sapper’s block has one release knob, and one dot on its strip with a “B” for its bridge')
+    drag(page, x0, pb['y'] + 8, x0 - pb['width'] * 0.1, pb['y'] + 8); page.wait_for_timeout(150)
+    t1 = S(page, f'S.charges.get({bw}).t'); head = page.inner_text(f'.blk[data-g="s{bw}"] .blk-head')
+    check(t1 > t0 and f'leaves {t1 * 20:.1f} s' in head and 'reaches target' in head, f'spec test 7: dragging the sapper’s dot back along the strip makes it leave later ({t0 * 20:.1f} → {t1 * 20:.1f} s): {head}')
+    page.screenshot(path=f'{OUT}/v202_sappers.png')
+    # the play button after switching the bridge toggle
+    page.click('#scrub-br [data-lands="0"]'); page.wait_for_timeout(150); page.click('#scrub-play'); page.wait_for_timeout(200)
+    check(play(), 'after switching the bridge toggle the play button still plays')
+    page.click('#scrub-play')
+    check(not errors, f'v20.2: no errors {errors[:3]}')
+    # a new page on the same device: the card doesn't open by itself again
+    page.reload(); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page)
+    page.click('#def-next'); page.click('#def-next'); hand(page); page.click('.step.plus[data-i="0"]'); page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(200)
+    check(page.is_visible('#a-scrub') and page.is_hidden('#ov-guide'), 'spec test 8: on the same device the card only opens from its button')
+    ctx.close()
+    # the wave plan on a phone: one column, nothing wider than the screen
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
+    page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
+    page.tap('#def-next'); page.wait_for_timeout(100); page.tap('#def-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
+    for _ in range(3): page.tap('.step.plus[data-i="0"]')
+    page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(250)
+    page.tap('#scrub-play'); page.wait_for_timeout(400)
+    wide = page.evaluate("() => Math.max(...[...document.querySelectorAll('#tl *')].map(e => e.getBoundingClientRect().right))")
+    tb = page.locator('#scrub-t').bounding_box()
+    check(page.evaluate('() => window.siegeline.scrub.playing') and wide <= 390 and tb['height'] >= 44 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
+          f'phone: the wave plan is one column within 390 px ({wide:.0f}), the slider’s touch area is 44 px, and the play button plays')
+    page.screenshot(path=f'{OUT}/m14_waveplan.png')
+    check(not errors, f'phone wave plan: no errors {errors[:3]}')
     ctx.close()
 
     ctx = b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)

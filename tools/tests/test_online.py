@@ -4,7 +4,7 @@
    python tools/tests/test_online.py        (add "peer" to run only the peer-to-peer part)"""
 import os, sys, json, subprocess, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from common import game_html, write_build, BUILD, ROOT, TOOLS, launch
+from common import game_html, write_build, BUILD, ROOT, TOOLS, launch, GUIDE_SEEN
 from playwright.sync_api import sync_playwright
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -90,6 +90,7 @@ try:
         br = p.chromium.launch(args=['--disable-features=WebRtcHideLocalIpsWithMdns', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows'])
         if 'peer' not in sys.argv:
             ctx = br.new_context(viewport={'width': 1280, 'height': 800})
+            ctx.add_init_script(GUIDE_SEEN)  # the wave plan's How to use card has been seen
             errs = []
             A = ctx.new_page(); B = ctx.new_page()
             for pg in (A, B): errors_hook(pg, errs)
@@ -329,6 +330,7 @@ try:
 
         # ---------- PeerJS transport (outside Claude) ----------
         ctx = br.new_context(viewport={'width': 1280, 'height': 800})
+        ctx.add_init_script(GUIDE_SEEN)  # the wave plan's How to use card has been seen
         ctx.add_init_script("window.SIEGE_PEER_OPTS={host:'127.0.0.1',port:9000,path:'/myapp',config:{iceServers:[]}};")
         ctx.route('https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js', lambda r: r.fulfill(path=PEERJS, content_type='application/javascript'))
         errs = []
@@ -372,6 +374,7 @@ try:
 
         # ---------- phone layout of the new screens ----------
         ctx = br.new_context(viewport={'width': 390, 'height': 844}, has_touch=True, is_mobile=True, device_scale_factor=2)
+        ctx.add_init_script(GUIDE_SEEN)  # the wave plan's How to use card has been seen
         P1 = ctx.new_page(); P1.goto('http://127.0.0.1:8765/room.html'); P1.wait_for_timeout(400)
         P1.tap('#info-go'); P1.wait_for_timeout(200)
         P1.screenshot(path=f'{SHOTS}/p1_mode.png')

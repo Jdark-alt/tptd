@@ -5,7 +5,7 @@ import os, sys, json, subprocess, time
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from common import ROOT
+from common import ROOT, GUIDE_SEEN
 SRV = ROOT
 HERE = os.path.dirname(os.path.abspath(__file__))
 if not os.path.isdir(os.path.join(ROOT, 'node_modules', 'ws')):
@@ -56,6 +56,7 @@ try:
 
         # 1. Both players on the page served by the relay server itself
         ctx = br.new_context(viewport={'width': 1280, 'height': 800})
+        ctx.add_init_script(GUIDE_SEEN)  # the wave plan's How to use card has been seen
         A = page(ctx, BASE + '/'); B = page(ctx, BASE + '/')
         check('server injects same-origin relay', A.evaluate('()=>window.SIEGE_RELAY') == 'same-origin')
         join(A, 'def', 'RLY1'); A.wait_for_timeout(600)
@@ -91,6 +92,7 @@ try:
 
         # 4. Page hosted elsewhere (like GitHub Pages) pointing at the relay
         ctx = br.new_context(viewport={'width': 1280, 'height': 800})
+        ctx.add_init_script(GUIDE_SEEN)  # the wave plan's How to use card has been seen
         ctx.add_init_script(f"window.SIEGE_RELAY='{BASE}';")
         A = page(ctx, 'http://127.0.0.1:8765/index.html'); B = page(ctx, 'http://127.0.0.1:8765/index.html')
         join(A, 'atk', 'GHP1'); join(B, 'def', 'GHP1')
@@ -102,6 +104,7 @@ try:
         # 5. Server asleep when players connect: the page waits for it to wake
         srv.terminate(); srv.wait()
         ctx = br.new_context(viewport={'width': 1280, 'height': 800})
+        ctx.add_init_script(GUIDE_SEEN)  # the wave plan's How to use card has been seen
         ctx.add_init_script(f"window.SIEGE_RELAY='{BASE}';")
         A = page(ctx, 'http://127.0.0.1:8765/index.html'); B = page(ctx, 'http://127.0.0.1:8765/index.html')
         join(A, 'def', 'SLP1'); A.wait_for_timeout(5500)

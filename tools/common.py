@@ -61,6 +61,20 @@ def sim_page():
     return write_build('sim.html', src)
 
 
+# The Wave step's How to use card opens by itself once per device (v20.2) and covers the step, so the tests' pages
+# start as if this device had seen it.
+GUIDE_SEEN = "try { localStorage.setItem('tptd-wave-guide', 'seen'); } catch (e) {}"
+
+
 def launch(p):
-    """Chromium with WebRTC host candidates visible (needed for the local peer-to-peer tests)."""
-    return p.chromium.launch(args=['--disable-features=WebRtcHideLocalIpsWithMdns'])
+    """Chromium with WebRTC host candidates visible (needed for the local peer-to-peer tests). Every context it opens
+    has already seen the wave plan's How to use card; b.new_context_fresh(...) opens one that hasn't."""
+    b = p.chromium.launch(args=['--disable-features=WebRtcHideLocalIpsWithMdns'])
+    fresh = b.new_context
+
+    def new_context(*a, **k):
+        c = fresh(*a, **k)
+        c.add_init_script(GUIDE_SEEN)
+        return c
+    b.new_context, b.new_context_fresh = new_context, fresh
+    return b
