@@ -338,8 +338,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .tl-len{font:500 10.5px/1 var(--f-ui);color:var(--muted);margin-right:auto}
 .mini{height:28px;padding:0 10px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
 .mini:hover{border-color:var(--muted);color:var(--paper)}
-.tl-grid{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;align-items:center}
-.tl-dens{display:flex;align-items:flex-end;gap:2px;height:32px;padding:0 0 1px;border-bottom:1px solid var(--line-2)}
+.tl-grid{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;align-items:center;padding-right:8px} /* room for the slider's thumb at 60 s */
+.tl-dens{position:relative;display:flex;align-items:flex-end;gap:1px;height:32px;padding:0 0 1px;border-bottom:1px solid var(--line-2)}
 .tl-dens i{flex:1;background:var(--warm);opacity:.55;min-height:1px;transition:height .1s}
 .tl-dens i.peak{opacity:1}
 .tl-peaklbl{font:500 10px/1.3 var(--f-ui);color:var(--muted);letter-spacing:.06em}
@@ -348,31 +348,42 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .trk-lbl .ico{width:20px;height:20px}
 .trk-lbl .rname{font-size:13px}
 .trk-lbl .rsub{font-size:10px;white-space:normal;line-height:1.25}
-.lane{position:relative;height:48px;border-radius:var(--r);background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--line) calc(25% - 1px) 25%),var(--slate);border:1px solid var(--line);touch-action:none}
-/* top band: the group's window with its two grab tabs; lower band: one dot per unit */
+/* a track on the preview's clock: the release window (shaded, to the dashed line) and a tick every 10 s. Top band: the
+   group's window with its two grab tabs; then one dot per unit; at the bottom, the wave on the map. Drag anywhere else
+   to move the whole wave. */
+.lane{position:relative;height:52px;border-radius:var(--r);cursor:grab;touch-action:none;border:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(255,138,61,.06) 0 var(--rel),transparent var(--rel)),repeating-linear-gradient(90deg,transparent 0 calc(var(--tick) - 1px),var(--line) calc(var(--tick) - 1px) var(--tick)),var(--slate)}
+.lane::after{content:"";position:absolute;top:0;bottom:0;left:var(--rel);border-left:1px dashed rgba(255,138,61,.45);pointer-events:none}
 .lane .rng{position:absolute;top:5px;height:10px;background:rgba(255,138,61,.22);border-radius:1px}
+.lane .span{position:absolute;bottom:4px;height:6px;border-radius:1px;background:var(--c);opacity:.4}
+.tcur{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1.5px solid var(--paper);opacity:.75;pointer-events:none;z-index:4}
+/* the preview's time, its slider lined up with the tracks (the thumb's centre sits on the clock) */
+.sclbl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.scbar{min-width:0}
+.scbar input{-webkit-appearance:none;appearance:none;display:block;width:calc(100% + 16px);margin:0 -8px;height:24px;background:transparent;cursor:pointer;touch-action:pan-y}
+.scbar input::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line-2)}
+.scbar input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--side);border:2px solid var(--ink)}
+.scbar input::-moz-range-track{height:4px;border-radius:2px;background:var(--line-2)}
+.scbar input::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--side);border:2px solid var(--ink)}
 .lane .hdl{position:absolute;top:0;height:20px;width:26px;margin-left:-13px;z-index:3;cursor:ew-resize;touch-action:none;display:grid;place-items:center}
 .lane .hdl::before{content:"";width:6px;height:16px;border-radius:1px;background:var(--warm);box-shadow:0 0 0 2px var(--ink)}
-.lane .clip{position:absolute;top:31px;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--c);border:2px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
-.lane .clip:nth-of-type(3n){top:26px} .lane .clip:nth-of-type(3n+1){top:36px}
+.lane .clip{position:absolute;top:29px;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--c);border:2px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
+.lane .clip:nth-of-type(3n){top:24px} .lane .clip:nth-of-type(3n+1){top:34px}
 .lane .clip:hover{transform:scale(1.3)}
-/* the wave scrubber: play, a time slider and its T, the bridge toggle; a track's label picks its group on the map */
-.scrub{display:flex;flex-direction:column;gap:7px;padding:8px 10px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line)}
+/* the wave scrubber: play and T beside the time slider, the bridge toggle; a track's label picks its group on the map */
 .scrow{display:flex;align-items:center;gap:10px;min-width:0}
-.scrow input[type=range]{flex:1;min-width:0;height:24px;margin:0;accent-color:var(--side);cursor:pointer;touch-action:pan-y}
 .scplay{flex:none;width:32px;padding:0;display:grid;place-items:center}
-.scplay svg{width:12px;height:12px;display:block}
+.scplay svg{width:12px;height:12px;display:block;pointer-events:none}
 .scplay[aria-pressed=true]{border-color:var(--side);color:var(--side)}
-.sct{flex:none;min-width:64px;text-align:right;font:600 12px/1 var(--f-ui);color:var(--paper);font-variant-numeric:tabular-nums}
+.sct{flex:none;font:600 11.5px/1 var(--f-ui);color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
 .altitle{font:500 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--soft);white-space:nowrap}
 .scseg{flex:1;max-width:220px}
 .scseg button{padding:7px 4px}
-.scrub .note{font-size:12px}
 button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:left;cursor:pointer;border-radius:var(--r)}
 .trk-lbl[aria-pressed=true] .rname{color:var(--side)}
 .trk-lbl[aria-pressed=true] .ico{outline:1px solid var(--side);outline-offset:2px;border-radius:2px}
 /* a sapper's track: one diamond to slide */
-.lane.sap{height:34px}
+.lane.sap{height:40px}
 .lane.sap .clip,.lane.sap .clip:nth-of-type(n){top:16px;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:2px;transform:rotate(45deg)}
 .lane.sap .clip:hover{transform:rotate(45deg) scale(1.3)}
 .tl-ruler{display:flex;justify-content:space-between;font:500 10px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
@@ -569,7 +580,8 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
   .tl-grid{grid-template-columns:76px minmax(0,1fr);gap:5px 8px}
   .trk-lbl{grid-template-columns:minmax(0,1fr);gap:5px}
   .trk-lbl .ico{display:none} /* the dots' colour tells the tracks apart, and the name needs the room */
-  .lane{height:46px}
+  .lane{height:50px}
+  .lane.sap{height:40px}
   .tl-dens{height:24px}
   .sumcell b{font-size:20px}
   .sodesc{font-size:12px}
@@ -626,7 +638,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
   .back,.ready{min-height:44px}
   .tile .val{font-size:19px}
   .breach .fine{display:none}
-  .lane{height:44px} .tl-dens{height:22px}
+  .lane{height:48px} .tl-dens{height:22px}
 }
 /* the wave speed control stays reachable on small screens */
 @media (orientation:portrait),(max-width:720px),(orientation:landscape) and (max-height:520px){
@@ -4256,25 +4268,22 @@ function rosterHTML() {
 function timelineHTML() {
   const active = S.designs.map((d, i) => ({ d, i })).filter(x => x.d.count > 0), saps = [...S.charges];
   if (!active.length && !saps.length) return '<p class="note show">Your army is empty. Add units in step 1, then come back here to arrange them.</p>';
-  return `<div class="tl-head"><span class="tl-title">Wave timeline</span><span class="tl-len">${RULES.waveLen} seconds</span>
+  const ticks = Array.from({ length: Math.floor(RULES.planMax / 10) + 1 }, (_, k) => `<span>${k * 10}s</span>`).join('');
+  return `<div class="tl-head"><span class="tl-title">Wave timeline</span><span class="tl-len">${RULES.planMax} seconds</span>
       <button class="mini" data-act="even">Even</button><button class="mini" data-act="stagger">One after another</button><button class="mini" data-act="rush">All at once</button></div>
-    <div class="scrub" id="a-scrub">
-      <div class="scrow"><button class="mini scplay" id="scrub-play" data-act="scrub-play" aria-pressed="false" aria-label="Play the preview">${ICON.play}</button>
-        <input type="range" id="scrub-t" min="0" max="${RULES.planMax}" step="${RULES.scrubStep}" value="0" aria-label="Preview time">
-        <span class="sct" id="scrub-lbl">T = 0.0 s</span></div>
-      <div class="scrow" id="scrub-br" hidden><span class="altitle">Plan with bridge</span><div class="seg scseg" role="group" aria-label="Plan with bridge"><button data-lands="1" aria-pressed="true">Lands</button><button data-lands="0" aria-pressed="false">Fails</button></div></div>
-      <p class="note">Scrub or play to see where everything will be. Pause and drag a dot along the route to move its group.</p>
-    </div>
-    <div class="tl-grid">
+    <div class="scrow" id="scrub-br" hidden><span class="altitle">Plan with bridge</span><div class="seg scseg" role="group" aria-label="Plan with bridge"><button data-lands="1" aria-pressed="true">Lands</button><button data-lands="0" aria-pressed="false">Fails</button></div></div>
+    <div class="tl-grid" style="--rel:${RULES.waveLen / RULES.planMax * 100}%;--tick:${1000 / RULES.planMax}%">
+      <div class="sclbl"><button class="mini scplay" id="scrub-play" data-act="scrub-play" aria-pressed="false" aria-label="Play the preview">${ICON.play}</button><span class="sct" id="scrub-lbl">T = 0.0 s</span></div>
+      <div class="scbar" id="a-scrub"><input type="range" id="scrub-t" min="0" max="${RULES.planMax}" step="${RULES.scrubStep}" value="0" aria-label="Preview time"></div>
       <div class="tl-peaklbl" id="tl-peak"></div>
-      <div class="tl-dens" id="tl-dens">${'<i></i>'.repeat(20)}</div>
+      <div class="tl-dens" id="tl-dens">${'<i></i>'.repeat(RULES.planMax)}<b class="tcur"></b></div>
       ${active.map(({ d, i }) => `<button class="trk-lbl" data-trk="d${i}" aria-pressed="false"><span class="ico">${unitSVG(d)}</span><span class="rmain"><span class="rname">${d.name}</span><span class="rsub"><span id="trk-sub-${i}"></span><span class="trk-wait"></span></span></span></button>
-        <div class="lane" data-i="${i}"><i class="rng"></i>${Array.from({ length: d.count }, (_, k) => `<span class="clip" data-k="${k}" style="--c:${d.color}"></span>`).join('')}<span class="hdl s" data-h="s" aria-label="Start of ${d.name}"></span><span class="hdl e" data-h="e" aria-label="End of ${d.name}"></span></div>`).join('')}
+        <div class="lane" data-i="${i}"><i class="rng"></i><i class="span" style="--c:${d.color}"></i>${Array.from({ length: d.count }, (_, k) => `<span class="clip" data-k="${k}" style="--c:${d.color}"></span>`).join('')}<span class="hdl s" data-h="s" aria-label="Start of ${d.name}"></span><span class="hdl e" data-h="e" aria-label="End of ${d.name}"></span><b class="tcur"></b></div>`).join('')}
       ${saps.map(([cell, c]) => `<button class="trk-lbl" data-trk="s${cell}" aria-pressed="false"><span class="ico ${c.kind === 'bridge' ? 'bridge' : 'jam'}">${c.kind === 'bridge' ? ICON.bridge : ICON.jam}</span><span class="rmain"><span class="rname">${c.kind === 'bridge' ? 'Bridge' : 'Knock-out'}</span><span class="rsub" id="sap-sub-${cell}"></span></span></button>
-        <div class="lane sap" data-sap="${cell}"><span class="clip" data-k="0" style="--c:${c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)'}" aria-label="Sapper"></span></div>`).join('')}
-      <span></span><div class="tl-ruler"><span>0s</span><span>5s</span><span>10s</span><span>15s</span><span>20s</span></div>
+        <div class="lane sap" data-sap="${cell}"><i class="span" style="--c:${c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)'}"></i><span class="clip" data-k="0" style="--c:${c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)'}" aria-label="Sapper"></span><b class="tcur"></b></div>`).join('')}
+      <span></span><div class="tl-ruler">${ticks}</div>
     </div>
-    <p class="note show">Each dot is a unit leaving the breach. Drag the tabs to squeeze a group, or drag a dot. Tap a track to pick it on the map.${saps.length ? ' Towers shoot whoever is nearest the keep, so units ahead of a sapper draw the fire.' : ' Bunched units hit in one burst; splash punishes that.'}</p>`;
+    <p class="note show">Drag a wave to move it, its tabs to squeeze it, or one dot; units leave within the first ${RULES.waveLen} s. The bar under each wave is when it’s on the map: set the time to see everyone there, and drag a dot on the map to move its group.${saps.length ? ' Units ahead of a sapper draw the fire.' : ''}</p>`;
 }
 /* ---------- the wave scrubber ----------
    A time slider over the Wave step's tracks previews the planned wave on the defense the attacker saw: the ghost wave
@@ -4297,6 +4306,7 @@ function ghostData() {
   if (Z.key !== key && !Z.drag && !tlDrag) { // no rerun while something is being dragged: the samples shift instead
     Z.key = key;
     Z.data = armyCount(S.designs) || S.charges.size ? ghostRun(Z.lands || !plannedBridges().length) : null;
+    Z.fresh = true; // the timeline's wave bars follow the new recording (see frame)
   }
   return Z.data;
 }
@@ -4401,17 +4411,24 @@ function scrubMove(x, y) {
   if (!V) return;
   const r = G.r, W = RULES.waveLen, D = snapRoute(routeLine(V.route), x, y);
   const want = D <= ENTRY_D ? Z.T / W : r.p + (Z.T - ghostReach(r, D)) / W; // on the entry tile or behind it: released at T
-  let P, now, c, d;
-  if (r.sap) { c = S.charges.get(r.cell); if (!c) return; P = [c.t]; now = c.t; }
-  else { d = S.designs[r.di]; if (!d) return; P = tlPositions(d); now = P[r.k]; P.push(d.tl.s, d.tl.e); } // the window stays inside 0-20 s too
-  let dp = want - now;
-  if (dp < -Math.min(...P)) { dp = -Math.min(...P); toast('Can’t release before 0 s', 'atk'); }
-  else if (dp > 1 - Math.max(...P)) { dp = 1 - Math.max(...P); toast(`Must be released by ${RULES.waveLen} s`, 'atk'); }
-  if (Math.abs(dp) < 1e-9) return;
-  if (c) c.t = clamp(c.t + dp, 0, 1);
-  else d.tl = { s: clamp(d.tl.s + dp, 0, 1), e: clamp(d.tl.e + dp, 0, 1), pos: d.tl.pos ? d.tl.pos.map(q => clamp(q + dp, 0, 1)) : null };
+  const now = r.sap ? (S.charges.get(r.cell) || {}).t : S.designs[r.di] ? tlPositions(S.designs[r.di])[r.k] : null;
+  if (now == null || !shiftGroup(r.g, want - now)) return;
   G.moved = true;
   updateTimeline(); renderScrub();
+}
+// Moves a group's release (a design, 'd' + index, or a sapper, 's' + cell) by dp, a share of the release window, keeping
+// its spread; the first unit can't leave before 0 s nor the last after it (a one-unit design's window stays inside
+// too). Says why at a limit. Returns the share it moved.
+function shiftGroup(g, dp) {
+  let P, c, d;
+  if (g[0] === 's') { c = S.charges.get(+g.slice(1)); if (!c) return 0; P = [c.t]; }
+  else { d = S.designs[+g.slice(1)]; if (!d) return 0; P = [...tlPositions(d), d.tl.s, d.tl.e]; }
+  if (dp < -Math.min(...P)) { dp = -Math.min(...P); toast('Can’t release before 0 s', 'atk'); }
+  else if (dp > 1 - Math.max(...P)) { dp = 1 - Math.max(...P); toast(`Must be released by ${RULES.waveLen} s`, 'atk'); }
+  if (Math.abs(dp) < 1e-9) return 0;
+  if (c) c.t = clamp(c.t + dp, 0, 1);
+  else d.tl = { s: clamp(d.tl.s + dp, 0, 1), e: clamp(d.tl.e + dp, 0, 1), pos: d.tl.pos ? d.tl.pos.map(q => clamp(q + dp, 0, 1)) : null };
+  return dp;
 }
 function scrubEnd() {
   const G = scrub.drag;
@@ -4423,17 +4440,20 @@ function scrubEnd() {
 }
 const ghostColor = r => (r.sap ? (r.sap === 'bridge' ? '#ff8a3d' : '#a98bff') : (S.designs[r.di] || {}).color || '#ffb547');
 function renderScrub() {
-  const box = $('#a-scrub');
-  if (!box) return;
+  const root = $('#tl');
+  if (!root || !$('#a-scrub')) return;
   const Z = scrubState(), V = scrubView(), inp = $('#scrub-t');
   if (Math.abs(+inp.value - Z.T) > 1e-6) inp.value = Z.T;
   $('#scrub-lbl').textContent = `T = ${Z.T.toFixed(1)} s`;
-  const play = $('#scrub-play');
-  play.setAttribute('aria-pressed', Z.playing); play.setAttribute('aria-label', Z.playing ? 'Pause the preview' : 'Play the preview');
-  play.innerHTML = Z.playing ? ICON.pause : ICON.play;
+  const play = $('#scrub-play'), icon = Z.playing ? 'pause' : 'play';
+  if (play.dataset.icon !== icon) { // only when it changes: a button rebuilt under the pointer loses its click
+    play.dataset.icon = icon; play.innerHTML = ICON[icon];
+    play.setAttribute('aria-pressed', Z.playing); play.setAttribute('aria-label', Z.playing ? 'Pause the preview' : 'Play the preview');
+  }
+  for (const c of root.querySelectorAll('.tcur')) c.style.left = Z.T / RULES.planMax * 100 + '%';
   $('#scrub-br').hidden = !plannedBridges().length;
-  for (const b of box.querySelectorAll('[data-lands]')) b.setAttribute('aria-pressed', String((b.dataset.lands === '1') === Z.lands));
-  for (const b of $('#tl').querySelectorAll('[data-trk]')) {
+  for (const b of root.querySelectorAll('[data-lands]')) b.setAttribute('aria-pressed', String((b.dataset.lands === '1') === Z.lands));
+  for (const b of root.querySelectorAll('[data-trk]')) {
     const g = b.dataset.trk, n = V ? V.wait[g] || 0 : 0, w = b.querySelector('.trk-wait');
     b.setAttribute('aria-pressed', String(g === Z.sel));
     if (w) w.textContent = n ? ` · ${n} still to spawn` : '';
@@ -4455,13 +4475,42 @@ function sapEta(cell, c) {
   }
   return null;
 }
+// The timeline runs on the preview's clock (0 to planMax): releases sit in the first waveLen seconds, and under each
+// track a bar shows when that wave is on the map, from its first release to its last unit reaching the keep (to the
+// end of the preview if it doesn't). The row above counts the army's units on the map in each second.
+const tlX = sec => clamp(sec / RULES.planMax, 0, 1) * 100 + '%';
+function ghostTimes() {
+  const D = ghostData(), spans = {}, onMap = new Array(RULES.planMax).fill(0);
+  if (!D) return { spans, onMap };
+  const P = S.designs.map(tlPositions);
+  for (const r of D.units) {
+    const sh = ghostShift(r, D, P);
+    if (sh == null) continue;
+    const a = r.t0 + sh, b = r.tEnd + sh, sp = spans[r.g] || (spans[r.g] = [Infinity, -Infinity]);
+    sp[0] = Math.min(sp[0], a); sp[1] = Math.max(sp[1], b);
+    if (!r.sap) for (let k = Math.max(0, Math.ceil(a - 0.5)); k < RULES.planMax && k + 0.5 < b; k++) onMap[k]++;
+  }
+  return { spans, onMap };
+}
+function renderWaveBars() {
+  const root = $('#tl'); if (!root) return;
+  const { spans, onMap } = ghostTimes();
+  for (const lane of root.querySelectorAll('.lane')) {
+    const sp = spans[lane.dataset.sap != null ? 's' + lane.dataset.sap : 'd' + lane.dataset.i], bar = lane.querySelector('.span');
+    bar.hidden = !sp;
+    if (sp) { bar.style.left = tlX(sp[0]); bar.style.width = `calc(${tlX(Math.min(sp[1], RULES.planMax))} - ${tlX(sp[0])})`; }
+  }
+  const mx = Math.max(1, ...onMap), peak = Math.max(...onMap);
+  root.querySelectorAll('#tl-dens i').forEach((b, k) => { b.style.height = (onMap[k] / mx * 100) + '%'; b.classList.toggle('peak', onMap[k] === peak && peak > 0); });
+  const pk = $('#tl-peak'); if (pk) pk.innerHTML = `<b>${peak}</b>most on the map`;
+}
 function updateTimeline() {
   const root = $('#tl'); if (!root) return;
-  const T = RULES.waveLen, keepCells = pathLen(seenPath()) + 2;
+  const T = RULES.waveLen, keepCells = pathLen(seenPath()) + 2, at = p => tlX(p * T);
   for (const lane of root.querySelectorAll('.lane')) {
     if (lane.dataset.sap != null) {
       const cell = +lane.dataset.sap, c = S.charges.get(cell); if (!c) continue;
-      lane.querySelector('.clip').style.left = c.t * 100 + '%';
+      lane.querySelector('.clip').style.left = at(c.t);
       const sub = $('#sap-sub-' + cell), eta = sapEta(cell, c);
       if (sub) sub.textContent = `${fmtNum(c.t * T)}s · ${eta == null ? 'off the route' : `there ~${fmtNum(eta)}s`}`;
       continue;
@@ -4469,45 +4518,53 @@ function updateTimeline() {
     const i = +lane.dataset.i, d = S.designs[i]; if (!d) continue;
     const pos = tlPositions(d);
     const rng = lane.querySelector('.rng');
-    rng.style.left = d.tl.s * 100 + '%'; rng.style.width = Math.max(0, d.tl.e - d.tl.s) * 100 + '%';
-    lane.querySelector('.hdl.s').style.left = d.tl.s * 100 + '%';
-    lane.querySelector('.hdl.e').style.left = d.tl.e * 100 + '%';
-    lane.querySelectorAll('.clip').forEach((c, k) => { c.style.left = (pos[k] ?? 0) * 100 + '%'; });
+    rng.style.left = at(d.tl.s); rng.style.width = `calc(${at(d.tl.e)} - ${at(d.tl.s)})`;
+    lane.querySelector('.hdl.s').style.left = at(d.tl.s);
+    lane.querySelector('.hdl.e').style.left = at(d.tl.e);
+    lane.querySelectorAll('.clip').forEach((c, k) => { c.style.left = at(pos[k] ?? 0); });
     const sub = $('#trk-sub-' + i);
     if (sub) {
       const sp = US.speed.steps[d.speed], a = etaWalk(sp, Math.min(...pos), keepCells), b = etaWalk(sp, Math.max(...pos), keepCells);
       sub.textContent = `×${d.count} · ${fmtNum(d.tl.s * T)}–${fmtNum(d.tl.e * T)}s${S.seenRound ? ` · keep ~${fmtNum(a)}${b - a >= 0.5 ? '–' + fmtNum(b) : ''}s` : ''}`;
     }
   }
-  const bins = densityBins(S.designs), mx = Math.max(1, ...bins), peak = Math.max(...bins);
-  root.querySelectorAll('#tl-dens i').forEach((b, k) => { b.style.height = (bins[k] / mx * 100) + '%'; b.classList.toggle('peak', bins[k] === peak && peak > 0); });
-  const pk = $('#tl-peak'); if (pk) pk.innerHTML = `<b>${peak}</b>busiest second`;
+  renderWaveBars();
 }
+// On a track: a tab stretches or squeezes the group, a dot moves one unit, anywhere else drags the whole wave (its
+// spread kept, within the release window). A sapper's track moves its sapper. The board follows as it moves.
 let tlDrag = null;
+const tlAt = (lane, x) => { const r = lane.getBoundingClientRect(); return (x - r.left) / r.width * RULES.planMax / RULES.waveLen; }; // a share of the release window
 function tlDown(e) {
-  const h = e.target.closest('.hdl, .clip'); if (!h) return;
-  const lane = h.closest('.lane');
-  if (lane.dataset.sap != null) { // a sapper's dot: slide it along its track
-    if (!S.charges.has(+lane.dataset.sap)) return;
+  const lane = e.target.closest('.lane'); if (!lane) return;
+  const h = e.target.closest('.hdl, .clip'), f0 = tlAt(lane, e.clientX);
+  if (lane.dataset.sap != null) { // a sapper: grab it anywhere on its track
+    const c = S.charges.get(+lane.dataset.sap); if (!c) return;
     e.preventDefault();
-    tlDrag = { id: e.pointerId, lane, sap: +lane.dataset.sap };
+    tlDrag = { id: e.pointerId, lane, sap: +lane.dataset.sap, f0, t0: c.t, move: !h };
+    scrubState().sel = 's' + lane.dataset.sap;
   } else {
     const i = +lane.dataset.i, d = S.designs[i]; if (!d) return;
     e.preventDefault();
     const pos0 = tlPositions(d);
-    tlDrag = { id: e.pointerId, lane, i, kind: h.dataset.h || 'clip', k: +h.dataset.k, s0: d.tl.s, e0: d.tl.e, pos0, custom: !!d.tl.pos };
+    tlDrag = { id: e.pointerId, lane, i, kind: h ? h.dataset.h || 'clip' : 'move', k: h ? +h.dataset.k : -1, f0, s0: d.tl.s, e0: d.tl.e, pos0, custom: !!d.tl.pos };
     if (tlDrag.kind === 'clip') d.tl.pos = pos0.slice();
+    scrubState().sel = 'd' + i;
   }
   try { lane.setPointerCapture(e.pointerId); } catch (_) { /* optional */ }
   document.body.classList.add('dragging');
+  renderScrub();
 }
 function tlMove(e) {
   if (!tlDrag || e.pointerId !== tlDrag.id) return;
-  const r = tlDrag.lane.getBoundingClientRect(), f = clamp((e.clientX - r.left) / r.width, 0, 1);
-  const D = tlDrag;
-  if (D.sap != null) { const c = S.charges.get(D.sap); if (c) c.t = f; updateTimeline(); return; }
+  const D = tlDrag, raw = tlAt(D.lane, e.clientX), f = clamp(raw, 0, 1);
+  if (D.sap != null) {
+    const c = S.charges.get(D.sap);
+    if (c) { if (D.move) shiftGroup('s' + D.sap, D.t0 + raw - D.f0 - c.t); else c.t = f; }
+    updateTimeline(); return;
+  }
   const d = S.designs[D.i];
-  if (D.kind === 'clip') {
+  if (D.kind === 'move') shiftGroup('d' + D.i, D.s0 + raw - D.f0 - d.tl.s);
+  else if (D.kind === 'clip') {
     d.tl.pos[D.k] = f;
     d.tl.s = Math.min(...d.tl.pos); d.tl.e = Math.max(...d.tl.pos);
   } else {
@@ -5700,6 +5757,7 @@ function frame(now) {
       S.overT -= dt;
       if (S.overT <= 0) finishOver();
     }
+    if (scrub.fresh && scrub.S === S && S.phase === 'attack' && S.step === A_WAVE) { scrub.fresh = false; renderWaveBars(); }
     if (scrub.playing && scrub.S === S && S.phase === 'attack' && S.step === A_WAVE) { // the scrubber's preview plays at 1×
       scrub.T = Math.min(RULES.planMax, scrub.T + dt);
       if (scrub.T >= RULES.planMax) scrub.playing = false;

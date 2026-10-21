@@ -174,9 +174,18 @@ with sync_playwright() as p:
     # drag one clip of the swarm track to the middle
     cb = page.locator('.lane[data-i="2"] .clip').nth(0).bounding_box()
     lb2 = page.locator('.lane[data-i="2"]').bounding_box()
-    drag(page, cb['x'] + cb['width'] / 2, cb['y'] + cb['height'] / 2, lb2['x'] + lb2['width'] * 0.5, cb['y'] + cb['height'] / 2)
+    drag(page, cb['x'] + cb['width'] / 2, cb['y'] + cb['height'] / 2, lb2['x'] + lb2['width'] * 0.5 / 3, cb['y'] + cb['height'] / 2)  # the tracks show 60 s; 10 s is a sixth
     pos = S(page, 'S.designs[2].tl.pos')
     check(pos is not None and abs(pos[0] - 0.5) < 0.05, f'dragging a single dot places it ({pos[0] if pos else None})')
+    # the whole wave: drag the swarm's track (away from its tabs and dots) 5 s later; its spread stays
+    s0, e0 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
+    y = lb2['y'] + lb2['height'] - 4
+    drag(page, lb2['x'] + lb2['width'] * 0.8, y, lb2['x'] + lb2['width'] * (0.8 + 5 / 60), y)
+    s1, e1 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
+    check(abs((s1 - s0) * 20 - 5) < 0.3 and abs((e1 - s1) - (e0 - s0)) < 1e-9, f'dragging a track moves the whole wave, keeping its spread ({s0 * 20:.1f}s → {s1 * 20:.1f}s)')
+    drag(page, lb2['x'] + lb2['width'] * 0.8, y, lb2['x'] + lb2['width'] * 0.99, y)
+    check(abs(S(page, 'Math.max(...window.siegeline.tlPositions(window.siegeline.state.designs[2]))') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s',
+          f'a wave dragged past 20 s stops there ({toast(page)})')
     peak = page.inner_text('#tl-peak')
     page.screenshot(path=f'{OUT}/a1_wave.png')
     page.click('.mini[data-act=rush]')
@@ -292,7 +301,7 @@ with sync_playwright() as p:
     check(S(page, 'S.step') == 2 and page.locator('.lane.sap').count() == 2 and 'there ~' in page.inner_text('#tl'), 'Wave step: a track for each sapper, with when it gets there')
     t0 = S(page, f'S.charges.get({bw}).t')
     db = page.locator(f'.lane.sap[data-sap="{bw}"] .clip').bounding_box(); lb = page.locator(f'.lane.sap[data-sap="{bw}"]').bounding_box()
-    drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25, db['y'] + db['height'] / 2)
+    drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25 / 3, db['y'] + db['height'] / 2)
     t1 = S(page, f'S.charges.get({bw}).t')
     check(abs(t1 - 0.25) < 0.03 and t1 != t0, f'dragging a sapper’s dot sets when it leaves ({t0:.3f} → {t1:.3f})')
     page.evaluate(f'() => {{ const S = window.siegeline.state; S.charges.get({bw}).t = 0.02; S.charges.get({T95}).t = 0.02; }}')
@@ -833,8 +842,21 @@ with sync_playwright() as p:
     set_slider(page, '#scrub-t', 2); page.click('#scrub-play'); page.wait_for_timeout(600)
     T = page.evaluate('() => window.siegeline.scrub.T')
     check(page.evaluate('() => window.siegeline.scrub.playing') and 2.3 < T < 3.5, f'Play runs the preview at 1× ({T:.2f}s after 0.6 s)')
+    def press(sel):  # a press held a tenth of a second, like a finger: frames go by between down and up
+        bx = page.locator(sel).bounding_box(); page.mouse.move(bx['x'] + bx['width'] / 2, bx['y'] + bx['height'] / 2)
+        page.mouse.down(); page.wait_for_timeout(100); page.mouse.up(); page.wait_for_timeout(150)
+    press('#scrub-play')
+    check(not page.evaluate('() => window.siegeline.scrub.playing'), 'the play button pauses on the next press while playing, with nothing in between')
+    press('#scrub-play')
+    check(page.evaluate('() => window.siegeline.scrub.playing'), 'and plays again on the press after')
+    press('#scrub-play')
     set_slider(page, '#scrub-t', 5)
     check(not page.evaluate('() => window.siegeline.scrub.playing') and page.evaluate('() => window.siegeline.scrub.T') == 5, 'moving the slider pauses the preview')
+    lane = page.locator('.lane[data-i="0"]').bounding_box(); cur = page.locator('.lane[data-i="0"] .tcur').bounding_box()
+    thumb = page.evaluate("() => { const i = document.querySelector('#scrub-t'), r = i.getBoundingClientRect(); return r.left + 8 + (r.width - 16) * i.value / i.max; }")
+    check(abs(cur['x'] - (lane['x'] + lane['width'] * 5 / 60)) < 2 and abs(thumb - cur['x']) < 3, f'the T line sits at 5 s on the tracks, under the slider’s thumb ({cur["x"]:.0f} vs {thumb:.0f})')
+    bar = page.locator('.lane[data-i="0"] .span').bounding_box()
+    check(bar and bar['x'] < lane['x'] + lane['width'] / 3 and bar['x'] + bar['width'] > lane['x'] + lane['width'] / 3, f'the Runners’ bar runs from their release past 20 s, while they walk ({bar})')
     # spec test 8: with a bridge planned, Lands changes the route the moment its sapper arrives; Fails never does
     page.click('#atk-back'); page.wait_for_timeout(150)
     # without the tower the seen route runs beside the wall at (7,5), so a bridge there is a real shortcut
