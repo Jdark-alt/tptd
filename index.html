@@ -340,38 +340,61 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .tl-len{font:500 10.5px/1 var(--f-ui);color:var(--muted);margin-right:auto}
 .mini{height:28px;padding:0 10px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
 .mini:hover{border-color:var(--muted);color:var(--paper)}
-.tl-grid{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;align-items:center;padding-right:8px} /* room for the slider's thumb at 60 s */
-.tl-dens{position:relative;display:flex;align-items:flex-end;gap:1px;height:32px;padding:0 0 1px;border-bottom:1px solid var(--line-2)}
+/* one row per group: its name, its spread track (when its units leave) and its path slider (where it is at T) */
+.tl-grid{display:grid;grid-template-columns:96px minmax(0,4fr) minmax(0,6fr);gap:6px 10px;align-items:center}
+.tl-dens{display:flex;align-items:flex-end;gap:2px;height:32px;padding:0 0 1px;border-bottom:1px solid var(--line-2)}
 .tl-dens i{flex:1;background:var(--warm);opacity:.55;min-height:1px;transition:height .1s}
 .tl-dens i.peak{opacity:1}
 .tl-peaklbl{font:500 10px/1.3 var(--f-ui);color:var(--muted);letter-spacing:.06em}
 .tl-peaklbl b{display:block;font:900 20px/1 var(--f-display);color:var(--warm)}
+.pth-head{display:flex;justify-content:space-between;align-items:flex-end;gap:6px;height:32px;padding-bottom:4px;border-bottom:1px solid var(--line-2);
+  font:500 10px/1.3 var(--f-ui);color:var(--muted);letter-spacing:.06em;white-space:nowrap;overflow:hidden}
+.pth-head b{font-weight:600;color:var(--soft)}
 .trk-lbl{display:grid;grid-template-columns:20px minmax(0,1fr);gap:7px;align-items:center;min-width:0}
 .trk-lbl .ico{width:20px;height:20px}
-.trk-lbl .rname{font-size:13px}
+.trk-lbl .rname{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trk-lbl .rsub{font-size:10px;white-space:normal;line-height:1.25}
-/* a track on the preview's clock: the release window (shaded, to the dashed line) and a tick every 10 s. Top band: the
-   group's window with its two grab tabs; then one dot per unit; at the bottom, the wave on the map. Drag anywhere else
-   to move the whole wave. */
-.lane{position:relative;height:52px;border-radius:var(--r);cursor:grab;touch-action:none;border:1px solid var(--line);
-  background:linear-gradient(90deg,rgba(255,138,61,.06) 0 var(--rel),transparent var(--rel)),repeating-linear-gradient(90deg,transparent 0 calc(var(--tick) - 1px),var(--line) calc(var(--tick) - 1px) var(--tick)),var(--slate)}
-.lane::after{content:"";position:absolute;top:0;bottom:0;left:var(--rel);border-left:1px dashed rgba(255,138,61,.45);pointer-events:none}
+/* a spread track: the 20 s release window, a line every 5 s. The group's band, its spread tab at the end, one dot per
+   unit: slide the band, drag the tab to spread the group (its front stays put), or drag one dot. */
+.lane{position:relative;height:46px;border-radius:var(--r);cursor:grab;touch-action:none;border:1px solid var(--line);
+  background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--line) calc(25% - 1px) 25%),var(--slate)}
 .lane .rng{position:absolute;top:5px;height:10px;background:rgba(255,138,61,.22);border-radius:1px}
-.lane .span{position:absolute;bottom:4px;height:6px;border-radius:1px;background:var(--c);opacity:.4}
-.tcur{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1.5px solid var(--paper);opacity:.75;pointer-events:none;z-index:4}
-/* the preview's time, its slider lined up with the tracks (the thumb's centre sits on the clock) */
+.lane .hdl{position:absolute;top:0;height:20px;width:26px;margin-left:-13px;z-index:3;cursor:ew-resize;touch-action:none;display:grid;place-items:center}
+.lane .hdl::before{content:"";width:6px;height:16px;border-radius:1px;background:var(--warm);box-shadow:0 0 0 2px var(--ink)}
+.lane .clip{position:absolute;top:30px;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--c);border:2px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
+.lane .clip:nth-of-type(3n){top:25px} .lane .clip:nth-of-type(3n+1){top:35px}
+.lane .clip:hover{transform:scale(1.3)}
+/* a path slider: the route at T, from the breach (left) to the keep (right), on one scale for every row. Shaded where a
+   seen tower reaches, a deck where a planned bridge is; the group's band from its rear unit to its front, a tick per
+   unit; the units still to leave wait at the left end, the ones at the keep stack at the right. Drag it along. */
+.pth{position:relative;height:46px;border-radius:var(--r);border:1px solid var(--line);background:var(--slate);cursor:grab;touch-action:none;overflow:hidden}
+.pth.sel{border-color:color-mix(in srgb,var(--side) 60%,transparent)}
+.pth .rail{position:absolute;left:0;right:0;bottom:14px;height:2px;background:var(--line-2)}
+.pth .fire{position:absolute;bottom:7px;height:16px;background:rgba(79,214,238,.12)}
+.pth .brk{position:absolute;bottom:10px;width:9px;height:9px;margin-left:-4.5px;background:var(--warm);border:1.5px solid #ffd27a;box-sizing:border-box;z-index:1}
+.pth .band{position:absolute;bottom:9px;height:12px;border-radius:2px;background:var(--c);opacity:.32}
+.pth .tk{position:absolute;bottom:7px;width:2px;height:16px;margin-left:-1px;border-radius:1px;background:var(--c);z-index:2}
+.pth.sap .tk{bottom:11px;width:9px;height:9px;margin-left:-4.5px;border-radius:1px;transform:rotate(45deg);border:1.5px solid var(--ink)}
+.pth .tk.fail{background:var(--muted)}
+.pth .tk.used{opacity:.4}
+.pth .stubbar,.pth .keepbar{position:absolute;bottom:9px;width:5px;height:12px;border-radius:1px;background:var(--c);opacity:.6}
+.pth .stubbar{left:0} .pth .keepbar{right:0;background:var(--keep)}
+.pth .stub,.pth .atk{position:absolute;top:4px;font:500 9.5px/1 var(--f-ui);letter-spacing:.04em;color:var(--muted);white-space:nowrap}
+.pth .stub{left:5px} .pth .atk{right:5px;color:var(--keep)}
+/* where the group was before the last change, fading out */
+.pth .was{position:absolute;inset:0;opacity:0;pointer-events:none}
+.pth .was .band{background:none;border:1px solid var(--c);opacity:1}
+.pth .was.go{animation:wasfade var(--fade,1s) linear forwards}
+@keyframes wasfade{from{opacity:.55}to{opacity:0}}
+/* the preview's time: play, T and the slider (0-60 s), above the rows */
+.scmaster{display:grid;grid-template-columns:96px minmax(0,1fr);gap:6px 10px;align-items:center}
 .sclbl{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
 .scbar{min-width:0}
-.scbar input{-webkit-appearance:none;appearance:none;display:block;width:calc(100% + 16px);margin:0 -8px;height:24px;background:transparent;cursor:pointer;touch-action:pan-y}
+.scbar input{-webkit-appearance:none;appearance:none;display:block;width:100%;margin:0;height:24px;background:transparent;cursor:pointer;touch-action:pan-y}
 .scbar input::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line-2)}
 .scbar input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--side);border:2px solid var(--ink)}
 .scbar input::-moz-range-track{height:4px;border-radius:2px;background:var(--line-2)}
 .scbar input::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--side);border:2px solid var(--ink)}
-.lane .hdl{position:absolute;top:0;height:20px;width:26px;margin-left:-13px;z-index:3;cursor:ew-resize;touch-action:none;display:grid;place-items:center}
-.lane .hdl::before{content:"";width:6px;height:16px;border-radius:1px;background:var(--warm);box-shadow:0 0 0 2px var(--ink)}
-.lane .clip{position:absolute;top:29px;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--c);border:2px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
-.lane .clip:nth-of-type(3n){top:24px} .lane .clip:nth-of-type(3n+1){top:34px}
-.lane .clip:hover{transform:scale(1.3)}
 /* the wave scrubber: play and T beside the time slider, the bridge toggle; a track's label picks its group on the map */
 .scrow{display:flex;align-items:center;gap:10px;min-width:0}
 .scplay{flex:none;width:32px;padding:0;display:grid;place-items:center}
@@ -384,8 +407,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:left;cursor:pointer;border-radius:var(--r)}
 .trk-lbl[aria-pressed=true] .rname{color:var(--side)}
 .trk-lbl[aria-pressed=true] .ico{outline:1px solid var(--side);outline-offset:2px;border-radius:2px}
-/* a sapper's track: one diamond to slide */
-.lane.sap{height:40px}
+/* a sapper's row: one diamond to slide, one tick on the route */
+.lane.sap,.pth.sap{height:34px}
 .lane.sap .clip,.lane.sap .clip:nth-of-type(n){top:16px;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:2px;transform:rotate(45deg)}
 .lane.sap .clip:hover{transform:rotate(45deg) scale(1.3)}
 .tl-ruler{display:flex;justify-content:space-between;font:500 10px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
@@ -584,12 +607,16 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
   .breach .fine{display:none}
   .tiles .tile{padding:6px 9px;gap:6px}
   .tile .val{font-size:20px}
-  .tl-grid{grid-template-columns:76px minmax(0,1fr);gap:5px 8px}
+  .tl-grid{grid-template-columns:58px minmax(0,4fr) minmax(0,6fr);gap:5px 6px}
+  .scmaster{grid-template-columns:58px minmax(0,1fr);gap:5px 6px}
   .trk-lbl{grid-template-columns:minmax(0,1fr);gap:5px}
   .trk-lbl .ico{display:none} /* the dots' colour tells the tracks apart, and the name needs the room */
-  .lane{height:50px}
-  .lane.sap{height:40px}
-  .tl-dens{height:24px}
+  .trk-lbl .rsub{display:none}
+  .trk-lbl .rname{font-size:12px}
+  .lane,.pth{height:46px}
+  .lane.sap,.pth.sap{height:34px}
+  .tl-dens,.pth-head{height:24px}
+  .pth-head span{display:none}
   .sumcell b{font-size:20px}
   .sodesc{font-size:12px}
   #toast{top:6px;bottom:auto;transform:translate(-50%,-6px)}
@@ -651,7 +678,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
   .back,.ready{min-height:44px}
   .tile .val{font-size:19px}
   .breach .fine{display:none}
-  .lane{height:48px} .tl-dens{height:22px}
+  .lane,.pth{height:44px} .tl-dens,.pth-head{height:22px}
 }
 /* the wave speed control stays reachable on small screens */
 @media (orientation:portrait),(max-width:720px),(orientation:landscape) and (max-height:520px){
@@ -756,7 +783,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v20</p>
+        <p class="tagline">Two Player Tower Defence · v20.1</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -791,8 +818,8 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
         <h2>Army</h2>
         <p>Up to four permanent designs; units that die come back next wave. Health, speed, armor, regeneration and resistance multiply the price, and above 60 coins a surcharge applies, so one giant unit costs more than its parts. Regeneration only heals out of fire, and resistances cut one kind of damage by 60%.</p>
         <div class="callout"><p><code>15 × health × speed × armor × regen × resist</code></p></div>
-        <p>On the timeline each design is a track and each unit a dot. Units leave within the first 20 seconds; the bar under each track shows when that wave is on the map, and dragging a whole track moves the wave, so two can meet where you want them. Bunched units overwhelm single-target towers; fewer, tougher units in a looser wave beat splash.</p>
-        <p>Above the tracks, a time slider previews the wave on the defense you saw: scrub to any moment and every unit and sapper shows where it will be. Pause, drag a group along the route, and its release time moves so it’s there at that moment.</p>
+        <p>On the timeline each design is a row. Its track covers the 20 seconds when units can leave, one dot per unit: drag its tab to spread the group out. Bunched units overwhelm single-target towers; fewer, tougher units in a looser wave beat splash.</p>
+        <p>Above the rows, a time slider previews the wave on the defense you saw: scrub to any moment and every unit and sapper shows where it will be. Beside each track, a bar for the route shows where that group is then. Drag the group along it and its release time moves so it’s there at that moment; line the bars up to make groups meet.</p>
       </section>
 
       <section>
@@ -850,7 +877,7 @@ button.trk-lbl{padding:2px 0;border:0;background:none;color:inherit;text-align:l
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v20</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v20.1</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -976,9 +1003,8 @@ const RULES = {
   // rate (one per TS.rate step, 4/s down to 0.4/s), clamped to 0-100%. A miss is drawn missOffset cells beside the target.
   rateAcc: [-8, -5, -2, 0, 3, 6], missOffset: 0.3,
   // the wave scrubber (attacker's Wave step): a preview from 0 to planMax seconds in scrubStep steps, sampled every
-  // scrubStep; a dot can be grabbed within scrubGrab px on touch (half that with a mouse); after a drag the old
-  // positions fade over scrubFade seconds
-  planMax: 60, scrubStep: 0.1, scrubGrab: 24, scrubFade: 1,
+  // scrubStep; after a change the old positions fade over scrubFade seconds
+  planMax: 60, scrubStep: 0.1, scrubFade: 1,
   // build helpers (they never change a wave): hot tiles suggest up to hintSetSize walls, worked out in slices of
   // hintSliceMs between frames; a test run starts at testSpeed× (1×, 5× and 10× while it runs)
   hintSetSize: 3, hintSliceMs: 8, testSpeed: 5,
@@ -2289,7 +2315,7 @@ const DEF_STEPS = [
 const ATK_STEPS = [
   { name: 'Army', hint: 'Choose which units march.' },
   { name: 'Sabotage', hint: 'Optional: send sappers to bridge a wall or knock out a tower.' },
-  { name: 'Wave', hint: 'Time each unit and sapper. Scrub the preview, or drag a group along the route on the map.' },
+  { name: 'Wave', hint: 'Time each unit and sapper. Pick a moment, then drag each group along its route bar to where it should be.' },
   { name: 'Ready', hint: 'Check your plan, then send it.' },
 ];
 const A_ARMY = 0, A_SABO = 1, A_WAVE = 2, A_READY = 3;
@@ -2303,7 +2329,7 @@ const PHASE_UI = {
 };
 function setPhase(p) {
   S.phase = p; S.step = 0; S.sel = null; pending = -1; pendingRemove = -1; drag = null; S.confirmEmpty = false; saboMode = '';
-  scrub.playing = false; scrub.drag = null; document.body.classList.remove('dragging');
+  scrub.playing = false; tlDrag = null; document.body.classList.remove('dragging');
   if (p === 'defend') S.tool = DEF_STEPS[0].tool;
   clearTimeout(toastTimer); el.toast.className = '';
   const ui = PHASE_UI[p];
@@ -2331,7 +2357,7 @@ function goStep(n) {
   S.step = clamp(n, 0, steps.length - 1);
   S.sel = null; pending = -1; pendingRemove = -1;
   if (S.phase === 'defend') S.tool = DEF_STEPS[S.step].tool;
-  if (S.phase === 'attack') { const Z = scrubState(); Z.playing = false; Z.drag = null; if (S.step === A_WAVE) Z.T = 0; } // the preview opens at 0 s
+  if (S.phase === 'attack') { const Z = scrubState(); Z.playing = false; tlDrag = null; if (S.step === A_WAVE) Z.T = 0; } // the preview opens at 0 s
   refreshUI();
 }
 function startRound() {
@@ -4418,49 +4444,57 @@ function rosterHTML() {
     </div>`;
   }).join('');
 }
-// Each army design is a track of dots; each planned sabotage is a track with one dot, its sapper.
+// One row per army design and per planned sabotage's sapper: its name, a spread track for when its units leave (the
+// release window) and a path slider for where it is on the route at the preview's time T.
 function timelineHTML() {
   const active = S.designs.map((d, i) => ({ d, i })).filter(x => x.d.count > 0), saps = [...S.charges];
   if (!active.length && !saps.length) return '<p class="note show">Your army is empty. Add units in step 1, then come back here to arrange them.</p>';
-  const ticks = Array.from({ length: Math.floor(RULES.planMax / 10) + 1 }, (_, k) => `<span>${k * 10}s</span>`).join('');
-  return `<div class="tl-head"><span class="tl-title">Wave timeline</span><span class="tl-len">${RULES.planMax} seconds</span>
+  const W = RULES.waveLen, ticks = [0, 0.25, 0.5, 0.75, 1].map(f => `<span>${fmtNum(f * W)}s</span>`).join('');
+  const pth = (g, color, sap) => `<div class="pth${sap ? ' sap' : ''}" data-g="${g}" style="--c:${color}"><i class="rail"></i><span class="mk"></span><span class="was"></span><span class="dyn"></span></div>`;
+  const sapColor = c => (c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)');
+  return `<div class="tl-head"><span class="tl-title">Wave timeline</span><span class="tl-len">${W} seconds</span>
       <button class="mini" data-act="even">Even</button><button class="mini" data-act="stagger">One after another</button><button class="mini" data-act="rush">All at once</button></div>
     <div class="scrow" id="scrub-br" hidden><span class="altitle">Plan with bridge</span><div class="seg scseg" role="group" aria-label="Plan with bridge"><button data-lands="1" aria-pressed="true">Lands</button><button data-lands="0" aria-pressed="false">Fails</button></div></div>
-    <div class="tl-grid" style="--rel:${RULES.waveLen / RULES.planMax * 100}%;--tick:${1000 / RULES.planMax}%">
+    <div class="scmaster">
       <div class="sclbl"><button class="mini scplay" id="scrub-play" data-act="scrub-play" aria-pressed="false" aria-label="Play the preview">${ICON.play}</button><span class="sct" id="scrub-lbl">T = 0.0 s</span></div>
       <div class="scbar" id="a-scrub"><input type="range" id="scrub-t" min="0" max="${RULES.planMax}" step="${RULES.scrubStep}" value="0" aria-label="Preview time"></div>
-      <div class="tl-peaklbl" id="tl-peak"></div>
-      <div class="tl-dens" id="tl-dens">${'<i></i>'.repeat(RULES.planMax)}<b class="tcur"></b></div>
-      ${active.map(({ d, i }) => `<button class="trk-lbl" data-trk="d${i}" aria-pressed="false"><span class="ico">${unitSVG(d)}</span><span class="rmain"><span class="rname">${d.name}</span><span class="rsub"><span id="trk-sub-${i}"></span><span class="trk-wait"></span></span></span></button>
-        <div class="lane" data-i="${i}"><i class="rng"></i><i class="span" style="--c:${d.color}"></i>${Array.from({ length: d.count }, (_, k) => `<span class="clip" data-k="${k}" style="--c:${d.color}"></span>`).join('')}<span class="hdl s" data-h="s" aria-label="Start of ${d.name}"></span><span class="hdl e" data-h="e" aria-label="End of ${d.name}"></span><b class="tcur"></b></div>`).join('')}
-      ${saps.map(([cell, c]) => `<button class="trk-lbl" data-trk="s${cell}" aria-pressed="false"><span class="ico ${c.kind === 'bridge' ? 'bridge' : 'jam'}">${c.kind === 'bridge' ? ICON.bridge : ICON.jam}</span><span class="rmain"><span class="rname">${c.kind === 'bridge' ? 'Bridge' : 'Knock-out'}</span><span class="rsub" id="sap-sub-${cell}"></span></span></button>
-        <div class="lane sap" data-sap="${cell}"><i class="span" style="--c:${c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)'}"></i><span class="clip" data-k="0" style="--c:${c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)'}" aria-label="Sapper"></span><b class="tcur"></b></div>`).join('')}
-      <span></span><div class="tl-ruler">${ticks}</div>
     </div>
-    <p class="note show">Drag a wave to move it, its tabs to squeeze it, or one dot; units leave within the first ${RULES.waveLen} s. The bar under each wave is when it’s on the map: set the time to see everyone there, and drag a dot on the map to move its group.${saps.length ? ' Units ahead of a sapper draw the fire.' : ''}</p>`;
+    <div class="tl-grid" style="--fade:${RULES.scrubFade}s">
+      <div class="tl-peaklbl" id="tl-peak"></div>
+      <div class="tl-dens" id="tl-dens">${'<i></i>'.repeat(20)}</div>
+      <div class="pth-head"><span>On the route at T</span><b id="pth-len"></b></div>
+      ${active.map(({ d, i }) => `<button class="trk-lbl" data-trk="d${i}" aria-pressed="false"><span class="ico">${unitSVG(d)}</span><span class="rmain"><span class="rname">${d.name}</span><span class="rsub" id="trk-sub-${i}"></span></span></button>
+        <div class="lane" data-i="${i}"><i class="rng"></i>${Array.from({ length: d.count }, (_, k) => `<span class="clip" data-k="${k}" style="--c:${d.color}"></span>`).join('')}<span class="hdl e" data-h="e" aria-label="Spread of ${d.name}"></span></div>
+        ${pth('d' + i, d.color)}`).join('')}
+      ${saps.map(([cell, c]) => `<button class="trk-lbl" data-trk="s${cell}" aria-pressed="false"><span class="ico ${c.kind === 'bridge' ? 'bridge' : 'jam'}">${c.kind === 'bridge' ? ICON.bridge : ICON.jam}</span><span class="rmain"><span class="rname">${c.kind === 'bridge' ? 'Bridge' : 'Knock-out'}</span><span class="rsub" id="sap-sub-${cell}"></span></span></button>
+        <div class="lane sap" data-sap="${cell}"><span class="clip" data-k="0" style="--c:${sapColor(c)}" aria-label="Sapper"></span></div>
+        ${pth('s' + cell, sapColor(c), true)}`).join('')}
+      <span></span><div class="tl-ruler">${ticks}</div><div class="tl-ruler"><span>Entry</span><span>Keep</span></div>
+    </div>
+    <p class="note show">Left, when units leave: slide a band, or drag its tab to spread the group. Right, where each group is at T: drag it along the route and its release time follows.${saps.length ? ' Units ahead of a sapper draw the fire.' : ''}</p>`;
 }
 /* ---------- the wave scrubber ----------
-   A time slider over the Wave step's tracks previews the planned wave on the defense the attacker saw: the ghost wave
-   (ghostRun) is played once and recorded, and scrubbing reads its samples. At any paused moment T a dot on the board
-   can be dragged along the route: the grabbed unit's release time becomes T minus the time it takes to walk to the
-   point it was dropped on, and its whole group (a design, or one sapper) moves with it, keeping its spacing, within the
-   0-20 s release window. Dropped on the entry tile or behind it, it releases at T. Each unit's recorded walk is shifted
-   in time by how far its release has moved since the recording, so the board follows the tracks at once; the ghost
-   wave runs again once the plan has changed and no drag is under way. Nothing remembers an arrangement: the latest
-   drag simply rewrites release times. Local planning only: only the timeline goes online, in the plan. */
-const scrub = { S: null, round: 0, T: 0, playing: false, lands: true, sel: '', key: '', data: null, drag: null, fade: null };
+   A time slider over the Wave step's rows previews the planned wave on the defense the attacker saw: the ghost wave
+   (ghostRun) is played once and recorded, and scrubbing reads its samples. Each row's path slider shows where its group
+   is at T; at a paused T the group can be dragged along it: the front unit's release time becomes T minus the time it
+   takes to walk to where it was dropped, and the whole group (a design, or one sapper) moves with it, keeping its
+   spread, within the 0-20 s release window. Dropped at the entry, the front releases at T. Each unit's recorded walk is
+   shifted in time by how far its release has moved since the recording, so the rows and the board follow at once; the
+   ghost wave runs again once the plan has changed and no drag is under way. Nothing remembers an arrangement: the
+   latest drag simply rewrites release times. The board only shows the preview. Local planning only: only the timeline
+   goes online, in the plan. */
+const scrub = { S: null, round: 0, T: 0, playing: false, lands: true, sel: '', key: '', data: null, fade: null, prow: {} };
 function scrubState() {
-  if (scrub.S !== S || scrub.round !== S.round) Object.assign(scrub, { S, round: S.round, T: 0, playing: false, lands: true, sel: '', key: '', data: null, drag: null, fade: null });
+  if (scrub.S !== S || scrub.round !== S.round) Object.assign(scrub, { S, round: S.round, T: 0, playing: false, lands: true, sel: '', key: '', data: null, fade: null, prow: {} });
   return scrub;
 }
 const ghostKey = () => JSON.stringify([S.seenVer, [...S.bridges], S.designs.map(d => [d.hp, d.speed, d.armor, d.regen, d.resist, d.count, d.tl.s, d.tl.e, d.tl.pos]),
   [...S.charges].map(([i, c]) => [i, c.kind, c.t, c.at]), plannedBridges().length ? scrub.lands : null]);
 function ghostData() {
   const Z = scrubState(), key = ghostKey();
-  if (Z.key !== key && !Z.drag && !tlDrag) { // no rerun while something is being dragged: the samples shift instead
+  if (Z.key !== key && !tlDrag) { // no rerun while something is being dragged: the samples shift instead
     Z.key = key;
     Z.data = armyCount(S.designs) || S.charges.size ? ghostRun(Z.lands || !plannedBridges().length) : null;
-    Z.fresh = true; // the timeline's wave bars follow the new recording (see frame)
   }
   return Z.data;
 }
@@ -4497,18 +4531,18 @@ function ghostReach(r, D) {
     A = B;
   }
 }
-// The preview at the scrubber's time: the dots out on the route, the units already at the keep, how many of each
-// group are still to set out, and the route as it runs then (a bridge landing changes it).
+// The preview at the scrubber's time: the dots out on the route, the units already at the keep, the sappers already
+// used up, how many of each group are still to set out, and the route as it runs then (a bridge landing changes it).
 function scrubView() {
   const Z = scrubState(), D = ghostData();
   if (!D) return null;
-  const T = Z.T, P = S.designs.map(tlPositions), dots = [], keep = [], wait = {};
+  const T = Z.T, P = S.designs.map(tlPositions), dots = [], keep = [], used = [], wait = {};
   for (const r of D.units) {
     const sh = ghostShift(r, D, P);
     if (sh == null) continue;
     const at = ghostAt(r, T - sh);
     if (!at) { wait[r.g] = (wait[r.g] || 0) + 1; continue; }
-    if (at.done) { if (r.end === 'keep') keep.push({ r, sh }); continue; }
+    if (at.done) { if (r.end === 'keep') keep.push({ r, sh }); else used.push({ r, x: at.x, y: at.y, fail: T - sh >= r.tFail }); continue; }
     dots.push({ r, x: at.x, y: at.y, w: at.w, a: at.a, fail: T - sh >= r.tFail });
   }
   let route = D.routes[0].path;
@@ -4516,7 +4550,7 @@ function scrubView() {
     const by = D.units.find(r => r.sap === 'bridge' && r.cell === rt.by), sh = by ? ghostShift(by, D, P) || 0 : 0;
     if (T >= rt.t + sh) route = rt.path;
   }
-  return { T, dots, keep, wait, route };
+  return { T, dots, keep, used, wait, route };
 }
 // The route as a line in walking order, from the breach to the keep, with the distance walked at each corner.
 function routeLine(path) {
@@ -4535,40 +4569,86 @@ function snapRoute(L, x, y) {
   }
   return D;
 }
+// The point D along the line.
+function routeAt(L, D) {
+  let k = 1;
+  while (k < L.pts.length - 1 && L.at[k] < D) k++;
+  const [ax, ay] = L.pts[k - 1], [bx, by] = L.pts[k], len = L.at[k] - L.at[k - 1], f = len ? clamp((D - L.at[k - 1]) / len, 0, 1) : 0;
+  return [ax + (bx - ax) * f, ay + (by - ay) * f];
+}
 const ENTRY_D = 1.05 + 0.5; // distance walked to the far side of the entry tile
-// The dots the pointer (world point p) can grab: within scrubGrab px on touch, half that with a mouse. Of several, one
-// of the selected track's group, else the one nearest the keep; the stack at the keep counts as the keep.
-function scrubHit(p, pt) {
-  const V = scrubView();
-  if (!V) return null;
-  const R = (pt === 'mouse' ? RULES.scrubGrab / 2 : RULES.scrubGrab) / view.cs, cand = [];
-  for (const d of V.dots) if (hyp(d.x + d.r.ox - p[0], d.y + d.r.oy - p[1]) <= Math.max(R, d.r.r * 1.3)) cand.push({ r: d.r, w: d.w });
-  if (hyp(KEEP_DOT[0] - p[0], KEEP_DOT[1] - p[1]) <= R) for (const { r, sh } of V.keep) cand.push({ r, w: r.we + (r.tEnd + sh) * 1e-6 }); // the latest arrival on top
-  if (!cand.length) return null;
-  const mine = cand.filter(c => c.r.g === scrub.sel);
-  return (mine.length ? mine : cand).reduce((a, c) => (c.w > a.w ? c : a)).r;
+// What every path slider shares for the route at T: its line and length, the stretches a seen tower reaches and where
+// the planned bridges are (their deck once on the route, else their sapper's tile).
+let pathCache = { key: '', v: 0 };
+function pathMarks(route) {
+  const key = String(route) + '|' + S.seenVer + '|' + [...S.charges].filter(([, c]) => c.kind === 'bridge').map(([i, c]) => i + ':' + c.at).join(',');
+  if (pathCache.key === key) return pathCache;
+  const line = routeLine(route), L = line.at[line.at.length - 1], pc = D => (clamp(D / L, 0, 1) * 100).toFixed(2) + '%';
+  const towers = [];
+  S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') { const [x, y] = center(i), R = TS.range.steps[g.cfg.range]; towers.push([x, y, R * R]); } });
+  const hot = D => { const [x, y] = routeAt(line, D); return towers.some(([tx, ty, r2]) => (x - tx) * (x - tx) + (y - ty) * (y - ty) <= r2); };
+  let mk = '', a = -1;
+  for (let k = 0, n = Math.ceil(L / 0.1); k <= n; k++) {
+    const D = Math.min(L, k * 0.1), h = hot(D);
+    if (h && a < 0) a = D;
+    if (a >= 0 && (!h || k === n)) { mk += `<i class="fire" style="left:${pc(a)};width:${pc(D - a)}"></i>`; a = -1; }
+  }
+  for (const [cell, c] of S.charges) {
+    if (c.kind !== 'bridge') continue;
+    const j = route.indexOf(cell), k = j >= 0 ? j : route.indexOf(c.at);
+    if (k >= 0) mk += `<i class="brk" style="left:${pc(line.at[k + 1])}"></i>`;
+  }
+  return (pathCache = { key, v: pathCache.v + 1, line, L, mk });
 }
-function scrubGrab(p, pt) {
-  const r = scrubHit(p, pt);
-  if (!r) return false;
-  const Z = scrubState(), V = scrubView();
-  Z.playing = false; Z.sel = r.g; Z.fade = null;
-  Z.drag = { r, moved: false, before: V.dots.map(d => ({ x: d.x + d.r.ox, y: d.y + d.r.oy, rad: d.r.r, color: ghostColor(d.r) })) };
-  document.body.classList.add('dragging');
-  refreshUI();
-  return true;
+// Each group on the route at T: its units' places (sorted, rear first), the sappers used up, how many wait at the
+// entry and how many are at the keep.
+function pathRows(V, M) {
+  const rows = {}, row = g => rows[g] || (rows[g] = { on: [], used: [], wait: V.wait[g] || 0, keep: 0 });
+  for (const d of V.dots) row(d.r.g).on.push({ D: snapRoute(M.line, d.x, d.y), fail: d.fail });
+  for (const u of V.used) row(u.r.g).used.push({ D: snapRoute(M.line, u.x, u.y), fail: u.fail });
+  for (const { r } of V.keep) row(r.g).keep++;
+  for (const g in V.wait) row(g);
+  for (const g in rows) rows[g].on.sort((a, b) => a.D - b.D);
+  return rows;
 }
-// The grabbed unit is to be at world point (x, y) at T: its release becomes T minus its walk there, and its group
-// moves by as much, within 0-20 s.
-function scrubMove(x, y) {
-  const Z = scrub, G = Z.drag, V = G && scrubView();
-  if (!V) return;
-  const r = G.r, W = RULES.waveLen, D = snapRoute(routeLine(V.route), x, y);
-  const want = D <= ENTRY_D ? Z.T / W : r.p + (Z.T - ghostReach(r, D)) / W; // on the entry tile or behind it: released at T
-  const now = r.sap ? (S.charges.get(r.cell) || {}).t : S.designs[r.di] ? tlPositions(S.designs[r.di])[r.k] : null;
-  if (now == null || !shiftGroup(r.g, want - now)) return;
-  G.moved = true;
-  updateTimeline(); renderScrub();
+// The group's front unit (the first one released) and where it is on the route at T: at the entry while it waits, at
+// the keep once it's there.
+function frontOf(g, V) {
+  const D = ghostData();
+  if (!D || !V) return null;
+  let r;
+  if (g[0] === 's') r = D.units.find(u => u.g === g);
+  else {
+    const d = S.designs[+g.slice(1)]; if (!d) return null;
+    const P = tlPositions(d); let k = 0;
+    P.forEach((p, j) => { if (p < P[k]) k = j; });
+    r = D.units.find(u => u.g === g && u.k === k);
+  }
+  const sh = r && ghostShift(r, D, S.designs.map(tlPositions));
+  if (sh == null) return null;
+  const M = pathMarks(V.route), at = ghostAt(r, V.T - sh);
+  return { r, D: !at ? 0 : at.done && r.end === 'keep' ? M.L : snapRoute(M.line, at.x, at.y) };
+}
+function renderPaths(V) {
+  const root = $('#tl');
+  if (!root) return;
+  const Z = scrub, M = V && pathMarks(V.route), rows = V ? pathRows(V, M) : {}, pc = D => (clamp(D / M.L, 0, 1) * 100).toFixed(2) + '%';
+  const len = $('#pth-len'); if (len) len.textContent = V ? `${V.route.length} cells` : '';
+  for (const el of root.querySelectorAll('.pth')) {
+    const g = el.dataset.g, R = rows[g], mk = el.querySelector('.mk');
+    el.classList.toggle('sel', g === Z.sel);
+    if (+mk.dataset.v !== (M ? M.v : 0)) { mk.dataset.v = M ? M.v : 0; mk.innerHTML = M ? M.mk : ''; }
+    let body = '';
+    if (R) {
+      if (R.on.length > 1) body += `<i class="band" style="left:${pc(R.on[0].D)};width:${pc(R.on[R.on.length - 1].D - R.on[0].D)}"></i>`;
+      for (const p of R.on) body += `<i class="tk${p.fail ? ' fail' : ''}" style="left:${pc(p.D)}"></i>`;
+      for (const p of R.used) body += `<i class="tk used${p.fail ? ' fail' : ''}" style="left:${pc(p.D)}"></i>`;
+    }
+    Z.prow[g] = body; // what fades out after a change
+    const html = body + (R && R.wait ? `<i class="stubbar"></i><span class="stub">${g[0] === 's' ? 'waiting' : `+${R.wait} waiting`}</span>` : '')
+      + (R && R.keep ? `<i class="keepbar"></i><span class="atk">×${R.keep} at keep</span>` : '');
+    if (el.pathHTML !== html) { el.pathHTML = html; el.querySelector('.dyn').innerHTML = html; } // kept on the element: a rebuilt row starts empty
+  }
 }
 // Moves a group's release (a design, 'd' + index, or a sapper, 's' + cell) by dp, a share of the release window, keeping
 // its spread; the first unit can't leave before 0 s nor the last after it (a one-unit design's window stays inside
@@ -4584,14 +4664,21 @@ function shiftGroup(g, dp) {
   else d.tl = { s: clamp(d.tl.s + dp, 0, 1), e: clamp(d.tl.e + dp, 0, 1), pos: d.tl.pos ? d.tl.pos.map(q => clamp(q + dp, 0, 1)) : null };
   return dp;
 }
-function scrubEnd() {
-  const G = scrub.drag;
-  if (!G) return;
-  scrub.drag = null;
-  document.body.classList.remove('dragging');
-  if (G.moved) scrub.fade = { at: performance.now(), dots: G.before }; // where everything was, fading out
-  refreshUI(); // the ghost wave runs again, and a test result for the old timing goes
+// Where everything is at T before a change, and after it, fading out over scrubFade: the dots on the board and each
+// row's band and ticks.
+function fadeFrom() {
+  const V = scrubView();
+  return { dots: V ? V.dots.map(d => ({ x: d.x + d.r.ox, y: d.y + d.r.oy, rad: d.r.r, color: ghostColor(d.r) })) : [], rows: { ...scrub.prow } };
 }
+function fadeOut(before) {
+  scrub.fade = { at: performance.now(), dots: before.dots };
+  for (const el of document.querySelectorAll('#tl .pth')) {
+    const was = el.querySelector('.was'), old = before.rows[el.dataset.g] || '';
+    if (!old || old === scrub.prow[el.dataset.g]) continue;
+    was.innerHTML = old; was.classList.remove('go'); void was.offsetWidth; was.classList.add('go');
+  }
+}
+const timingKey = () => JSON.stringify([S.designs.map(d => d.tl), [...S.charges].map(([i, c]) => [i, c.t])]);
 const ghostColor = r => (r.sap ? (r.sap === 'bridge' ? '#ff8a3d' : '#a98bff') : (S.designs[r.di] || {}).color || '#ffb547');
 function renderScrub() {
   const root = $('#tl');
@@ -4604,14 +4691,10 @@ function renderScrub() {
     play.dataset.icon = icon; play.innerHTML = ICON[icon];
     play.setAttribute('aria-pressed', Z.playing); play.setAttribute('aria-label', Z.playing ? 'Pause the preview' : 'Play the preview');
   }
-  for (const c of root.querySelectorAll('.tcur')) c.style.left = Z.T / RULES.planMax * 100 + '%';
   $('#scrub-br').hidden = !plannedBridges().length;
   for (const b of root.querySelectorAll('[data-lands]')) b.setAttribute('aria-pressed', String((b.dataset.lands === '1') === Z.lands));
-  for (const b of root.querySelectorAll('[data-trk]')) {
-    const g = b.dataset.trk, n = V ? V.wait[g] || 0 : 0, w = b.querySelector('.trk-wait');
-    b.setAttribute('aria-pressed', String(g === Z.sel));
-    if (w) w.textContent = n ? ` · ${n} still to spawn` : '';
-  }
+  for (const b of root.querySelectorAll('[data-trk]')) b.setAttribute('aria-pressed', String(b.dataset.trk === Z.sel));
+  renderPaths(V);
 }
 /* Rough arrival times on the route as last seen, ignoring frost and the sabotage itself: walking starts 0.35 s into the
    wave, 1.05 cells outside the entry, and the keep is 0.95 cells past the exit. */
@@ -4629,38 +4712,10 @@ function sapEta(cell, c) {
   }
   return null;
 }
-// The timeline runs on the preview's clock (0 to planMax): releases sit in the first waveLen seconds, and under each
-// track a bar shows when that wave is on the map, from its first release to its last unit reaching the keep (to the
-// end of the preview if it doesn't). The row above counts the army's units on the map in each second.
-const tlX = sec => clamp(sec / RULES.planMax, 0, 1) * 100 + '%';
-function ghostTimes() {
-  const D = ghostData(), spans = {}, onMap = new Array(RULES.planMax).fill(0);
-  if (!D) return { spans, onMap };
-  const P = S.designs.map(tlPositions);
-  for (const r of D.units) {
-    const sh = ghostShift(r, D, P);
-    if (sh == null) continue;
-    const a = r.t0 + sh, b = r.tEnd + sh, sp = spans[r.g] || (spans[r.g] = [Infinity, -Infinity]);
-    sp[0] = Math.min(sp[0], a); sp[1] = Math.max(sp[1], b);
-    if (!r.sap) for (let k = Math.max(0, Math.ceil(a - 0.5)); k < RULES.planMax && k + 0.5 < b; k++) onMap[k]++;
-  }
-  return { spans, onMap };
-}
-function renderWaveBars() {
-  const root = $('#tl'); if (!root) return;
-  const { spans, onMap } = ghostTimes();
-  for (const lane of root.querySelectorAll('.lane')) {
-    const sp = spans[lane.dataset.sap != null ? 's' + lane.dataset.sap : 'd' + lane.dataset.i], bar = lane.querySelector('.span');
-    bar.hidden = !sp;
-    if (sp) { bar.style.left = tlX(sp[0]); bar.style.width = `calc(${tlX(Math.min(sp[1], RULES.planMax))} - ${tlX(sp[0])})`; }
-  }
-  const mx = Math.max(1, ...onMap), peak = Math.max(...onMap);
-  root.querySelectorAll('#tl-dens i').forEach((b, k) => { b.style.height = (onMap[k] / mx * 100) + '%'; b.classList.toggle('peak', onMap[k] === peak && peak > 0); });
-  const pk = $('#tl-peak'); if (pk) pk.innerHTML = `<b>${peak}</b>most on the map`;
-}
+// The spread tracks span the release window, 0 to waveLen seconds.
 function updateTimeline() {
   const root = $('#tl'); if (!root) return;
-  const T = RULES.waveLen, keepCells = pathLen(seenPath()) + 2, at = p => tlX(p * T);
+  const T = RULES.waveLen, keepCells = pathLen(seenPath()) + 2, at = p => clamp(p, 0, 1) * 100 + '%';
   for (const lane of root.querySelectorAll('.lane')) {
     if (lane.dataset.sap != null) {
       const cell = +lane.dataset.sap, c = S.charges.get(cell); if (!c) continue;
@@ -4672,8 +4727,7 @@ function updateTimeline() {
     const i = +lane.dataset.i, d = S.designs[i]; if (!d) continue;
     const pos = tlPositions(d);
     const rng = lane.querySelector('.rng');
-    rng.style.left = at(d.tl.s); rng.style.width = `calc(${at(d.tl.e)} - ${at(d.tl.s)})`;
-    lane.querySelector('.hdl.s').style.left = at(d.tl.s);
+    rng.style.left = at(d.tl.s); rng.style.width = at(d.tl.e - d.tl.s);
     lane.querySelector('.hdl.e').style.left = at(d.tl.e);
     lane.querySelectorAll('.clip').forEach((c, k) => { c.style.left = at(pos[k] ?? 0); });
     const sub = $('#trk-sub-' + i);
@@ -4682,25 +4736,30 @@ function updateTimeline() {
       sub.textContent = `×${d.count} · ${fmtNum(d.tl.s * T)}–${fmtNum(d.tl.e * T)}s${S.seenRound ? ` · keep ~${fmtNum(a)}${b - a >= 0.5 ? '–' + fmtNum(b) : ''}s` : ''}`;
     }
   }
-  renderWaveBars();
+  const bins = densityBins(S.designs), mx = Math.max(1, ...bins), peak = Math.max(...bins);
+  root.querySelectorAll('#tl-dens i').forEach((b, k) => { b.style.height = (bins[k] / mx * 100) + '%'; b.classList.toggle('peak', bins[k] === peak && peak > 0); });
+  const pk = $('#tl-peak'); if (pk) pk.innerHTML = `<b>${peak}</b>busiest second`;
 }
-// On a track: a tab stretches or squeezes the group, a dot moves one unit, anywhere else drags the whole wave (its
-// spread kept, within the release window). A sapper's track moves its sapper. The board follows as it moves.
+// On a spread track: the tab spreads the group (its front stays put), a dot moves one unit, anywhere else slides the
+// group (its spread kept, within the release window). A sapper's track slides its sapper. On a path slider: the group
+// moves along the route at T and its release time follows. Rows and board follow as it moves.
 let tlDrag = null;
-const tlAt = (lane, x) => { const r = lane.getBoundingClientRect(); return (x - r.left) / r.width * RULES.planMax / RULES.waveLen; }; // a share of the release window
+const tlAt = (lane, x) => { const r = lane.getBoundingClientRect(); return (x - r.left) / r.width; }; // a share of the release window
 function tlDown(e) {
+  const pth = e.target.closest('.pth');
+  if (pth) { pathDown(e, pth); return; }
   const lane = e.target.closest('.lane'); if (!lane) return;
-  const h = e.target.closest('.hdl, .clip'), f0 = tlAt(lane, e.clientX);
+  const h = e.target.closest('.hdl, .clip'), f0 = tlAt(lane, e.clientX), before = fadeFrom(), k0 = timingKey();
   if (lane.dataset.sap != null) { // a sapper: grab it anywhere on its track
     const c = S.charges.get(+lane.dataset.sap); if (!c) return;
     e.preventDefault();
-    tlDrag = { id: e.pointerId, lane, sap: +lane.dataset.sap, f0, t0: c.t, move: !h };
+    tlDrag = { id: e.pointerId, lane, sap: +lane.dataset.sap, f0, t0: c.t, move: !h, before, k0 };
     scrubState().sel = 's' + lane.dataset.sap;
   } else {
     const i = +lane.dataset.i, d = S.designs[i]; if (!d) return;
     e.preventDefault();
     const pos0 = tlPositions(d);
-    tlDrag = { id: e.pointerId, lane, i, kind: h ? h.dataset.h || 'clip' : 'move', k: h ? +h.dataset.k : -1, f0, s0: d.tl.s, e0: d.tl.e, pos0, custom: !!d.tl.pos };
+    tlDrag = { id: e.pointerId, lane, i, kind: h ? (h.dataset.h ? 'e' : 'clip') : 'move', k: h ? +h.dataset.k : -1, f0, s0: d.tl.s, e0: d.tl.e, pos0, custom: !!d.tl.pos, before, k0 };
     if (tlDrag.kind === 'clip') d.tl.pos = pos0.slice();
     scrubState().sel = 'd' + i;
   }
@@ -4708,32 +4767,59 @@ function tlDown(e) {
   document.body.classList.add('dragging');
   renderScrub();
 }
+function pathDown(e, el) {
+  const V = scrubView(), g = el.dataset.g, f = frontOf(g, V);
+  if (!f) return;
+  e.preventDefault();
+  const Z = scrubState();
+  Z.playing = false; Z.sel = g;
+  tlDrag = { id: e.pointerId, lane: el, kind: 'path', g, r: f.r, D0: f.D, x0: e.clientX, w: el.getBoundingClientRect().width, L: pathMarks(V.route).L, moved: false, before: fadeFrom(), k0: timingKey() };
+  try { el.setPointerCapture(e.pointerId); } catch (_) { /* optional */ }
+  document.body.classList.add('dragging');
+  renderScrub();
+}
+// The front unit is to be D cells along the route at T: its release becomes T minus its walk there (read off the ghost
+// wave), and its group moves by as much, within 0-20 s. At the entry it releases at T.
+function pathMove(G, x) {
+  if (!G.moved && Math.abs(x - G.x0) < 3) return; // a tap picks the group
+  G.moved = true;
+  const Z = scrub, r = G.r, W = RULES.waveLen, D = clamp(G.D0 + (x - G.x0) / G.w * G.L, 0, G.L);
+  const want = D <= ENTRY_D ? Z.T / W : r.p + (Z.T - ghostReach(r, D)) / W;
+  const now = r.sap ? (S.charges.get(r.cell) || {}).t : S.designs[r.di] ? tlPositions(S.designs[r.di])[r.k] : null;
+  if (now == null) return;
+  shiftGroup(G.g, want - now);
+  updateTimeline(); renderScrub();
+}
 function tlMove(e) {
   if (!tlDrag || e.pointerId !== tlDrag.id) return;
-  const D = tlDrag, raw = tlAt(D.lane, e.clientX), f = clamp(raw, 0, 1);
+  const D = tlDrag;
+  if (D.kind === 'path') { pathMove(D, e.clientX); return; }
+  const raw = tlAt(D.lane, e.clientX), f = clamp(raw, 0, 1);
   if (D.sap != null) {
     const c = S.charges.get(D.sap);
     if (c) { if (D.move) shiftGroup('s' + D.sap, D.t0 + raw - D.f0 - c.t); else c.t = f; }
-    updateTimeline(); return;
+    updateTimeline(); renderScrub(); return;
   }
   const d = S.designs[D.i];
   if (D.kind === 'move') shiftGroup('d' + D.i, D.s0 + raw - D.f0 - d.tl.s);
   else if (D.kind === 'clip') {
     d.tl.pos[D.k] = f;
     d.tl.s = Math.min(...d.tl.pos); d.tl.e = Math.max(...d.tl.pos);
-  } else {
-    if (D.kind === 's') d.tl.s = Math.min(f, d.tl.e); else d.tl.e = Math.max(f, d.tl.s);
+  } else { // the spread: the front stays where it is, the end moves, never past the window
+    d.tl.e = Math.max(f, d.tl.s);
     if (D.custom) {
       const w0 = D.e0 - D.s0;
       d.tl.pos = w0 > 1e-6 ? D.pos0.map(p => d.tl.s + (p - D.s0) / w0 * (d.tl.e - d.tl.s)) : null;
     }
   }
-  updateTimeline();
+  updateTimeline(); renderScrub();
 }
 function tlUp(e) {
   if (!tlDrag || e.pointerId !== tlDrag.id) return;
+  const D = tlDrag;
   tlDrag = null;
   document.body.classList.remove('dragging');
+  if (timingKey() !== D.k0) fadeOut(D.before); // where everything was at T fades out
   refreshUI(); // a test result for the old timing goes, and the scrubber's ghost wave runs again
 }
 // Step 2 offers two things, each on its own card: bridge a wall, or knock out a tower. Picking a card (or tapping a
@@ -5797,7 +5883,6 @@ function pressDefend(cell, pt) {
   return null;
 }
 function pressAttack(cell, p, pt) {
-  if (S.step === A_WAVE && scrubGrab(p, pt)) return 'scrub'; // a dot of the preview: drag its group along the route
   if (cell < 0) { if (S.sel) { S.sel = null; refreshUI(); } return null; }
   const g = S.seenGrid[cell];
   if (g && g.t === 'tower') { if (S.step === A_SABO && chargeStatus().ok) saboMode = 'tower'; selectTower(cell); return null; }
@@ -5869,10 +5954,8 @@ canvas.addEventListener('pointermove', e => {
   if (e.pointerType === 'mouse') {
     hoverType = 'mouse'; hover = cellOf(p);
     const g = S && S.phase === 'defend' && S.tool !== 'remove' && hover >= 0 ? S.grid[hover] : null;
-    canvas.style.cursor = drag && drag.mode === 'tower' ? 'grabbing' : g && g.t === 'tower' ? 'grab'
-      : !drag && S && S.phase === 'attack' && S.step === A_WAVE && scrubHit(p, 'mouse') ? 'grab' : ''; // a dot of the wave preview
+    canvas.style.cursor = drag && drag.mode === 'tower' ? 'grabbing' : g && g.t === 'tower' ? 'grab' : '';
   }
-  if (drag && e.pointerId === drag.id && drag.mode === 'scrub') { scrubMove(p[0], p[1]); return; }
   if (drag && e.pointerId === drag.id) {
     // a tower press becomes a drag only past a little travel, so a wobbly tap near a cell's edge still just opens its card
     if (drag.mode === 'tower' && !drag.moved && Math.hypot(p[0] - drag.p0[0], p[1] - drag.p0[1]) > (e.pointerType === 'mouse' ? 0.3 : 0.5)) drag.moved = true;
@@ -5885,7 +5968,7 @@ canvas.addEventListener('pointermove', e => {
     drag.last = p;
   }
 });
-const endDrag = e => { if (drag && e.pointerId === drag.id) { if (drag.mode === 'scrub') scrubEnd(); drag = null; } };
+const endDrag = e => { if (drag && e.pointerId === drag.id) drag = null; };
 canvas.addEventListener('pointerup', e => {
   const d = drag;
   endDrag(e);
@@ -5948,7 +6031,6 @@ function frame(now) {
       S.overT -= dt;
       if (S.overT <= 0) finishOver();
     }
-    if (scrub.fresh && scrub.S === S && S.phase === 'attack' && S.step === A_WAVE) { scrub.fresh = false; renderWaveBars(); }
     if (scrub.playing && scrub.S === S && S.phase === 'attack' && S.step === A_WAVE) { // the scrubber's preview plays at 1×
       scrub.T = Math.min(RULES.planMax, scrub.T + dt);
       if (scrub.T >= RULES.planMax) scrub.playing = false;
@@ -6050,6 +6132,13 @@ window.siegeline = {
   scrub: { // the attacker's wave scrubber (Wave step): its time, the bridge toggle, and the preview it shows
     get T() { return scrub.T; }, get lands() { return scrub.lands; }, get playing() { return scrub.playing; },
     view() { const V = scrubView(); return V && { dots: V.dots.map(d => ({ g: d.r.g, k: d.r.k, x: d.x, y: d.y, ox: d.r.ox, oy: d.r.oy, w: d.w, fail: d.fail })), keep: V.keep.length, wait: V.wait, route: V.route.slice() }; },
+    paths() { // the path sliders at T: the route's length (polyline and cells), each group's places, and its front unit
+      const V = scrubView(); if (!V) return null;
+      const M = pathMarks(V.route), rows = pathRows(V, M), out = {};
+      for (const g in rows) { const f = frontOf(g, V); out[g] = { on: rows[g].on.map(p => p.D), wait: rows[g].wait, keep: rows[g].keep, front: f && f.D, frontK: f && f.r.k }; }
+      return { L: M.L, cells: V.route.length, rows: out };
+    },
+    pointAt(D) { const V = scrubView(); return V ? routeAt(pathMarks(V.route).line, D) : null; }, // the world point D cells along the route at T
     routes() { const D = ghostData(); return D ? D.routes.map(r => ({ t: r.t, path: r.path.slice(), by: r.by })) : []; }, // the route, and when a bridge changes it
     saps() { const D = ghostData(); return D ? D.units.filter(r => r.sap).map(r => ({ cell: r.cell, kind: r.sap, t0: r.t0, tEnd: r.tEnd, end: r.end, tFail: r.tFail })) : []; },
   },

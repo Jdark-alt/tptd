@@ -175,16 +175,16 @@ with sync_playwright() as p:
     # drag one clip of the swarm track to the middle
     cb = page.locator('.lane[data-i="2"] .clip').nth(0).bounding_box()
     lb2 = page.locator('.lane[data-i="2"]').bounding_box()
-    drag(page, cb['x'] + cb['width'] / 2, cb['y'] + cb['height'] / 2, lb2['x'] + lb2['width'] * 0.5 / 3, cb['y'] + cb['height'] / 2)  # the tracks show 60 s; 10 s is a sixth
+    drag(page, cb['x'] + cb['width'] / 2, cb['y'] + cb['height'] / 2, lb2['x'] + lb2['width'] * 0.5, cb['y'] + cb['height'] / 2)  # the spread tracks span 20 s
     pos = S(page, 'S.designs[2].tl.pos')
     check(pos is not None and abs(pos[0] - 0.5) < 0.05, f'dragging a single dot places it ({pos[0] if pos else None})')
-    # the whole wave: drag the swarm's track (away from its tabs and dots) 5 s later; its spread stays
+    # the whole group: drag the swarm's track (away from its tab and dots) 5 s later; its spread stays
     s0, e0 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
-    y = lb2['y'] + lb2['height'] - 4
-    drag(page, lb2['x'] + lb2['width'] * 0.8, y, lb2['x'] + lb2['width'] * (0.8 + 5 / 60), y)
+    y = lb2['y'] + lb2['height'] - 3
+    drag(page, lb2['x'] + lb2['width'] * 0.6, y, lb2['x'] + lb2['width'] * 0.85, y)
     s1, e1 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
-    check(abs((s1 - s0) * 20 - 5) < 0.3 and abs((e1 - s1) - (e0 - s0)) < 1e-9, f'dragging a track moves the whole wave, keeping its spread ({s0 * 20:.1f}s → {s1 * 20:.1f}s)')
-    drag(page, lb2['x'] + lb2['width'] * 0.8, y, lb2['x'] + lb2['width'] * 0.99, y)
+    check(abs((s1 - s0) * 20 - 5) < 0.3 and abs((e1 - s1) - (e0 - s0)) < 1e-9, f'sliding a track moves the whole group, keeping its spread ({s0 * 20:.1f}s → {s1 * 20:.1f}s)')
+    drag(page, lb2['x'] + lb2['width'] * 0.6, y, lb2['x'] + lb2['width'] * 0.99, y)
     check(abs(S(page, 'Math.max(...window.siegeline.tlPositions(window.siegeline.state.designs[2]))') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s',
           f'a wave dragged past 20 s stops there ({toast(page)})')
     peak = page.inner_text('#tl-peak')
@@ -302,7 +302,7 @@ with sync_playwright() as p:
     check(S(page, 'S.step') == 2 and page.locator('.lane.sap').count() == 2 and 'there ~' in page.inner_text('#tl'), 'Wave step: a track for each sapper, with when it gets there')
     t0 = S(page, f'S.charges.get({bw}).t')
     db = page.locator(f'.lane.sap[data-sap="{bw}"] .clip').bounding_box(); lb = page.locator(f'.lane.sap[data-sap="{bw}"]').bounding_box()
-    drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25 / 3, db['y'] + db['height'] / 2)
+    drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25, db['y'] + db['height'] / 2)
     t1 = S(page, f'S.charges.get({bw}).t')
     check(abs(t1 - 0.25) < 0.03 and t1 != t0, f'dragging a sapper’s dot sets when it leaves ({t0:.3f} → {t1:.3f})')
     page.evaluate(f'() => {{ const S = window.siegeline.state; S.charges.get({bw}).t = 0.02; S.charges.get({T95}).t = 0.02; }}')
@@ -817,51 +817,101 @@ with sync_playwright() as p:
     hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
     check(S(page, 'S.last.misses') > 0 and S(page, 'S.phase') == 'summary', f'towers at 80% miss some shots in a real wave ({S(page, "S.last.misses")} missed)')
     page.click('#sum-next'); hand(page); page.click('#def-next'); page.click('#def-next'); hand(page)
+    for _ in range(2): page.click('.step.plus[data-i="1"]')  # two Brutes beside the Runners, for the path sliders
     # the attacker's card for a seen tower: Accuracy and Expected damage rows
     page.click('#atk-next'); page.wait_for_timeout(200)
     click_cell(page, 8, 9); page.wait_for_timeout(80)
     card = page.inner_text('#atk-ctx')
     check('72% per shot' in card and '18 per second · about 13 after misses' in card, f'a tower card shows its accuracy at 4 shots/s and expected damage ({card[:200]!r})')
     page.click('#atk-ctx [data-act=close]')
-    # spec tests 6-8: the scrubber on the Wave step (Runners only, no bridge planned)
+    # the scrubber and the v20.1 "Spread + Path planner" spec on the Wave step: Runners ×3 and Brutes ×2, no bridge yet
     page.click('#atk-next'); page.wait_for_timeout(250)
     check(page.is_visible('#a-scrub') and page.inner_text('#scrub-lbl') == 'T = 0.0 s' and page.is_hidden('#scrub-br') and page.locator('#tl [data-al]').count() == 0,
           'the Wave step opens the scrubber at T = 0 s, no bridge toggle without a bridge, and auto-align is gone')
-    check(S(page, 'window.siegeline.scrub.view().dots.length') == 0 and '3 still to spawn' in page.inner_text('#tl'), 'at 0 s nothing has set out: the track says 3 still to spawn')
-    set_slider(page, '#scrub-t', 10)
-    v = page.evaluate('() => window.siegeline.scrub.view()')
-    dots = sorted([d for d in v['dots'] if d['g'] == 'd0'], key=lambda d: d['w'])
-    check(len(dots) == 3 and page.inner_text('#scrub-lbl') == 'T = 10.0 s', f'at T = 10 s the three Runners are on the map ({len(dots)})')
-    route = v['route']; d = dots[1]
-    ci = min(range(len(route)), key=lambda k: (route[k] % COLS + 0.5 - d['x']) ** 2 + (route[k] // COLS + 0.5 - d['y']) ** 2)
-    tgt = route[max(2, ci - 3)]
-    tl0 = S(page, 'S.designs[0].tl')
-    x0, y0 = page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox']}, {d['y'] + d['oy']})")
-    drag(page, x0, y0, *page.evaluate(f'() => window.siegeline.cellToClient({tgt})')); page.wait_for_timeout(150)
-    tl1 = S(page, 'S.designs[0].tl')
-    v = page.evaluate('() => window.siegeline.scrub.view()')
-    d1 = next((x for x in v['dots'] if x['g'] == 'd0' and x['k'] == d['k']), None)
-    gap = ((d1['x'] - tgt % COLS - 0.5) ** 2 + (d1['y'] - tgt // COLS - 0.5) ** 2) ** 0.5 if d1 else 9
-    check(tl1['s'] > tl0['s'] and abs((tl1['e'] - tl1['s']) - (tl0['e'] - tl0['s'])) < 1e-9 and gap < 0.2,
-          f'spec test 6: a group dragged at T = 10 s keeps its spread ({tl0["e"] - tl0["s"]:.3f}) and the grabbed unit is {gap:.3f} cells from the drop point')
-    page.screenshot(path=f'{OUT}/v19_scrub.png')
-    # spec test 7: past 0 s or 20 s the group stops at the limit, and a toast says why
-    lead = max(v['dots'], key=lambda d: d['w'])
-    x0, y0 = page.evaluate(f"() => window.siegeline.worldToClient({lead['x'] + lead['ox']}, {lead['y'] + lead['oy']})")
-    drag(page, x0, y0, *page.evaluate(f'() => window.siegeline.cellToClient({route[-2]})')); page.wait_for_timeout(100)
-    check(abs(S(page, 'S.designs[0].tl.s')) < 1e-9 and toast(page) == 'Can’t release before 0 s', f'spec test 7: dragged too far ahead, the group stops at 0 s ({toast(page)})')
-    page.wait_for_timeout(150); set_slider(page, '#scrub-t', 40)
-    v = page.evaluate('() => window.siegeline.scrub.view()')
-    check(v['keep'] == 3 and not v['dots'], f'at 40 s all three are at the keep ({v["keep"]})')
-    drag(page, *page.evaluate('() => window.siegeline.worldToClient(16.33, 5.5)'), *page.evaluate(f'() => window.siegeline.cellToClient({route[3]})')); page.wait_for_timeout(100)
-    check(abs(S(page, 'S.designs[0].tl.e') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s', f'spec test 7: dragged back from the keep at 40 s, the group stops at 20 s ({toast(page)})')
-    # dropped on the entry tile at T: it releases at T, so it isn't out yet
-    page.wait_for_timeout(150); page.click('.mini[data-act=rush]'); page.wait_for_timeout(150); set_slider(page, '#scrub-t', 6)
-    v = page.evaluate('() => window.siegeline.scrub.view()'); d = max(v['dots'], key=lambda d: d['w'])
-    drag(page, *page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox']}, {d['y'] + d['oy']})"), *page.evaluate(f'() => window.siegeline.cellToClient({idx(0, 5)})')); page.wait_for_timeout(150)
-    pos = page.evaluate('() => window.siegeline.tlPositions(window.siegeline.state.designs[0])')
-    v = page.evaluate('() => window.siegeline.scrub.view()')
-    check(abs(pos[d['k']] * 20 - 6) < 1e-6 and not any(x['g'] == 'd0' and x['k'] == d['k'] for x in v['dots']), f'dropped on the entry tile at 6 s, it releases at 6 s and isn’t on the map yet ({pos[d["k"]] * 20:.2f}s)')
+    check(page.get_attribute('#scrub-t', 'max') == '60' and all(page.locator(f'.lane[data-i="{i}"]').count() == 1 and page.locator(f'.pth[data-g="d{i}"]').count() == 1 for i in (0, 1)),
+          'one master time slider (0–60 s), then a row per design with a spread track and a path slider')
+    check(S(page, 'window.siegeline.scrub.view().dots.length') == 0 and '+3 waiting' in page.inner_text('.pth[data-g="d0"]') and '+2 waiting' in page.inner_text('.pth[data-g="d1"]'),
+          'at 0 s nothing has set out: each path slider shows its group waiting at the entry')
+    paths = lambda: page.evaluate('() => window.siegeline.scrub.paths()')
+    pbox = lambda g: page.locator(f'.pth[data-g="{g}"]').bounding_box()
+    def px(box, D, L): return box['x'] + 1 + D / L * (box['width'] - 2)  # a route distance on a path slider (inside its 1 px border)
+    # spec test 1: the spread track spans the release window, 0-20 s; spreading keeps the front's release time
+    lane = page.locator('.lane[data-i="0"]').bounding_box(); y = lane['y'] + lane['height'] - 3
+    drag(page, lane['x'] + lane['width'] * 0.15, y, lane['x'] + lane['width'] * 0.40, y)
+    tl = S(page, 'S.designs[0].tl')
+    check(abs(tl['s'] - 0.25) < 0.02 and abs((tl['e'] - tl['s']) - 0.3) < 1e-9, f'sliding a band on its spread track moves its release time, spread kept ({tl["s"] * 20:.1f}–{tl["e"] * 20:.1f}s)')
+    s0 = tl['s']; hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box()
+    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] * 0.75, hb['y'] + hb['height'] / 2)
+    tl = S(page, 'S.designs[0].tl')
+    check(tl['s'] == s0 and abs(tl['e'] - 0.75) < 0.02, f'spec test 1: the tab changes the spread and keeps the front’s release time ({s0 * 20:.2f}s → {tl["s"] * 20:.2f}s, the end at {tl["e"] * 20:.1f}s)')
+    hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box()
+    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] + 60, hb['y'] + hb['height'] / 2)
+    tl = S(page, 'S.designs[0].tl'); dots = page.locator('.lane[data-i="0"] .clip'); first, last = dots.nth(0).bounding_box(), dots.nth(2).bounding_box()
+    check(tl['s'] == s0 and tl['e'] == 1 and abs(last['x'] + last['width'] / 2 - (lane['x'] + lane['width'] - 1)) < 3 and abs(first['x'] + first['width'] / 2 - (lane['x'] + 1 + (lane['width'] - 2) * s0)) < 3
+          and page.inner_text('.tl-ruler').split() == ['0s', '5s', '10s', '15s', '20s'],
+          f'spec test 1: the spread track spans 0–20 s, and a spread pulled past 20 s stops there (front {tl["s"] * 20:.1f}s, end {tl["e"] * 20:.1f}s)')
+    # spec test 3: with the same spread, the fast group's band is longer on the route than the slow one's
+    page.click('.mini[data-act=rush]'); page.wait_for_timeout(150); set_slider(page, '#scrub-t', 5); page.wait_for_timeout(50)
+    P = paths(); fast, slow = P['rows']['d0'], P['rows']['d1']
+    bf, bs = fast['on'][-1] - fast['on'][0], slow['on'][-1] - slow['on'][0]
+    wf, ws = page.locator('.pth[data-g="d0"] .band').bounding_box()['width'], page.locator('.pth[data-g="d1"] .band').bounding_box()['width']
+    check(len(fast['on']) == 3 and len(slow['on']) == 2 and bf > bs * 1.5 and wf > ws * 1.5,
+          f'spec test 3: with the same spread the Runners’ band is longer than the Brutes’ ({bf:.2f} vs {bs:.2f} cells, {wf:.0f} vs {ws:.0f} px)')
+    # spec test 5: every path slider shares one scale: the same route distance sits at the same x on every row
+    b0, b1 = pbox('d0'), pbox('d1')
+    marks = page.evaluate("() => [...document.querySelectorAll('#tl .pth .mk')].map(m => m.innerHTML)")
+    ticks = page.evaluate("() => Object.fromEntries([...document.querySelectorAll('#tl .pth')].map(p => [p.dataset.g, [...p.querySelectorAll('.dyn .tk')].map(t => { const r = t.getBoundingClientRect(); return r.left + r.width / 2; })]))")
+    off = max(abs(x - px(pbox(g), D, P['L'])) for g in ('d0', 'd1') for x, D in zip(ticks[g], P['rows'][g]['on']))
+    check(abs(b0['x'] - b1['x']) < 0.5 and abs(b0['width'] - b1['width']) < 0.5 and len(set(marks)) == 1 and 'fire' in marks[0] and off < 1.5,
+          f'spec test 5: every path slider has the same place, width and tower-range shading, and each unit sits at its route distance on that scale (off by {off:.2f} px)')
+    page.screenshot(path=f'{OUT}/v201_rows.png')
+    # spec test 2: a path drag at T = 10 s puts the front unit within 0.2 cells of the drop point, its spread unchanged
+    set_slider(page, '#scrub-t', 10); page.wait_for_timeout(50)
+    P = paths(); f0, L = P['rows']['d0']['front'], P['L']; box = pbox('d0'); y = box['y'] + box['height'] - 15
+    tl0 = S(page, 'S.designs[0].tl'); x0 = px(box, f0, L); dx = -box['width'] * 0.2
+    drag(page, x0, y, x0 + dx, y); page.wait_for_timeout(150)
+    want = f0 + dx / box['width'] * L
+    tl1 = S(page, 'S.designs[0].tl'); P1 = paths(); v = page.evaluate('() => window.siegeline.scrub.view()')
+    d = next((x for x in v['dots'] if x['g'] == 'd0' and x['k'] == P1['rows']['d0']['frontK']), None)
+    wx, wy = page.evaluate(f'() => window.siegeline.scrub.pointAt({want})')
+    gap = ((d['x'] - wx) ** 2 + (d['y'] - wy) ** 2) ** 0.5 if d else 9
+    check(tl1['s'] > tl0['s'] and abs((tl1['e'] - tl1['s']) - (tl0['e'] - tl0['s'])) < 1e-9 and gap < 0.2 and abs(P1['rows']['d0']['front'] - want) < 0.2,
+          f'spec test 2: dragged along its path slider at T = 10 s, the Runners’ front unit is {gap:.3f} cells from the drop point ({f0:.1f} → {want:.1f} of {L:.1f}), spread kept ({(tl1["e"] - tl1["s"]) * 20:.2f}s)')
+    check(page.evaluate("() => document.querySelector('.pth[data-g=\"d0\"] .was').classList.contains('go')"),
+          'after a path drag the group’s old place fades out on its path slider')
+    page.screenshot(path=f'{OUT}/v201_path_drag.png')
+    # spec test 4: past 0 s or 20 s the group stops at the limit, and a toast says why
+    P = paths(); box = pbox('d0')
+    drag(page, px(box, P['rows']['d0']['front'], P['L']), y, box['x'] + box['width'] - 3, y); page.wait_for_timeout(100)
+    check(abs(S(page, 'S.designs[0].tl.s')) < 1e-9 and toast(page) == 'Can’t release before 0 s', f'spec test 4: dragged toward the keep, the group stops when its front would leave before 0 s ({toast(page)})')
+    page.wait_for_timeout(150); set_slider(page, '#scrub-t', 40); page.wait_for_timeout(50)
+    P = paths()
+    check(P['rows']['d0']['keep'] == 3 and not P['rows']['d0']['on'] and '×3 at keep' in page.inner_text('.pth[data-g="d0"]'), f'at 40 s all three Runners stack at the keep end ({P["rows"]["d0"]})')
+    drag(page, box['x'] + box['width'] - 4, y, box['x'] + 4, y); page.wait_for_timeout(100)
+    check(abs(S(page, 'Math.max(...window.siegeline.tlPositions(window.siegeline.state.designs[0]))') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s',
+          f'spec test 4: dragged back from the keep at 40 s, the group stops when its last unit would leave after 20 s ({toast(page)})')
+    # dragged to the left end at T: the front releases at T, so the group waits at the entry
+    page.wait_for_timeout(150); page.click('.mini[data-act=rush]'); page.wait_for_timeout(150); set_slider(page, '#scrub-t', 6); page.wait_for_timeout(50)
+    P = paths(); box = pbox('d0')
+    drag(page, px(box, P['rows']['d0']['front'], P['L']), y, box['x'] + 2, y); page.wait_for_timeout(150)
+    pos = page.evaluate('() => window.siegeline.tlPositions(window.siegeline.state.designs[0])'); P = paths()
+    check(abs(min(pos) * 20 - 6) < 1e-6 and P['rows']['d0']['wait'] == 3 and not P['rows']['d0']['on'], f'dragged to the left end at 6 s, the front releases at 6 s and the group waits at the entry ({min(pos) * 20:.2f}s)')
+    # dragged to the right end at T: the front reaches the keep exactly then
+    set_slider(page, '#scrub-t', 15); page.wait_for_timeout(50)
+    P = paths(); box = pbox('d0')
+    drag(page, px(box, P['rows']['d0']['front'], P['L']), y, box['x'] + box['width'] + 30, y); page.wait_for_timeout(150)
+    k = paths()['rows']['d0']['frontK']
+    set_slider(page, '#scrub-t', 14.8); page.wait_for_timeout(50); A = paths()['rows']['d0']
+    set_slider(page, '#scrub-t', 15.2); page.wait_for_timeout(50); B = paths()['rows']['d0']
+    check(A['frontK'] == k and A['keep'] == 0 and A['front'] > A['on'][-1] - 1e-9 and A['front'] > paths()['L'] - 1 and B['keep'] >= 1,
+          f'dragged to the right end at 15 s, the front reaches the keep then (at 14.8 s it is {A["front"]:.2f} along, at 15.2 s {B["keep"]} at the keep)')
+    # spec test 6: dragging on the map does nothing
+    set_slider(page, '#scrub-t', 10); page.wait_for_timeout(50)
+    v = page.evaluate('() => window.siegeline.scrub.view()'); d = max((x for x in v['dots'] if x['g'] == 'd0'), key=lambda d: d['w'])
+    timing = lambda: S(page, 'JSON.stringify([S.designs.map(d => d.tl), [...S.charges].map(([i, c]) => c.t)])')
+    t0 = timing()
+    drag(page, *page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox']}, {d['y'] + d['oy']})"), *page.evaluate(f'() => window.siegeline.cellToClient({v["route"][2]})')); page.wait_for_timeout(150)
+    check(timing() == t0 and S(page, 'S.phase') == 'attack' and S(page, 'S.step') == 2, 'spec test 6: dragging a unit on the map changes nothing (the map only shows the preview)')
     # play runs the preview at 1×, and moving the slider pauses it
     set_slider(page, '#scrub-t', 2); page.click('#scrub-play'); page.wait_for_timeout(600)
     T = page.evaluate('() => window.siegeline.scrub.T')
@@ -876,12 +926,7 @@ with sync_playwright() as p:
     press('#scrub-play')
     set_slider(page, '#scrub-t', 5)
     check(not page.evaluate('() => window.siegeline.scrub.playing') and page.evaluate('() => window.siegeline.scrub.T') == 5, 'moving the slider pauses the preview')
-    lane = page.locator('.lane[data-i="0"]').bounding_box(); cur = page.locator('.lane[data-i="0"] .tcur').bounding_box()
-    thumb = page.evaluate("() => { const i = document.querySelector('#scrub-t'), r = i.getBoundingClientRect(); return r.left + 8 + (r.width - 16) * i.value / i.max; }")
-    check(abs(cur['x'] - (lane['x'] + lane['width'] * 5 / 60)) < 2 and abs(thumb - cur['x']) < 3, f'the T line sits at 5 s on the tracks, under the slider’s thumb ({cur["x"]:.0f} vs {thumb:.0f})')
-    bar = page.locator('.lane[data-i="0"] .span').bounding_box()
-    check(bar and bar['x'] < lane['x'] + lane['width'] / 3 and bar['x'] + bar['width'] > lane['x'] + lane['width'] / 3, f'the Runners’ bar runs from their release past 20 s, while they walk ({bar})')
-    # spec test 8: with a bridge planned, Lands changes the route the moment its sapper arrives; Fails never does
+    # spec test 8 (v19): with a bridge planned, Lands changes the route the moment its sapper arrives; Fails never does
     page.click('#atk-back'); page.wait_for_timeout(150)
     # without the tower the seen route runs beside the wall at (7,5), so a bridge there is a real shortcut
     page.evaluate(f'() => {{ const S = window.siegeline.state; S.seenGrid[{idx(8, 9)}] = null; S.seenVer++; }}')
@@ -894,14 +939,20 @@ with sync_playwright() as p:
     check(len(R) == 2 and R[1]['by'] == bw and sp['end'] == 'used' and abs(R[1]['t'] - sp['tEnd']) < 1e-9 and R[0]['path'] != R[1]['path']
           and at(round(sp['tEnd'] - 0.15, 1)) == R[0]['path'] and at(round(sp['tEnd'] + 0.15, 1)) == R[1]['path'],
           f'spec test 8: on Lands the route changes when the sapper reaches its tile ({sp["tEnd"]:.2f}s), and the map shows it when the slider passes then {[(r["t"], r["by"], len(r["path"])) for r in R]} {sp} bridge {bw}')
+    before, after = (at(round(sp['tEnd'] - 0.15, 1)), paths())[1], (at(round(sp['tEnd'] + 0.15, 1)), paths())[1]
+    n_pth = page.locator('#tl .pth').count()
+    check(before['cells'] == len(R[0]['path']) and after['cells'] == len(R[1]['path']) and after['L'] < before['L'] and n_pth == 3 and page.locator('#tl .pth .brk').count() == n_pth,
+          f'the path sliders follow the route at T: {before["cells"]} cells before the bridge lands, {after["cells"]} after; the planned bridge is marked on every row')
+    at(round(sp['t0'] + 1, 1))
+    check(page.locator(f'.pth[data-g="s{bw}"] .dyn .tk').count() == 1 and '+' not in page.inner_text(f'.pth[data-g="s{bw}"]'), 'the sapper has a path slider too, with a single tick')
     page.screenshot(path=f'{OUT}/v19_lands.png')
     page.click('#scrub-br [data-lands="0"]'); page.wait_for_timeout(100)
     R = page.evaluate('() => window.siegeline.scrub.routes()'); sp = page.evaluate('() => window.siegeline.scrub.saps()')[0]
     check(len(R) == 1 and sp['tFail'] == sp['t0'] and at(30) == R[0]['path'], 'spec test 8: on Fails the route never changes and the sapper fails at once')
     page.screenshot(path=f'{OUT}/v19_fails.png')
-    check(not errors, f'v19: no errors {errors[:3]}')
+    check(not errors, f'v19 and v20.1: no errors {errors[:3]}')
     ctx.close()
-    # the scrubber on a phone: drag a dot by touch
+    # the path slider on a phone: drag a group by touch
     ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
     page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
@@ -910,18 +961,19 @@ with sync_playwright() as p:
     page.tap('#def-next'); page.wait_for_timeout(100); page.tap('#def-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
     for _ in range(3): page.tap('.step.plus[data-i="0"]')
     page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(250)
-    set_slider(page, '#scrub-t', 6)
-    v = page.evaluate('() => window.siegeline.scrub.view()'); d = min(v['dots'], key=lambda d: d['w'])
-    x0, y0 = page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox'] + 0.3}, {d['y'] + d['oy']})")  # a little off the dot: the grab area is wide
-    x1, y1 = page.evaluate(f'() => window.siegeline.cellToClient({v["route"][2]})')  # back toward the breach: it releases later
+    set_slider(page, '#scrub-t', 6); page.wait_for_timeout(50)
+    P = page.evaluate('() => window.siegeline.scrub.paths()'); page.locator('.pth[data-g="d0"]').scroll_into_view_if_needed(); box = page.locator('.pth[data-g="d0"]').bounding_box()
+    x0 = box['x'] + 1 + P['rows']['d0']['front'] / P['L'] * (box['width'] - 2); y0 = box['y'] + box['height'] / 2
+    x1 = x0 - box['width'] * 0.15  # back toward the entry: it releases later
     s0 = S(page, 'S.designs[0].tl.s')
     cdp = ctx.new_cdp_session(page)
     cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x0, 'y': y0}]})
-    for k in range(1, 9): cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (x1 - x0) * k / 8, 'y': y0 + (y1 - y0) * k / 8}]}); page.wait_for_timeout(20)
+    for k in range(1, 9): cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (x1 - x0) * k / 8, 'y': y0}]}); page.wait_for_timeout(20)
     cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []}); page.wait_for_timeout(150)
-    check(S(page, 'S.designs[0].tl.s') != s0 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'), 'phone: a dot dragged by touch moves its group; no horizontal overflow')
+    check(S(page, 'S.designs[0].tl.s') > s0 and box['x'] + box['width'] <= 390 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
+          f'phone: a group dragged along its path slider by touch leaves later ({s0 * 20:.2f}s → {S(page, "S.designs[0].tl.s") * 20:.2f}s); the rows fit, no horizontal overflow')
     page.screenshot(path=f'{OUT}/m13_scrub.png')
-    check(not errors, f'phone scrubber: no errors {errors[:3]}')
+    check(not errors, f'phone path slider: no errors {errors[:3]}')
     ctx.close()
 
     ctx = b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
