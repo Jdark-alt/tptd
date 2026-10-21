@@ -114,7 +114,7 @@ with sync_playwright() as p:
     check(S(page, 'SOLO.on') and S(page, 'S.phase') == 'defend' and not page.is_visible('#ov-hand'), 'defender vs computer starts building at once, no handoff')
     thought(page)
     plan0 = S(page, PLAN)
-    check(S(page, 'SOLO.plan && SOLO.plan.a.reduce((n, a) => n + a[8], 0) > 0 && SOLO.plan.c.length === 0'), 'computer attacker planned an army, no sabotage in round 1')
+    check(S(page, 'SOLO.plan && SOLO.plan.a.reduce((n, a) => n + a[7], 0) > 0 && SOLO.plan.c.length === 0'), 'computer attacker planned an army, no sabotage in round 1')
     build_maze(page)
     check(S(page, PLAN) == plan0, 'computer\'s plan is unchanged by what the player builds')
     check(S(page, 'S.designs.every(d => d.count === 0)'), 'computer\'s army stays out of the live state while the player plans')
