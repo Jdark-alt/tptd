@@ -7,6 +7,7 @@
   python tools/sim/match.py --defenders game:normal,game:hard                # the game's computer defender
   python tools/sim/match.py --defenders counter,basic --attackers computer   # the game's computer attacker
   python tools/sim/match.py --attackers computer --rules '{"bridgesPerWave": 0}'   # ... and the same computer that never bridges
+  python tools/sim/match.py --out tools/.build/after.jsonl    # keep every match for tools/sim/compare.py
 
 Read results relatively: run the current rules and the variant with the same bots, and compare.
 Two CPUs make a full run take a few minutes; split strategies across processes with --attackers if needed.
@@ -53,6 +54,7 @@ def main():
     ap.add_argument('--defenders', default='counter,basic')
     ap.add_argument('--seeds', type=int, default=2)
     ap.add_argument('--log', action='store_true', help='print the round-by-round log of the first seed')
+    ap.add_argument('--out', default='', help='append every match (with its round-by-round log) to this JSONL file, for compare.py')
     a = ap.parse_args()
     rules, extra = json.loads(a.rules), json.loads(a.opts)
     atk = ({k: v for k, v in ATTACKERS.items() if not k.startswith('computer')} if a.attackers == 'all'
@@ -68,6 +70,9 @@ def main():
             for an, ao in atk.items():
                 opts = {**GAME_RULES_OPTS, **ao, **extra}
                 res = [pg.evaluate('([d,a,s,r]) => runMatch(d,a,s,r)', [DEFENDERS[dn], opts, s + 1, rules]) for s in range(a.seeds)]
+                if a.out:
+                    with open(a.out, 'a') as f:
+                        for s, r in enumerate(res): f.write(json.dumps({'defender': dn, 'attacker': an, 'seed': s + 1, 'rules': rules, **r}) + '\n')
                 w = sum(r['winner'] == 'attacker' for r in res); wins += w; total += len(res)
                 fell = [r['round'] for r in res if r['winner'] == 'attacker']
                 br = [x['breach'] for r in res for x in r['log'] if 'breach' in x]

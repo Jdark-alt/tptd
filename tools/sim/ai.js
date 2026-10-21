@@ -15,9 +15,9 @@
      serpentine maze of 4 wall columns with towers set into the columns so each covers two lanes, then more
      towers and damage upgrades. Locked (offline) towers stay put. It never moves its maze: nothing can be built
      on a bridge or rough ground, so one in its columns leaves a hole; rock in a column serves as a wall.
-     style 'counter': retunes towers against the last army it saw (splash on half the towers vs cheap or
-                      dodging units, slow heavy shots vs armor), and walls off the ends of bridges that cut its
-                      maze (the game's blockBridges). This is the "competent defender" baseline.
+     style 'counter': retunes towers against the last army it saw (splash on half the towers vs cheap units,
+                      slow heavy shots vs armor), and walls off the ends of bridges that cut its maze (the game's
+                      blockBridges). This is the "competent defender" baseline.
      style 'basic':   never retunes and leaves bridges open (default towers + damage upgrades). A weak defender.
      game: 'easy' | 'normal' | 'hard' plays the game's own computer defender (brainPlan in index.html) instead. */
   const WCOLS = [3, 6, 9, 12];
@@ -26,29 +26,35 @@
   function towerCfgFor(army, k, style) {
     const cfg = I.defaultTower();
     if (style !== 'counter' || !army) return cfg;
-    let val = 0, cheap = 0, armor = 0, dodge = 0;
-    for (const d of army) { const v = d.count * I.unitCost(d); val += v; if (d.hp <= 2) cheap += v; if (d.armor) armor += v; if (d.dodge) dodge += v; }
+    let val = 0, cheap = 0, armor = 0;
+    for (const d of army) { const v = d.count * I.unitCost(d); val += v; if (d.hp <= 2) cheap += v; if (d.armor) armor += v; }
     if (!val) return cfg;
-    if ((cheap + dodge) / val > 0.45 && k % 2 === 0) { cfg.splash = 2; cfg.rate = 4; }
+    if (cheap / val > 0.45 && k % 2 === 0) { cfg.splash = 2; cfg.rate = 4; }
     else if (armor / val > 0.3) cfg.rate = 5;
     return cfg;
   }
+  // expected damage per second: damage × the chance a shot hits (the game's shotAcc)
+  const expDps = c => I.TS.dps.steps[c.dps] * I.shotAcc(c) / 100;
   function upgradeStep(S, getW, spend, towers, force) {
-    // raise the weakest tower's damage one step if that buys more damage per coin than another tower
+    // raise the weakest tower's damage or accuracy one step, whichever adds more expected damage per coin, if that
+    // buys more than another tower would
+    const top = k => I.TS[k].steps.length - 1;
     let best = null;
     for (let i = 0; i < N; i++) {
-      const g = S.grid[i]; if (!g || g.t !== 'tower' || g.off > 0 || g.cfg.dps >= I.TS.dps.steps.length - 1) continue;
+      const g = S.grid[i]; if (!g || g.t !== 'tower' || g.off > 0 || (g.cfg.dps >= top('dps') && g.cfg.accuracy >= top('accuracy'))) continue;
       if (!best || g.cfg.dps < best.cfg.dps) best = g;
     }
     if (!best) return false;
-    const next = { ...best.cfg, dps: best.cfg.dps + 1 };
-    const delta = I.towerCost(next) - I.towerCost(best.cfg);
-    if (delta > getW()) return false;
-    if (!force) {
-      const gain = (I.TS.dps.steps[next.dps] - I.TS.dps.steps[best.cfg.dps]) / delta;
-      if (gain < 18 * 1.5 / (I.RULES.towerBase + I.RULES.towerFee * towers())) return false;
+    const c = best.cfg, cost = I.towerCost(c);
+    let pick = null;
+    for (const k of ['dps', 'accuracy']) {
+      if (c[k] >= top(k)) continue;
+      const next = { ...c, [k]: c[k] + 1 }, delta = I.towerCost(next) - cost, r = (expDps(next) - expDps(c)) / delta;
+      if (delta <= getW() && (!pick || r > pick.r)) pick = { next, delta, r };
     }
-    best.cfg = next; spend(delta); return true;
+    if (!pick) return false;
+    if (!force && pick.r < expDps(I.defaultTower()) * 1.5 / (I.RULES.towerBase + I.RULES.towerFee * towers())) return false;
+    best.cfg = pick.next; spend(pick.delta); return true;
   }
   // returns how it dealt with the bridges on the map ('' when there are none)
   function defend(S, opt, seed) {

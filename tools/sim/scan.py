@@ -24,14 +24,14 @@ ints = lambda s: [int(x) for x in s.split(',')]
 ap = argparse.ArgumentParser()
 ap.add_argument('--rules', default='{}')
 ap.add_argument('--hp', default='0,3,6,9'); ap.add_argument('--speed', default='0,4,7'); ap.add_argument('--armor', default='0,2,3')
-ap.add_argument('--dodge', default='0,3'); ap.add_argument('--regen', default='0,3')
+ap.add_argument('--regen', default='0,3')
 ap.add_argument('--budget', type=int, default=0, help='army coins (default: the cost of the plain defense)')
 ap.add_argument('--part', default='0/1', help='k/n: run every n-th design starting at k, to split across processes')
 ap.add_argument('--out', default=os.path.join(BUILD, 'scan.jsonl'))
 ap.add_argument('--summary', default='', help='print a summary of an existing results file and exit')
 a = ap.parse_args()
 
-def name(d): return ' '.join(f'{k}{d[k]}' for k in ('hp', 'speed', 'armor', 'dodge', 'regen'))
+def name(d): return ' '.join(f'{k}{d[k]}' for k in ('hp', 'speed', 'armor', 'regen') if k in d)
 if a.summary:
     rows = [json.loads(l) for l in open(a.summary)]
     rows.sort(key=lambda r: -r['best'])
@@ -41,15 +41,15 @@ if a.summary:
     sys.exit()
 
 rules = json.loads(a.rules)
-grid = list(itertools.product(ints(a.hp), ints(a.speed), ints(a.armor), ints(a.dodge), ints(a.regen)))
+grid = list(itertools.product(ints(a.hp), ints(a.speed), ints(a.armor), ints(a.regen)))
 k, n = map(int, a.part.split('/'))
 with sync_playwright() as p:
     b = launch(p); pg = b.new_page()
     pg.goto('file://' + sim_page()); pg.wait_for_timeout(300)
     budget = a.budget or pg.evaluate('([t,r]) => runWave(t, [["Swarm", 1, 0, 0.1]], r)', [DEFENSES['basic'], rules])['defenseCost']
     print(f'army budget {budget}', flush=True)
-    for hp, sp, ar, do, rg in grid[k::n]:
-        d = {'hp': hp, 'speed': sp, 'armor': ar, 'dodge': do, 'regen': rg}
+    for hp, sp, ar, rg in grid[k::n]:
+        d = {'hp': hp, 'speed': sp, 'armor': ar, 'regen': rg}
         for wave, end in (('bunched', 0.12), ('spread', 1.0)):
             res, info = {}, None
             for dn, towers in DEFENSES.items():

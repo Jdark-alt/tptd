@@ -1,4 +1,4 @@
-"""Online suite: lobby, ready gating, hidden plans, identical waves on both devices (also at 10x), desyncs,
+"""Online suite: lobby, ready gating, hidden plans, identical waves on both devices (also at 10x, and with towers missing), desyncs,
    rematch/swap, drop and rejoin, both devices building the same map (terrain), plus the peer-to-peer path.
    The room scenarios click known cells, so they play without terrain. Needs: npm install in tools/tests.
    python tools/tests/test_online.py        (add "peer" to run only the peer-to-peer part)"""
@@ -130,7 +130,9 @@ try:
             A.screenshot(path=f'{SHOTS}/o2_wave_def.png')
             for pg in (A, B): pg.evaluate('()=>window.siegeline.advance(300)')
             wait(A, "S.phase==='summary'"); wait(B, "S.phase==='summary'")
-            same(A, B, 'round 1 results identical on both devices')
+            s1 = same(A, B, 'round 1 results identical on both devices')
+            # v19 (spec test 5): towers miss now (80% by default), and both devices still agree shot for shot
+            check('misses on: both devices missed the same shots', s1['last']['misses'] > 0 and ev(B, "S.last.misses") == s1['last']['misses'], s1['last']['misses'])
             check('defender published the result', ev(A, "N.res && N.res.r") == 1)
             # the attacker replays the wave while the defender moves on to round 2
             B.click('#sum-replay'); A.click('#sum-next')

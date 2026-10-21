@@ -1,7 +1,7 @@
 """Pass-and-play suite: building, tuning, pricing, sappers (bridges and knock-outs), the timeline, test runs, win/loss,
    phone layout, and terrain (rough ground and rock). The fixed scenarios switch terrain off; the terrain checks come last.
    python tools/tests/test_local.py   (screenshots land in tools/.build/shots/local)"""
-import os, sys, json
+import os, sys, json, subprocess
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import game_html, write_build, BUILD, ROOT, TOOLS, launch
 from playwright.sync_api import sync_playwright
@@ -77,6 +77,17 @@ with sync_playwright() as p:
     check(page.inner_text('#d-tprice') == '40', 'first tower costs 40')
     click_cell(page, 9, 5)
     check(S(page, f'S.grid[{idx(9,5)}].fee') == 0 and page.is_visible('#te-price'), 'first tower: no fee, editor opens')
+    # v19 (spec test 1): a Basic tower still costs 40, and at the 100% accuracy step 64; the labels give the per-shot chance
+    check(page.inner_text('#te-price') == '40' and page.inner_text('#te-accuracy-v') == '80% · 80% per shot at this fire rate'
+          and page.inner_text('#te-rate-v') == '1 per second · 18 per hit · 80% accurate', f'a Basic tower costs 40 at 80% accuracy ({page.inner_text("#te-accuracy-v")} / {page.inner_text("#te-rate-v")})')
+    set_slider(page, '#te-accuracy', 3)
+    check(page.inner_text('#te-price') == '64' and page.inner_text('#te-accuracy-v') == '100% · 100% per shot at this fire rate', f'the 100% accuracy step on a Basic tower costs 64 ({page.inner_text("#te-price")})')
+    set_slider(page, '#te-rate', 1)
+    check(page.inner_text('#te-accuracy-v') == '100% · 95% per shot at this fire rate' and page.inner_text('#te-rate-v') == '2.5 per second · 7.2 per hit · 95% accurate',
+          f'fire rate shifts the per-shot accuracy ({page.inner_text("#te-accuracy-v")} / {page.inner_text("#te-rate-v")})')
+    set_slider(page, '#te-accuracy', 1)
+    check(page.inner_text('#te-accuracy-v') == '87% · 82% per shot at this fire rate', f'the spec’s example label: 87% · 82% per shot at 2.5/s ({page.inner_text("#te-accuracy-v")})')
+    set_slider(page, '#te-accuracy', 0); set_slider(page, '#te-rate', 3)
     up = page.evaluate(f'() => {{ const sl = window.siegeline, c = sl.state.grid[{idx(9,5)}].cfg; return sl.towerCost({{...c, dps: c.dps + 1}}) - sl.towerCost(c); }}')
     check(page.inner_text('#te-dps-n') == f'+{up}' and 'poor' not in page.get_attribute('#te-dps-n', 'class'), f'slider shows what the next step costs ({page.inner_text("#te-dps-n")})')
     check(page.is_hidden('#te-rate-n'), 'free slider shows no step price')
@@ -135,10 +146,14 @@ with sync_playwright() as p:
     check(S(page, 'S.aFree') == 300 - 100 - 70 - 60, f'army bought ({S(page, "S.aFree")})')
     page.click('.rpick[data-i="1"]')
     check(page.is_visible('#ue-price'), 'designer opens')
-    a0 = S(page, 'S.aFree'); set_slider(page, '#ue-dodge', 3)
-    check(page.inner_text('#ue-dodge-v') == '30% of direct shots' and S(page, 'S.designs[1].dodge') == 3, f'top dodge is 30% ({page.inner_text("#ue-dodge-v")})')
-    set_slider(page, '#ue-dodge', 0)
-    check(S(page, 'S.aFree') == a0, 'dodge back off refunds it')
+    # v19 (spec test 9): no dodge anywhere: no Dodge row in the designer, no dodge field in a design or an encoded army
+    check(page.locator('#ue-dodge').count() == 0 and 'dodge' not in page.inner_text('#atk-ctx').lower(), 'the designer has no Dodge slider')
+    enc = page.evaluate('() => window.siegeline.encodeArmy(window.siegeline.state.designs)')
+    check(all(len(a) == 11 for a in enc) and S(page, 'S.designs.every(d => !("dodge" in d))'), f'an encoded army has no dodge slot (11 fields: {enc[0]})')
+    page.click('.pre[data-pre=Ghost]')
+    check(S(page, '[S.designs[1].hp, S.designs[1].speed, S.designs[1].armor, S.designs[1].regen, S.designs[1].resist].join()') == '2,5,0,0,none' and page.inner_text('#ue-price') == '16',
+          f'the Ghost preset is Health 112, Speed 1.9 and nothing else, at 16 ({page.inner_text("#ue-price")})')
+    page.click('.pre[data-pre=Brute]')
     up = page.evaluate('() => { const sl = window.siegeline, d = sl.state.designs[1]; return (sl.unitCost({...d, hp: d.hp + 1}) - sl.unitCost(d)) * d.count; }')
     check(page.inner_text('#ue-hp-n') == f'+{up}', f'unit slider prices the next step for every unit of the design ({page.inner_text("#ue-hp-n")})')
     page.click('#atk-ctx [data-act=close]')
@@ -638,7 +653,7 @@ with sync_playwright() as p:
     check(not errors, f'sapper rules: no errors {errors[:3]}')
     ctx.close()
 
-    # ---------- v18: sabotage prices per kind, on slider price; the cap bar; auto-align; auto-tune
+    # ---------- v18: sabotage prices per kind, on slider price; the cap bar; auto-tune
     ctx = b.new_context(viewport={'width': 1366, 'height': 860})
     page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
@@ -695,22 +710,6 @@ with sync_playwright() as p:
     plant(SN)
     check(not S(page, f'S.charges.has({SN})'), 'with the one-tower exception used, nothing else can be added')
     page.click(f'[data-rm="{BG}"]')
-    # auto-align: tap a cell on the route, Align here: the slowest unit leaves at 0, faster ones wait; Undo puts it back
-    page.click('#atk-next'); page.wait_for_timeout(250)
-    route = page.evaluate('() => window.siegeline.seenRoute()'); cell = route[len(route) // 2]
-    tl0 = S(page, 'JSON.stringify(S.designs.map(d => d.tl))')
-    check(S(page, '[...document.querySelectorAll("#tl [data-al]")].map(b => b.getAttribute("aria-pressed")).join()') == 'true,true', 'auto-align: both army tracks ticked by default')
-    click_cell(page, cell % COLS, cell // COLS); page.wait_for_timeout(80)
-    page.click('#al-go'); page.wait_for_timeout(80)
-    tl = S(page, 'S.designs.map(d => d.count ? [window.siegeline.state.designs.indexOf(d), d.speed, d.tl.pos] : null).filter(Boolean)')
-    slow = min(tl, key=lambda x: x[1]); fast = max(tl, key=lambda x: x[1])
-    k = route.index(cell); spd = [0.7, 0.9, 1.1, 1.3, 1.6, 1.9, 2.3, 2.8]
-    arr = lambda d, p: 0.35 + p * 20 + (1.05 + k) / spd[d[1]]
-    check(min(slow[2]) == 0 and min(fast[2]) > 0 and abs(arr(slow, slow[2][0]) - arr(fast, fast[2][-1])) < 1.5 and 'arrive within' in page.inner_text('#al-note'),
-          f'auto-align: the slowest unit leaves at 0 and the faster ones wait to arrive together ({page.inner_text("#al-note")})')
-    page.screenshot(path=f'{OUT}/v18_align.png')
-    page.click('#al-undo')
-    check(S(page, 'JSON.stringify(S.designs.map(d => d.tl))') == tl0, 'auto-align: Undo puts the timeline back')
     check(not errors, f'v18 attacker: no errors {errors[:3]}')
     ctx.close()
     # auto-tune: spends free coins on the towers placed, never lowers a slider or touches fire rate; Undo refunds it
@@ -726,13 +725,157 @@ with sync_playwright() as p:
     cfg0, f0, n0 = S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)'), S(page, 'S.dFree'), S(page, 'S.grid.filter(Boolean).length')
     page.click('#d-tune [data-act=tune]')
     cfg1, f1 = S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)'), S(page, 'S.dFree')
-    nolower = all(c0 is None or all(c1[k] >= c0[k] for k in ('range', 'dps', 'splash')) and c1['rate'] == c0['rate'] and all(c1[k] or not c0[k] for k in ('slow', 'poison', 'chain')) for c0, c1 in zip(cfg0, cfg1))
+    nolower = all(c0 is None or all(c1[k] >= c0[k] for k in ('range', 'dps', 'accuracy', 'splash')) and c1['rate'] == c0['rate'] and all(c1[k] or not c0[k] for k in ('slow', 'poison', 'chain')) for c0, c1 in zip(cfg0, cfg1))
     check(nolower and cfg1 != cfg0 and f1 < f0 and S(page, 'S.grid.filter(Boolean).length') == n0, f'auto-tune spends coins on upgrades, never lowers a slider or changes fire rate, adds nothing ({f0} → {f1})')
     check(f'spent {f0 - f1} coins' in page.inner_text('#d-tune').lower() and f'{f1} left' in page.inner_text('#d-tune').lower(), f'auto-tune says what it spent ({page.inner_text("#d-tune")})')
     page.screenshot(path=f'{OUT}/v18_tune.png')
     page.click('#d-tune [data-act=tune-undo]')
     check(S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)') == cfg0 and S(page, 'S.dFree') == f0, 'auto-tune: Undo restores every tower and the coins')
     check(not errors, f'v18 auto-tune: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v19: tower accuracy (each shot rolls once) and the wave scrubber
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    # spec test 2: per-shot accuracy for all 24 slider × fire-rate pairs
+    want = [[72, 75, 78, 80, 83, 86], [79, 82, 85, 87, 90, 93], [86, 89, 92, 94, 97, 100], [92, 95, 98, 100, 100, 100]]
+    got = page.evaluate('() => [0, 1, 2, 3].map(a => [0, 1, 2, 3, 4, 5].map(r => window.siegeline.shotAcc({ range: 2, dps: 2, accuracy: a, rate: r, splash: 0 })))')
+    check(got == want, f'per-shot accuracy matches the spec’s table for all 24 pairs {got}')
+    # hidden test waves on a fixed maze: towers beside the route, an army in one bunch
+    maze = [idx(5, r) for r in range(0, 10)] + [idx(10, r) for r in range(1, 11)]
+    run = """([maze, towers, army, seed]) => { const sl = window.siegeline, G = new Array(176).fill(null);
+      for (const i of maze) G[i] = { t: 'wall', fresh: false };
+      for (const [i, cfg] of towers) G[i] = { t: 'tower', cfg: { range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: false, ...cfg }, fee: 0, off: 0, n: 1, fresh: false, cd: 0, ang: 0, kick: 0, dealt: 0 };
+      const ds = army.map(([hp, speed, count, e], k) => ({ name: 'U' + k, color: '#ffb547', hp, speed, armor: 0, regen: 0, resist: 'none', count, tl: { s: 0, e, pos: null } }));
+      return sl.trial(G, ds, [], seed, []); }"""
+    T1 = idx(7, 5)
+    page.evaluate('() => { window.siegeline.rules.rateAcc = [-100, -100, -100, -100, -100, -100]; }')  # every shot at 0%
+    fz = page.evaluate(run, [maze, [[T1, {'slow': True, 'poison': True}]], [[5, 3, 4, 0.1]], 3])
+    fz0 = page.evaluate(run, [maze, [[T1, {}]], [[5, 3, 4, 0.1]], 3])
+    check(fz['misses'] > 0 and fz['dealt'] == 0 and abs(fz['Y'] - fz['X']) < 1e-9 and abs(fz['t'] - fz0['t']) < 1e-9,
+          f'spec test 3: at 0% a single-target tower deals nothing and applies no frost or poison (missed {fz["misses"]}, dealt {fz["dealt"]}, wave {fz["t"]:.2f}s = {fz0["t"]:.2f}s without effects)')
+    one = page.evaluate(run, [maze, [[T1, {'rate': 4, 'splash': 2}]], [[5, 3, 1, 0]], 3])
+    many = page.evaluate(run, [maze, [[T1, {'rate': 4, 'splash': 2}]], [[5, 3, 8, 0.02]], 3])
+    check(one['misses'] > 0 and one['dealt'] == 0 and many['dealt'] > 0 and many['Y'] < many['X'],
+          f'spec test 3: at 0% a splash shot spares its target but hits the rest of the blast (alone: dealt {one["dealt"]}; in a bunch of 8: dealt {round(many["dealt"])})')
+    page.evaluate('() => { window.siegeline.rules.rateAcc = [-8, -5, -2, 0, 3, 6]; }')
+    # spec test 4: at 100% (the top slider at 1/s or slower) a wave plays exactly as it did in v18, for the same seed
+    sure = [[T1, {'accuracy': 3, 'rate': 3, 'dps': 4}], [idx(12, 4), {'accuracy': 3, 'rate': 4, 'splash': 2, 'poison': True}], [idx(3, 6), {'accuracy': 3, 'rate': 5, 'chain': True, 'slow': True}]]
+    army = [[5, 3, 6, 0.2], [2, 6, 10, 0.1]]
+    now = page.evaluate(run, [maze, sure, army, 11])
+    try: v18 = subprocess.run(['git', 'show', '52d977a:index.html'], cwd=ROOT, capture_output=True, text=True).stdout
+    except Exception: v18 = ''
+    if 'const PROTO = 8' in v18:
+        old = ctx.new_page(); old.goto('file://' + write_build('v18.html', v18)); old.wait_for_timeout(300)
+        then = old.evaluate(run, [maze, sure, army, 11]); old.close()
+        keys = ['X', 'Y', 'kills', 'leaks', 't']
+        check(now['misses'] == 0 and now['Y'] < now['X'] and [now[k] for k in keys] == [then[k] for k in keys],
+              f'spec test 4: at 100% accuracy the wave matches v18 exactly ({ {k: now[k] for k in keys} } vs { {k: then[k] for k in keys} })')
+    else: print('SKIP spec test 4: the v18 build (52d977a) is not in this checkout')
+    # a played wave: misses happen at the default 80%
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    for r in range(0, 10): click_cell(page, 7, r)
+    page.click('.tool[data-tool=tower]'); click_cell(page, 8, 9); set_slider(page, '#te-rate', 0); page.click('[data-act=close]')  # rapid fire beside the gap the route must take
+    page.click('#def-next'); page.click('#def-next'); hand(page)
+    for _ in range(3): page.click('.step.plus[data-i="0"]')
+    for _ in range(4): page.click('#atk-next')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
+    check(S(page, 'S.last.misses') > 0 and S(page, 'S.phase') == 'summary', f'towers at 80% miss some shots in a real wave ({S(page, "S.last.misses")} missed)')
+    page.click('#sum-next'); hand(page); page.click('#def-next'); page.click('#def-next'); hand(page)
+    # the attacker's card for a seen tower: Accuracy and Expected damage rows
+    page.click('#atk-next'); page.wait_for_timeout(200)
+    click_cell(page, 8, 9); page.wait_for_timeout(80)
+    card = page.inner_text('#atk-ctx')
+    check('72% per shot' in card and '18 per second · about 13 after misses' in card, f'a tower card shows its accuracy at 4 shots/s and expected damage ({card[:200]!r})')
+    page.click('#atk-ctx [data-act=close]')
+    # spec tests 6-8: the scrubber on the Wave step (Runners only, no bridge planned)
+    page.click('#atk-next'); page.wait_for_timeout(250)
+    check(page.is_visible('#a-scrub') and page.inner_text('#scrub-lbl') == 'T = 0.0 s' and page.is_hidden('#scrub-br') and page.locator('#tl [data-al]').count() == 0,
+          'the Wave step opens the scrubber at T = 0 s, no bridge toggle without a bridge, and auto-align is gone')
+    check(S(page, 'window.siegeline.scrub.view().dots.length') == 0 and '3 still to spawn' in page.inner_text('#tl'), 'at 0 s nothing has set out: the track says 3 still to spawn')
+    set_slider(page, '#scrub-t', 10)
+    v = page.evaluate('() => window.siegeline.scrub.view()')
+    dots = sorted([d for d in v['dots'] if d['g'] == 'd0'], key=lambda d: d['w'])
+    check(len(dots) == 3 and page.inner_text('#scrub-lbl') == 'T = 10.0 s', f'at T = 10 s the three Runners are on the map ({len(dots)})')
+    route = v['route']; d = dots[1]
+    ci = min(range(len(route)), key=lambda k: (route[k] % COLS + 0.5 - d['x']) ** 2 + (route[k] // COLS + 0.5 - d['y']) ** 2)
+    tgt = route[max(2, ci - 3)]
+    tl0 = S(page, 'S.designs[0].tl')
+    x0, y0 = page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox']}, {d['y'] + d['oy']})")
+    drag(page, x0, y0, *page.evaluate(f'() => window.siegeline.cellToClient({tgt})')); page.wait_for_timeout(150)
+    tl1 = S(page, 'S.designs[0].tl')
+    v = page.evaluate('() => window.siegeline.scrub.view()')
+    d1 = next((x for x in v['dots'] if x['g'] == 'd0' and x['k'] == d['k']), None)
+    gap = ((d1['x'] - tgt % COLS - 0.5) ** 2 + (d1['y'] - tgt // COLS - 0.5) ** 2) ** 0.5 if d1 else 9
+    check(tl1['s'] > tl0['s'] and abs((tl1['e'] - tl1['s']) - (tl0['e'] - tl0['s'])) < 1e-9 and gap < 0.2,
+          f'spec test 6: a group dragged at T = 10 s keeps its spread ({tl0["e"] - tl0["s"]:.3f}) and the grabbed unit is {gap:.3f} cells from the drop point')
+    page.screenshot(path=f'{OUT}/v19_scrub.png')
+    # spec test 7: past 0 s or 20 s the group stops at the limit, and a toast says why
+    lead = max(v['dots'], key=lambda d: d['w'])
+    x0, y0 = page.evaluate(f"() => window.siegeline.worldToClient({lead['x'] + lead['ox']}, {lead['y'] + lead['oy']})")
+    drag(page, x0, y0, *page.evaluate(f'() => window.siegeline.cellToClient({route[-2]})')); page.wait_for_timeout(100)
+    check(abs(S(page, 'S.designs[0].tl.s')) < 1e-9 and toast(page) == 'Can’t release before 0 s', f'spec test 7: dragged too far ahead, the group stops at 0 s ({toast(page)})')
+    page.wait_for_timeout(150); set_slider(page, '#scrub-t', 40)
+    v = page.evaluate('() => window.siegeline.scrub.view()')
+    check(v['keep'] == 3 and not v['dots'], f'at 40 s all three are at the keep ({v["keep"]})')
+    drag(page, *page.evaluate('() => window.siegeline.worldToClient(16.33, 5.5)'), *page.evaluate(f'() => window.siegeline.cellToClient({route[3]})')); page.wait_for_timeout(100)
+    check(abs(S(page, 'S.designs[0].tl.e') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s', f'spec test 7: dragged back from the keep at 40 s, the group stops at 20 s ({toast(page)})')
+    # dropped on the entry tile at T: it releases at T, so it isn't out yet
+    page.wait_for_timeout(150); page.click('.mini[data-act=rush]'); page.wait_for_timeout(150); set_slider(page, '#scrub-t', 6)
+    v = page.evaluate('() => window.siegeline.scrub.view()'); d = max(v['dots'], key=lambda d: d['w'])
+    drag(page, *page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox']}, {d['y'] + d['oy']})"), *page.evaluate(f'() => window.siegeline.cellToClient({idx(0, 5)})')); page.wait_for_timeout(150)
+    pos = page.evaluate('() => window.siegeline.tlPositions(window.siegeline.state.designs[0])')
+    v = page.evaluate('() => window.siegeline.scrub.view()')
+    check(abs(pos[d['k']] * 20 - 6) < 1e-6 and not any(x['g'] == 'd0' and x['k'] == d['k'] for x in v['dots']), f'dropped on the entry tile at 6 s, it releases at 6 s and isn’t on the map yet ({pos[d["k"]] * 20:.2f}s)')
+    # play runs the preview at 1×, and moving the slider pauses it
+    set_slider(page, '#scrub-t', 2); page.click('#scrub-play'); page.wait_for_timeout(600)
+    T = page.evaluate('() => window.siegeline.scrub.T')
+    check(page.evaluate('() => window.siegeline.scrub.playing') and 2.3 < T < 3.5, f'Play runs the preview at 1× ({T:.2f}s after 0.6 s)')
+    set_slider(page, '#scrub-t', 5)
+    check(not page.evaluate('() => window.siegeline.scrub.playing') and page.evaluate('() => window.siegeline.scrub.T') == 5, 'moving the slider pauses the preview')
+    # spec test 8: with a bridge planned, Lands changes the route the moment its sapper arrives; Fails never does
+    page.click('#atk-back'); page.wait_for_timeout(150)
+    # without the tower the seen route runs beside the wall at (7,5), so a bridge there is a real shortcut
+    page.evaluate(f'() => {{ const S = window.siegeline.state; S.seenGrid[{idx(8, 9)}] = null; S.seenVer++; }}')
+    bw = idx(7, 5)
+    click_cell(page, 7, 5); page.click('#atk-next'); page.wait_for_timeout(250)
+    check(page.is_visible('#scrub-br') and page.get_attribute('#scrub-br [data-lands="1"]', 'aria-pressed') == 'true' and 'plan with bridge' in page.inner_text('#scrub-br').lower(),
+          'a planned bridge shows the toggle, Plan with bridge: Lands / Fails, on Lands')
+    R = page.evaluate('() => window.siegeline.scrub.routes()'); sp = page.evaluate('() => window.siegeline.scrub.saps()')[0]
+    at = lambda T: (set_slider(page, '#scrub-t', T), page.evaluate('() => window.siegeline.scrub.view().route'))[1]
+    check(len(R) == 2 and R[1]['by'] == bw and sp['end'] == 'used' and abs(R[1]['t'] - sp['tEnd']) < 1e-9 and R[0]['path'] != R[1]['path']
+          and at(round(sp['tEnd'] - 0.15, 1)) == R[0]['path'] and at(round(sp['tEnd'] + 0.15, 1)) == R[1]['path'],
+          f'spec test 8: on Lands the route changes when the sapper reaches its tile ({sp["tEnd"]:.2f}s), and the map shows it when the slider passes then {[(r["t"], r["by"], len(r["path"])) for r in R]} {sp} bridge {bw}')
+    page.screenshot(path=f'{OUT}/v19_lands.png')
+    page.click('#scrub-br [data-lands="0"]'); page.wait_for_timeout(100)
+    R = page.evaluate('() => window.siegeline.scrub.routes()'); sp = page.evaluate('() => window.siegeline.scrub.saps()')[0]
+    check(len(R) == 1 and sp['tFail'] == sp['t0'] and at(30) == R[0]['path'], 'spec test 8: on Fails the route never changes and the sapper fails at once')
+    page.screenshot(path=f'{OUT}/v19_fails.png')
+    check(not errors, f'v19: no errors {errors[:3]}')
+    ctx.close()
+    # the scrubber on a phone: drag a dot by touch
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
+    page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
+    page.tap('#def-next'); page.wait_for_timeout(100); page.tap('#def-next'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
+    for _ in range(3): page.tap('.step.plus[data-i="0"]')
+    page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(250)
+    set_slider(page, '#scrub-t', 6)
+    v = page.evaluate('() => window.siegeline.scrub.view()'); d = min(v['dots'], key=lambda d: d['w'])
+    x0, y0 = page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox'] + 0.3}, {d['y'] + d['oy']})")  # a little off the dot: the grab area is wide
+    x1, y1 = page.evaluate(f'() => window.siegeline.cellToClient({v["route"][2]})')  # back toward the breach: it releases later
+    s0 = S(page, 'S.designs[0].tl.s')
+    cdp = ctx.new_cdp_session(page)
+    cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x0, 'y': y0}]})
+    for k in range(1, 9): cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (x1 - x0) * k / 8, 'y': y0 + (y1 - y0) * k / 8}]}); page.wait_for_timeout(20)
+    cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []}); page.wait_for_timeout(150)
+    check(S(page, 'S.designs[0].tl.s') != s0 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'), 'phone: a dot dragged by touch moves its group; no horizontal overflow')
+    page.screenshot(path=f'{OUT}/m13_scrub.png')
+    check(not errors, f'phone scrubber: no errors {errors[:3]}')
     ctx.close()
 
     ctx = b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
