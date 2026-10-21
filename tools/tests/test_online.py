@@ -284,10 +284,11 @@ try:
             C = ctx.new_page(); D = ctx.new_page()
             for pg in (C, D): errors_hook(pg, errs); pg.goto('http://127.0.0.1:8765/room.html')
             C.wait_for_timeout(300); no_terrain(C, D)
-            C.evaluate('()=>{window.siegeline.rules.planSecs=3;}'); D.evaluate('()=>{window.siegeline.rules.planSecs=6;}')
+            # the defender's clock has room for building and locking in on a loaded machine; the attacker's runs out later
+            C.evaluate('()=>{window.siegeline.rules.planSecs=6;}'); D.evaluate('()=>{window.siegeline.rules.planSecs=10;}')
             join(C, 'def', 'LONG', waves=6); join(D, 'atk', 'LONG', waves=10)
             wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
-            check("match length: both devices play the defender's 6 waves with a keep of 750", ev(C, '[S.rounds,S.keep,S.keepMax]') == [6, 750, 750] and ev(D, '[S.rounds,S.keep,S.keepMax]') == [6, 750, 750],
+            check("match length: both devices play the defender's 6 waves with a keep of 800", ev(C, '[S.rounds,S.keep,S.keepMax]') == [6, 800, 800] and ev(D, '[S.rounds,S.keep,S.keepMax]') == [6, 800, 800],
                   f"{ev(C, '[S.rounds,S.keep]')} / {ev(D, '[S.rounds,S.keep]')}")
             for pg in (C, D):  # a page in the background draws its HUD once it's in front
                 pg.bring_to_front()
@@ -299,10 +300,10 @@ try:
             defend_round(C, walls=[idx(6, r) for r in range(0, 10)], towers=[(idx(8, 5), None)])
             C.wait_for_timeout(200)
             check('planning clock: locked in early, Keep planning is there', C.is_visible('#ov-wait') and C.is_visible('#wait-back') and C.is_hidden('#t-clock'))
-            C.wait_for_selector('#wait-back', state='hidden', timeout=6000)
+            C.wait_for_selector('#wait-back', state='hidden', timeout=9000)
             check("planning clock: once the defender's time is up Keep planning is gone", ev(C, "S.phase") == 'defend' and ev(D, "S.phase") == 'attack')
             D.evaluate('(counts)=>{const sl=window.siegeline,S=sl.state; counts.forEach((n,k)=>{ const d=S.designs[k]; S.aFree-=(n-d.count)*sl.unitCost(d); d.count=n; }); }', [5, 1, 2])
-            wait(C, "S.phase==='wave'", 10000); wait(D, "S.phase==='wave'", 10000)
+            wait(C, "S.phase==='wave'", 14000); wait(D, "S.phase==='wave'", 14000)
             check('planning clock: the attacker who never pressed Ready is locked in when time runs out, army as planned', ev(C, "S.designs.map(d=>d.count).join()") == '5,1,2')
             for pg in (C, D): pg.evaluate('()=>window.siegeline.advance(300)')
             wait(C, "S.phase==='summary'"); wait(D, "S.phase==='summary'")

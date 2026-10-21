@@ -749,7 +749,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
         <div class="key">
           <div class="kd"><b>Defender</b>Walls and one tunable tower. Hold the keep through every wave.</div>
           <div class="ka"><b>Attacker</b>Design an army, send sappers, time the wave. Break the keep.</div>
-          <div class="kk"><b>Keep</b><span data-rule="keepPerRound">125</span> points for every wave in the match. Whatever gets through comes off it.</div>
+          <div class="kk"><b>Keep</b><span data-rule="keepPerRound">125</span> points a wave, plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Whatever gets through comes off it.</div>
         </div>
         <ol>
           <li><strong>Defender, in secret.</strong> Build: walls bend the route, towers shoot it, shapes drop in ready-made pieces. Tap a tower to tune it. From round 2, <strong>Test</strong> plays last wave’s army against your build. Ready.</li>
@@ -757,13 +757,13 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
           <li><strong>The wave.</strong> Everything is revealed and plays out. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
           <li><strong>The split.</strong> Each round adds a 200-coin pot. The more gets through, the bigger the defender’s share, from 30% to 70%.</li>
         </ol>
-        <p>Play on one device and take turns, online on two, or against the computer; pick how many waves the match lasts at the start (online the defender’s pick counts). Each side has <span data-rule="planSecs:min">3</span> minutes to plan each round; when the clock runs out, the plan goes as it stands. Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. The <strong>+</strong> beside a slider is what the next step costs.</p>
+        <p>Play on one device and take turns, online on two, or against the computer; pick how many waves the match lasts at the start (online the defender’s pick counts). Each side has <span data-rule="planSecs:min">3</span> minutes to plan each round; when the clock runs out, the plan goes as it stands. Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. Drag a tower to move it, or onto a wall or another tower to swap them, free. The <strong>+</strong> beside a slider is what the next step costs.</p>
         <p><strong>Hints</strong> (on by default, switch beside the build tabs): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire.</p>
       </section>
 
       <section>
         <h2>Towers</h2>
-        <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee, so moving one is free.</p>
+        <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee, and dragging one to a new cell is free.</p>
         <div class="callout"><p><code>40 × range × damage × splash × frost × poison × chain + fee</code></p></div>
       </section>
 
@@ -815,7 +815,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal</td></tr>
               <tr><td>Pot per round</td><td class="n">200</td><td>Defender gets 30% + 40% × (breach ÷ 50%), capped at 70%</td></tr>
-              <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Loses the strength that gets through</td></tr>
+              <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
               <tr><td>Waves</td><td class="n"><span data-rule="roundChoices:range">4–12</span></td><td>Picked at the start, <span data-rule="rounds">8</span> by default. The defender wins by surviving them</td></tr>
               <tr><td>Planning</td><td class="n"><span data-rule="planSecs:min">3</span> min</td><td>Each side, each round; then the plan goes as it stands</td></tr>
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
@@ -930,8 +930,9 @@ const RULES = {
   bigUnit: 60, // units priced above this pay a surcharge: bigUnit × (price ÷ bigUnit)^1.5
   regenDelay: 3, regenCap: 10, // regen waits this many seconds after a direct hit; heals at most cap% of max health per 1%/s, per wave
   // a match lasts `rounds` waves unless the players pick another length from roundChoices at the start; the keep gets
-  // keepPerRound points for every wave (1,000 over 8)
-  rounds: 8, roundChoices: [4, 6, 8, 10, 12], keepPerRound: 125, startDef: 300, startAtk: 300, pot: 200,
+  // keepPerRound points for every wave, plus keepShort for every wave short of keepShortOf (600 for 4 waves, 800 for 6,
+  // 1,000 for 8, 1,500 for 12): short matches lean to the attacker otherwise (see CLAUDE.md, "Measured on v19")
+  rounds: 8, roundChoices: [4, 6, 8, 10, 12], keepPerRound: 125, keepShort: 25, keepShortOf: 8, startDef: 300, startAtk: 300, pot: 200,
   planSecs: 180, // each side's planning time per round (0: no limit); when it runs out the plan goes as it stands
   shareMin: 0.3, shareMax: 0.7, breachCap: 0.5,
   wall: 5, towerBase: 40, towerFee: 10, unitBase: 15, maxDesigns: 4, waveLen: 20,
@@ -1143,10 +1144,12 @@ let replay = null;
 const real = () => (replay ? replay.live : S);
 // sappers: sent this wave; sapOk landed, sapLost shot down on the way, sapMissed failed (route changed, target gone)
 const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, bridges: 0, bridgeRefund: 0, missed: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0, sappers: 0, sapOk: 0, sapLost: 0, sapMissed: 0 });
-// rounds: how many waves this match lasts; the keep starts with keepPerRound for each of them
+// The keep for a match of n waves.
+const keepFor = n => RULES.keepPerRound * n + RULES.keepShort * Math.max(0, RULES.keepShortOf - n);
+// rounds: how many waves this match lasts; the keep follows (keepFor)
 function newState(rounds = RULES.rounds) {
   return {
-    round: 1, rounds, keepMax: RULES.keepPerRound * rounds, keep: RULES.keepPerRound * rounds, dFree: RULES.startDef, aFree: RULES.startAtk,
+    round: 1, rounds, keepMax: keepFor(rounds), keep: keepFor(rounds), dFree: RULES.startDef, aFree: RULES.startAtk,
     phase: 'defend', step: 0, next: null,
     grid: new Array(N).fill(null), gridVer: 0, towerSeq: 0,
     seenGrid: new Array(N).fill(null), seenVer: 0, seenRound: 0,
@@ -1463,12 +1466,18 @@ const pathLen = p => (p ? p.length - 1 : 0);
 // "New" means the attacker hasn't seen it. Tearing something down and rebuilding it on the same
 // cell doesn't hide it again, so charges planted there still land.
 const seenAs = (cell, kind) => !!(S.seenGrid[cell] && S.seenGrid[cell].t === kind);
-function canBuild(cell, kind) {
-  if (cell < 0) return { ok: false, quiet: true };
+// Why nothing can stand on a cell (the gates, a bridge, rock, rough ground), or null.
+function siteBlock(cell) {
   if (cell === ENTRY || cell === EXIT) return { ok: false, reason: 'Keep the gates clear. Nothing can be built on the entry or exit cell.' };
   if (S.bridges.has(cell)) return { ok: false, reason: 'That’s the attacker’s bridge. Nothing can be built on it, but you can wall off either end.' };
   if (S.terrain[cell] === ROCK) return { ok: false, reason: 'Rock. Nothing can be built on it, but it already blocks the route like a wall.' };
   if (S.terrain[cell] === ROUGH) return { ok: false, reason: 'Rough ground. Units can cross it, but nothing can be built on it.' };
+  return null;
+}
+function canBuild(cell, kind) {
+  if (cell < 0) return { ok: false, quiet: true };
+  const site = siteBlock(cell);
+  if (site) return site;
   if (S.grid[cell]) return { ok: false, quiet: true };
   const cost = kind === 'wall' ? RULES.wall : newTowerPrice();
   if (S.dFree < cost) return { ok: false, reason: `Not enough coins. A ${kind} costs ${cost} and you have ${S.dFree} free.`, gold: true };
@@ -1508,6 +1517,43 @@ function removeAt(cell) {
   puff(x, y, '#8b9daa');
   if (S.sel && S.sel.k === 'tower' && S.sel.cell === cell) S.sel = null;
   refreshUI();
+}
+/* Moving a tower: drag it onto an open cell, or onto a wall or another tower to swap the two. It keeps its tuning,
+   fee and number, so no coins move (the same as removing it and rebuilding it with the same tuning, which fees made
+   free in v12). Like a rebuilt tower it's new where the attacker didn't see a tower, so a knock-out planned on its old
+   spot finds nothing; a wall or tower it swaps with is new where the attacker didn't see one of its kind. */
+function canMove(from, to) {
+  const g = S.grid[from], h = to >= 0 ? S.grid[to] : null;
+  if (!g || g.t !== 'tower' || to < 0 || to === from) return { ok: false, quiet: true };
+  if (g.off > 0) return { ok: false, reason: 'This tower is offline. It can’t be moved until it comes back.' };
+  if (h && h.t === 'tower' && h.off > 0) return { ok: false, reason: 'That tower is offline. It can’t be moved until it comes back.' };
+  if (h && h.t === 'rock') return siteBlock(to);
+  if (h) return { ok: true, swap: h.t }; // the same cells stay blocked, so the route stays open
+  const site = siteBlock(to);
+  if (site) return site;
+  bfs(tmpA, i => i !== to && (i === from || !S.grid[i]));
+  if (tmpA[ENTRY] < 0) return { ok: false, reason: 'Path must stay open', block: true };
+  return { ok: true, swap: '' };
+}
+function moveTower(from, to) {
+  const v = canMove(from, to);
+  if (!v.ok) { if (!v.quiet) explain(v, to); return false; }
+  const g = S.grid[from], h = S.grid[to];
+  S.grid[to] = g; g.fresh = !seenAs(to, 'tower');
+  S.grid[from] = h; if (h) h.fresh = !seenAs(from, h.t);
+  if (S.sel && S.sel.k === 'tower') S.sel = { k: 'tower', cell: S.sel.cell === from ? to : S.sel.cell === to ? from : S.sel.cell };
+  S.gridVer++; recompute();
+  puff(...center(to), '#4fd6ee');
+  refreshUI();
+  return true;
+}
+// The route units would take with the tower on `from` moved to `to` (swapped with whatever stands there).
+function routeMoved(from, to) {
+  const H = S.grid.slice();
+  [H[from], H[to]] = [H[to], H[from]];
+  flow(tmpA, i => !H[i], dangerField(H), S.bridges);
+  const path = tracePath(tmpA);
+  return { path, len: pathLen(path), fire: underFire(path, H) };
 }
 function setTowerCfg(cell, patch) {
   const g = S.grid[cell];
@@ -1735,8 +1781,23 @@ function placeHot() {
 /* ---------- what the pointer would build ----------
    For the cell under the mouse (or the pending tap on touch): the ghost, the route preview and the readout's change. */
 let hypCache = { key: '', S: null, pv: null };
+// A tower being dragged to a new cell (on either step), or null.
+const towerDrag = () => (drag && drag.mode === 'tower' && drag.moved && S.phase === 'defend' && S.grid[drag.from] && S.grid[drag.from].t === 'tower' ? drag : null);
 function buildPreview() {
-  if (S.phase !== 'defend' || S.step !== 0) return null;
+  if (S.phase !== 'defend') return null;
+  const td = towerDrag();
+  if (td) {
+    const key = ['move', S.gridVer, td.from, td.cell].join(':');
+    if (hypCache.key === key && hypCache.S === S) return hypCache.pv;
+    let pv = null;
+    if (td.cell >= 0 && td.cell !== td.from) {
+      pv = { kind: 'move', cell: td.cell, from: td.from, v: canMove(td.from, td.cell) };
+      if (pv.v.ok) pv.r = routeMoved(td.from, td.cell);
+    }
+    hypCache = { key, S, pv };
+    return pv;
+  }
+  if (S.step !== 0) return null;
   const cell = ghostCell(), tool = S.tool, set = hotNow();
   if (cell < 0 || (tool !== 'wall' && tool !== 'tower' && tool !== 'shape')) return null;
   const key = [S.gridVer, S.dFree, tool, cell, shapeSel.k, shapeSel.rot, shapeSel.flip, view.rot, set ? set.join(',') : '-'].join(':');
@@ -2172,7 +2233,7 @@ function waveStep(dt) {
    Round flow
    ===================================================================== */
 const DEF_STEPS = [
-  { name: 'Build', tool: 'wall', hint: 'Walls bend the route, towers shoot it. Tap a tower to tune it.' },
+  { name: 'Build', tool: 'wall', hint: 'Walls bend the route, towers shoot it. Tap a tower to tune it, drag it to move it.' },
   { name: 'Ready', tool: 'inspect', hint: 'Check your build and what attacked last time.' },
 ];
 // The sabotage screen decides what to hit; the wave screen decides how the sappers get there.
@@ -2213,6 +2274,7 @@ function setPhase(p) {
   for (const k in ctxKey) ctxKey[k] = null;
   bodyKey.def = bodyKey.atk = null;
   refreshUI();
+  tickClock(false); // the clock pill follows the phase at once, not on its next tick
 }
 function goStep(n) {
   const steps = S.phase === 'defend' ? DEF_STEPS : ATK_STEPS;
@@ -2258,11 +2320,12 @@ function attackerReady() {
 const clock = { end: 0, on: false, out: false };
 function startClock() { Object.assign(clock, { end: performance.now() + RULES.planSecs * 1000, on: RULES.planSecs > 0, out: false }); tickClock(); }
 const planLocked = () => (online() ? NET.lk === real().round : SOLO.on && SOLO.locked);
-function tickClock() {
+// fire: false only redraws the pill (after a phase change or a lock); time-up fires from the timer alone
+function tickClock(fire = true) {
   const s = real(), planning = !!s && (s.phase === 'defend' || s.phase === 'attack');
   if (clock.on && !planning) clock.on = false; // the round moved on: a handoff, the wave, the summary
   const left = clock.on ? Math.max(0, clock.end - performance.now()) / 1000 : 0;
-  if (clock.on && left <= 0) { timeUp(); return; }
+  if (clock.on && left <= 0) { if (fire) timeUp(); return; }
   const show = clock.on && !planLocked();
   el.clock.hidden = !show;
   if (!show) return;
@@ -2270,7 +2333,7 @@ function tickClock() {
   setText(el.clock, 'clk', `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
   el.clock.classList.toggle('low', sec <= 30);
 }
-setInterval(tickClock, 250); // a timer, not the frame loop, so it keeps counting in a background tab
+setInterval(() => tickClock(), 250); // a timer, not the frame loop, so it keeps counting in a background tab
 function timeUp() {
   Object.assign(clock, { on: false, out: true });
   el.clock.hidden = true;
@@ -2661,18 +2724,18 @@ function lockIn() {
     toast('Hand-placed unit timings were evened out so the plan fits the connection.', 'atk');
   }
   if (bytes({ ...netState(), plan }) > 3900) { toast('This plan is too large to send. Remove a few walls or units.', 'bad'); return; }
-  NET.myPlan = plan; NET.lk = S.round;
-  publish();
+  NET.myPlan = plan; NET.lk = S.round; drag = null;
+  publish(); tickClock(false);
   show(ovWait);
   netCheck();
 }
 function unlock() {
   if (clock.out) return; // time's up: the plan stands
-  if (SOLO.on) { SOLO.locked = false; hide(ovWait); return; }
+  if (SOLO.on) { SOLO.locked = false; hide(ovWait); tickClock(false); return; }
   if (NET.go >= S.round) return;
   NET.lk = 0; NET.myPlan = null;
   hide(ovWait);
-  publish(); refreshUI(); updateNetUI();
+  publish(); refreshUI(); updateNetUI(); tickClock(false);
 }
 function netCheck() {
   if (!NET.on || NET.st !== 'play' || !S || replay) return; // exitReplay checks again
@@ -2759,7 +2822,7 @@ function adoptRounds(n) {
   if (!validRounds(n) || !s || s.rounds === n) return;
   NET.n = n;
   const fresh = s.round === 1 && s.keep === s.keepMax;
-  s.rounds = n; s.keepMax = RULES.keepPerRound * n;
+  s.rounds = n; s.keepMax = keepFor(n);
   s.keep = fresh ? s.keepMax : Math.min(s.keep, s.keepMax);
   publish(); refreshUI();
   toast(`The defender picked ${n} waves.`, '');
@@ -3751,7 +3814,7 @@ function pumpThink() {
 }
 function soloReady() {
   if (!SOLO.think) { soloBeginWave(); return; }
-  SOLO.locked = true;
+  SOLO.locked = true; drag = null; tickClock(false);
   $('#wait-title').textContent = 'Locked in';
   $('#wait-sub').textContent = 'The computer is finishing its plan';
   $('#wait-net').textContent = '';
@@ -3813,7 +3876,7 @@ const fmtK = n => n.toLocaleString('en-US');
 function syncRoundsUI() {
   const n = chosenRounds();
   for (const b of document.querySelectorAll('#mode-waves button')) b.setAttribute('aria-pressed', String(+b.dataset.rounds === n));
-  $('#mode-keep').innerHTML = `Keep <b>${fmtK(RULES.keepPerRound * n)}</b>`;
+  $('#mode-keep').innerHTML = `Keep <b>${fmtK(keepFor(n))}</b>`;
 }
 $('#mode-waves').innerHTML = RULES.roundChoices.map(n => `<button data-rounds="${n}" aria-pressed="false">${n}</button>`).join('');
 for (const b of document.querySelectorAll('#mode-waves button')) b.addEventListener('click', () => {
@@ -4036,7 +4099,7 @@ function defBodyHTML(step) {
 // One short line for the picked tool.
 function toolNote() {
   const offline = S.grid.filter(g => g && g.t === 'tower' && g.off > 0).length, set = hotNow();
-  if (S.tool === 'tower') return `Next tower <b>${towerCost(defaultTower())} + ${nextFee()}</b> fee. Each tower adds ${RULES.towerFee} to the fee; moving one is free.${offline ? ` <b>${plural(offline, 'tower')} offline</b>, locked until it comes back.` : ''}`;
+  if (S.tool === 'tower') return `Next tower <b>${towerCost(defaultTower())} + ${nextFee()}</b> fee. Each tower adds ${RULES.towerFee} to the fee; drag one to move it, free.${offline ? ` <b>${plural(offline, 'tower')} offline</b>, locked until it comes back.` : ''}`;
   if (S.tool === 'remove') return 'Tap a wall or tower to take it back for a full refund.';
   if (S.tool === 'shape') return matchMedia('(hover: hover)').matches ? 'Click to drop the piece; R rotates, F flips. Red cells can’t be built.' : 'Tap to show the piece, drag to move it, tap it to place. Red cells can’t be built.';
   return set && set.length ? `Drag to draw walls. <b>Glowing tiles</b> place the ${plural(set.length, 'wall')} that lengthen the route most, all at once.` : 'Drag to draw walls. Units avoid tower range when they can, so walls are what force them through your fire.';
@@ -5181,6 +5244,22 @@ function drawHot(c, t, cells, on) {
     c.lineWidth = px * 1.3; c.strokeStyle = `rgba(184,242,138,${(on ? 0.7 : 0.28) + 0.25 * a})`; c.stroke();
   }
 }
+// A tower being dragged: its old cell framed, the tower where it would land with its range, and whatever it swaps
+// with shown in the old cell.
+function drawMoveGhost(c, pv) {
+  const g = S.grid[pv.from], h = S.grid[pv.cell], v = pv.v, [fx, fy] = center(pv.from), [x, y] = center(pv.cell);
+  c.beginPath(); rr(c, fx - 0.47, fy - 0.47, 0.94, 0.94, 0.16);
+  c.setLineDash([0.12, 0.08]); c.lineWidth = 0.05; c.strokeStyle = 'rgba(226,233,238,0.75)'; c.stroke(); c.setLineDash([]);
+  if (v.ok && h) {
+    c.globalAlpha = 0.45;
+    if (h.t === 'tower') drawTowerShape(c, h.cfg, fx, fy, Math.PI, 0, false);
+    else { c.beginPath(); rr(c, fx - 0.43, fy - 0.43, 0.86, 0.86, 0.13); c.fillStyle = '#7cc4e2'; c.fill(); }
+    c.globalAlpha = 1;
+  }
+  c.globalAlpha = 0.6; drawTowerShape(c, g.cfg, x, y, g.ang ?? Math.PI, 0, false); c.globalAlpha = 1;
+  drawRange(c, x, y, TS.range.steps[g.cfg.range], v.ok);
+  if (!v.ok) drawX(c, pv.cell);
+}
 function drawWallGhost(c, i, ok) {
   const [x, y] = center(i);
   c.globalAlpha = 0.55; c.beginPath(); rr(c, x - 0.43, y - 0.43, 0.86, 0.86, 0.13); c.fillStyle = ok ? '#7cc4e2' : '#ff7a7a'; c.fill(); c.globalAlpha = 1;
@@ -5227,7 +5306,8 @@ function drawInteraction(c, t, G) {
     } else {
       const set = hotNow(), pv = buildPreview();
       if (set && set.length) drawHot(c, t, set, pv && pv.kind === 'hot');
-      if (pv && pv.kind === 'shape') drawShapeGhost(c, t, pv);
+      if (pv && pv.kind === 'move') drawMoveGhost(c, pv);
+      else if (pv && pv.kind === 'shape') drawShapeGhost(c, t, pv);
       else if (pv && pv.kind === 'hot') for (const [i] of pv.cells) drawWallGhost(c, i, pv.v.ok);
       else if (pv) {
         const cell = pv.cell, v = pv.v, [x, y] = center(cell), br = S.bridges.has(cell);
@@ -5323,6 +5403,11 @@ function drawLabels(c, G) {
     pill(c, sx, sy, `REMOVE +${removeLabel.val}`, '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
   }
   const pv = S.phase === 'defend' ? buildPreview() : null;
+  if (pv && pv.kind === 'move') {
+    const v = pv.v, [x, y] = center(pv.cell), [sx, sy] = w2s(x, y);
+    const txt = v.ok ? (v.swap ? `SWAP WITH ${v.swap === 'tower' ? 'TOWER' : 'WALL'}` : 'MOVE TOWER \u00b7 FREE') : v.block ? 'PATH MUST STAY OPEN' : 'CAN\u2019T GO HERE';
+    pill(c, sx, Math.max(4, sy - view.cs * 0.5 - 24), txt, v.ok ? '#d9f6ff' : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
+  }
   if (pv && (pv.kind === 'shape' || pv.kind === 'hot')) {
     const v = pv.v, name = pv.kind === 'hot' ? `PLACE ${pv.cells.length} WALL${pv.cells.length === 1 ? '' : 'S'}` : SEGMENTS[shapeSel.k].name.toUpperCase();
     const txt = v.ok ? `${name} \u00b7 ${v.cost} COINS` : v.block ? 'PATH MUST STAY OPEN' : v.gold ? `${name} \u00b7 ${v.short} COINS SHORT` : 'NOTHING TO BUILD HERE';
@@ -5395,7 +5480,7 @@ function pressDefend(cell, pt) {
   if (tool === 'shape' && !(g && g.t === 'tower' && !nearPending(cell))) return pressShape(cell, pt);
   if (g) {
     pending = -1;
-    if (g.t === 'tower') { selectTower(cell); return null; }
+    if (g.t === 'tower') return 'tower'; // a tap opens its card, a drag moves it (pointerup decides)
     if (g.t === 'rock' && tool !== 'inspect') explain(canBuild(cell, tool), cell);
     return tool === 'wall' ? 'wall' : null;
   }
@@ -5465,7 +5550,8 @@ function pressShape(cell, pt) {
   return 'shape';
 }
 function paint(cell, mode) {
-  if (cell < 0 || S.phase !== 'defend') return;
+  if (mode === 'tower') return; // the ghost follows drag.cell; pointermove decides when a press became a drag
+  if (cell < 0 || S.phase !== 'defend' || planLocked()) return;
   if (mode === 'shape' || mode === 'shape-tap') {
     pending = clamp(((cell / COLS) | 0) + shapeGrab[1], 0, ROWS - 1) * COLS + clamp(cell % COLS + shapeGrab[0], 0, COLS - 1);
     if (drag) drag.moved = true;
@@ -5482,14 +5568,20 @@ canvas.addEventListener('pointerdown', e => {
   hover = hoverType === 'mouse' ? cell : -1;
   const mode = press(cell, hoverType, p);
   if (mode) {
-    drag = { id: e.pointerId, mode, last: p, cell };
+    drag = { id: e.pointerId, mode, last: p, cell, from: cell, p0: p };
     try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* capture is optional */ }
   }
 });
 canvas.addEventListener('pointermove', e => {
   const p = worldFromEvent(e);
-  if (e.pointerType === 'mouse') { hoverType = 'mouse'; hover = cellOf(p); }
+  if (e.pointerType === 'mouse') {
+    hoverType = 'mouse'; hover = cellOf(p);
+    const g = S && S.phase === 'defend' && S.tool !== 'remove' && hover >= 0 ? S.grid[hover] : null;
+    canvas.style.cursor = drag && drag.mode === 'tower' ? 'grabbing' : g && g.t === 'tower' ? 'grab' : '';
+  }
   if (drag && e.pointerId === drag.id) {
+    // a tower press becomes a drag only past a little travel, so a wobbly tap near a cell's edge still just opens its card
+    if (drag.mode === 'tower' && !drag.moved && Math.hypot(p[0] - drag.p0[0], p[1] - drag.p0[1]) > (e.pointerType === 'mouse' ? 0.3 : 0.5)) drag.moved = true;
     const [x0, y0] = drag.last, [x1, y1] = p;
     const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.2));
     for (let k = 1; k <= steps; k++) {
@@ -5505,6 +5597,11 @@ canvas.addEventListener('pointerup', e => {
   endDrag(e);
   if (d && d === drag) return; // another pointer's drag
   if (d && d.mode === 'shape-tap' && !d.moved && S.phase === 'defend' && S.tool === 'shape' && pending >= 0 && placeShape(pending)) pending = -1;
+  if (d && d.mode === 'tower' && S.phase === 'defend' && !planLocked()) {
+    if (!d.moved) selectTower(d.from);
+    else if (d.cell >= 0 && d.cell !== d.from) moveTower(d.from, d.cell); // dropped off the board or back home: nothing moves
+    if (e.pointerType === 'mouse') canvas.style.cursor = '';
+  }
 });
 canvas.addEventListener('pointercancel', endDrag);
 canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = -1; });
