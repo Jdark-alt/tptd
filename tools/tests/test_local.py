@@ -24,8 +24,9 @@ def hand(page):
 def set_slider(page, sel, v):
     page.evaluate(f"""() => {{ const i = document.querySelector('{sel}'); i.value = {v}; i.dispatchEvent(new Event('input', {{bubbles:true}})); }}""")
 def no_terrain(page):
-    """The fixed scenarios click known cells, so their matches start without rough ground or rock."""
-    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; }')
+    """The fixed scenarios click known cells, so their matches start without rough ground or rock, and without the
+    planning clock (it has checks of its own), so a slow machine never sends a plan early."""
+    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.planSecs = 0; }')
 def sure_sappers(page):
     """The fixed scenarios check what sappers do on arrival, so theirs get top health and always arrive."""
     page.evaluate('() => { window.siegeline.rules.sapper.hp = 9; }')
@@ -742,6 +743,122 @@ with sync_playwright() as p:
     rb = page.locator('#def-next').bounding_box()
     check(rb and rb['y'] + rb['height'] <= 390, f'landscape phone: Next visible {rb}')
     page.screenshot(path=f'{OUT}/l0.png')
+    ctx.close()
+
+    # ---------- v19: the match length picked at the start (the keep follows), the planning clock, knock-outs keep the route
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go')
+    picks = page.evaluate("() => [...document.querySelectorAll('#mode-waves button')].map(b => b.textContent + (b.getAttribute('aria-pressed') === 'true' ? '*' : ''))")
+    check(picks == ['4', '6', '8*', '10', '12'] and page.inner_text('#mode-keep') == 'KEEP 1,000', f'the mode screen offers 4-12 waves, 8 picked, keep 1,000 ({picks}, {page.inner_text("#mode-keep")})')
+    page.click('#mode-waves [data-rounds="4"]')
+    check(page.inner_text('#mode-keep') == 'KEEP 500', 'picking 4 waves shows a keep of 500')
+    page.click('#mode-local'); hand(page)
+    check(S(page, '[S.rounds, S.keep, S.keepMax]') == [4, 500, 500] and page.inner_text('#v-rounds') == 'of 4' and page.inner_text('#v-keepmax') == '/ 500',
+          f'a 4-wave match: the HUD says of 4 and the keep has 500 ({page.inner_text("#v-rounds")}, {page.inner_text("#v-keepmax")})')
+    check(page.is_hidden('#t-clock'), 'no clock with the planning time switched off')
+    def quick_round(page, army=0):
+        page.click('#def-next'); page.click('#def-next'); hand(page)
+        if army: page.evaluate(f'() => {{ const S = window.siegeline.state; S.designs[0].count = {army}; }}')
+        page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next')
+        if not page.is_visible('#ov-hand'): page.click('#atk-next')  # an empty army asks to confirm
+        hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    for r in range(1, 4):
+        quick_round(page)
+        check(page.is_visible('#ov-sum') and f'round {r} of 4 complete' in page.inner_text('#ov-sum').lower(), f'round {r} of 4 complete')
+        page.click('#sum-next'); hand(page)
+    page.click('#def-next'); page.click('#def-next'); hand(page)
+    page.click('#atk-next'); page.wait_for_timeout(200)
+    check(S(page, 'S.round') == 4 and 'final wave' in page.inner_text('#a-chg-note').lower(), f'no sabotage in wave 4 of 4, the final one ({page.inner_text("#a-chg-note")})')
+    page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next')
+    if not page.is_visible('#ov-hand'): page.click('#atk-next')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
+    check(S(page, 'S.winner') == 'defender' and page.is_visible('#ov-end') and 'survived all 4 rounds' in page.inner_text('#ov-end').lower() and '500 of 500 points' in page.inner_text('#ov-end'),
+          'the defender wins after 4 waves, holding the keep of 500')
+    page.click('#end-again'); hand(page)
+    check(S(page, '[S.rounds, S.keep, S.round]') == [4, 500, 1], 'a rematch keeps the match length')
+    # the keep scales with the length: 12 waves, 1,500
+    page.reload(); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-waves [data-rounds="12"]'); page.click('#mode-local'); hand(page)
+    check(S(page, '[S.rounds, S.keep]') == [12, 1500] and page.inner_text('#v-keep') == '1500', '12 waves: the keep has 1,500')
+    ctx.close()
+
+    # the planning clock: each side's own 3 minutes, from when its screen opens; when it runs out the plan goes as it stands
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.evaluate('() => { window.siegeline.rules.planSecs = 180; }')
+    page.click('#info-go'); page.click('#mode-local')
+    check(page.is_hidden('#t-clock'), 'the clock waits behind the handoff screen')
+    hand(page)
+    check(page.is_visible('#t-clock') and page.inner_text('#t-clock') in ('3:00', '2:59'), f'the defender gets 3:00 ({page.inner_text("#t-clock")})')
+    page.reload(); page.wait_for_timeout(300); no_terrain(page); page.evaluate('() => { window.siegeline.rules.planSecs = 2; }')
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    click_cell(page, 5, 4); click_cell(page, 5, 5)
+    page.wait_for_timeout(1300)
+    check('low' in page.get_attribute('#t-clock', 'class'), 'the last seconds show in red')
+    page.wait_for_selector('#ov-hand', state='visible', timeout=4000)
+    check(S(page, 'S.next') == 'attack' and 'defender’s time ran out' in page.inner_text('#hand-sub').lower() and S(page, f'S.grid[{idx(5,5)}].t') == 'wall',
+          f'time up: the defense goes as built and the device passes to the attacker ({page.inner_text("#hand-sub")})')
+    hand(page)
+    check(S(page, 'S.phase') == 'attack' and page.is_visible('#t-clock'), 'the attacker gets a clock of their own')
+    page.evaluate('() => { const S = window.siegeline.state; S.designs[0].count = 4; }')
+    page.wait_for_selector('#ov-hand', state='visible', timeout=4000)
+    check(S(page, 'S.next') == 'wave' and 'attacker’s time ran out' in page.inner_text('#hand-sub').lower() and '4 units' in page.inner_text('#hand-sub'),
+          f'time up: the attacker’s army goes as planned ({page.inner_text("#hand-sub")})')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    page.click('#sum-next')
+    check(page.is_hidden('#t-clock'), 'no clock on the handoff between rounds')
+    page.evaluate('() => { window.siegeline.rules.planSecs = 3; }')
+    hand(page)
+    # a test run counts toward the time: when it runs out the test stops and the plan goes
+    page.click('#def-test'); page.click('#pane-wave .speed [data-speed="1"]'); page.wait_for_timeout(100)
+    check(page.evaluate('() => window.siegeline.testing') and page.is_visible('#t-clock'), 'the clock keeps running during a test run')
+    page.wait_for_selector('#ov-hand', state='visible', timeout=5000)
+    check(not page.evaluate('() => window.siegeline.testing') and S(page, 'S.next') == 'attack' and S(page, 'S.round') == 2, 'time up during a test run: the test stops and the plan goes')
+    # an empty army goes empty when time runs out
+    hand(page); page.evaluate('() => { const S = window.siegeline.state; S.designs.forEach(d => { d.count = 0; }); }')
+    page.wait_for_selector('#ov-hand', state='visible', timeout=5000)
+    check(S(page, 'S.next') == 'wave' and '0 units' in page.inner_text('#hand-sub'), f'time up on an attacker who planned nothing sends it empty, without asking ({page.inner_text("#hand-sub")})')
+    check(not errors, f'planning clock: no errors {errors[:3]}')
+    ctx.close()
+
+    # knock-outs keep the route: a tower knocked out mid-wave still counts when units pick their way, so nobody turns
+    # into the gap it guarded. Column 4 is walled with gaps in rows 3 and 6, and a tower at (2,7) covers the entry and
+    # the near gap (row 6), so units take the far one (row 3). Without that tower's fire the near gap would win.
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page); sure_sappers(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page)
+    page.click('#def-next'); page.click('#def-next'); hand(page)
+    KO = idx(2, 7)
+    layout = f"""() => {{ const S = window.siegeline.state, T = range => ({{ t: 'tower', cfg: {{ range, dps: 2, rate: 3, splash: 0, slow: false, poison: false, chain: false }}, fee: 0, off: 0, n: 1, fresh: false, cd: 0, ang: 0, kick: 0, dealt: 0 }});
+      const G = S.seenGrid.map(() => null); for (let r = 0; r < 11; r++) if (r !== 3 && r !== 6) G[r * 16 + 4] = {{ t: 'wall', fresh: false }};
+      G[{KO}] = T(3); S.seenGrid = G; S.grid = G.map(g => g && {{ ...g, cfg: g.cfg && {{ ...g.cfg }} }}); S.seenVer++; S.gridVer++; S.seenRound = 1; S.round = 2;
+      S.aFree = 500; S.designs.forEach(d => {{ d.count = 0; }}); }}"""
+    page.evaluate(layout)
+    far = page.evaluate('() => window.siegeline.seenRoute()')
+    check(idx(4, 3) in far and idx(4, 6) not in far, 'with the tower firing, units take the far gap')
+    page.evaluate(f"() => {{ const S = window.siegeline.state; S.seenGrid[{KO}] = {{ t: 'wall', fresh: false }}; S.seenVer++; }}")
+    near_route = page.evaluate('() => window.siegeline.seenRoute()')
+    check(idx(4, 6) in near_route, 'without its fire (its cell still blocked), the near gap would be cheaper')
+    page.evaluate(layout)
+    page.evaluate(f"() => {{ const S = window.siegeline.state; S.charges = new Map([[{KO}, {{ kind: 'tower', cost: 0, t: 0 }}]]); S.chargeVer++; }}")
+    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(100)
+    check(S(page, 'S.step') == 2 and 'if your bridge lands' not in page.inner_text('#atk-body'), 'a knock-out alone doesn’t promise a different route')
+    page.click('#atk-test'); page.wait_for_timeout(50)
+    p0 = S(page, 'S.path')
+    check(page.evaluate('() => window.siegeline.testing') and idx(4, 3) in p0, 'test run: units head for the far gap')
+    landed = advance_until(page, f'S.grid[{KO}].off > 0')
+    p1 = S(page, 'S.path')
+    check(landed and p1 == p0 and idx(4, 6) not in p1, f'the knock-out lands mid-wave and the route stays as it was ({len(p0)} → {len(p1)} cells)')
+    page.evaluate('() => window.siegeline.advance(30)')
+    check(S(page, 'S.path') == p0, 'and it stays so for the rest of the wave')
+    check(not errors, f'knock-outs keep the route: no errors {errors[:3]}')
     ctx.close()
 
     # ---------- terrain: rough ground and rock, a new map every match
