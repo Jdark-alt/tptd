@@ -1014,13 +1014,26 @@ with sync_playwright() as p:
     # the layout: one column, the master panel first, then a block per design (header, spread track, path strip)
     play = lambda: page.evaluate('() => window.siegeline.scrub.playing'); T = lambda: page.evaluate('() => window.siegeline.scrub.T')
     sizes = page.evaluate("() => ['#scrub-lbl', '.wp-title', '.blk-name', '.wp-help', '.wp-pre .mini', '.blk-sub', '.tl-ruler'].map(s => getComputedStyle(document.querySelector(s)).fontSize)")
-    order = page.evaluate("() => ['.wp-head', '.wp-pre', '.wp-master', '.wp-hist', '.wp-route', '.blk'].map(s => Math.round(document.querySelector(s).getBoundingClientRect().top))")
-    check(sizes == ['28px', '18px', '16px', '12px', '12px', '12px', '11px'] and order == sorted(order) and page.inner_text('.wp-title').lower() == 'wave plan',
-          f'the text sizes follow the spec (T 28, title 18, names 16, buttons 12, details 12, axis 11: {sizes}), top to bottom: title, presets, master panel, histogram, route, blocks')
-    play_box = page.locator('#scrub-play').bounding_box()
-    check(abs(play_box['width'] - 56) < 1 and abs(play_box['height'] - 56) < 1 and page.evaluate("() => getComputedStyle(document.querySelector('#scrub-play')).borderRadius") == '50%'
-          and page.locator('.wp-rel').count() == 1 and 'releases end' in page.inner_text('.wp-ticks') and page.inner_text('.wp-ticks').split()[:7] == ['0s', '10s', '20s', '30s', '40s', '50s', '60s'],
-          'the master panel: a 56 px round play button, ticks every 10 s to 60 s and a marker at 20 s, “releases end”')
+    biggest = page.evaluate("() => Math.max(...[...document.querySelectorAll('#tl *')].filter(e => e.offsetParent && !e.closest('.wp-title') && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())).map(e => parseFloat(getComputedStyle(e).fontSize)))")
+    order = page.evaluate("() => ['.wp-head', '.wp-master', '.wp-hist', '.wp-pre', '.wp-route', '.blk'].map(s => Math.round(document.querySelector(s).getBoundingClientRect().top))")
+    help_box, title_box = page.locator('.wp-help').bounding_box(), page.locator('.wp-title').bounding_box()
+    check(sizes == ['11px', '22px', '16px', '11px', '11px', '12px', '11px'] and biggest < 22 and order == sorted(order) and page.inner_text('.wp-title').lower() == 'wave plan'
+          and 0 < help_box['x'] - (title_box['x'] + title_box['width']) < 24 and abs(help_box['y'] + help_box['height'] / 2 - (title_box['y'] + title_box['height'] / 2)) < 3,
+          f'v20.3: the title is the biggest text (22 px; the next biggest {biggest:.0f}) with How to use beside it; T, buttons and axis 11, names 16, details 12 ({sizes}); top to bottom: title, master panel, histogram, presets, route, blocks')
+    play_box, lbl_box, sl_box = page.locator('#scrub-play').bounding_box(), page.locator('#scrub-lbl').bounding_box(), page.locator('#scrub-t').bounding_box()
+    mb = page.locator('#a-scrub').bounding_box()
+    check(abs(play_box['width'] - 34) < 1 and abs(play_box['height'] - 34) < 1 and page.evaluate("() => getComputedStyle(document.querySelector('#scrub-play')).borderRadius") == '50%'
+          and play_box['x'] - mb['x'] < 30 and lbl_box['y'] >= play_box['y'] + play_box['height'] and abs((lbl_box['x'] + lbl_box['width'] / 2) - (play_box['x'] + play_box['width'] / 2)) < 2
+          and sl_box['x'] > play_box['x'] + play_box['width'] and abs((sl_box['y'] + sl_box['height'] / 2) - (play_box['y'] + play_box['height'] / 2)) < 2,
+          'v20.3: the master panel: a 34 px round play button at its left, T under it, the slider to its right')
+    check(page.locator('.wp-rel').count() == 1 and page.get_attribute('.wp-ticks .rel', 'title') == 'Releases end at 20 s' and page.inner_text('.wp-ticks .rel') == '20s'
+          and page.inner_text('.wp-ticks').split()[:7] == ['0s', '10s', '20s', '30s', '40s', '50s', '60s'],
+          'the master panel: ticks every 10 s to 60 s and a marker at 20 s, where releases end')
+    lanes = page.evaluate("() => [...document.querySelectorAll('#tl .lane')].map(l => l.getBoundingClientRect().height)")
+    knob = page.evaluate("() => { const h = document.querySelector('#tl .lane .hdl'); const s = getComputedStyle(h, '::before'); return [h.getBoundingClientRect().height, parseFloat(s.height), parseFloat(s.width)]; }")
+    dot = page.locator('.lane[data-i="0"] .clip').nth(1).bounding_box()
+    check(all(abs(h - 39) < 0.5 for h in lanes) and knob == [17, 17, 7] and abs(dot['width'] - 8) < 0.5,
+          f'v20.3: the spread tracks are 70% as tall as before (39 px: {lanes}), their knobs 7 × 17 px ({knob}) and dots 8 px ({dot["width"]:.1f})')
     check('nudge' in (page.get_attribute('#scrub-play', 'class') or '') and page.inner_text('#scrub-nudge') == 'Press play, or drag the dot, to watch your wave move.',
           'until the first touch in a match the play button pulses and the line under the slider says what to do')
     blocks = page.evaluate("() => [...document.querySelectorAll('#tl .blk')].map(b => [...b.children].map(c => c.className.split(' ')[0]))")
@@ -1036,6 +1049,8 @@ with sync_playwright() as p:
     t1 = T()
     check(play() and 0.7 < t1 < 1.6 and 'nudge' not in (page.get_attribute('#scrub-play', 'class') or '') and page.is_hidden('#scrub-nudge'),
           f'spec test 1: on a fresh match, play runs T at real speed ({t1:.2f} s after 1 s); the pulse and the line are gone')
+    mh = page.locator('#a-scrub').bounding_box()['height']
+    check(mh <= 73, f'v20.3: the master panel is half as tall as v20.2’s (146 px): {mh:.0f} px')
     lane = page.locator('.lane[data-i="0"]').bounding_box(); tnow = page.locator('.lane[data-i="0"] .tnow').bounding_box()
     check(tnow and abs(tnow['x'] - (lane['x'] + 1 + (lane['width'] - 2) * T() / 20)) < 4, 'while T is under 20 s a line on each spread track marks it')
     set_slider(page, '#scrub-t', 58.5); page.click('#scrub-play'); page.wait_for_timeout(2300)
@@ -1113,8 +1128,9 @@ with sync_playwright() as p:
     page.locator(f'.blk[data-g="s{bw}"]').scroll_into_view_if_needed()  # the panel scrolls; the strip may sit under the nav
     P = page.evaluate('() => window.siegeline.scrub.paths()'); pb = page.locator(f'.pth[data-g="s{bw}"]').bounding_box()
     x0 = pb['x'] + 1 + P['rows'][f's{bw}']['front'] / P['L'] * (pb['width'] - 2)
-    check(page.locator(f'.pth[data-g="s{bw}"] .dyn .tk').count() == 1 and page.locator(f'.pth[data-g="s{bw}"] .brk').count() == 1 and page.locator(f'.lane.sap[data-sap="{bw}"] .clip').count() == 1,
-          'a sapper’s block has one release knob, and one dot on its strip with a “B” for its bridge')
+    check(page.locator(f'.pth[data-g="s{bw}"] .dyn .tk').count() == 1 and page.locator(f'.pth[data-g="s{bw}"] .brk').count() == 1 and page.locator(f'.lane.sap[data-sap="{bw}"] .clip').count() == 1
+          and abs(page.locator(f'.lane.sap[data-sap="{bw}"]').bounding_box()['height'] - 24) < 0.5,
+          'a sapper’s block has one release knob on a 24 px track (70% of v20.2’s), and one dot on its strip with a “B” for its bridge')
     drag(page, x0, pb['y'] + 8, x0 - pb['width'] * 0.1, pb['y'] + 8); page.wait_for_timeout(150)
     t1 = S(page, f'S.charges.get({bw}).t'); head = page.inner_text(f'.blk[data-g="s{bw}"] .blk-head')
     check(t1 > t0 and f'leaves {t1 * 20:.1f} s' in head and 'reaches target' in head, f'spec test 7: dragging the sapper’s dot back along the strip makes it leave later ({t0 * 20:.1f} → {t1 * 20:.1f} s): {head}')

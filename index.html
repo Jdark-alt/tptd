@@ -333,44 +333,53 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .hpbar i{display:block;height:100%;background:#f3e3cf}
 .tagline2{font:500 10.5px/1.35 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--side)}
 
-/* the wave plan (the attacker's Wave step), one column: the title and How to use, the presets, the master panel (play,
-   T and the 0-60 s slider), the busiest-second bars and the route line, then a block per design and per sapper: its
-   name, a spread track (when its units leave, 0-20 s) and a slim path strip under it (where it is on the route at T).
-   Text sizes: T 28, title 18, names 16, buttons 12 caps, details 12 grey, axis labels 11 dim. */
+/* the wave plan (the attacker's Wave step), one column: the title with How to use beside it, the master panel (play
+   with T under it, the 0-60 s slider beside them), the busiest-second bars, the presets, the route line, then a block per
+   design and per sapper: its name, a spread track (when its units leave, 0-20 s) and a slim path strip under it (where
+   it is on the route at T). Text sizes: title 22, names 16, details 12 grey, buttons and axis labels 11. */
 .tl{display:flex;flex-direction:column;gap:10px;--dim:#57616b}
-.wp-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.wp-title{margin:0;font:700 18px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--paper)}
-.wp-help{flex:none;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px 0 8px;border-radius:999px;border:1px solid var(--warm);background:transparent;
-  color:var(--warm);font:600 12px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
-.wp-help i{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;font:700 11px/1 var(--f-ui);font-style:normal;letter-spacing:0}
-.wp-help:hover{background:var(--warm-wash)}
+.wp-head{display:flex;align-items:center;gap:14px;min-width:0}
+.wp-title{margin:0;font:700 22px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--paper);white-space:nowrap}
+.wp-help{flex:none;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 6px;border-radius:999px;border:1px solid color-mix(in srgb,var(--warm) 55%,transparent);background:transparent;
+  color:var(--warm);font:600 11px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.wp-help i{display:grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1.2px solid currentColor;font:700 9.5px/1 var(--f-ui);font-style:normal;letter-spacing:0}
+.wp-help:hover{background:var(--warm-wash);border-color:var(--warm)}
 .mini{height:28px;padding:0 10px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;color:var(--soft)}
 .mini:hover{border-color:var(--muted);color:var(--paper)}
-.wp-pre{display:flex;gap:6px;flex-wrap:wrap}
-.wp-pre .mini{height:32px;font-size:12px}
-/* the master panel: the first thing to notice */
-.wp-master{display:flex;flex-direction:column;gap:4px;padding:12px 14px 10px;border:1px solid var(--warm);border-radius:var(--r2);background:var(--slate-2)}
-.wp-top{display:flex;align-items:center;gap:14px;min-width:0}
-.wp-play{flex:none;width:56px;height:56px;padding:0;border:0;border-radius:50%;background:var(--warm);color:var(--warm-ink);display:grid;place-items:center;cursor:pointer}
-.wp-play svg{width:20px;height:20px;display:block;pointer-events:none}
+/* the presets: quiet, under the bars they reshape */
+.wp-pre{display:flex;gap:4px;flex-wrap:wrap;padding:0 6px}
+.wp-pre .mini{height:24px;padding:0 8px;font-size:11px;letter-spacing:.08em;border-color:var(--line);color:var(--muted)}
+.wp-pre .mini:hover{border-color:var(--line-2);color:var(--paper)}
+/* the master panel: play on the left with T under it, the slider beside them, the ticks under the slider */
+.wp-master{display:grid;grid-template-columns:68px minmax(0,1fr);column-gap:10px;row-gap:3px;align-items:center;padding:8px 12px 7px 6px;
+  border:1px solid var(--line);border-left:2px solid var(--warm);border-radius:var(--r2);background:var(--slate)}
+.wp-play{justify-self:center;width:34px;height:34px;padding:0;border:1px solid var(--warm);border-radius:50%;background:var(--warm-wash);color:var(--warm);display:grid;place-items:center;cursor:pointer;
+  transition:background-color 80ms,color 80ms,transform 60ms;-webkit-tap-highlight-color:transparent}
+.wp-play svg{width:13px;height:13px;display:block;pointer-events:none}
+.wp-play:hover{background:color-mix(in srgb,var(--warm) 28%,transparent)}
+.wp-play[aria-pressed="true"]{background:var(--warm);color:var(--warm-ink)}
+.wp-play:active{transform:scale(.92)}
 .wp-play.nudge{animation:wpPulse 2s ease-out infinite}
-@keyframes wpPulse{0%{box-shadow:0 0 0 0 rgba(255,138,61,.55)}70%,100%{box-shadow:0 0 0 14px rgba(255,138,61,0)}}
-@media (prefers-reduced-motion:reduce){.wp-play.nudge{animation:none;box-shadow:0 0 0 3px rgba(255,138,61,.4)}}
-.wp-t{font:700 28px/1 var(--f-ui);color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+@keyframes wpPulse{0%{box-shadow:0 0 0 0 rgba(255,138,61,.5)}70%,100%{box-shadow:0 0 0 9px rgba(255,138,61,0)}}
+@media (prefers-reduced-motion:reduce){.wp-play.nudge{animation:none;box-shadow:0 0 0 2px rgba(255,138,61,.4)}}
+.wp-t{justify-self:center;font:500 11px/1 var(--f-ui);color:var(--soft);letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
 .wp-slider{position:relative}
-.wp-slider input{-webkit-appearance:none;appearance:none;display:block;width:100%;margin:0;height:44px;background:transparent;cursor:pointer;touch-action:pan-y}
-.wp-slider input::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--warm) calc(14px + (100% - 28px) * var(--p,0)),var(--line-2) 0)}
-.wp-slider input::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;margin-top:-10px;border-radius:50%;background:var(--warm);border:3px solid #fff;box-sizing:border-box}
-.wp-slider input::-moz-range-track{height:8px;border-radius:4px;background:var(--line-2)}
-.wp-slider input::-moz-range-progress{height:8px;border-radius:4px;background:var(--warm)}
-.wp-slider input::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--warm);border:3px solid #fff}
-.wp-rel{position:absolute;top:11px;bottom:11px;left:calc(14px + (100% - 28px) / 3);width:0;border-left:1.5px solid var(--paper);opacity:.55;pointer-events:none}
-.wp-ticks{position:relative;height:13px;margin:0 14px;font:500 11px/1 var(--f-ui);color:var(--dim);font-variant-numeric:tabular-nums}
+.wp-slider input{-webkit-appearance:none;appearance:none;display:block;width:100%;margin:0;height:34px;background:transparent;cursor:pointer;touch-action:pan-y}
+@media (pointer:coarse){.wp-slider input{height:44px;margin:-5px 0}}
+/* the track: orange up to the thumb, a lighter grey over the release window (0-20 s), darker after it */
+.wp-slider input::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--warm) calc(8px + (100% - 16px) * var(--p,0)),var(--line-2) 0,
+  var(--line-2) calc(8px + (100% - 16px) / 3),var(--line) 0)}
+.wp-slider input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--warm);border:2px solid #fff;box-sizing:border-box}
+.wp-slider input:active::-webkit-slider-thumb{transform:scale(1.15)}
+.wp-slider input::-moz-range-track{height:4px;border-radius:2px;background:var(--line-2)}
+.wp-slider input::-moz-range-progress{height:4px;border-radius:2px;background:var(--warm)}
+.wp-slider input::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--warm);border:2px solid #fff}
+.wp-rel{position:absolute;top:50%;height:12px;margin-top:-6px;left:calc(8px + (100% - 16px) / 3);width:0;border-left:1px solid var(--paper);opacity:.45;pointer-events:none}
+.wp-ticks{position:relative;height:11px;margin:0 8px;font:500 10px/1 var(--f-ui);color:var(--dim);font-variant-numeric:tabular-nums}
 .wp-ticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
-.wp-ticks .rel{top:15px;color:var(--soft)}
-.wp-ticks.two{height:28px}
-.wp-nudge{margin:4px 0 0;font:400 12px/1.4 var(--f-body);color:var(--soft)}
-.wp-master .scrow{margin-top:6px}
+.wp-ticks span.rel{color:var(--soft)}
+.wp-nudge{grid-column:1/-1;margin:3px 0 0 6px;font:400 11px/1.4 var(--f-body);color:var(--muted)}
+.wp-master .scrow{grid-column:1/-1;margin:5px 0 0 6px}
 /* the busiest-second bars and the route line, inset like the blocks so they line up with the tracks */
 .wp-hist{display:flex;flex-direction:column;gap:4px;padding:0 6px}
 .tl-peaklbl{font:500 12px/1 var(--f-ui);color:var(--muted);letter-spacing:.06em}
@@ -394,19 +403,19 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .blk-sub .bad{color:var(--bad)}
 /* a spread track: the 20 s release window, a line every 5 s. The band from the first release to the last, a knob at
    each end (each moves only its own end), one dot per unit below them; drag the band's middle to slide the group. */
-.lane{position:relative;height:56px;border-radius:var(--r);cursor:grab;touch-action:none;border:1px solid var(--line);
+.lane{position:relative;height:39px;border-radius:var(--r);cursor:grab;touch-action:none;border:1px solid var(--line);
   background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--line) calc(25% - 1px) 25%),var(--slate)}
-.lane .rng{position:absolute;top:4px;bottom:4px;border-radius:2px;background:color-mix(in srgb,var(--c) 20%,transparent)}
+.lane .rng{position:absolute;top:3px;bottom:3px;border-radius:2px;background:color-mix(in srgb,var(--c) 20%,transparent)}
 .lane .tnow{position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid var(--paper);opacity:.7;pointer-events:none;z-index:4}
-.lane .hdl,.lane.sap .clip{position:absolute;top:4px;height:24px;width:22px;margin-left:-11px;z-index:3;cursor:ew-resize;touch-action:none;display:grid;place-items:center}
+.lane .hdl,.lane.sap .clip{position:absolute;top:3px;height:17px;width:20px;margin-left:-10px;z-index:3;cursor:ew-resize;touch-action:none;display:grid;place-items:center}
 .lane .hdl::before,.lane .hdl::after,.lane.sap .clip::before,.lane.sap .clip::after{content:"";grid-area:1/1}
-.lane .hdl::before,.lane.sap .clip::before{width:10px;height:24px;border-radius:2px;background:var(--c);box-shadow:0 0 0 1.5px var(--ink)}
-.lane .hdl::after,.lane.sap .clip::after{width:2px;height:12px;border-radius:1px;background:#fff}
-.lane .clip{position:absolute;top:40px;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--c);border:2px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
-.lane .clip:nth-of-type(3n){top:34px} .lane .clip:nth-of-type(3n+1){top:46px}
+.lane .hdl::before,.lane.sap .clip::before{width:7px;height:17px;border-radius:2px;background:var(--c);box-shadow:0 0 0 1px var(--ink)}
+.lane .hdl::after,.lane.sap .clip::after{width:1.5px;height:8px;border-radius:1px;background:#fff}
+.lane .clip{position:absolute;top:28px;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--c);border:1.5px solid var(--ink);cursor:grab;z-index:2;touch-action:none}
+.lane .clip:nth-of-type(3n){top:24px} .lane .clip:nth-of-type(3n+1){top:32px}
 .lane .clip:hover{transform:scale(1.3)}
-.lane.sap{height:34px}
-.lane.sap .clip,.lane.sap .clip:nth-of-type(n){top:4px;margin-top:0;border:0;border-radius:0;background:none;cursor:ew-resize}
+.lane.sap{height:24px}
+.lane.sap .clip,.lane.sap .clip:nth-of-type(n){top:3px;margin-top:0;border:0;border-radius:0;background:none;cursor:ew-resize}
 .lane.sap .clip:hover{transform:none}
 .tl-ruler{display:flex;justify-content:space-between;font:500 11px/1 var(--f-ui);color:var(--dim);font-variant-numeric:tabular-nums}
 /* a path strip: the route at T, entry (left) to keep (right), the same scale in every block. Shaded where a seen tower
@@ -807,7 +816,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v20.2</p>
+        <p class="tagline">Two Player Tower Defence · v20.3</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -901,7 +910,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v20.2</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v20.3</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -4509,19 +4518,20 @@ function timelineHTML() {
   if (!active.length && !saps.length) return '<p class="note show">Your army is empty. Add units in step 1, then come back here to arrange them.</p>';
   const W = RULES.waveLen, P = RULES.planMax, at = sec => (sec / P * 100).toFixed(3) + '%', names = sapNames();
   const ruler = `<div class="tl-ruler">${[0, 0.25, 0.5, 0.75, 1].map(f => `<span>${fmtNum(f * W)}s</span>`).join('')}</div>`;
-  const ticks = Array.from({ length: Math.floor(P / 10) + 1 }, (_, k) => `<span style="left:${at(k * 10)}">${k * 10}s</span>`).join('');
+  const ticks = Array.from({ length: Math.floor(P / 10) + 1 }, (_, k) => `<span${k * 10 === W ? ` class="rel" title="Releases end at ${W} s"` : ''} style="left:${at(k * 10)}">${k * 10}s</span>`).join('');
   const strip = (g, sap) => `<div class="pth${sap ? ' sap' : ''}" data-g="${g}"><div class="pin"><i class="rail"></i><span class="mk"></span><span class="was"></span><span class="dyn"></span></div></div>`;
   const sapColor = c => (c.kind === 'bridge' ? 'var(--warm)' : 'var(--chain)');
   return `<div class="wp-head"><h3 class="wp-title">Wave plan</h3><button class="wp-help" data-act="guide"><i aria-hidden="true">?</i>How to use</button></div>
-    <div class="wp-pre"><button class="mini" data-act="even">Even</button><button class="mini" data-act="stagger">One after another</button><button class="mini" data-act="rush">All at once</button></div>
     <div class="wp-master" id="a-scrub">
-      <div class="wp-top"><button class="wp-play" id="scrub-play" data-act="scrub-play" aria-pressed="false" aria-label="Play the preview">${ICON.play}</button><span class="wp-t" id="scrub-lbl">T = 0.0 s</span></div>
+      <button class="wp-play" id="scrub-play" data-act="scrub-play" aria-pressed="false" aria-label="Play the preview">${ICON.play}</button>
       <div class="wp-slider"><input type="range" id="scrub-t" min="0" max="${P}" step="${RULES.scrubStep}" value="0" aria-label="Preview time"><i class="wp-rel"></i></div>
-      <div class="wp-ticks two">${ticks}<span class="rel" style="left:${at(W)}">releases end</span></div>
+      <span class="wp-t" id="scrub-lbl">T = 0.0 s</span>
+      <div class="wp-ticks">${ticks}</div>
       <p class="wp-nudge" id="scrub-nudge" hidden>Press play, or drag the dot, to watch your wave move.</p>
       <div class="scrow" id="scrub-br" hidden><span class="altitle">Plan with bridge</span><div class="seg scseg" role="group" aria-label="Plan with bridge"><button data-lands="1" aria-pressed="true">Lands</button><button data-lands="0" aria-pressed="false">Fails</button></div></div>
     </div>
     <div class="wp-hist"><div class="tl-peaklbl" id="tl-peak"></div><div class="tl-dens" id="tl-dens">${'<i></i>'.repeat(20)}</div></div>
+    <div class="wp-pre"><button class="mini" data-act="even">Even</button><button class="mini" data-act="stagger">One after another</button><button class="mini" data-act="rush">All at once</button></div>
     <div class="wp-route"><span>Route at T: <b id="pth-len"></b></span><span class="wp-ek">Entry<i></i>Keep</span></div>
     <div class="wp-blocks" style="--fade:${RULES.scrubFade}s">
       ${active.map(({ d, i }) => `<div class="blk" data-g="d${i}" style="--c:${d.color}">
