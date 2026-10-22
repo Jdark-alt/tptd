@@ -1308,6 +1308,23 @@ with sync_playwright() as p:
     page.click('#scrub-br [data-lands="0"]'); page.wait_for_timeout(150); page.click('#scrub-play'); page.wait_for_timeout(200)
     check(play(), 'after switching the bridge toggle the play button still plays')
     page.click('#scrub-play')
+    # v20.5: dragging a strip past where its group's recorded walk ends (a sapper used up on the way, or a route at T
+    # longer than the walk, over a bridge) froze the page: the search for when a unit gets there never stopped
+    def fling(g):
+        el = page.locator(f'.pth[data-g="{g}"]'); el.scroll_into_view_if_needed(); bb = el.bounding_box()
+        page.mouse.move(bb['x'] + bb['width'] * 0.3, bb['y'] + 8); page.mouse.down()
+        for k in range(1, 13): page.mouse.move(bb['x'] + bb['width'] * (0.3 + 0.09 * k), bb['y'] + 8)
+        for k in range(1, 13): page.mouse.move(bb['x'] + bb['width'] * (1.3 - 0.11 * k), bb['y'] + 8)
+        page.mouse.up(); page.wait_for_timeout(30)
+    flung = 0
+    for lands in ('1', '0'):
+        page.click(f'#scrub-br [data-lands="{lands}"]'); page.wait_for_timeout(80)
+        for T in (5, 15, 30, 45):
+            set_slider(page, '#scrub-t', T); page.wait_for_timeout(40)
+            for g in page.evaluate("() => [...document.querySelectorAll('#tl .pth')].map(e => e.dataset.g)"): fling(g); flung += 1
+    times = page.evaluate('() => { const S = window.siegeline.state; return [...S.designs.flatMap(d => [d.tl.s, d.tl.e, ...(d.tl.pos || [])]), ...[...S.charges.values()].map(c => c.t)]; }')
+    check(page.evaluate('() => 1 + 1') == 2 and all(0 <= x <= 1 for x in times) and not errors,
+          f'v20.5: every strip flung past both ends at 5, 15, 30 and 45 s, with the bridge landing and failing ({flung} drags): the page keeps answering and every release stays within 0–20 s')
     check(not errors, f'v20.2: no errors {errors[:3]}')
     # a new page on the same device: the card doesn't open by itself again
     page.reload(); page.wait_for_timeout(300); no_terrain(page)

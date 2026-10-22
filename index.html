@@ -370,7 +370,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .wp-play.nudge{animation:wpPulse 2s ease-out infinite}
 @keyframes wpPulse{0%{box-shadow:0 0 0 0 rgba(255,138,61,.5)}70%,100%{box-shadow:0 0 0 9px rgba(255,138,61,0)}}
 @media (prefers-reduced-motion:reduce){.wp-play.nudge{animation:none;box-shadow:0 0 0 2px rgba(255,138,61,.4)}}
-.wp-t{justify-self:center;font:500 11px/1 var(--f-ui);color:var(--soft);letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* T changes every frame while the preview plays: a box of its own size, so the page isn't laid out again for it */
+.wp-t{justify-self:stretch;height:13px;text-align:center;contain:size layout style;font:500 11px/13px var(--f-ui);color:var(--soft);letter-spacing:.04em;font-variant-numeric:tabular-nums;white-space:nowrap}
 .wp-slider{position:relative}
 .wp-slider input{-webkit-appearance:none;appearance:none;display:block;width:100%;margin:0;height:34px;background:transparent;cursor:pointer;touch-action:pan-y}
 @media (pointer:coarse){.wp-slider input{height:44px;margin:-5px 0}}
@@ -411,7 +412,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .blk-sub .bad{color:var(--bad)}
 /* a spread track: the 20 s release window, a line every 5 s. The band from the first release to the last, a knob at
    each end (each moves only its own end), one dot per unit below them; drag the band's middle to slide the group. */
-.lane{position:relative;height:39px;border-radius:var(--r);cursor:grab;touch-action:none;border:1px solid var(--line);
+.lane{position:relative;height:39px;contain:size layout style;border-radius:var(--r);cursor:grab;touch-action:none;border:1px solid var(--line);
   background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--line) calc(25% - 1px) 25%),var(--slate)}
 .lane .rng{position:absolute;top:3px;bottom:3px;border-radius:2px;background:color-mix(in srgb,var(--c) 20%,transparent)}
 .lane .tnow{position:absolute;top:0;bottom:0;width:0;border-left:1.5px solid var(--paper);opacity:.7;pointer-events:none;z-index:4}
@@ -431,7 +432,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
    the entry, "×4" at the keep. Drag it along; the grab area is taller than the strip. */
 .pth{position:relative;height:16px;cursor:grab;touch-action:none}
 .pth::before{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-8px}
-.pth .pin{position:absolute;inset:0;overflow:hidden;border-radius:3px;border:1px solid var(--line);background:var(--slate)}
+.pth .pin{position:absolute;inset:0;overflow:hidden;contain:strict;border-radius:3px;border:1px solid var(--line);background:var(--slate)} /* its parts move every frame while playing: kept inside */
 .pth .rail{position:absolute;left:0;right:0;top:6px;height:2px;background:var(--line-2)}
 .pth .fire{position:absolute;top:0;bottom:0;background:rgba(79,214,238,.14)}
 .pth .brk{position:absolute;top:1px;width:12px;height:12px;margin-left:-6px;border-radius:2px;background:var(--warm);color:var(--warm-ink);font:700 9px/12px var(--f-ui);text-align:center;z-index:1}
@@ -827,7 +828,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v20.4</p>
+        <p class="tagline">Two Player Tower Defence · v20.5</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -922,7 +923,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v20.4</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v20.5</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -4167,24 +4168,30 @@ function ghostRun(lands) {
     recompute();
     prepWave(ghostSeed(real.round));
     const every = Math.round(RULES.scrubStep / STEP), tMax = RULES.planMax + RULES.waveLen; // a group can be moved up to waveLen later
-    const pos = S.designs.map(tlPositions), units = [], seen = new Set(), routes = [{ t: 0, path: S.path, by: -1 }];
+    const pos = S.designs.map(tlPositions), units = [], live = [], seen = new Set(), routes = [{ t: 0, path: S.path, by: -1 }];
+    let known = new Set(S.bridges);
     for (let k = 1; k * STEP <= tMax + 1e-9 && !S.trialDone; k++) {
-      const path = S.path, br = new Set(S.bridges);
+      const path = S.path, spawned = S.spawnIdx;
       waveStep(STEP); trim();
       const t = k * STEP;
-      if (S.path !== path && String(S.path) !== String(path)) routes.push({ t, path: S.path, by: [...S.bridges].find(i => !br.has(i)) ?? -1 }); // a bridge that changes the route
-      for (const u of S.units) {
-        if (seen.has(u.id)) continue;
-        seen.add(u.id); // it set out at the start of this step, from the breach
-        units.push({ u, g: u.sap ? 's' + u.sap.cell : 'd' + u.di, di: u.di, k: u.k, cell: u.sap ? u.sap.cell : -1, sap: u.sap ? u.sap.kind : '',
-          p: u.sap ? u.sap.t : pos[u.di][u.k], t0: t - STEP, j0: -1, x: [], y: [], w: [], a: [], ox: u.ox, oy: u.oy, r: u.r, shape: u.shape, speed: u.speed,
-          tEnd: Infinity, end: '', tFail: u.sap && u.sap.state === 'miss' ? t - STEP : Infinity });
+      let by = -1; // a bridge laid in this step
+      if (S.bridges.size !== known.size) { by = [...S.bridges].find(i => !known.has(i)) ?? -1; known = new Set(S.bridges); }
+      if (S.path !== path && String(S.path) !== String(path)) routes.push({ t, path: S.path, by }); // a bridge that changes the route
+      if (S.spawnIdx > spawned) { // the units that set out in this step, at the start of it, from the breach: the end of the list
+        const fresh = [];
+        for (let j = S.units.length - 1; j >= Math.max(0, S.units.length - (S.spawnIdx - spawned)); j--) if (!seen.has(S.units[j].id)) fresh.push(S.units[j]);
+        for (const u of fresh.reverse()) {
+          seen.add(u.id);
+          const r = { u, g: u.sap ? 's' + u.sap.cell : 'd' + u.di, di: u.di, k: u.k, cell: u.sap ? u.sap.cell : -1, sap: u.sap ? u.sap.kind : '',
+            p: u.sap ? u.sap.t : pos[u.di][u.k], t0: t - STEP, j0: -1, x: [], y: [], w: [], a: [], ox: u.ox, oy: u.oy, r: u.r, shape: u.shape, speed: u.speed,
+            tEnd: Infinity, end: '', tFail: u.sap && u.sap.state === 'miss' ? t - STEP : Infinity };
+          units.push(r); live.push(r);
+        }
       }
-      for (const r of units) {
-        if (r.tEnd < Infinity) continue;
-        const u = r.u;
+      for (let j = live.length - 1; j >= 0; j--) { // only the ones still out (an ended one is swapped out of the list)
+        const r = live[j], u = r.u;
         if (r.sap && u.sap.state === 'miss' && r.tFail === Infinity) r.tFail = t;
-        if (u.gone || u.dead) { Object.assign(r, { tEnd: t, end: u.sap ? 'used' : 'keep', xe: u.x, ye: u.y, we: u.walked, ae: u.ang }); continue; }
+        if (u.gone || u.dead) { Object.assign(r, { tEnd: t, end: u.sap ? 'used' : 'keep', xe: u.x, ye: u.y, we: u.walked, ae: u.ang }); live[j] = live[live.length - 1]; live.pop(); continue; }
         if (k % every === 0) { if (r.j0 < 0) r.j0 = k / every; r.x.push(u.x); r.y.push(u.y); r.w.push(u.walked); r.a.push(u.ang); }
       }
     }
@@ -4844,15 +4851,18 @@ function ghostAt(r, τ) {
   const f = clamp((τ - A.t) / (B.t - A.t), 0, 1);
   return { x: A.x + (B.x - A.x) * f, y: A.y + (B.y - A.y) * f, w: A.w + (B.w - A.w) * f, a: A.a };
 }
-// When r's recorded walk reaches D cells along its way (past the recording: at its own speed).
+// When r's recorded walk reaches D cells along its way. Past its last knot: a unit at the keep arrived when it did (the
+// route at T can be longer than the walk it made, over a bridge); one used up on the way, or still walking when the
+// recording stops, goes on at its own speed. The knots end there: ghostKnot keeps returning the last one.
 function ghostReach(r, D) {
   let A = ghostKnot(r, -1);
-  for (let m = 0; ; m++) {
+  for (let m = 0; m <= r.x.length; m++) {
     const B = ghostKnot(r, m);
-    if (!B) return A.t + Math.max(0, D - A.w) / r.speed;
+    if (!B) break;
     if (B.w >= D) return B.w > A.w ? A.t + (B.t - A.t) * (D - A.w) / (B.w - A.w) : B.t;
     A = B;
   }
+  return r.end === 'keep' ? A.t : A.t + Math.max(0, D - A.w) / r.speed;
 }
 // The preview at the scrubber's time: the dots out on the route, the units already at the keep, the sappers already
 // used up, how many of each group are still to set out, and the route as it runs then (a bridge landing changes it).
@@ -4907,7 +4917,7 @@ let pathCache = { key: '', v: 0 };
 function pathMarks(route) {
   const key = String(route) + '|' + S.seenVer + '|' + [...S.charges].map(([i, c]) => i + ':' + c.kind + ':' + c.at).join(',');
   if (pathCache.key === key) return pathCache;
-  const line = routeLine(route), L = line.at[line.at.length - 1], a = 1.05 - 0.5, n = L - 1, pc = D => (clamp((D - a) / n, 0, 1) * 100).toFixed(2) + '%';
+  const line = routeLine(route), L = line.at[line.at.length - 1], a = 1.05 - 0.5, n = L - 1, pn = D => clamp((D - a) / n, 0, 1) * 100, pc = D => pn(D).toFixed(2) + '%';
   const towers = [], tgt = {};
   S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') { const [x, y] = center(i), R = TS.range.steps[g.cfg.range]; towers.push([x, y, R * R, i]); } });
   let mk = '', from = -1;
@@ -4922,7 +4932,7 @@ function pathMarks(route) {
     const j = route.indexOf(cell), k = j >= 0 ? j : route.indexOf(c.at);
     if (k >= 0) mk += `<i class="brk" style="left:${pc(line.at[k + 1])}">B</i>`;
   }
-  return (pathCache = { key, v: pathCache.v + 1, line, L, a, n, mk, tgt, pc });
+  return (pathCache = { key, v: pathCache.v + 1, line, L, a, n, mk, tgt, pc, pn });
 }
 // Each group on the route at T: its units' places (sorted, rear first), the sappers used up, how many wait at the
 // entry and how many are at the keep. Places are route distances (routeLine); the strip shows them from M.a.
@@ -4963,28 +4973,60 @@ function sapReach(cell) {
   if (c.kind !== 'bridge') return r.end === 'used' && !(r.tFail < r.tEnd) ? r.tEnd + sh : null;
   if (c.at == null) return null;
   const [tx, ty] = center(c.at);
-  for (let m = 0; ; m++) { const K = ghostKnot(r, m); if (!K) return null; if (hyp(K.x - tx, K.y - ty) <= 0.35) return K.t + sh; }
+  for (let m = 0; m <= r.x.length; m++) { const K = ghostKnot(r, m); if (!K) break; if (hyp(K.x - tx, K.y - ty) <= 0.35) return K.t + sh; }
+  return null;
 }
 function renderPaths(V) {
   const root = $('#tl');
   if (!root) return;
   const Z = scrub, M = V && pathMarks(V.route), rows = V ? pathRows(V, M) : {};
-  const len = $('#pth-len'); if (len) len.textContent = V ? `${V.route.length} cells` : '';
+  const len = $('#pth-len'), lt = V ? `${V.route.length} cells` : ''; if (len && len.textContent !== lt) len.textContent = lt;
   for (const el of root.querySelectorAll('.pth')) {
     const g = el.dataset.g, R = rows[g], mk = el.querySelector('.mk');
     if (+mk.dataset.v !== (M ? M.v : 0)) { mk.dataset.v = M ? M.v : 0; mk.innerHTML = M ? M.mk : ''; }
-    let body = '';
-    if (R) {
-      if (R.on.length > 1) body += `<i class="band" style="left:${M.pc(R.on[0].D)};width:calc(${M.pc(R.on[R.on.length - 1].D)} - ${M.pc(R.on[0].D)})"></i>`;
-      for (const p of R.on) body += `<i class="tk${p.fail ? ' fail' : ''}" style="left:${M.pc(p.D)}"></i>`;
-      for (const p of R.used) body += `<i class="tk used${p.fail ? ' fail' : ''}" style="left:${M.pc(p.D)}"></i>`;
-    }
-    Z.prow[g] = body; // what fades out after a change
+    Z.prow[g] = R ? { R, M } : null; // what fades out after a change (rowHTML)
     const t = M && g[0] === 's' ? M.tgt[+g.slice(1)] : null; // a knock-out's tower, where its range starts
-    const html = (t != null ? `<i class="tgt" style="left:${M.pc(t)}">${ICON.tower}</i>` : '') + body
-      + (R && R.wait ? `<span class="stub">+${R.wait}</span>` : '') + (R && R.keep ? `<span class="atk">×${R.keep}</span>` : '');
-    if (el.pathHTML !== html) { el.pathHTML = html; el.querySelector('.dyn').innerHTML = html; } // kept on the element: a rebuilt row starts empty
+    stripSync(el, R, M, t);
   }
+}
+// A strip's moving parts are kept between frames, so that playing only moves them: the knock-out's tower, the band, a
+// tick per unit (those on the route, then those used up), the units waiting and the stack at the keep. A part not
+// needed now is taken out of the strip; the elements stay with it (a rebuilt row starts with none).
+const setStyle = (e, k, v) => { const w = e.wrote || (e.wrote = {}); if (w[k] !== v) { w[k] = v; e.style[k] = v; } }; // what was written, not read back (Chrome rewrites 0.00% as 0%)
+const putText = (e, v) => { if (e.textContent !== v) e.textContent = v; };
+function stripSync(el, R, M, t) {
+  let P = el.parts;
+  if (!P) {
+    const dyn = el.querySelector('.dyn'), mk = (tag, cls) => { const e = document.createElement(tag); e.className = cls; return e; };
+    dyn.textContent = '';
+    P = el.parts = { dyn, tgt: mk('i', 'tgt'), band: mk('i', 'band'), ticks: [], stub: mk('span', 'stub'), atk: mk('span', 'atk'), shape: '' };
+    P.tgt.innerHTML = ICON.tower;
+  }
+  const on = R ? R.on : [], used = R ? R.used : [], n = on.length + used.length, band = on.length > 1;
+  while (P.ticks.length < n) P.ticks.push(document.createElement('i'));
+  const shape = [t != null, band, n, !!(R && R.wait), !!(R && R.keep)].join();
+  if (P.shape !== shape) { // what the strip shows changed: put the parts it needs in order
+    P.shape = shape;
+    P.dyn.replaceChildren(...[t != null && P.tgt, band && P.band, ...P.ticks.slice(0, n), R && R.wait && P.stub, R && R.keep && P.atk].filter(Boolean));
+  }
+  if (t != null) setStyle(P.tgt, 'left', M.pc(t));
+  if (band) { const a = M.pn(on[0].D), b = M.pn(on[on.length - 1].D); setStyle(P.band, 'left', a.toFixed(2) + '%'); setStyle(P.band, 'width', (b - a).toFixed(2) + '%'); }
+  for (let k = 0; k < n; k++) {
+    const p = k < on.length ? on[k] : used[k - on.length], e = P.ticks[k], cls = 'tk' + (k < on.length ? '' : ' used') + (p.fail ? ' fail' : '');
+    if (e.className !== cls) e.className = cls;
+    setStyle(e, 'left', M.pc(p.D));
+  }
+  if (R && R.wait) putText(P.stub, '+' + R.wait);
+  if (R && R.keep) putText(P.atk, '×' + R.keep);
+}
+// A strip's band and ticks as markup, for the outline that fades out after a change.
+function rowHTML(x) {
+  if (!x) return '';
+  const { R, M } = x;
+  let h = R.on.length > 1 ? `<i class="band" style="left:${M.pc(R.on[0].D)};width:${(M.pn(R.on[R.on.length - 1].D) - M.pn(R.on[0].D)).toFixed(2)}%"></i>` : '';
+  for (const p of R.on) h += `<i class="tk${p.fail ? ' fail' : ''}" style="left:${M.pc(p.D)}"></i>`;
+  for (const p of R.used) h += `<i class="tk used${p.fail ? ' fail' : ''}" style="left:${M.pc(p.D)}"></i>`;
+  return h;
 }
 // Moves a group's release (a design, 'd' + index, or a sapper, 's' + cell) by dp, a share of the release window, keeping
 // its spread; the first unit can't leave before 0 s nor the last after it (a one-unit design's window stays inside
@@ -5009,8 +5051,8 @@ function fadeFrom() {
 function fadeOut(before) {
   scrub.fade = { at: performance.now(), dots: before.dots };
   for (const el of document.querySelectorAll('#tl .pth')) {
-    const was = el.querySelector('.was'), old = before.rows[el.dataset.g] || '';
-    if (!old || old === scrub.prow[el.dataset.g]) continue;
+    const was = el.querySelector('.was'), old = rowHTML(before.rows[el.dataset.g]);
+    if (!old || old === rowHTML(scrub.prow[el.dataset.g])) continue;
     was.innerHTML = old; was.classList.remove('go'); void was.offsetWidth; was.classList.add('go');
   }
 }
@@ -5029,21 +5071,25 @@ function renderScrub() {
   if (!root || !$('#a-scrub')) return;
   const Z = scrubState(), V = scrubView(), inp = $('#scrub-t'), W = RULES.waveLen;
   if (Math.abs(+inp.value - Z.T) > 1e-6) inp.value = Z.T;
-  inp.style.setProperty('--p', Z.T / RULES.planMax); // the track left of the thumb fills orange
-  $('#scrub-lbl').textContent = `T = ${Z.T.toFixed(1)} s`;
+  if (inp.wroteP !== Z.T) { inp.wroteP = Z.T; inp.style.setProperty('--p', Z.T / RULES.planMax); } // the track left of the thumb fills orange
+  putText($('#scrub-lbl'), `T = ${Z.T.toFixed(1)} s`);
   const play = $('#scrub-play'), icon = Z.playing ? 'pause' : 'play';
   if (play.dataset.icon !== icon) { // only when it changes: a button rebuilt under the pointer loses its click
     play.dataset.icon = icon; play.innerHTML = ICON[icon];
     play.setAttribute('aria-pressed', Z.playing); play.setAttribute('aria-label', Z.playing ? 'Pause the preview' : 'Play the preview');
   }
-  play.classList.toggle('nudge', !S.waveTouched); $('#scrub-nudge').hidden = !!S.waveTouched;
-  $('#scrub-br').hidden = !plannedBridges().length;
-  for (const b of root.querySelectorAll('[data-lands]')) b.setAttribute('aria-pressed', String((b.dataset.lands === '1') === Z.lands));
-  for (const b of root.querySelectorAll('[data-trk]')) b.setAttribute('aria-pressed', String(b.dataset.trk === Z.sel));
+  play.classList.toggle('nudge', !S.waveTouched);
+  const hide = (e, h) => { if (e && e.hidden !== h) e.hidden = h; }, attr = (e, k, v) => { if (e.getAttribute(k) !== v) e.setAttribute(k, v); };
+  hide($('#scrub-nudge'), !!S.waveTouched); hide($('#scrub-br'), !plannedBridges().length);
+  for (const b of root.querySelectorAll('[data-lands]')) attr(b, 'aria-pressed', String((b.dataset.lands === '1') === Z.lands));
+  for (const b of root.querySelectorAll('[data-trk]')) attr(b, 'aria-pressed', String(b.dataset.trk === Z.sel));
   for (const b of root.querySelectorAll('.blk')) b.classList.toggle('sel', b.dataset.g === Z.sel);
-  for (const t of root.querySelectorAll('.lane .tnow')) { t.hidden = Z.T > W; t.style.left = clamp(Z.T / W, 0, 1) * 100 + '%'; } // who has left by T
+  for (const t of root.querySelectorAll('.lane .tnow')) { hide(t, Z.T > W); setStyle(t, 'left', clamp(Z.T / W, 0, 1) * 100 + '%'); } // who has left by T
   for (const [cell, c] of S.charges) {
-    const sub = $('#sap-sub-' + cell), at = V ? sapReach(cell) : null; if (!sub) continue;
+    const sub = $('#sap-sub-' + cell); if (!sub) continue;
+    if (sub.reachOf === Z.data && sub.reachT === c.t) continue; // when it reaches its target only changes with the ghost wave or its release
+    sub.reachOf = Z.data; sub.reachT = c.t;
+    const at = V ? sapReach(cell) : null;
     const html = `leaves ${(c.t * W).toFixed(1)} s · ${at != null ? `reaches target ${at.toFixed(1)} s` : '<span class="bad">won’t reach target</span>'}`;
     if (sub.innerHTML !== html) sub.innerHTML = html;
   }
@@ -5082,13 +5128,13 @@ function tlDown(e) {
   if (lane.dataset.sap != null) { // a sapper: grab it anywhere on its track
     const c = S.charges.get(+lane.dataset.sap); if (!c) return;
     e.preventDefault();
-    tlDrag = { id: e.pointerId, lane, sap: +lane.dataset.sap, f0, t0: c.t, move: !h, before, k0 };
+    tlDrag = { id: e.pointerId, lane, box: lane.getBoundingClientRect(), sap: +lane.dataset.sap, f0, t0: c.t, move: !h, before, k0 };
     Z.sel = 's' + lane.dataset.sap;
   } else {
     const i = +lane.dataset.i, d = S.designs[i]; if (!d) return;
     e.preventDefault();
     const pos0 = tlPositions(d);
-    tlDrag = { id: e.pointerId, lane, i, kind: h ? h.dataset.h || 'clip' : 'move', k: h ? +h.dataset.k : -1, f0, s0: d.tl.s, e0: d.tl.e, pos0, custom: !!d.tl.pos, before, k0 };
+    tlDrag = { id: e.pointerId, lane, box: lane.getBoundingClientRect(), i, kind: h ? h.dataset.h || 'clip' : 'move', k: h ? +h.dataset.k : -1, f0, s0: d.tl.s, e0: d.tl.e, pos0, custom: !!d.tl.pos, before, k0 };
     if (tlDrag.kind === 'clip') d.tl.pos = pos0.slice();
     Z.sel = 'd' + i;
   }
@@ -5125,7 +5171,7 @@ function tlMove(e) {
   if (!tlDrag || e.pointerId !== tlDrag.id) return;
   const D = tlDrag;
   if (D.kind === 'path') { pathMove(D, e.clientX); return; }
-  const raw = tlAt(D.lane, e.clientX), f = clamp(raw, 0, 1);
+  const raw = (e.clientX - D.box.left) / D.box.width, f = clamp(raw, 0, 1); // measured at the press: reading it again after each move's changes would lay the page out every move
   if (D.sap != null) {
     const c = S.charges.get(D.sap);
     if (c) { if (D.move) shiftGroup('s' + D.sap, D.t0 + raw - D.f0 - c.t); else c.t = f; }
@@ -6100,15 +6146,26 @@ function pill(c, x, y, txt, fg, bg, align = 'left') {
   if ('letterSpacing' in c) c.letterSpacing = '0px';
 }
 // A short note under the board when there's room, else over it, else along the board's bottom edge.
+const noteWraps = new Map(); // the note's lines and width, per text, width and whether the fonts have loaded
 function boardNote(c, txt) {
   if (view.cs < 14) return;
   const bw = (view.rot ? ROWS : COLS) * view.cs, bh = (view.rot ? COLS : ROWS) * view.cs, lh = 13;
   c.font = '400 10px "Geist Mono", ui-monospace, monospace';
-  const wrap = maxW => { const lines = []; for (const w of txt.split(' ')) { const l = lines.length ? lines[lines.length - 1] + ' ' + w : w; if (lines.length && c.measureText(l).width + 14 <= maxW) lines[lines.length - 1] = l; else lines.push(w); } return lines; };
-  let lines = wrap(view.W - 16), H = lines.length * lh + 6, x0 = 8, y0 = view.oy + bh + 6;
+  const wrap = maxW => {
+    const key = maxW + '|' + (document.fonts ? document.fonts.status : '') + '|' + txt;
+    let W = noteWraps.get(key);
+    if (!W) {
+      const lines = [];
+      for (const w of txt.split(' ')) { const l = lines.length ? lines[lines.length - 1] + ' ' + w : w; if (lines.length && c.measureText(l).width + 14 <= maxW) lines[lines.length - 1] = l; else lines.push(w); }
+      if (noteWraps.size > 16) noteWraps.clear();
+      noteWraps.set(key, (W = { lines, w: Math.max(...lines.map(l => c.measureText(l).width)) + 14 }));
+    }
+    return W;
+  };
+  let N = wrap(view.W - 16), lines = N.lines, H = lines.length * lh + 6, x0 = 8, y0 = view.oy + bh + 6;
   if (y0 + H > view.H) y0 = view.oy - 6 - H;
-  if (y0 < 0) { lines = wrap(bw - 16); H = lines.length * lh + 6; x0 = view.ox + 8; y0 = view.oy + bh - 8 - H; }
-  const w = Math.max(...lines.map(l => c.measureText(l).width)) + 14;
+  if (y0 < 0) { N = wrap(bw - 16); lines = N.lines; H = lines.length * lh + 6; x0 = view.ox + 8; y0 = view.oy + bh - 8 - H; }
+  const w = N.w;
   c.fillStyle = 'rgba(7,9,12,0.82)'; c.fillRect(x0, y0, w, H);
   c.fillStyle = '#9aa6b1'; c.textAlign = 'left'; c.textBaseline = 'middle';
   lines.forEach((l, k) => c.fillText(l, x0 + 7, y0 + 3 + lh * k + lh / 2));
