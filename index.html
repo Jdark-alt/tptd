@@ -159,11 +159,19 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .routebar b{font:600 13px/1 var(--f-ui);letter-spacing:.02em;color:var(--paper)}
 .routebar i{font-style:normal;letter-spacing:.02em}
 .routebar .up{color:var(--cool)} .routebar .dn{color:#ffb4b4}
-/* auto-tune: one button and what it did */
-.tunerow{display:flex;align-items:center;gap:10px;min-height:28px}
-.tunemsg{flex:1;min-width:0;font:500 10.5px/1.3 var(--f-ui);letter-spacing:.04em;color:var(--muted);font-variant-numeric:tabular-nums}
+/* helpers: auto-maze, auto-tune and undo, then what the last helper press did */
+.tunerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:28px}
+.tunemsg{flex:1 0 100%;min-width:0;font:500 10.5px/1.3 var(--f-ui);letter-spacing:.04em;color:var(--muted);font-variant-numeric:tabular-nums}
 .tunemsg b{color:var(--paper);font-weight:600}
 .tunerow .tunebtn{border-color:color-mix(in srgb,var(--side) 55%,transparent);color:var(--side)}
+.tunerow .undobtn{margin-left:auto}
+.tunerow .mini:disabled{opacity:.4;cursor:default;border-color:var(--line-2);color:var(--soft)}
+/* "Tower removed · Undo" over the board */
+#undo-pop{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:14px;
+  background:rgba(12,16,21,.97);border:1px solid var(--line-2);border-left:2px solid var(--cool);border-radius:var(--r);padding:8px 8px 8px 14px;
+  font:500 13px/1.3 var(--f-body);color:var(--paper);width:max-content;max-width:calc(100% - 24px)}
+#undo-pop[hidden]{display:none}
+#undo-pop .mini{border-color:color-mix(in srgb,var(--cool) 60%,transparent);color:var(--cool);height:30px}
 /* shapes: four pieces, then rotate and flip */
 .shapegrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 38px;gap:6px}
 .shp{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px 7px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;min-width:0;
@@ -625,6 +633,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
   .tool{min-height:46px;padding:7px 10px}
   .tool .ico{width:20px;height:20px}
   .tools.bar .tool{flex-direction:row;min-height:44px;padding:5px 4px;gap:6px}
+  .tools.bar .tool[data-tool=remove] .tcost{letter-spacing:0;font-size:9.5px} /* "& inspect" fits a 390 px phone */
   .tools.bar .tx{align-items:flex-start;gap:3px;min-width:0}
   .tools.bar .tname{font-size:12.5px}
   .tools.bar .ico{width:16px;height:16px}
@@ -655,6 +664,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
   .sodesc{font-size:12px}
   #toast{top:6px;bottom:auto;transform:translate(-50%,-6px)}
   #toast.show{transform:translate(-50%,0)}
+  #undo-pop{top:auto;bottom:6px}
   #wave-ctx .d-only{display:none} #wave-ctx .m-only{display:block;white-space:normal}
   /* cards become bottom sheets */
   .ctx:not(:empty){position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:30;
@@ -753,6 +763,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <div id="boardwrap">
       <canvas id="board" aria-label="Battlefield grid"></canvas>
       <div id="toast" role="status" aria-live="polite"></div>
+      <div id="undo-pop" role="status" aria-live="polite" hidden><span id="undo-msg"></span><button class="mini" id="undo-btn">Undo</button></div>
     </div>
 
     <aside id="panel">
@@ -816,7 +827,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v20.3</p>
+        <p class="tagline">Two Player Tower Defence · v20.4</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -836,6 +847,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
         </ol>
         <p>Play on one device and take turns, online on two, or against the computer; pick how many waves the match lasts at the start (online the defender’s pick counts). Each side has <span data-rule="planSecs:min">3</span> minutes to plan each round; when the clock runs out, the plan goes as it stands. Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. Drag a tower to move it, or onto a wall or another tower to swap them, free. The <strong>+</strong> beside a slider is what the next step costs.</p>
         <p><strong>Hints</strong> (on by default, switch beside the build tabs): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire.</p>
+        <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">60</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built; towers stay yours to place. <strong>Remove &amp; Inspect</strong>: hover a wall (on touch, hold it) and a red line shows where units would go if it were bridged. <strong>Undo</strong> (or Ctrl+Z) takes back your last change this round, coins and tuning included, until the wave starts.</p>
       </section>
 
       <section>
@@ -910,7 +922,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v20.3</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v20.4</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1057,6 +1069,9 @@ const RULES = {
   // build helpers (they never change a wave): hot tiles suggest up to hintSetSize walls, worked out in slices of
   // hintSliceMs between frames; a test run starts at testSpeed× (1×, 5× and 10× while it runs)
   hintSetSize: 3, hintSliceMs: 8, testSpeed: 5,
+  // auto-maze: each press spends up to autoMazeFirst coins on walls in the first wave (the 240 left buy four towers and
+  // a few upgrades), autoMazeShare of the free coins after that (a column that turns the route takes about 50)
+  autoMazeFirst: 60, autoMazeShare: 0.4,
 };
 // Shapes: pre-made pieces the defender drops into the maze. '#' a wall, 'T' a tower (defaultTower), '.' left open.
 // 5×5 so a U-turn fits with walls on both sides; each leaves openings for the route. Placed pieces are ordinary
@@ -1232,7 +1247,7 @@ const el = {
   defSteps: $('#def-steps'), defBody: $('#def-body'), defCtx: $('#def-ctx'), defBack: $('#def-back'), defNext: $('#def-next'),
   atkSteps: $('#atk-steps'), atkBody: $('#atk-body'), atkCtx: $('#atk-ctx'), atkBack: $('#atk-back'), atkNext: $('#atk-next'),
   waveTitle: $('#wave-title'), waveCtx: $('#wave-ctx'), rpBar: $('#replay-bar'),
-  toast: $('#toast'), tip: $('#tip'),
+  toast: $('#toast'), tip: $('#tip'), undoPop: $('#undo-pop'),
   ovInfo: $('#ov-info'), ovHand: $('#ov-hand'), ovSum: $('#ov-sum'), ovEnd: $('#ov-end'),
 };
 $('#kico').innerHTML = ICON.keep;
@@ -1657,6 +1672,12 @@ function moveTower(from, to) {
   refreshUI();
   return true;
 }
+// The route units would take if the wall on `cell` were bridged: the cell open, with the tie-break toward bridges.
+function routeBridged(cell) {
+  flow(tmpA, i => i === cell || !S.grid[i], dangerField(S.grid), new Set(S.bridges).add(cell));
+  const path = tracePath(tmpA);
+  return { path, len: pathLen(path), fire: underFire(path, S.grid) };
+}
 // The route units would take with the tower on `from` moved to `to` (swapped with whatever stands there).
 function routeMoved(from, to) {
   const H = S.grid.slice();
@@ -1677,6 +1698,85 @@ function setTowerCfg(cell, patch) {
   refreshUI();
   return true;
 }
+/* ---------- undo ----------
+   The defender's changes this round, newest last, each kept as the build before it: every cell with its tuning, fee,
+   number and freshness, the free coins and the tower count. Undo (its button, or Ctrl+Z) puts that back exactly, so a
+   refund goes back out and a spend comes back in: it can't make or lose a coin. One press on the board (a wall, a drawn
+   line of walls, a swipe of removals, a shape or hint set, a tower placed, moved or removed) or one helper press is one
+   change; a tower's tuning is one change until something else happens. The history is this round's planning only: none
+   while a plan is locked in or a test run or replay is open, and once the wave starts it's gone. */
+const undo = { S: null, round: 0, list: [], open: null };
+const UNDO_MAX = 100;
+const buildSig = () => JSON.stringify([S.dFree, S.towerSeq, S.grid.map(g => (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? (g.fresh ? 2 : 1) : [g.n, g.fee, g.fresh ? 1 : 0, g.cfg]))]);
+const undoHere = () => !!S && S.phase === 'defend' && !replay && !planLocked();
+function undoList() {
+  if (undo.S !== S || undo.round !== S.round) Object.assign(undo, { S, round: S.round, list: [] });
+  return undo.list;
+}
+const undoTop = () => { const l = undoHere() ? undoList() : []; return l[l.length - 1] || null; };
+// what: { label, merge, help }. merge: changes with the same key in a row are one (a tower's sliders); help: what a
+// helper did, shown under its button while it's the last change.
+function undoBegin(what = {}) {
+  if (undo.open) { if (drag && drag.undo) return false; undoEnd(); } // a press cut short (a lock-in, a phase change)
+  if (!undoHere()) return false;
+  undo.open = { what, S, round: S.round, sig: buildSig(), grid: S.grid.map(cloneCell), dFree: S.dFree, towerSeq: S.towerSeq };
+  return true;
+}
+function undoEnd() {
+  const o = undo.open; undo.open = null;
+  if (!o || o.S !== S || o.round !== S.round || !undoHere() || buildSig() === o.sig) return null;
+  const list = undoList(), top = list[list.length - 1];
+  if (o.what.merge && top && top.merge === o.what.merge) return top;
+  const e = { grid: o.grid, dFree: o.dFree, towerSeq: o.towerSeq, label: o.what.label || changeLabel(o.grid), merge: o.what.merge || '', help: o.what.help || null };
+  list.push(e);
+  if (list.length > UNDO_MAX) list.shift();
+  hideUndoPop();
+  return e;
+}
+function undoable(what, fn) { const mine = undoBegin(what); try { return fn(); } finally { if (mine) undoEnd(); } }
+const tuneWhat = cell => { const n = S.grid[cell].n; return { merge: 'tune:' + n, label: `tower ${n} tuning` }; };
+// What changed since G0, in a few words: "tower moved", "3 walls placed", "tower removed", "tower 2 tuning".
+function changeLabel(G0) {
+  const t0 = new Map(), t1 = new Map();
+  let wa = 0, wr = 0;
+  G0.forEach((g, i) => { if (g && g.t === 'tower') t0.set(g.n, i); });
+  S.grid.forEach((g, i) => {
+    const h = G0[i], w = !!(g && g.t === 'wall'), w0 = !!(h && h.t === 'wall');
+    if (g && g.t === 'tower') t1.set(g.n, i);
+    if (w && !w0) wa++; if (w0 && !w) wr++;
+  });
+  const added = [...t1.keys()].filter(n => !t0.has(n)).length, gone = [...t0.keys()].filter(n => !t1.has(n)).length;
+  const moved = [...t1].filter(([n, i]) => t0.has(n) && t0.get(n) !== i).length;
+  if (moved) return moved > 1 ? 'towers swapped' : 'tower moved';
+  if (added || wa) return wa + added === 1 ? (wa ? 'wall placed' : 'tower placed') : [wa && plural(wa, 'wall'), added && plural(added, 'tower')].filter(Boolean).join(' and ') + ' placed';
+  if (gone) return gone === 1 && !wr ? 'tower removed' : [wr && plural(wr, 'wall'), plural(gone, 'tower')].filter(Boolean).join(' and ') + ' removed';
+  if (wr) return wr === 1 ? 'wall removed' : plural(wr, 'wall') + ' removed';
+  return 'tower tuning';
+}
+function undoLast() {
+  if (!undoHere()) return false;
+  stopMaze();
+  const e = undoList().pop();
+  if (!e) { toast('Nothing to undo this round.', 'def'); return false; }
+  e.grid.forEach((g, i) => { S.grid[i] = cloneCell(g); });
+  S.dFree = e.dFree; S.towerSeq = e.towerSeq;
+  if (S.sel && S.sel.k === 'tower' && !(S.grid[S.sel.cell] && S.grid[S.sel.cell].t === 'tower')) S.sel = null;
+  pending = -1; drag = null; undo.open = null;
+  S.gridVer++; recompute(); hideUndoPop();
+  toast(`Undone: ${e.label}.`, 'def');
+  refreshUI();
+  return true;
+}
+// "Tower removed · Undo" over the board after a tower is taken back with Remove & Inspect: the Undo is right there.
+let popTimer = 0;
+function popUndo(msg) {
+  $('#undo-msg').textContent = msg; el.undoPop.hidden = false;
+  clearTimeout(popTimer); popTimer = setTimeout(hideUndoPop, 6000);
+}
+function hideUndoPop() { clearTimeout(popTimer); el.undoPop.hidden = true; }
+// The helper row's message, for the last change while it's a helper's.
+const lastHelp = () => { const e = undoTop(); return e && e.help; };
+
 /* ---------- auto-tune ----------
    One button spends the defender's free coins on upgrades to the towers already placed: a greedy heavy spender, not an
    optimiser. Each step is one notch up on one tower (range, damage, accuracy or splash, or frost, poison or chain
@@ -1684,8 +1784,8 @@ function setTowerCfg(cell, patch) {
    in its range × (1 + splash radius), +25% for each effect, on the route as it was when the button was pressed. The
    step with the best gain per coin goes
    first, until none that adds anything fits; then the cheapest step anywhere, until nothing fits. It never moves, adds or
-   removes anything, lowers a slider, or touches fire rate (free, and the player's call against armor). Undo puts every
-   tower's settings and the coins back while the build is as auto-tune left it. */
+   removes anything, lowers a slider, or touches fire rate (free, and the player's call against armor). One Undo puts
+   every tower's settings and the coins back. */
 function tuneScore(i, cfg, onRoute) {
   let n = 0; coverCells(i, cfg, j => { if (onRoute.has(j)) n++; });
   return TS.dps.steps[cfg.dps] * shotAcc(cfg) / 100 * n * (1 + TS.splash.steps[cfg.splash]) * (1 + 0.25 * FXK.filter(k => cfg[k]).length);
@@ -1696,12 +1796,11 @@ function tuneSteps(cfg) {
   for (const k of FXK) if (!cfg[k]) out.push({ ...cfg, [k]: true });
   return out;
 }
-let tune = null; // { S, key, before: [[cell, cfg]], spent, n }: what Undo restores
 function autoTune() {
   const onRoute = new Set(S.path || []), towers = [];
   S.grid.forEach((g, i) => { if (g && g.t === 'tower' && !(g.off > 0)) towers.push(i); });
   if (!towers.length) return;
-  const before = towers.map(i => [i, { ...S.grid[i].cfg }]), free0 = S.dFree;
+  const free0 = S.dFree;
   const pick = useful => {
     let best = null;
     for (const i of towers) {
@@ -1717,19 +1816,120 @@ function autoTune() {
     return best;
   };
   let n = 0;
-  for (const useful of [true, false]) for (let st; (st = pick(useful));) { S.dFree -= st.cost; S.grid[st.i].cfg = st.cfg; n++; }
+  const what = { label: 'auto-tune' };
+  undoable(what, () => {
+    for (const useful of [true, false]) for (let st; (st = pick(useful));) { S.dFree -= st.cost; S.grid[st.i].cfg = st.cfg; n++; }
+    if (!n) return;
+    S.gridVer++; recompute();
+    what.help = { kind: 'tune', spent: free0 - S.dFree, n };
+  });
   if (!n) { toast(`No upgrade fits in ${S.dFree} coins.`, 'def'); return; }
-  S.gridVer++; recompute();
-  tune = { S, key: buildKey(), before, spent: free0 - S.dFree, n };
   refreshUI();
 }
-function tuneUndo() {
-  if (!tuneFresh()) return;
-  for (const [i, cfg] of tune.before) { const g = S.grid[i]; if (g && g.t === 'tower') g.cfg = cfg; }
-  S.dFree += tune.spent; tune = null;
-  S.gridVer++; recompute(); refreshUI();
+
+/* ---------- auto-maze ----------
+   One button spends a budget on walls that make the route as long as practical, around whatever stands (it never
+   moves or removes anything, and never places a tower): the hot tiles taken to their natural end. Each step tries every
+   straight run of new walls along a row or a column that crosses the route (walls, towers and rock inside a run cost
+   nothing; a gate, a bridge or rough ground breaks it), measures the route units would take with it (the pathing they
+   use, tower danger and the bridge tie-break included), and keeps the run that adds the most route per wall; ties go
+   to more route, then to more time under fire. Runs see what single walls can't: a column of walls only turns the
+   route once it reaches past it. It stops when the budget is spent or no run that fits makes the route longer. A
+   good-enough starter, not an optimiser, worked out a slice at a time between frames like the hot tiles. Budget:
+   RULES.autoMazeFirst coins in the first wave, RULES.autoMazeShare of the free coins after that. One Undo takes the
+   whole maze back. */
+const LINES = [...Array.from({ length: ROWS }, (_, r) => Array.from({ length: COLS }, (_, c) => r * COLS + c)),
+  ...Array.from({ length: COLS }, (_, c) => Array.from({ length: ROWS }, (_, r) => r * COLS + c))];
+const WALL_MARK = { t: 'wall' };
+const mazeBudget = () => Math.min(S.dFree, S.round === 1 ? RULES.autoMazeFirst : Math.floor(S.dFree * RULES.autoMazeShare));
+// The most route one default tower could cover from a free cell off the route (with `extra` walled), so of two
+// equally long mazes the one that folds the route past a good tower spot wins.
+function spotScore(path, G, extra, hole) {
+  const on = new Set(path), cfg = defaultTower();
+  let best = 0;
+  for (let i = 0; i < N; i++) {
+    if (G[i] || on.has(i) || hole(i) || extra.includes(i)) continue;
+    let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; });
+    if (n > best) best = n;
+  }
+  return best;
 }
-const tuneFresh = () => !!(tune && tune.S === S && tune.key === buildKey());
+function* mazeSearch(G, walls, br, T) {
+  const dz = Int16Array.from(dangerField(G)), open = i => !G[i], hole = i => i === ENTRY || i === EXIT || br.has(i) || T[i] === ROUGH;
+  const route = () => { flow(tmpA, open, dz, br); return tracePath(tmpA); };
+  const out = [];
+  let path = route();
+  while (path && out.length < walls) {
+    const len = pathLen(path), on = new Set(path), left = walls - out.length;
+    let best = null;
+    for (const line of LINES) for (let a = 0; a < line.length; a++) {
+      if (G[line[a]] || hole(line[a])) continue; // a run starts and ends on a new wall: blocked cells at its ends change nothing
+      const cells = [];
+      let hit = false;
+      for (let b = a; b < line.length && !hole(line[b]); b++) {
+        const i = line[b];
+        if (G[i]) continue;
+        cells.push(i); hit = hit || on.has(i);
+        if (cells.length > left) break;
+        if (!hit) continue; // only a run across the route can lengthen it
+        // a run of two or more leans on the board's edge or on something solid at one end: one floating free at both
+        // ends leaves two equal ways round, and no run after it could lengthen the route
+        if (cells.length > 1 && !(a === 0 || G[line[a - 1]] || b === line.length - 1 || G[line[b + 1]])) continue;
+        for (const j of cells) G[j] = WALL_MARK;
+        bfs(tmpB, open);
+        const shut = tmpB[ENTRY] < 0, p = shut ? null : route();
+        for (const j of cells) G[j] = null;
+        yield;
+        if (shut) break; // a longer run would close it too
+        const gain = pathLen(p) - len, r = gain / cells.length;
+        if (gain <= 0) continue;
+        let take = !best || r > best.r + 1e-9 || (r > best.r - 1e-9 && gain > best.gain);
+        if (!take && r > best.r - 1e-9 && gain === best.gain) { // a tie: more time under fire, then a better tower spot
+          if (best.fire < 0) { best.fire = underFire(best.p, G); best.spot = spotScore(best.p, G, best.cells, hole); }
+          const f = underFire(p, G);
+          take = f > best.fire + 1e-9 || (f > best.fire - 1e-9 && spotScore(p, G, cells, hole) > best.spot);
+        }
+        if (take) best = { cells: cells.slice(), p, gain, r, fire: -1, spot: 0 };
+      }
+    }
+    if (!best) break;
+    for (const j of best.cells) { G[j] = WALL_MARK; out.push(j); }
+    path = best.p;
+  }
+  return out;
+}
+const amaze = { gen: null, S: null, sig: '', budget: 0, timer: 0 };
+function autoMaze() {
+  if (amaze.gen || !undoHere()) return;
+  const walls = Math.floor(mazeBudget() / RULES.wall);
+  if (!walls) { toast(`Auto-maze needs ${RULES.wall} coins for a wall. You have ${S.dFree} free.`, 'def'); return; }
+  Object.assign(amaze, { S, sig: buildSig(), budget: walls * RULES.wall, gen: mazeSearch(S.grid.slice(), walls, new Set(S.bridges), S.terrain) });
+  clearTimeout(amaze.timer); amaze.timer = setTimeout(pumpMaze, 0);
+  refreshUI();
+}
+function stopMaze(redraw = true) { if (!amaze.gen) return; amaze.gen = null; clearTimeout(amaze.timer); amaze.timer = 0; if (redraw) refreshUI(); }
+function pumpMaze() {
+  amaze.timer = 0;
+  if (!amaze.gen) return;
+  if (amaze.S !== S || !undoHere() || buildSig() !== amaze.sig) { stopMaze(); return; } // the build changed under it: nothing is placed
+  const t0 = performance.now();
+  for (;;) {
+    const r = amaze.gen.next();
+    if (r.done) { amaze.gen = null; placeMaze(r.value); return; }
+    if (performance.now() - t0 > RULES.hintSliceMs) break;
+  }
+  amaze.timer = setTimeout(pumpMaze, 0);
+}
+function placeMaze(cells) {
+  if (!cells.length) { toast(`No walls within ${amaze.budget} coins make the route longer.`, 'def'); refreshUI(); return; }
+  const len0 = pathLen(S.path), what = { label: 'auto-maze' };
+  undoable(what, () => {
+    for (const i of cells) { S.dFree -= RULES.wall; S.grid[i] = { t: 'wall', fresh: !seenAs(i, 'wall') }; puff(...center(i), '#8fd3ef'); }
+    S.gridVer++; recompute();
+    what.help = { kind: 'maze', walls: cells.length, spent: cells.length * RULES.wall, from: len0, to: pathLen(S.path) };
+  });
+  refreshUI();
+}
 // Several cells at once (a shape, or the hint's wall set), all or nothing: cells are [cell, 'wall' | 'tower'] pairs
 // on empty, buildable cells. Walls cost RULES.wall, towers the usual new-tower price (defaultTower, the fee rising
 // with each one), with no discount; afterwards they're ordinary walls and towers.
@@ -1893,7 +2093,7 @@ function placeHot() {
    For the cell under the mouse (or the pending tap on touch): the ghost, the route preview and the readout's change. */
 let hypCache = { key: '', S: null, pv: null };
 // A tower being dragged to a new cell (on either step), or null.
-const towerDrag = () => (drag && drag.mode === 'tower' && drag.moved && S.phase === 'defend' && S.grid[drag.from] && S.grid[drag.from].t === 'tower' ? drag : null);
+const towerDrag = () => (drag && towerMode(drag.mode) && drag.moved && S.phase === 'defend' && S.grid[drag.from] && S.grid[drag.from].t === 'tower' ? drag : null);
 function buildPreview() {
   if (S.phase !== 'defend') return null;
   const td = towerDrag();
@@ -1909,6 +2109,16 @@ function buildPreview() {
     return pv;
   }
   if (S.step !== 0) return null;
+  if (S.tool === 'remove') { // Remove & Inspect: the route if the wall under the pointer were bridged
+    const cell = inspectCell();
+    if (cell < 0 || !S.grid[cell] || S.grid[cell].t !== 'wall') return null;
+    const key = ['inspect', S.gridVer, cell].join(':');
+    if (hypCache.key !== key || hypCache.S !== S) {
+      const r = routeBridged(cell);
+      hypCache = { key, S, pv: { kind: 'inspect', cell, v: { ok: true }, r, same: String(r.path) === String(S.path) } };
+    }
+    return hypCache.pv;
+  }
   const cell = ghostCell(), tool = S.tool, set = hotNow();
   if (cell < 0 || (tool !== 'wall' && tool !== 'tower' && tool !== 'shape')) return null;
   const key = [S.gridVer, S.dFree, tool, cell, shapeSel.k, shapeSel.rot, shapeSel.flip, view.rot, set ? set.join(',') : '-'].join(':');
@@ -2377,7 +2587,8 @@ const PHASE_UI = {
   over: { side: 'both', who: 'Match over', hint: '' },
 };
 function setPhase(p) {
-  S.phase = p; S.step = 0; S.sel = null; pending = -1; pendingRemove = -1; drag = null; S.confirmEmpty = false; saboMode = '';
+  S.phase = p; S.step = 0; S.sel = null; pending = -1; drag = null; S.confirmEmpty = false; saboMode = '';
+  hideUndoPop(); stopMaze(false); undo.open = null; // a press cut short by the clock or a lock-in records nothing
   scrub.playing = false; tlDrag = null; document.body.classList.remove('dragging');
   if (p === 'defend') S.tool = DEF_STEPS[0].tool;
   clearTimeout(toastTimer); el.toast.className = '';
@@ -2404,7 +2615,7 @@ function setPhase(p) {
 function goStep(n) {
   const steps = S.phase === 'defend' ? DEF_STEPS : ATK_STEPS;
   S.step = clamp(n, 0, steps.length - 1);
-  S.sel = null; pending = -1; pendingRemove = -1;
+  S.sel = null; pending = -1;
   if (S.phase === 'defend') S.tool = DEF_STEPS[S.step].tool;
   if (S.phase === 'attack') { scrubState().playing = false; tlDrag = null; } // leaving or opening the Wave step pauses the preview; T stays
   refreshUI();
@@ -2582,7 +2793,7 @@ function startTest() {
   if (side === 'atk' && !armyCount(live.designs) && !live.charges.size) { toast('Your wave is empty. Add units or sabotage first.', 'atk'); return; }
   const offs = side === 'def' && !!(L && L.snap.charges.length);
   replay = { live, done: false, test: { side, srand, uid, offs, key: buildKey(), round: live.round, fire: side === 'def' ? underFire(live.path, live.grid) : 0 } };
-  pending = -1; pendingRemove = -1; drag = null;
+  pending = -1; drag = null;
   S = newState();
   Object.assign(S, { round: live.round, rounds: live.rounds, keepMax: live.keepMax, keep: 1e9, dFree: live.dFree, aFree: live.aFree, seenRound: live.seenRound, towerSeq: live.towerSeq, mapSeed: live.mapSeed, terrain: live.terrain, totals: { ...live.totals } });
   S.grid = (side === 'def' ? live.grid : live.seenGrid).map(cloneCell); S.seenGrid = live.seenGrid.map(cloneCell); S.seenVer = live.seenVer;
@@ -4121,7 +4332,7 @@ function renderNav(steps, back, next, sideCls, readyFn) {
   next.textContent = last ? (S.phase === 'attack' && S.confirmEmpty ? 'Send nothing?' : 'Ready') : `Next: ${steps[S.step + 1].name}`;
   next.dataset.last = last ? '1' : '';
 }
-const toolBtn = (id, name, cost) => `<button class="tool" data-tool="${id}" aria-pressed="false"><span class="ico ${id}">${ICON[id]}</span><span class="tx"><span class="tname">${name}</span><span class="tcost">${cost}</span></span></button>`;
+const toolBtn = (id, name, cost, label) => `<button class="tool" data-tool="${id}" aria-pressed="false"${label ? ` aria-label="${label}"` : ''}><span class="ico ${id}">${ICON[id]}</span><span class="tx"><span class="tname">${name}</span><span class="tcost">${cost}</span></span></button>`;
 
 function buildPanels() {
   el.defSteps.addEventListener('click', e => {
@@ -4142,9 +4353,10 @@ function buildPanels() {
   el.defBody.addEventListener('click', e => {
     if (e.target.closest('[data-act=replay]')) { startReplay(); return; }
     if (e.target.closest('[data-act=tune]')) { autoTune(); return; }
-    if (e.target.closest('[data-act=tune-undo]')) { tuneUndo(); return; }
+    if (e.target.closest('[data-act=maze]')) { autoMaze(); return; }
+    if (e.target.closest('[data-act=undo]')) { undoLast(); return; }
     const t = e.target.closest('.tool');
-    if (t) { S.tool = S.tool === t.dataset.tool && t.dataset.tool === 'remove' ? DEF_STEPS[S.step].tool : t.dataset.tool; pending = -1; pendingRemove = -1; if (S.tool === 'remove') S.sel = null; refreshUI(); return; }
+    if (t) { S.tool = S.tool === t.dataset.tool && t.dataset.tool === 'remove' ? DEF_STEPS[S.step].tool : t.dataset.tool; pending = -1; if (S.tool === 'remove') S.sel = null; refreshUI(); if (S.tool === 'remove') inspectTip(t); return; }
     const sh = e.target.closest('[data-shape]');
     if (sh) { shapeSel.k = sh.dataset.shape; S.tool = 'shape'; refreshUI(); return; }
     const op = e.target.closest('[data-act=rot],[data-act=flip]');
@@ -4157,7 +4369,7 @@ function buildPanels() {
   el.defCtx.addEventListener('input', e => {
     const inp = e.target.closest('input[type=range]'); if (!inp || !S.sel || S.sel.k !== 'tower') return;
     const cell = S.sel.cell, key = inp.dataset.key, v = +inp.value;
-    if (!setTowerCfg(cell, { [key]: v })) inp.value = S.grid[cell].cfg[key];
+    if (!undoable(tuneWhat(cell), () => setTowerCfg(cell, { [key]: v }))) inp.value = S.grid[cell].cfg[key];
   });
   el.defCtx.addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
@@ -4165,10 +4377,11 @@ function buildPanels() {
     if (t.dataset.act === 'tips') { tipsOn = !tipsOn; ctxKey.def = null; refreshUI(); return; }
     if (!S.sel || S.sel.k !== 'tower') return;
     const cell = S.sel.cell, g = S.grid[cell]; if (!g) return;
-    if (t.dataset.act === 'remove') { removeAt(cell); return; }
-    if (t.dataset.fx) { setTowerCfg(cell, { [t.dataset.fx]: !g.cfg[t.dataset.fx] }); return; }
-    if (t.dataset.pre) setTowerCfg(cell, presetTower(t.dataset.pre));
+    if (t.dataset.act === 'remove') { const msg = undoable({}, () => removeTower(cell)); if (msg) popUndo(msg); return; }
+    if (t.dataset.fx) { undoable(tuneWhat(cell), () => setTowerCfg(cell, { [t.dataset.fx]: !g.cfg[t.dataset.fx] })); return; }
+    if (t.dataset.pre) undoable(tuneWhat(cell), () => setTowerCfg(cell, presetTower(t.dataset.pre)));
   });
+  $('#undo-btn').addEventListener('click', undoLast);
 
   // attacker body (roster, timeline, charges)
   el.atkBody.addEventListener('click', e => {
@@ -4290,9 +4503,9 @@ const tipBtn = () => `<button class="tipbtn" data-act="tips" aria-pressed="${tip
 /* ---------- defender ---------- */
 function defBodyHTML(step) {
   if (step === 0) return `
-    <div class="tools bar">${toolBtn('wall', 'Wall', `${RULES.wall} coins`)}${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span> coins')}${toolBtn('remove', 'Remove', 'refund')}${toolBtn('shape', 'Shapes', '<span id="d-shname"></span>')}</div>
+    <div class="tools bar">${toolBtn('wall', 'Wall', `${RULES.wall} coins`)}${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span> coins')}${toolBtn('remove', 'Remove', '&amp; inspect', 'Remove &amp; Inspect')}${toolBtn('shape', 'Shapes', '<span id="d-shname"></span>')}</div>
     <div class="routebar" id="d-route"></div>
-    <div class="tunerow" id="d-tune" hidden></div>
+    <div class="tunerow" id="d-tune"></div>
     <div id="d-shapes" hidden></div>
     <p class="note" id="d-toolnote"></p>
     ${bridgeDefNote()}${groundNote()}
@@ -4300,11 +4513,36 @@ function defBodyHTML(step) {
     <p class="note">Bright walls are new this round: the attacker hasn’t seen them and can’t bridge them.</p>`;
   return `<div class="sumgrid" id="d-sum"></div>${bridgeDefNote()}${replayRow()}<div class="list" id="def-intel"></div>`;
 }
+// The first time a device picks Remove & Inspect, one line under its button says what the inspect part does.
+let inspectTipSeen = false;
+try { inspectTipSeen = localStorage.getItem('tptd-inspect-tip') === 'seen'; } catch (_) { /* no storage here: shown once per visit */ }
+function inspectTip(btn) {
+  if (inspectTipSeen) return;
+  inspectTipSeen = true;
+  try { localStorage.setItem('tptd-inspect-tip', 'seen'); } catch (_) { /* not kept */ }
+  el.tip.textContent = matchMedia('(hover: hover)').matches ? 'Hover walls to preview bridge risk.' : 'Hold a wall to preview bridge risk.';
+  el.tip.hidden = false;
+  const r = btn.getBoundingClientRect(), tw = el.tip.offsetWidth;
+  el.tip.style.left = Math.max(8, Math.min(innerWidth - tw - 8, r.left + r.width / 2 - tw / 2)) + 'px'; el.tip.style.top = (r.bottom + 8) + 'px';
+  const shown = el.tip.textContent;
+  setTimeout(() => { if (el.tip.textContent === shown) el.tip.hidden = true; }, 4000);
+}
+// The helpers: Auto-maze, Auto-tune (once a tower stands) and Undo, with what the last helper press did.
+function helperRowHTML() {
+  const h = lastHelp(), top = undoTop(), busy = !!amaze.gen, mb = mazeBudget();
+  const msg = !h ? '' : h.kind === 'tune' ? `Spent <b>${h.spent}</b> coins on ${plural(h.n, 'upgrade')}, <b>${S.dFree}</b> left`
+    : `Auto-maze built <b>${plural(h.walls, 'wall')}</b> for ${h.spent} coins · path <b>${h.from} → ${h.to}</b>`;
+  return `<button class="mini tunebtn" data-act="maze"${busy ? ' disabled' : ''} data-tip="Spends up to ${mb} coins on walls that make the route longer, around what you’ve built. Towers stay up to you.">${busy ? 'Building…' : 'Auto-maze'}</button>`
+    + (towerCount(S.grid) ? `<button class="mini tunebtn" data-act="tune" data-tip="Spends your free coins on upgrades to the towers you’ve placed. Never lowers a slider or changes fire rate.">Auto-tune towers</button>` : '')
+    + `<button class="mini undobtn" data-act="undo"${top ? '' : ' disabled'} data-tip="${top ? `Undo: ${top.label} (Ctrl+Z)` : 'Nothing to undo yet'}">Undo</button>`
+    + (msg ? `<span class="tunemsg">${msg}</span>` : '');
+}
 // One short line for the picked tool.
 function toolNote() {
   const offline = S.grid.filter(g => g && g.t === 'tower' && g.off > 0).length, set = hotNow();
   if (S.tool === 'tower') return `Next tower <b>${towerCost(defaultTower())} + ${nextFee()}</b> fee. Each tower adds ${RULES.towerFee} to the fee; drag one to move it, free.${offline ? ` <b>${plural(offline, 'tower')} offline</b>, locked until it comes back.` : ''}`;
-  if (S.tool === 'remove') return 'Tap a wall or tower to take it back for a full refund.';
+  if (S.tool === 'remove') return matchMedia('(hover: hover)').matches ? 'Hover a wall: the <b>red route</b> is where units go if it’s bridged. Click a wall or tower to take it back (full refund), drag a tower to move it. Ctrl+Z undoes.'
+    : 'Hold a wall: the <b>red route</b> is where units go if it’s bridged. Tap a wall or tower to take it back (full refund), drag a tower to move it.';
   if (S.tool === 'shape') return matchMedia('(hover: hover)').matches ? 'Click to drop the piece; R rotates, F flips. Red cells can’t be built.' : 'Tap to show the piece, drag to move it, tap it to place. Red cells can’t be built.';
   return set && set.length ? `Drag to draw walls. <b>Glowing tiles</b> place the ${plural(set.length, 'wall')} that lengthen the route most, all at once.` : 'Drag to draw walls. Units avoid tower range when they can, so walls are what force them through your fire.';
 }
@@ -4365,10 +4603,7 @@ function renderDef() {
     $('#d-tprice').textContent = newTowerPrice();
     $('#d-shname').textContent = SEGMENTS[shapeSel.k].name;
     $('#d-route').innerHTML = routeBarHTML(); hudCache.route = null;
-    const tr = $('#d-tune'), towers = towerCount(S.grid) > 0;
-    tr.hidden = !towers;
-    if (towers) tr.innerHTML = tuneFresh() ? `<span class="tunemsg">Spent <b>${tune.spent}</b> coins on ${plural(tune.n, 'upgrade')}, <b>${S.dFree}</b> left</span><button class="mini" data-act="tune-undo">Undo</button>`
-      : `<button class="mini tunebtn" data-act="tune" data-tip="Spends your free coins on upgrades to the towers you've placed. Never lowers a slider or changes fire rate.">Auto-tune towers</button><span class="tunemsg">${S.dFree} coins free</span>`;
+    $('#d-tune').innerHTML = helperRowHTML();
     const sh = $('#d-shapes');
     sh.hidden = S.tool !== 'shape';
     if (!sh.hidden) sh.innerHTML = shapesHTML();
@@ -5451,6 +5686,11 @@ function drawPaths(c, t) {
     return;
   }
   const pv = buildPreview(), hyp = pv && pv.r ? pv.r.path : null;
+  if (pv && pv.kind === 'inspect') { // Remove & Inspect: the route keeps its colour, the bridged one shows in red
+    strokePath(c, S.path, 'rgba(200,228,242,0.5)', 0.06, t);
+    if (!pv.same) strokePath(c, hyp, 'rgba(255,93,93,0.95)', 0.075, t, [0.22, 0.12]);
+    return;
+  }
   strokePath(c, S.path, hyp ? 'rgba(200,228,242,0.22)' : 'rgba(200,228,242,0.5)', 0.06, t);
   if (hyp) strokePath(c, hyp, 'rgba(79,214,238,0.95)', 0.075, t, [0.22, 0.12]);
 }
@@ -5765,13 +6005,13 @@ function drawInteraction(c, t, G) {
     if (S.sel && S.sel.cell === i) { const q = i % COLS, r = (i / COLS) | 0; c.beginPath(); rr(c, q + 0.02, r + 0.02, 0.96, 0.96, 0.17); c.lineWidth = 0.05; c.strokeStyle = '#e2e9ee'; c.stroke(); }
   }
   if (S.phase === 'defend') {
-    if (S.tool === 'remove') {
-      const sc = hoverType === 'mouse' ? hover : pendingRemove;
-      if (sc >= 0 && S.grid[sc] && S.grid[sc].t !== 'rock') {
+    if (S.tool === 'remove' && !towerDrag()) {
+      const sc = inspectCell(), pv = buildPreview();
+      if (sc >= 0 && S.grid[sc] && S.grid[sc].t !== 'rock' && !(drag && drag.mode === 'remove')) {
         const q = sc % COLS, r = (sc / COLS) | 0;
         c.beginPath(); rr(c, q + 0.03, r + 0.03, 0.94, 0.94, 0.15);
         c.lineWidth = 0.06; c.strokeStyle = 'rgba(255,93,93,0.95)'; c.stroke();
-        removeLabel = { cell: sc, val: S.grid[sc].t === 'wall' ? RULES.wall : sellValue(S.grid, sc) };
+        removeLabel = { cell: sc, val: S.grid[sc].t === 'wall' ? RULES.wall : sellValue(S.grid, sc), delta: pv && pv.kind === 'inspect' ? pv.r.len - pathLen(S.path) : null };
       }
     } else {
       const set = hotNow(), pv = buildPreview();
@@ -5876,7 +6116,8 @@ function boardNote(c, txt) {
 function drawLabels(c, G) {
   if (removeLabel) {
     const [x, y] = center(removeLabel.cell), [sx, sy0] = w2s(x, y), sy = sy0 - view.cs * 0.66 - 14;
-    pill(c, sx, sy, `REMOVE +${removeLabel.val}`, '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
+    const d = removeLabel.delta, tiles = d == null ? '' : d ? `${d < 0 ? '\u2212' : '+'}${Math.abs(d)} TILE${Math.abs(d) === 1 ? '' : 'S'} \u00b7 ` : 'SAME ROUTE \u00b7 ';
+    pill(c, sx, sy, `${tiles}REMOVE +${removeLabel.val}`, '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
   }
   const pv = S.phase === 'defend' ? buildPreview() : null;
   if (pv && pv.kind === 'move') {
@@ -5925,8 +6166,9 @@ function drawLabels(c, G) {
 
 /* =====================================================================
    Input: mouse hovers to preview; touch taps, with a confirm tap for towers.
+   Each press on the defender's board is one change for Undo (drag.undo).
    ===================================================================== */
-let hover = -1, hoverType = 'mouse', pending = -1, pendingRemove = -1, drag = null;
+let hover = -1, hoverType = 'mouse', pending = -1, drag = null;
 function worldFromEvent(e) { const r = canvas.getBoundingClientRect(); return s2w(e.clientX - r.left, e.clientY - r.top); }
 function cellOf(p) { const [x, y] = p; if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return -1; return (y | 0) * COLS + (x | 0); }
 function press(cell, pt, p) {
@@ -5939,18 +6181,19 @@ function selectTower(cell) {
   const same = S.sel && S.sel.k === 'tower' && S.sel.cell === cell;
   S.sel = same ? null : { k: 'tower', cell }; refreshUI();
 }
+/* Remove & Inspect: a click (or a swipe) takes walls back; a swipe passes over towers. A click on a tower takes it back
+   with an Undo right there, a drag moves it. Hovering a wall shows the route if it were bridged; on touch, a finger
+   held still on a wall does (sliding on to other walls), and a quick tap removes it. */
 function pressDefend(cell, pt) {
-  if (cell < 0) { pending = -1; pendingRemove = -1; if (S.sel) { S.sel = null; refreshUI(); } return null; }
+  if (cell < 0) { pending = -1; if (S.sel) { S.sel = null; refreshUI(); } return null; }
   const g = S.grid[cell], tool = S.tool;
   if (tool === 'remove') {
-    if (!g) { pendingRemove = -1; return 'remove'; }
-    if (g.t === 'wall') { pendingRemove = -1; removeAt(cell); return 'remove'; }
-    if (g.t === 'rock' || g.off > 0) { pendingRemove = -1; removeAt(cell); return null; } // both explain why they stay
-    if (pt === 'mouse' || pendingRemove === cell) { pendingRemove = -1; removeAt(cell); }
-    else { pendingRemove = cell; toast(`Tap again to remove this tower for ${sellValue(S.grid, cell)}`, 'def'); }
-    return null;
+    if (!g) return 'remove';
+    if (g.t === 'tower' && !(g.off > 0)) return 'tower-rm'; // pointerup decides: a click removes, a drag moves
+    if (g.t === 'wall' && pt !== 'mouse') return 'rm-hold'; // a tap, a hold or a swipe: pointermove and pointerup decide
+    removeAt(cell); // rock and offline towers: removeAt says why they stay
+    return g.t === 'wall' ? 'remove' : null;
   }
-  pendingRemove = -1;
   if (tool === 'shape' && !(g && g.t === 'tower' && !nearPending(cell))) return pressShape(cell, pt);
   if (g) {
     pending = -1;
@@ -6022,8 +6265,18 @@ function pressShape(cell, pt) {
   pending = cell; shapeGrab = [0, 0];
   return 'shape';
 }
+const towerMode = m => m === 'tower' || m === 'tower-rm';
+// On touch the remove tool waits a moment on a wall: held still, it previews the route as if the wall were bridged.
+const HOLD_MS = 400;
+let holdTimer = 0;
+const inspectCell = () => (hoverType === 'mouse' ? hover : drag && drag.mode === 'rm-hold' && drag.held ? drag.cell : -1);
+function removeTower(cell) { // returns the pop-up's line, or '' if the tower stays
+  const g = S.grid[cell], val = sellValue(S.grid, cell);
+  removeAt(cell);
+  return S.grid[cell] ? '' : `Tower ${g.n} removed · +${val}`;
+}
 function paint(cell, mode) {
-  if (mode === 'tower') return; // the ghost follows drag.cell; pointermove decides when a press became a drag
+  if (towerMode(mode) || mode === 'rm-hold') return; // the ghost or the preview follows drag.cell; pointermove decides when a press became a drag
   if (cell < 0 || S.phase !== 'defend' || planLocked()) return;
   if (mode === 'shape' || mode === 'shape-tap') {
     pending = clamp(((cell / COLS) | 0) + shapeGrab[1], 0, ROWS - 1) * COLS + clamp(cell % COLS + shapeGrab[0], 0, COLS - 1);
@@ -6039,22 +6292,31 @@ canvas.addEventListener('pointerdown', e => {
   hoverType = e.pointerType === 'mouse' ? 'mouse' : 'touch';
   const p = worldFromEvent(e), cell = cellOf(p);
   hover = hoverType === 'mouse' ? cell : -1;
+  const mine = S.phase === 'defend' && undoBegin();
   const mode = press(cell, hoverType, p);
   if (mode) {
-    drag = { id: e.pointerId, mode, last: p, cell, from: cell, p0: p };
+    drag = { id: e.pointerId, mode, last: p, cell, from: cell, p0: p, undo: mine };
     try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* capture is optional */ }
-  }
+    if (mode === 'rm-hold') { clearTimeout(holdTimer); holdTimer = setTimeout(() => { if (drag && drag.mode === 'rm-hold') drag.held = true; }, HOLD_MS); }
+  } else if (mine) undoEnd();
 });
 canvas.addEventListener('pointermove', e => {
   const p = worldFromEvent(e);
   if (e.pointerType === 'mouse') {
     hoverType = 'mouse'; hover = cellOf(p);
     const g = S && S.phase === 'defend' && S.tool !== 'remove' && hover >= 0 ? S.grid[hover] : null;
-    canvas.style.cursor = drag && drag.mode === 'tower' ? 'grabbing' : g && g.t === 'tower' ? 'grab' : '';
+    canvas.style.cursor = drag && (drag.mode === 'tower' || (drag.mode === 'tower-rm' && drag.moved)) ? 'grabbing' : g && g.t === 'tower' ? 'grab' : '';
   }
   if (drag && e.pointerId === drag.id) {
     // a tower press becomes a drag only past a little travel, so a wobbly tap near a cell's edge still just opens its card
-    if (drag.mode === 'tower' && !drag.moved && Math.hypot(p[0] - drag.p0[0], p[1] - drag.p0[1]) > (e.pointerType === 'mouse' ? 0.3 : 0.5)) drag.moved = true;
+    // (or, with Remove & Inspect, still removes it)
+    const far = Math.hypot(p[0] - drag.p0[0], p[1] - drag.p0[1]) > (e.pointerType === 'mouse' ? 0.3 : 0.5);
+    if (towerMode(drag.mode) && !drag.moved && far) drag.moved = true;
+    // a finger that sets off from a wall before the hold kicks in is a swipe: it takes that wall and goes on
+    if (drag.mode === 'rm-hold' && !drag.held && far) {
+      clearTimeout(holdTimer); drag.mode = 'remove';
+      if (S.phase === 'defend' && !planLocked() && S.grid[drag.from] && S.grid[drag.from].t === 'wall') removeAt(drag.from);
+    }
     const [x0, y0] = drag.last, [x1, y1] = p;
     const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.2));
     for (let k = 1; k <= steps; k++) {
@@ -6064,19 +6326,27 @@ canvas.addEventListener('pointermove', e => {
     drag.last = p;
   }
 });
-const endDrag = e => { if (drag && e.pointerId === drag.id) drag = null; };
 canvas.addEventListener('pointerup', e => {
-  const d = drag;
-  endDrag(e);
-  if (d && d === drag) return; // another pointer's drag
-  if (d && d.mode === 'shape-tap' && !d.moved && S.phase === 'defend' && S.tool === 'shape' && pending >= 0 && placeShape(pending)) pending = -1;
-  if (d && d.mode === 'tower' && S.phase === 'defend' && !planLocked()) {
-    if (!d.moved) selectTower(d.from);
-    else if (d.cell >= 0 && d.cell !== d.from) moveTower(d.from, d.cell); // dropped off the board or back home: nothing moves
+  if (!drag || e.pointerId !== drag.id) return; // no drag, or another pointer's
+  const d = drag, live = S.phase === 'defend' && !planLocked();
+  drag = null; clearTimeout(holdTimer);
+  let pop = '';
+  if (d.mode === 'shape-tap' && !d.moved && live && S.tool === 'shape' && pending >= 0 && placeShape(pending)) pending = -1;
+  if (d.mode === 'rm-hold' && !d.held && live && S.grid[d.from] && S.grid[d.from].t === 'wall') removeAt(d.from); // a quick tap
+  if (towerMode(d.mode) && live) {
+    if (d.moved) { if (d.cell >= 0 && d.cell !== d.from) moveTower(d.from, d.cell); } // dropped off the board or back home: nothing moves
+    else if (d.mode === 'tower-rm') pop = removeTower(d.from);
+    else selectTower(d.from);
     if (e.pointerType === 'mouse') canvas.style.cursor = '';
   }
+  if (d.undo) undoEnd();
+  if (pop) popUndo(pop);
 });
-canvas.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('pointercancel', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  const d = drag; drag = null; clearTimeout(holdTimer);
+  if (d.undo) undoEnd();
+});
 canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = -1; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -6093,6 +6363,9 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'r' || e.key === 'R' || e.key === 'f' || e.key === 'F') && S && S.phase === 'defend' && S.tool === 'shape' && !e.metaKey && !e.ctrlKey && !(e.target.closest && e.target.closest('input'))) {
     turnShape(e.key.toLowerCase() === 'r' ? 'rot' : 'flip'); return;
   }
+  // Ctrl+Z (⌘Z) undoes the defender's last change, unless something is being typed
+  if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && S && S.phase === 'defend'
+    && !(e.target.closest && e.target.closest('input:not([type=range]), textarea, select, [contenteditable]'))) { e.preventDefault(); if (!drag) undoLast(); return; }
   // the space bar plays or pauses the wave plan's preview, unless something is being typed or a card is open
   if (e.key === ' ' && !e.repeat && S && S.phase === 'attack' && S.step === A_WAVE && $('#a-scrub') && ovGuide.hidden && el.ovInfo.hidden
     && !(e.target.closest && e.target.closest('input:not([type=range]), textarea, select, [contenteditable]'))) { e.preventDefault(); togglePlay(); return; }
@@ -6226,6 +6499,7 @@ window.siegeline = {
   get hot() { return hotTiles(); }, get hints() { return hintsOn; }, // the hint's wall set (null until it's worked out)
   underFire: () => underFire(S.path, S.grid), avgSpeed, shapeSel, canBridgeAt: i => bridgeSpot(i), // where the attacker may lay a bridge
   seenRoute: () => (seenPath() || []).slice(), // the route as the attacker last saw it
+  undoDepth: () => (undoHere() ? undoList().length : 0), mazeBudget, get mazing() { return !!amaze.gen; }, // the defender's changes Undo can take back this round; what Auto-maze may spend, and whether it's still working
   bridgePrice: bridgeCost, knockPrice: towerChargeCost, // sabotage prices: (b), and (C, t)
   shotAcc, encodeArmy: ds => encodeArmy(ds, true), // one shot's chance to hit for a tower's sliders (%); an army as a plan carries it
   worldToClient(x, y) { const [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },

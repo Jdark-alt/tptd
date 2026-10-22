@@ -1,7 +1,7 @@
 """Pass-and-play suite: building, tuning, pricing, sappers (bridges and knock-outs), the timeline, test runs, win/loss,
    phone layout, and terrain (rough ground and rock). The fixed scenarios switch terrain off; the terrain checks come last.
    python tools/tests/test_local.py   (screenshots land in tools/.build/shots/local)"""
-import os, sys, json, subprocess
+import os, sys, json, re, subprocess
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common import game_html, write_build, BUILD, ROOT, TOOLS, launch
 from playwright.sync_api import sync_playwright
@@ -766,9 +766,178 @@ with sync_playwright() as p:
     check(nolower and cfg1 != cfg0 and f1 < f0 and S(page, 'S.grid.filter(Boolean).length') == n0, f'auto-tune spends coins on upgrades, never lowers a slider or changes fire rate, adds nothing ({f0} → {f1})')
     check(f'spent {f0 - f1} coins' in page.inner_text('#d-tune').lower() and f'{f1} left' in page.inner_text('#d-tune').lower(), f'auto-tune says what it spent ({page.inner_text("#d-tune")})')
     page.screenshot(path=f'{OUT}/v18_tune.png')
-    page.click('#d-tune [data-act=tune-undo]')
-    check(S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)') == cfg0 and S(page, 'S.dFree') == f0, 'auto-tune: Undo restores every tower and the coins')
+    page.click('#d-tune [data-act=undo]')
+    check(S(page, 'S.grid.map(g => g && g.t === "tower" ? { ...g.cfg } : null)') == cfg0 and S(page, 'S.dFree') == f0, 'auto-tune: one Undo restores every tower and the coins')
     check(not errors, f'v18 auto-tune: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v20.4: the user's Defender QoL spec: Auto-maze, Remove & Inspect, Undo
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    grid = lambda: S(page, 'S.grid.map(g => g ? (g.t === "tower" ? ["tower", g.n, g.fee, !!g.fresh, JSON.stringify(g.cfg)] : [g.t, !!g.fresh]) : null)')
+    xy = lambda c, r: page.evaluate(f'() => window.siegeline.cellToClient({idx(c, r)})')
+    depth = lambda: page.evaluate('() => window.siegeline.undoDepth()')
+    def maze():
+        page.click('#d-tune [data-act=maze]')
+        page.wait_for_function('() => !window.siegeline.mazing'); page.wait_for_timeout(30)
+    check(page.is_visible('#d-tune [data-act=maze]') and page.is_hidden('#d-tune [data-act=tune]') and page.is_disabled('#d-tune [data-act=undo]'),
+          'Build step: Auto-maze where Auto-tune goes (Auto-tune once a tower stands), Undo greyed out with nothing to undo')
+    # round 1: a fixed 60 coins, walls only, the route longer, room left for four towers
+    g0, f0, len0 = grid(), S(page, 'S.dFree'), route_len(page)
+    check(page.evaluate('() => window.siegeline.mazeBudget()') == 60, 'auto-maze budget in the first wave: 60 coins')
+    maze()
+    g1, f1, len1 = grid(), S(page, 'S.dFree'), route_len(page)
+    added = [i for i in range(len(g0)) if g0[i] != g1[i]]
+    check(added and all(g0[i] is None and g1[i] == ['wall', True] for i in added) and f0 - f1 == 5 * len(added) <= 60 and len1 > len0,
+          f'auto-maze: {len(added)} new walls for {f0 - f1} coins (at most 60), nothing else; route {len0} → {len1}')
+    check(f1 >= 40 + 50 + 60 + 70, f'after auto-maze four plain towers still fit ({f1} free)')
+    check(f'{len0} → {len1}' in page.inner_text('#d-tune') and f'{f0 - f1} coins' in page.inner_text('#d-tune'), f'the helper row says what it built ({page.inner_text("#d-tune")})')
+    page.screenshot(path=f'{OUT}/q0_automaze.png')
+    page.click('#d-tune [data-act=undo]')
+    check(grid() == g0 and S(page, 'S.dFree') == f0 and route_len(page) == len0 and 'auto-maze' in toast(page).lower(), f'one Undo takes the whole auto-maze back and refunds it ({toast(page)})')
+    maze(); page.keyboard.press('Control+z')
+    check(grid() == g0 and S(page, 'S.dFree') == f0, 'Ctrl+Z does the same')
+    # add-only: it builds around what's there (walls, a tuned tower) and never moves, removes or retunes anything
+    for r in range(3, 8): click_cell(page, 4, r)
+    page.click('.tool[data-tool=tower]'); click_cell(page, 10, 5); set_slider(page, '#te-dps', 3); set_slider(page, '#te-range', 3); page.click('[data-act=close]')
+    page.click('.tool[data-tool=wall]')
+    g2, f2 = grid(), S(page, 'S.dFree')
+    maze()
+    g3, f3 = grid(), S(page, 'S.dFree')
+    new_cells = [i for i in range(len(g2)) if g2[i] is None and g3[i]]
+    check(new_cells and all(g2[i] is None or g3[i] == g2[i] for i in range(len(g2))) and all(g3[i] == ['wall', True] for i in new_cells) and f2 - f3 == 5 * len(new_cells),
+          f'auto-maze only adds walls: everything already built stays as it was ({len(new_cells)} walls added)')
+    check(S(page, 'S.path && S.path[S.path.length - 1]') == idx(15, 5), 'the route stays open')
+    # multi-step: each change comes back off in turn, newest first, until the board is as the round began
+    n = depth()
+    check(n == 8, f'eight changes to undo: five walls, a tower, its tuning (one change), auto-maze ({n})')
+    said = []
+    for _ in range(n): page.keyboard.press('Control+z'); said.append(toast(page).lower())
+    check(grid() == g0 and S(page, 'S.dFree') == f0 and depth() == 0, 'undoing all of them leaves the board and the coins as the round began')
+    check(said[:3] == ['undone: auto-maze.', 'undone: tower 1 tuning.', 'undone: tower placed.'] and said[3] == 'undone: wall placed.', f'each undo says what it took back ({said[:4]})')
+    page.keyboard.press('Control+z')
+    check(toast(page) == 'Nothing to undo this round.', 'nothing left to undo')
+    # Remove & Inspect: hovering a wall previews the route as if it were bridged; the click removes it
+    drag(page, *xy(7, 0), *xy(7, 9))
+    check(depth() == 1 and S(page, 'S.grid.filter(g => g && g.t === "wall").length') == 10, 'a drawn line of walls is one change')
+    base = route_len(page)
+    page.click('.tool[data-tool=remove]')
+    check(page.get_attribute('.tool[data-tool=remove]', 'aria-label') == 'Remove & Inspect' and ''.join(page.inner_text('.tool[data-tool=remove]').split()).lower() == 'remove&inspect', 'the Remove card is now Remove & Inspect')
+    check(page.is_visible('#tip') and page.inner_text('#tip') == 'Hover walls to preview bridge risk.', 'the first time it is picked, one line says what the inspect part does')
+    x, y = xy(7, 5); page.mouse.move(x, y); page.wait_for_timeout(120)
+    bar = page.inner_text('#d-route')
+    check(S(page, f'S.grid[{idx(7, 5)}].t') == 'wall' and re.search(rf'path\s+{base}\s*→\s*15\s*\(−{base - 15}\)', bar, re.I), f'hovering a wall previews the route without it ({bar})')
+    page.screenshot(path=f'{OUT}/q1_inspect.png')
+    page.mouse.click(x, y); page.wait_for_timeout(50)
+    check(S(page, f'S.grid[{idx(7, 5)}]') is None and route_len(page) == 15, 'a click removes it, and the route is the one previewed')
+    page.keyboard.press('Control+z')
+    page.click('.tool[data-tool=wall]'); page.click('.tool[data-tool=remove]')
+    check(page.is_hidden('#tip'), 'the inspect line shows only the first time')
+    # a swipe takes walls back and passes over towers; one Undo puts the swipe back
+    page.click('.tool[data-tool=tower]'); click_cell(page, 4, 2); set_slider(page, '#te-dps', 3); set_slider(page, '#te-accuracy', 2); page.click('[data-act=close]')
+    page.click('.tool[data-tool=wall]'); drag(page, *xy(2, 2), *xy(6, 2))
+    sw, fs, tn = grid(), S(page, 'S.dFree'), S(page, f'S.grid[{idx(4, 2)}].n')
+    page.click('.tool[data-tool=remove]'); drag(page, *xy(1, 2), *xy(6, 2))
+    check(all(S(page, f'S.grid[{idx(c, 2)}]') is None for c in (2, 3, 5, 6)) and S(page, f'S.grid[{idx(4, 2)}].t') == 'tower' and S(page, 'S.dFree') == fs + 20,
+          'with Remove & Inspect a swipe takes the walls back and passes over the tower')
+    page.keyboard.press('Control+z')
+    check(grid() == sw and S(page, 'S.dFree') == fs, 'one Undo puts the whole swipe back')
+    # a click on a tower removes it, with Undo right there; the Undo restores it exactly
+    page.mouse.move(*xy(4, 2)); page.mouse.down(); page.mouse.move(xy(4, 2)[0] + 3, xy(4, 2)[1] + 2); page.mouse.up(); page.wait_for_timeout(50)
+    msg = page.inner_text('#undo-msg') if page.is_visible('#undo-pop') else ''
+    check(S(page, f'S.grid[{idx(4, 2)}]') is None and re.fullmatch(rf'Tower {tn} removed · \+\d+', msg) and S(page, 'S.dFree') == fs + int(msg.split('+')[1]),
+          f'a click on a tower (a few pixels of wobble included) removes it, and says so with an Undo ({msg})')
+    page.screenshot(path=f'{OUT}/q2_removed.png')
+    page.click('#undo-btn')
+    check(grid() == sw and S(page, 'S.dFree') == fs and page.is_hidden('#undo-pop'), 'its Undo puts the tower back with its tuning, fee and number, and takes the refund back')
+    # a drag moves it instead
+    drag(page, *xy(4, 2), *xy(4, 5))
+    check(S(page, f'S.grid[{idx(4, 2)}]') is None and S(page, f'S.grid[{idx(4, 5)}] && S.grid[{idx(4, 5)}].n') == tn and S(page, 'S.dFree') == fs and page.is_hidden('#undo-pop'),
+          'with Remove & Inspect a drag moves a tower, free, and removes nothing')
+    page.keyboard.press('Control+z')
+    check(grid() == sw, 'Undo moves it back')
+    # a tower's tuning is one change: Undo puts every slider and the coins back
+    page.click('.tool[data-tool=tower]'); click_cell(page, 4, 2)
+    cfg0, fq, d0 = S(page, f'JSON.stringify(S.grid[{idx(4, 2)}].cfg)'), S(page, 'S.dFree'), depth()
+    set_slider(page, '#te-range', 3); set_slider(page, '#te-dps', 4); set_slider(page, '#te-rate', 4); page.click('#def-ctx [data-fx=slow]')
+    check(depth() == d0 + 1 and S(page, 'S.dFree') < fq, 'tuning a tower (sliders and an effect) is one change')
+    page.keyboard.press('Control+z')
+    check(S(page, f'JSON.stringify(S.grid[{idx(4, 2)}].cfg)') == cfg0 and S(page, 'S.dFree') == fq and page.is_visible('#te-price'), 'Undo takes the tuning back, coins included, and the card stays open')
+    page.click('[data-act=close]')
+    # once the defender is done, nothing more to undo: the attacker can't, and next round starts afresh
+    page.click('.tool[data-tool=wall]'); click_cell(page, 12, 8)
+    page.click('#def-next'); page.click('#def-next'); hand(page)
+    gd = grid(); page.keyboard.press('Control+z')
+    check(S(page, 'S.phase') == 'attack' and grid() == gd, 'Ctrl+Z does nothing on the attacker’s turn')
+    page.click('.step.plus[data-i="0"]')
+    for _ in range(4): page.click('#atk-next')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    page.click('#sum-next'); hand(page)
+    check(S(page, '[S.phase, S.round]') == ['defend', 2] and depth() == 0 and page.is_disabled('#d-tune [data-act=undo]'), 'after the wave the defender’s history is gone: last round can’t be undone')
+    page.keyboard.press('Control+z')
+    check(S(page, f'S.grid[{idx(12, 8)}].t') == 'wall' and toast(page) == 'Nothing to undo this round.', 'Ctrl+Z leaves last round’s build alone')
+    fr = S(page, 'S.dFree')
+    check(page.evaluate('() => window.siegeline.mazeBudget()') == min(fr, int(fr * 0.4)), f'auto-maze budget after the first wave: 40% of the free coins ({fr} free)')
+    # the history survives a test run
+    click_cell(page, 12, 9)
+    page.click('#def-test'); page.wait_for_timeout(100); page.click('#test-skip'); page.wait_for_timeout(200)
+    check(S(page, 'S.phase') == 'defend' and not page.evaluate('() => window.siegeline.testing') and depth() == 1, 'a test run leaves the history as it was')
+    page.keyboard.press('Control+z')
+    check(S(page, f'S.grid[{idx(12, 9)}]') is None, 'and Undo still takes back the change made before it')
+    check(not errors, f'v20.4 desktop: no errors {errors[:3]}')
+    ctx.close()
+
+    # the same on a 390 px phone: the hold previews, a tap removes, the pop-up and the helper row fit
+    ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
+    page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
+    page.tap('#def-steps [data-act=hints]')
+    xy = lambda c, r: page.evaluate(f'() => window.siegeline.cellToClient({idx(c, r)})')
+    cdp = ctx.new_cdp_session(page)
+    tools = page.evaluate("() => [...document.querySelectorAll('#def-body .tools.bar .tool')].map(b => [Math.round(b.getBoundingClientRect().top), b.querySelector('.tcost').scrollWidth <= b.querySelector('.tcost').clientWidth])")
+    check(len({t for t, _ in tools}) == 1 and all(fit for _, fit in tools), f'phone: the four tools in one row, "& inspect" not cut off ({tools})')
+    page.tap('#d-tune [data-act=maze]'); page.wait_for_function('() => !window.siegeline.mazing'); page.wait_for_timeout(50)
+    row = page.evaluate("() => [...document.querySelectorAll('#d-tune button')].map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right)]; })")
+    check(S(page, 'S.grid.filter(g => g && g.t === "wall").length') > 0 and len({t for t, _ in row}) == 1 and max(r for _, r in row) <= 390 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
+          f'phone: Auto-maze builds, and its row fits 390 px ({row})')
+    page.tap('.tool[data-tool=tower]'); x, y = xy(1, 1); page.touchscreen.tap(x, y); page.wait_for_timeout(100); page.touchscreen.tap(x, y); page.wait_for_timeout(150)
+    if page.is_visible('#def-ctx [data-act=close]'): page.tap('#def-ctx [data-act=close]')
+    page.tap('.tool[data-tool=remove]'); page.wait_for_timeout(100)
+    check(page.is_visible('#tip') and page.inner_text('#tip') == 'Hold a wall to preview bridge risk.', 'phone: the first time, the line says to hold a wall')
+    walls = S(page, 'S.grid.map((g, i) => g && g.t === "wall" ? i : -1).filter(i => i >= 0)')
+    w = walls[len(walls) // 2]; x, y = page.evaluate(f'() => window.siegeline.cellToClient({w})')
+    base = route_len(page)
+    cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x, 'y': y}]}); page.wait_for_timeout(650)
+    bar = page.inner_text('#d-route')
+    check(S(page, f'!!S.grid[{w}]') and re.search(rf'path\s+{base}\s*→\s*\d+', bar, re.I), f'phone: a finger held on a wall previews the route without it ({bar})')
+    page.screenshot(path=f'{OUT}/q3_phone_hold.png')
+    cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []}); page.wait_for_timeout(100)
+    check(S(page, f'!!S.grid[{w}]') and route_len(page) == base, 'phone: letting go removes nothing')
+    page.touchscreen.tap(x, y); page.wait_for_timeout(100)
+    check(not S(page, f'!!S.grid[{w}]'), 'phone: a quick tap removes the wall')
+    page.tap('#d-tune [data-act=undo]'); page.wait_for_timeout(50)
+    check(S(page, f'!!S.grid[{w}]') and route_len(page) == base, 'phone: the Undo button puts it back')
+    # a finger that sets off from a wall at once swipes walls away
+    col = [i for i in walls if i % COLS == w % COLS] or walls
+    run = sorted(col)[:3]
+    (x0, y0), (x1, y1) = [page.evaluate(f'() => window.siegeline.cellToClient({i})') for i in (run[0], run[-1])]
+    cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x0, 'y': y0}]})
+    for k in range(1, 7): cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (x1 - x0) * k / 6, 'y': y0 + (y1 - y0) * k / 6}]}); page.wait_for_timeout(15)
+    cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []}); page.wait_for_timeout(80)
+    check(all(not S(page, f'!!S.grid[{i}]') for i in run), f'phone: a swipe that starts on a wall takes the walls it crosses ({run})')
+    page.tap('#d-tune [data-act=undo]')
+    f1 = S(page, 'S.dFree'); x, y = xy(1, 1); page.touchscreen.tap(x, y); page.wait_for_timeout(150)
+    pb = page.locator('#undo-pop').bounding_box() if page.is_visible('#undo-pop') else None
+    check(not S(page, f'!!S.grid[{idx(1, 1)}]') and pb and pb['x'] >= 0 and pb['x'] + pb['width'] <= 390, f'phone: one tap removes a tower, and the Undo pop-up fits ({pb})')
+    page.screenshot(path=f'{OUT}/q4_phone_pop.png')
+    page.tap('#undo-btn'); page.wait_for_timeout(50)
+    check(S(page, f'S.grid[{idx(1, 1)}] && S.grid[{idx(1, 1)}].t') == 'tower' and S(page, 'S.dFree') == f1, 'phone: its Undo puts the tower back')
+    check(not errors, f'v20.4 phone: no errors {errors[:3]}')
     ctx.close()
 
     # ---------- v19: tower accuracy (each shot rolls once) and the wave scrubber
