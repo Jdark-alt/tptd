@@ -42,9 +42,9 @@ def snap(pg):
       grid:S.grid.map(g=>g?(g.t==="wall"?"w":"t"+g.off):0).join(","), bridges:[...S.bridges].sort((a,b)=>a-b).join(","), army:JSON.stringify(S.designs.map(d=>[d.name,d.count,d.hp,d.speed,d.tl.s,d.tl.e,d.tl.pos]))}}''')
 
 def no_terrain(*pgs):
-    """Known cells are clicked, so no terrain; sappers get top health so the planned sabotage always arrives; and no
-    planning clock (it has checks of its own), so a slow machine never sends a plan early."""
-    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.sapper.hp=9; R.planSecs=0;}')
+    """Known cells are clicked, so no terrain and no starter maze; sappers get top health so the planned sabotage always
+    arrives; and no planning clock (it has checks of its own), so a slow machine never sends a plan early."""
+    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.starterPresses=0; R.sapper.hp=9; R.planSecs=0;}')
 def join(pg, role, code, waves=None):
     pg.click('#info-go')
     pg.wait_for_selector('#ov-mode:not([hidden])')
@@ -62,15 +62,15 @@ def defend_round(pg, walls=(), towers=(), lock=True):
     for c, cfg in towers:
         cell(pg, c)
         if cfg: pg.evaluate(f'()=>{{const g=window.siegeline.state.grid[{c}]; Object.assign(g.cfg,{json.dumps(cfg)});}}')
-    pg.click('#def-next'); pg.wait_for_timeout(120)
-    if lock: pg.click('#def-next')
+    pg.wait_for_timeout(120)
+    if lock: pg.click('#def-lock')
 
 def attack_round(pg, counts, lock=True, extra=''):
     wait(pg, "S.phase==='attack' && S.step===0")
     pg.evaluate('''(counts)=>{const sl=window.siegeline,S=sl.state; counts.forEach((n,k)=>{ if(!S.designs[k]) return; const d=S.designs[k]; const add=n-d.count; S.aFree-=add*sl.unitCost(d); d.count=n; }); }''', counts)
     if extra: pg.evaluate(f'()=>{{{PRE}{extra}}}')
-    for _ in range(3): pg.click('#atk-next'); pg.wait_for_timeout(80)
-    if lock: pg.click('#atk-next')
+    pg.wait_for_timeout(80)
+    if lock: pg.click('#atk-lock')
 
 def same(a, b, name):
     sa, sb = snap(a), snap(b)
@@ -116,12 +116,13 @@ try:
 
             # ---------- round 1: defender locks first ----------
             maze = [idx(3, r) for r in range(0, 9)] + [idx(7, r) for r in range(2, 11)]
-            defend_round(A, walls=maze, towers=[(idx(5, 4), None), (idx(9, 6), {'splash': 1, 'rate': 4})])
+            # v21: the splash tower also arrives with chain switched on (a plan from an older or edited build): both
+            # devices decode it to Splash only
+            defend_round(A, walls=maze, towers=[(idx(5, 4), None), (idx(9, 6), {'splash': 1, 'rate': 4, 'chain': True})])
             A.wait_for_timeout(300)
             check('defender sees the wait card', A.is_visible('#ov-wait'), A.inner_text('#wait-sub'))
             check('wait card names the attacker', 'attacker' in A.inner_text('#wait-sub'))
             check('attacker is told the defender is ready', 'ready' in B.inner_text('#netpill').lower(), B.inner_text('#netpill'))
-            check('attacker hint mentions waiting opponent', 'ready and waiting' in B.inner_text('#t-hint'))
             check('defender plan is not revealed before both lock', ev(B, "N.peer && N.peer.plan") is None and ev(B, "S.grid.every(g=>!g)"))
             check('wave has not started', ev(A, "S.phase") == 'defend' and ev(B, "S.phase") == 'attack')
             attack_round(B, [8, 2, 6])
@@ -129,6 +130,8 @@ try:
             check('wave starts once both are ready', True)
             check('attacker now sees the real maze', ev(B, "S.grid.filter(g=>g&&g.t==='wall').length") == len(maze))
             check('defender now sees the army', ev(A, "S.designs.map(d=>d.count).join()") == '8,2,6')
+            CH = f"[S.grid[{idx(9, 6)}].cfg.splash, S.grid[{idx(9, 6)}].cfg.chain]"
+            check('a tower planned with both Chain and Splash decodes to Splash only, on both devices', ev(A, CH) == [1, False] and ev(B, CH) == [1, False], f'{ev(A, CH)} / {ev(B, CH)}')
             check('spawn schedules identical', A.evaluate('()=>JSON.stringify(window.siegeline.state.spawnList)') == B.evaluate('()=>JSON.stringify(window.siegeline.state.spawnList)'))
             A.screenshot(path=f'{SHOTS}/o2_wave_def.png')
             for pg in (A, B): pg.evaluate('()=>window.siegeline.advance(300)')
@@ -154,7 +157,7 @@ try:
             bcell = B.evaluate('()=>{const S=window.siegeline.state; const ok=S.seenGrid.map((g,i)=>i).filter(i=>window.siegeline.canBridgeAt(i)); return ok.find(i=>i%16===3) ?? ok[0];}')
             attack_round(B, [10, 2, 6], lock=False,
                          extra=f"S.charges.set({tower_cell},{{kind:'tower',t:0.02,cost:23}}); S.aFree-=23; S.charges.set({bcell},{{kind:'bridge',t:0.05,cost:31}}); S.aFree-=31;")
-            B.click('#atk-next')
+            B.click('#atk-lock')
             B.wait_for_timeout(200)
             check('attacker locks in first', B.is_visible('#ov-wait'))
             B.click('#wait-back')
@@ -162,7 +165,7 @@ try:
             A.wait_for_timeout(200)
             check('defender sees attacker planning again', 'planning' in A.inner_text('#netpill').lower(), A.inner_text('#netpill'))
             B.evaluate('()=>{const S=window.siegeline.state;S.designs[0].count=12;S.aFree-=2*window.siegeline.unitCost(S.designs[0]);}')
-            B.click('#atk-next')
+            B.click('#atk-lock')
             defend_round(A, walls=[idx(11, r) for r in range(0, 9)], towers=[(idx(13, 4), None)])
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('relocked plan is the one used', ev(A, "S.designs[0].count") == 12)
@@ -186,7 +189,7 @@ try:
             stale = f"S.charges.set({idx(13, 4)},{{kind:'tower',t:0,cost:1}}); S.aFree-=1;"
             v13 = ev(B, f"window.siegeline.towerCost(S.seenGrid[{idx(13, 4)}].cfg)"); want = int((15 + 0.2 * v13) * 1.25 + 0.5)
             defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else '') + stale)
-            A.evaluate("()=>document.querySelector('#def-next').click()"); B.evaluate("()=>document.querySelector('#atk-next').click()")
+            A.evaluate("()=>document.querySelector('#def-lock').click()"); B.evaluate("()=>document.querySelector('#atk-lock').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
             check(f'a knock-out is priced by the rules on both devices (the second knock-out: {want})', ev(A, "S.wave.chargeCoins") == want and ev(B, "S.wave.chargeCoins") == want, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
@@ -267,6 +270,10 @@ try:
             m1 = ev(C, MAP)
             check('terrain: both devices build the same map', m1 == ev(D, MAP) and '1' in m1[1] and '2' in m1[1], m1[0])
             check('terrain: the attacker sees the rock from the start', ev(D, 'S.seenGrid.filter(g=>g&&g.t==="rock").length') == m1[1].count('2'))
+            # v21: the starter maze is built on both devices from the shared seed; nothing about it travels
+            ST = 'S.grid.map(g=>g&&g.t==="wall"?1:0).join("")'
+            check('starter maze: built on both devices, identical, and seen by the attacker', ev(C, 'S.starter') > 20 and ev(C, ST) == ev(D, ST) and ev(D, 'S.seenGrid.map(g=>g&&g.t==="wall"?1:0).join("")') == ev(C, ST),
+                  f"{ev(C, 'S.starter')} walls / {ev(D, 'S.starter')}")
             defend_round(C); attack_round(D, [6, 1, 8])
             wait(C, "S.phase==='wave'"); wait(D, "S.phase==='wave'")
             for pg in (C, D): pg.evaluate('()=>window.siegeline.advance(300)')
@@ -288,7 +295,7 @@ try:
             for pg in (C, D): errors_hook(pg, errs); pg.goto('http://127.0.0.1:8765/room.html')
             C.wait_for_timeout(300); no_terrain(C, D)
             # the defender's clock has room for building and locking in on a loaded machine; the attacker's runs out later
-            C.evaluate('()=>{window.siegeline.rules.planSecs=6;}'); D.evaluate('()=>{window.siegeline.rules.planSecs=10;}')
+            C.evaluate('()=>{window.siegeline.rules.planSecs=6; window.siegeline.rules.planSecsFirst=6;}'); D.evaluate('()=>{window.siegeline.rules.planSecs=10; window.siegeline.rules.planSecsFirst=10;}')
             join(C, 'def', 'LONG', waves=6); join(D, 'atk', 'LONG', waves=10)
             wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
             check("match length: both devices play the defender's 6 waves with a keep of 800", ev(C, '[S.rounds,S.keep,S.keepMax]') == [6, 800, 800] and ev(D, '[S.rounds,S.keep,S.keepMax]') == [6, 800, 800],
@@ -385,16 +392,18 @@ try:
         wait(P1, "S.phase==='defend'")
         P1.wait_for_timeout(300)
         P1.screenshot(path=f'{SHOTS}/p2_defend.png')
-        P1.evaluate("()=>{const b=document.querySelector('#def-next'); b.click(); b.click();}")
+        P1.evaluate("()=>document.querySelector('#def-lock').click()")
         P1.wait_for_timeout(300)
         P1.screenshot(path=f'{SHOTS}/p3_wait.png')
         check('phone: wait card visible', P1.is_visible('#ov-wait'))
         P2.wait_for_timeout(200)
         P2.screenshot(path=f'{SHOTS}/p4_attack_clock.png')
         bx = lambda sel: P2.locator(sel).bounding_box()
-        ck, pill, coins = bx('#t-clock'), bx('#netpill'), bx('#turnbar .coins')
-        check('phone: the planning clock fits the turn bar beside the net pill and coins', bool(ck and pill and coins) and ck['x'] + ck['width'] <= pill['x'] and pill['x'] + pill['width'] <= coins['x'] and coins['x'] + coins['width'] <= 390,
-              f'{ck} {pill} {coins}')
+        boxes = {k: bx(k) for k in ('#clockbox', '#netpill', '#coinbox', '#potbox', '.keepbox', '.roundchip')}
+        apart = lambda a, b: a['x'] + a['width'] <= b['x'] + 0.5 or b['x'] + b['width'] <= a['x'] + 0.5 or a['y'] + a['height'] <= b['y'] + 0.5 or b['y'] + b['height'] <= a['y'] + 0.5
+        ks = list(boxes)
+        check('phone: the HUD holds the clock, net pill, coins and pot without overlap or clipping', all(boxes.values()) and all(b['x'] >= 0 and b['x'] + b['width'] <= 390 for b in boxes.values())
+              and all(apart(boxes[a], boxes[b]) for i, a in enumerate(ks) for b in ks[i + 1:]), json.dumps(boxes)[:300])
         check('phone: no horizontal overflow', P1.evaluate('()=>document.documentElement.scrollWidth<=innerWidth'))
         ctx.close()
         br.close()

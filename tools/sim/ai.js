@@ -187,7 +187,7 @@
     // prices rise with the attempts of each kind in earlier waves; this wave's targets don't raise each other's
     const budget = Math.floor(worth * (opt.chargeShare || 0)), tries = { bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0 }, list = [];
     let spent = 0;
-    if (budget > 0 && !(S.round >= S.rounds && opt.noLastCharges)) {
+    if (budget > 0 && S.round > 1 && !(S.round >= S.rounds && opt.noLastCharges)) { // none in the first wave (the starter maze is seen, but sabotage waits for round 2)
       const tw = [];
       S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([I.towerCost(g.cfg), i, g]); }); // slider price, as sabotage counts it
       tw.sort((a, b) => b[0] - a[0]);
@@ -233,7 +233,9 @@
     if (US) for (const [k, v] of Object.entries(US)) { if (v.steps) I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); }
     I.S = I.newState(); const S = I.S;
     I.startMap(Math.imul(seed, 2654435761) >>> 0); // each seed is its own map (none when the shares are 0)
+    I.buildStarter(); // and its starter maze, as the game builds it (none with starterPresses 0)
     I.recompute();
+    const starter = { walls: S.starter, len: I.pathLen(S.path) };
     const log = [];
     for (;;) {
       const response = defend(S, dOpt, seed * 7919 + S.round);
@@ -241,13 +243,15 @@
       I.startWave(seed * 101 + S.round);
       window.siegeline.advance(900);
       const W = S.wave, saps = { sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed };
-      if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: W.x, Y: Math.round(W.y), keep: 0, bridges: W.bridges, jammed: W.jammed, ...saps, response }); return { winner: 'attacker', round: S.round, keep: 0, log }; }
+      // the towers of this wave's defense and their effects, for "how often did towers take Frost, Chain, Splash"
+      const TW = S.grid.filter(g => g && g.t === 'tower'); saps.fx = { towers: TW.length, slow: TW.filter(g => g.cfg.slow).length, chain: TW.filter(g => g.cfg.chain).length, splash: TW.filter(g => g.cfg.splash > 0).length, poison: TW.filter(g => g.cfg.poison).length };
+      if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: W.x, Y: Math.round(W.y), keep: 0, bridges: W.bridges, jammed: W.jammed, ...saps, response }); return { winner: 'attacker', round: S.round, keep: 0, log, starter }; }
       const L = S.last;
       log.push({ r: S.round, army, X: L.X, Y: Math.round(L.Y), breach: Math.round(L.breach * 100), keep: Math.round(S.keep),
         defWorth: Math.round(S.dFree + S.grid.reduce((v, g) => v + (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? I.RULES.wall : I.towerValue(g)), 0)),
         atkWorth: S.aFree + S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0), charges: L.charges, bridges: L.bridges, missed: L.missed, jammed: L.jammed,
         onMap: S.bridges.size, ...saps, response });
-      if (S.over) return { winner: S.winner, round: S.round, keep: Math.round(S.keep), log };
+      if (S.over) return { winner: S.winner, round: S.round, keep: Math.round(S.keep), log, starter };
       S.round++;
     }
   };

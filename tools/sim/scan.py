@@ -5,6 +5,7 @@ when even the defense that suits it best lets a lot through.
   python tools/sim/scan.py                       # default grid, ~15 min on 2 CPUs (use --part 0/2 and 1/2 in parallel)
   python tools/sim/scan.py --rules '{"regenCap": 8}' --regen 3 --hp 6,9
   python tools/sim/scan.py --summary tools/.build/scan.jsonl
+  python tools/sim/scan.py --resist none,shock     # v21: each design with and without the Shock resist (chain is a defense here)
 
 Results append to tools/.build/scan.jsonl (or --out); --summary prints the strongest designs.
 """
@@ -19,19 +20,23 @@ DEFENSES = {  # six towers each in a 4-column maze; all land near 750 coins
     'splash': [{'dps': 2, 'rate': 4, 'splash': 2}] * 6,
     'mixed': [{'dps': 4, 'rate': 5}, {'dps': 2, 'rate': 4, 'splash': 2}, {'dps': 4, 'rate': 5}, {'dps': 2, 'rate': 4, 'splash': 2},
               {'range': 3, 'dps': 1, 'rate': 3, 'slow': True}, {'dps': 2, 'rate': 5, 'poison': True}],
+    # v21: chain towers (with --defenses), the defense the Shock resist answers
+    'chain': [{'dps': 3, 'chain': True}, {'dps': 2, 'chain': True}] * 3,
 }
 ints = lambda s: [int(x) for x in s.split(',')]
 ap = argparse.ArgumentParser()
 ap.add_argument('--rules', default='{}')
 ap.add_argument('--hp', default='0,3,6,9'); ap.add_argument('--speed', default='0,4,7'); ap.add_argument('--armor', default='0,2,3')
 ap.add_argument('--regen', default='0,3')
+ap.add_argument('--resist', default='none', help='comma-separated resists to try on every design (v21: none,shock)')
+ap.add_argument('--defenses', default='basic,heavy,splash,mixed', help='comma-separated defenses from DEFENSES (chain needs a v21 build to mean v21 chain)')
 ap.add_argument('--budget', type=int, default=0, help='army coins (default: the cost of the plain defense)')
 ap.add_argument('--part', default='0/1', help='k/n: run every n-th design starting at k, to split across processes')
 ap.add_argument('--out', default=os.path.join(BUILD, 'scan.jsonl'))
 ap.add_argument('--summary', default='', help='print a summary of an existing results file and exit')
 a = ap.parse_args()
 
-def name(d): return ' '.join(f'{k}{d[k]}' for k in ('hp', 'speed', 'armor', 'regen') if k in d)
+def name(d): return ' '.join(f'{k}{d[k]}' for k in ('hp', 'speed', 'armor', 'regen') if k in d) + (f" {d['resist']}" if d.get('resist', 'none') != 'none' else '')
 if a.summary:
     rows = [json.loads(l) for l in open(a.summary)]
     rows.sort(key=lambda r: -r['best'])
@@ -41,18 +46,19 @@ if a.summary:
     sys.exit()
 
 rules = json.loads(a.rules)
-grid = list(itertools.product(ints(a.hp), ints(a.speed), ints(a.armor), ints(a.regen)))
+grid = list(itertools.product(ints(a.hp), ints(a.speed), ints(a.armor), ints(a.regen), a.resist.split(',')))
+DEF = {k: DEFENSES[k] for k in a.defenses.split(',')}
 k, n = map(int, a.part.split('/'))
 with sync_playwright() as p:
     b = launch(p); pg = b.new_page()
     pg.goto('file://' + sim_page()); pg.wait_for_timeout(300)
     budget = a.budget or pg.evaluate('([t,r]) => runWave(t, [["Swarm", 1, 0, 0.1]], r)', [DEFENSES['basic'], rules])['defenseCost']
     print(f'army budget {budget}', flush=True)
-    for hp, sp, ar, rg in grid[k::n]:
-        d = {'hp': hp, 'speed': sp, 'armor': ar, 'regen': rg}
+    for hp, sp, ar, rg, rs in grid[k::n]:
+        d = {'hp': hp, 'speed': sp, 'armor': ar, 'regen': rg, 'resist': rs}
         for wave, end in (('bunched', 0.12), ('spread', 1.0)):
             res, info = {}, None
-            for dn, towers in DEFENSES.items():
+            for dn, towers in DEF.items():
                 cost = pg.evaluate('([t,a,r]) => runWave(t, a, r)', [towers, [[d, 1, 0, end]], rules])['unitCosts'][0]
                 count = budget // cost
                 if not count: res = None; break

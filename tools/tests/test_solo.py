@@ -46,7 +46,12 @@ CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].
 # terrain on the live board: rock in the grid where the map has it, nothing on rough ground
 TERRAIN_OK = 'S.grid.every((g, i) => S.terrain[i] === 2 ? !!(g && g.t === "rock") : S.terrain[i] === 1 ? !g : !(g && g.t === "rock"))'
 def terrain(page, on):
-    page.evaluate(f'() => {{ const R = window.siegeline.rules; R.roughShare = R.rockShare = {0.05 if on else 0}; }}')
+    """Terrain and the starter maze (v21) together: the fixed scenarios click known cells on an empty board."""
+    page.evaluate(f'() => {{ const R = window.siegeline.rules; R.roughShare = R.rockShare = {0.05 if on else 0}; R.starterPresses = {3 if on else 0}; }}')
+def details(page, ov='#ov-sum'):
+    """Open the summary's Details (closed by default since v21): the computer's note is in there."""
+    t = page.locator(f'{ov} [data-act=details]')
+    if t.count() and t.get_attribute('aria-expanded') != 'true': t.click()
 
 def start(page, side, level, seed=None):
     page.evaluate(f'() => {{ window.siegeline.solo.seed = {"null" if seed is None else seed}; }}')
@@ -68,7 +73,7 @@ def build_maze(page, strong=False):
     page.click('.tool[data-tool=tower]')
     for r in rows:
         for c in (3, 7, 11): click_cell(page, c, r)
-    page.click('#def-next')  # to Ready, so the next click locks in
+    if page.is_visible('#def-ctx [data-act=close]'): page.click('#def-ctx [data-act=close]')
 
 def play_out(page, side, label, ready):
     """Plays rounds until the match ends: ready() does the player's turn. Checks the computer's side each round."""
@@ -81,7 +86,7 @@ def play_out(page, side, label, ready):
         worth_ok &= before == S(page, AWORTH if side == 'def' else DWORTH)
         coins_ok &= S(page, 'S.aFree >= 0 && S.dFree >= 0 && S.path !== null')
         n = S(page, 'S.charges.size'); charges += n; most = max(most, n)
-        rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])') and S(page, TERRAIN_OK)
+        rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])') and S(page, TERRAIN_OK) and S(page, 'S.grid.every(g => !(g && g.t === "tower" && g.cfg.chain && g.cfg.splash > 0))')
         if S(page, 'S.round') in (1, 8): first_last.append(n)
         run_wave(page)
         sent += S(page, 'S.wave.sappers'); landed += S(page, 'S.wave.sapOk')
@@ -90,7 +95,7 @@ def play_out(page, side, label, ready):
         page.click('#sum-next'); page.wait_for_timeout(60)
     check(worth_ok, f'{label}: the computer\'s plan moves no coins in or out of its worth')
     check(coins_ok, f'{label}: no side overspends and the route stays open')
-    check(rules_ok and not any(first_last), f'{label}: sabotage only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge or rough ground, rock in place')
+    check(rules_ok and not any(first_last), f'{label}: sabotage only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge or rough ground, rock in place, no tower with both Chain and Splash')
     check(notes == rounds, f'{label}: the computer explains every wave ({notes}/{rounds})')
     if sent: print(f'      {label}: {landed} of {sent} sappers landed')
     check(page.is_visible('#ov-end') and text(page, '#end-title') in ('You win', 'The computer wins'), f'{label}: match ends with a solo result ({text(page, "#end-title")}, {rounds} rounds)')
@@ -118,7 +123,7 @@ with sync_playwright() as p:
     build_maze(page)
     check(S(page, PLAN) == plan0, 'computer\'s plan is unchanged by what the player builds')
     check(S(page, 'S.designs.every(d => d.count === 0)'), 'computer\'s army stays out of the live state while the player plans')
-    page.click('#def-next')
+    page.click('#def-lock')
     page.wait_for_selector('#ov-hand', state='visible', timeout=30000)
     check(text(page, '#hand-title') == 'Wave 1' and 'pass' not in page.inner_text('#hand-sub').lower(), 'Ready leads to the wave card, no pass-the-device screen')
     page.screenshot(path=f'{OUT}/1_def_wavecard.png')
@@ -126,13 +131,15 @@ with sync_playwright() as p:
     check(S(page, 'S.phase') == 'wave' and S(page, 'S.designs.reduce((n, d) => n + d.count, 0)') > 0, 'computer army marches')
     page.wait_for_timeout(900); page.screenshot(path=f'{OUT}/2_def_wave.png')
     run_wave(page)
+    check(page.is_hidden('#ov-sum .ainote'), 'the computer\'s thinking sits under Details, closed by default')
+    details(page)
     check(page.is_visible('#ov-sum .ainote') and 'opened with' in page.inner_text('#ov-sum .ainote'), f'summary shows the computer\'s thinking ({S(page, "SOLO.note")})')
     page.screenshot(path=f'{OUT}/3_summary_note.png')
     page.click('#sum-next'); page.wait_for_timeout(30)
     check(S(page, 'S.round') == 2 and S(page, 'S.phase') == 'defend' and not page.is_visible('#ov-hand'), 'round 2 goes straight back to the defender')
     thought(page)
     check(S(page, 'SOLO.plan.c.length') <= 1, 'easy computer sends at most one sapper a wave')
-    def def_ready(): page.click('#def-next'); page.click('#def-next')
+    def def_ready(): page.click('#def-lock')
     play_out(page, 'def', 'defend/easy', def_ready)
     check(not page.is_visible('#end-swap') and page.is_visible('#end-menu'), 'end screen offers Menu, not Swap sides')
     page.click('#end-again')
@@ -147,10 +154,10 @@ with sync_playwright() as p:
     for level in ('easy', 'normal', 'hard'):
         start(page, 'def', level)
         build_maze(page, strong=True)
-        page.click('#def-next'); hand(page); run_wave(page)
+        page.click('#def-lock'); hand(page); run_wave(page)
         if page.is_visible('#ov-end'): page.click('#end-menu'); check(False, f'{level}: keep fell in round 1'); continue
         page.click('#sum-next')
-        def maze_ready(): page.click('#def-next'); page.click('#def-next')
+        def maze_ready(): page.click('#def-lock')
         charges, most = play_out(page, 'def', f'defend/{level}', maze_ready)
         check(charges > 0, f'{level} computer attacker sends sappers against a walled defense ({charges} over the match)')
         if level == 'easy': check(most <= 1, f'easy computer sends at most one sapper a wave (most {most})')
@@ -163,8 +170,7 @@ with sync_playwright() as p:
         thought(page)
         check(S(page, 'SOLO.plan && Array.isArray(SOLO.plan.g.w)') and S(page, 'S.grid.every(g => !g)'), f'attack/{level}: computer defense planned, but not on the board while the player plans')
         for _ in range(10): page.click('.step.plus[data-i="0"]')
-        def atk_ready():
-            for _ in range(4): page.click('#atk-next')
+        def atk_ready(): page.click('#atk-lock')
         atk_ready(); hand(page)
         check(S(page, 'S.grid.some(g => g && g.t === "tower") && S.grid.some(g => g && g.t === "wall")'), f'attack/{level}: computer defense appears when the wave starts')
         if level == 'easy': page.wait_for_timeout(900); page.screenshot(path=f'{OUT}/4_atk_wave.png')
@@ -181,7 +187,7 @@ with sync_playwright() as p:
             click_cell(page, wall % COLS, wall // COLS)
             check(S(page, f'S.charges.has({wall}) && S.charges.get({wall}).kind') == 'bridge', f'attack/{level}: the player plans a bridge on a wall of the computer\'s maze')
         else: print(f'SKIP attack/{level}: the computer built no walls in round 1, nothing to bridge')
-        page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next'); hand(page); run_wave(page)
+        page.click('#atk-lock'); hand(page); run_wave(page)
         check('Your last wave was 10 × Runner' in S(page, 'SOLO.note'), f'attack/{level}: round 2 note names the army it defended against ({S(page, "SOLO.note")[:60]}…)')
         if wall >= 0:
             L = S(page, 'S.last')
@@ -202,7 +208,7 @@ with sync_playwright() as p:
     # player to target, and sappers sent for their old cells find nothing
     start(page, 'atk', 'hard', seed=11)
     for _ in range(12): page.click('.step.plus[data-i="0"]')
-    for _ in range(4): page.click('#atk-next')
+    page.click('#atk-lock')
     hand(page); run_wave(page); page.click('#sum-next')
     dodges, planted, knocked, moved_note = 0, 0, 0, False
     for rnd in range(2, 8):
@@ -216,7 +222,7 @@ with sync_playwright() as p:
             click_cell(page, cell % COLS, cell // COLS)
             if page.is_visible('#atk-ctx [data-act=plant]'): page.click('#atk-ctx [data-act=plant]'); planted += 1
             if page.is_visible('#atk-ctx [data-act=close]'): page.click('#atk-ctx [data-act=close]')
-        page.click('#atk-next'); page.click('#atk-next'); page.click('#atk-next'); hand(page); run_wave(page)
+        page.click('#atk-lock'); hand(page); run_wave(page)
         knocked += S(page, 'S.last ? S.last.jammed : 0')
         moved_note |= 'to a new cell' in S(page, 'SOLO.note')
         if page.is_visible('#ov-end'): break
@@ -226,7 +232,7 @@ with sync_playwright() as p:
     if page.is_visible('#ov-end'): page.click('#end-menu')
     else:
         page.evaluate('() => { window.siegeline.state.keep = 1; }')
-        for _ in range(4): page.click('#atk-next')
+        page.click('#atk-lock')
         hand(page); run_wave(page); page.click('#end-menu')
 
     # ---------- the computer's plan can't depend on the player's: same seed, player busy or idle while it thinks
@@ -238,7 +244,7 @@ with sync_playwright() as p:
         thought(page); plans.append(S(page, PLAN))
         page.evaluate('() => { window.siegeline.state.keep = 1; }')
         for _ in range(10): page.click('.step.plus[data-i="1"]')
-        for _ in range(4): page.click('#atk-next')
+        page.click('#atk-lock')
         hand(page); run_wave(page); page.click('#end-menu')
     check(plans[0] == plans[1], 'same match seed: the computer\'s plan is identical whether or not the player acts while it thinks')
 
@@ -247,8 +253,8 @@ with sync_playwright() as p:
     start(page, 'atk', 'hard')
     check(S(page, '!!SOLO.think'), 'the computer is still thinking as the player starts')
     live0 = S(page, LIVE)
-    # step to Ready and lock in (an empty army takes a second press) in one go, while it is surely still thinking
-    page.evaluate('() => { for (let k = 0; k < 5; k++) document.querySelector("#atk-next").click(); }')
+    # lock in (an empty army takes a second press) in one go, while it is surely still thinking
+    page.evaluate('() => { for (let k = 0; k < 2; k++) document.querySelector("#atk-lock").click(); }')
     waited = S(page, 'SOLO.locked') and page.is_visible('#ov-wait')
     check(waited and 'computer' in page.inner_text('#wait-sub').lower(), 'locking in early shows the wait card')
     page.screenshot(path=f'{OUT}/5_wait.png')
@@ -257,8 +263,8 @@ with sync_playwright() as p:
         check(not page.is_visible('#ov-wait') and S(page, 'S.phase') == 'attack' and not S(page, 'SOLO.locked'), 'Keep planning goes back to planning')
         thought(page)
         check(S(page, LIVE) == live0, 'thinking (its hidden test waves) leaves the live game untouched')
-        page.click('#atk-next'); page.wait_for_timeout(30)
-        if S(page, 'S.phase') == 'attack': page.click('#atk-next')
+        page.click('#atk-lock'); page.wait_for_timeout(30)
+        if S(page, 'S.phase') == 'attack': page.click('#atk-lock')
     page.wait_for_selector('#ov-hand', state='visible', timeout=60000)
     check(text(page, '#hand-title') == 'Wave 1', 'the wave card follows once the computer is done')
     cdp.send('Emulation.setCPUThrottlingRate', {'rate': 1})
@@ -276,17 +282,16 @@ with sync_playwright() as p:
     cdp.send('Emulation.setCPUThrottlingRate', {'rate': 8})
     page.click('#sum-next'); page.wait_for_timeout(30)
     thinking, live1 = S(page, '!!SOLO.think'), S(page, LIVE)
-    page.evaluate('() => { for (let k = 0; k < 3; k++) document.querySelector("#atk-next").click(); }')  # to the Ready step
-    page.click('#atk-body [data-act=replay]')
-    check(thinking and page.evaluate('() => window.siegeline.replaying'), 'solo: the Ready step replays the last wave while the computer is still thinking')
+    page.click('#atk-body [data-act=replay]')  # the Army step's Replay
+    check(thinking and page.evaluate('() => window.siegeline.replaying'), 'solo: the Army step replays the last wave while the computer is still thinking')
     page.evaluate('() => window.siegeline.advance(300)')
     thought(page)  # the computer finishes its plan while the replay is open
     page.click('#rp-close')
     cdp.send('Emulation.setCPUThrottlingRate', {'rate': 1})
     check(S(page, LIVE) == live1 and S(page, 'S.phase') == 'attack' and S(page, 'SOLO.plan && Array.isArray(SOLO.plan.g.w)'),
           'solo: a replay during thinking leaves the match and the computer\'s plan intact')
-    page.click('#atk-next'); page.wait_for_timeout(30)
-    if S(page, 'S.phase') == 'attack': page.click('#atk-next')  # an empty army takes a second Ready
+    page.click('#atk-lock'); page.wait_for_timeout(30)
+    if S(page, 'S.phase') == 'attack': page.click('#atk-lock')  # an empty army takes a second Lock in
     hand(page); run_wave(page)
     check(S(page, 'S.round') == 2 and (page.is_visible('#ov-sum') or page.is_visible('#ov-end')), 'solo: the next wave plays normally after the replay')
 
@@ -300,6 +305,8 @@ with sync_playwright() as p:
         play_out(page, 'atk', f'terrain attack/{level}', atk_ready)
         page.click('#end-menu')
     start(page, 'def', 'hard')
+    thought(page)
+    check(S(page, 'S.starter') > 0 and 'starter maze' in S(page, 'SOLO.pending'), f'terrain defend/hard: the computer attacker plans round 1 against the starter maze ({S(page, "SOLO.pending")[:90]}…)')
     play_out(page, 'def', 'terrain defend/hard', def_ready)
     page.click('#end-menu')
     plans = []
@@ -314,13 +321,14 @@ with sync_playwright() as p:
     page.evaluate('() => { window.siegeline.solo.on = false; }')
     page.evaluate('() => { document.querySelector("#ov-sum").hidden = true; document.querySelector("#ov-mode").hidden = false; }')
     page.click('#mode-local'); page.wait_for_timeout(480); page.click('#ov-hand')
-    for _ in range(2): page.click('#def-next')
+    page.click('#def-lock')
     page.wait_for_timeout(480); page.click('#ov-hand')
-    for _ in range(5): page.click('#atk-next')  # an empty army takes a second Ready
+    for _ in range(2): page.click('#atk-lock')  # an empty army takes a second Lock in
     page.wait_for_timeout(480); page.click('#ov-hand'); run_wave(page)
+    details(page)
     check(page.is_visible('#ov-sum') and not page.is_visible('#ov-sum .ainote'), 'pass-and-play summary has no computer note')
     # ---------- the planning clock against the computer: time up locks the plan in, with no Keep planning
-    page.evaluate('() => { window.siegeline.rules.planSecs = 1; document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
+    page.evaluate('() => { window.siegeline.rules.planSecs = 1; window.siegeline.rules.planSecsFirst = 1; document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
     cdp.send('Emulation.setCPUThrottlingRate', {'rate': 8})
     start(page, 'atk', 'hard')
     check(page.is_visible('#t-clock') and S(page, '!!SOLO.think'), 'solo: the player has a clock while the computer thinks')
@@ -329,7 +337,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#ov-hand', state='visible', timeout=60000)
     check(S(page, 'S.next') == 'wave' and 'time ran out' not in page.inner_text('#hand-sub').lower(), 'solo: the wave card follows once the computer is done')
     cdp.send('Emulation.setCPUThrottlingRate', {'rate': 1})
-    page.evaluate('() => { window.siegeline.rules.planSecs = 180; }')
+    page.evaluate('() => { window.siegeline.rules.planSecs = 180; window.siegeline.rules.planSecsFirst = 300; }')
     check(not errors, f'no errors on desktop {errors[:3]}')
     ctx.close()
 
@@ -349,20 +357,21 @@ with sync_playwright() as p:
     page.tap('.pick button[data-side=atk]'); page.tap('.pick button[data-level=normal]'); page.tap('#mode-solo'); page.wait_for_timeout(300)
     check(S(page, 'S.phase') == 'attack', 'phone: attacker vs computer starts')
     for _ in range(6): page.tap('.step.plus[data-i="0"]')
-    for _ in range(4): page.tap('#atk-next'); page.wait_for_timeout(80)
+    page.tap('#atk-lock'); page.wait_for_timeout(80)
     page.wait_for_selector('#ov-hand', state='visible', timeout=30000)
     page.wait_for_timeout(500); page.screenshot(path=f'{OUT}/m1_wavecard.png'); page.tap('#ov-hand'); page.wait_for_timeout(1500)
     check(S(page, 'S.phase') == 'wave', 'phone: wave plays')
     page.screenshot(path=f'{OUT}/m2_wave.png')
     check(not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'), 'phone: no horizontal overflow in the match')
     page.evaluate('() => window.siegeline.advance(300)'); page.wait_for_timeout(300)
+    details(page)
     nb = page.locator('#ov-sum .ainote').bounding_box()
     check(nb and nb['x'] >= 0 and nb['x'] + nb['width'] <= 390, f'phone: the computer\'s note fits on the summary {nb}')
     page.locator('#ov-sum .ainote').scroll_into_view_if_needed(); page.screenshot(path=f'{OUT}/m3_note.png')
     page.tap('#sum-next'); page.wait_for_timeout(200)
     # a big enough wave that something gets through whatever the computer builds (its seed is random here)
     page.evaluate('() => { const S = window.siegeline.state; S.keep = 1; S.designs[0].count += 40; S.designs[0].tl = { s: 0, e: 0.1, pos: null }; }')
-    for _ in range(4): page.tap('#atk-next'); page.wait_for_timeout(80)
+    page.tap('#atk-lock'); page.wait_for_timeout(80)
     page.wait_for_selector('#ov-hand', state='visible', timeout=30000); page.wait_for_timeout(500); page.tap('#ov-hand')
     page.evaluate('() => window.siegeline.advance(300)'); page.wait_for_selector('#ov-end', state='visible', timeout=5000)
     boxes = [page.locator(sel).bounding_box() for sel in ('#end-replay', '#end-menu', '#end-again')]
