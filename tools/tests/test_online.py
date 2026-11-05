@@ -399,10 +399,10 @@ try:
         P2.wait_for_timeout(200)
         P2.screenshot(path=f'{SHOTS}/p4_attack_clock.png')
         bx = lambda sel: P2.locator(sel).bounding_box()
-        boxes = {k: bx(k) for k in ('#clockbox', '#netpill', '#coinbox', '#potbox', '.keepbox', '.roundchip')}
+        boxes = {k: bx(k) for k in ('#clockbox', '#netpill', '#potbox', '.keepbox', '.roundchip')}
         apart = lambda a, b: a['x'] + a['width'] <= b['x'] + 0.5 or b['x'] + b['width'] <= a['x'] + 0.5 or a['y'] + a['height'] <= b['y'] + 0.5 or b['y'] + b['height'] <= a['y'] + 0.5
         ks = list(boxes)
-        check('phone: the HUD holds the clock, net pill, coins and pot without overlap or clipping', all(boxes.values()) and all(b['x'] >= 0 and b['x'] + b['width'] <= 390 for b in boxes.values())
+        check('phone: the HUD holds the clock, net pill and pot without overlap or clipping', all(boxes.values()) and all(b['x'] >= 0 and b['x'] + b['width'] <= 390 for b in boxes.values())
               and all(apart(boxes[a], boxes[b]) for i, a in enumerate(ks) for b in ks[i + 1:]), json.dumps(boxes)[:300])
         check('phone: no horizontal overflow', P1.evaluate('()=>document.documentElement.scrollWidth<=innerWidth'))
         ctx.close()

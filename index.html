@@ -121,7 +121,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .ready:active,.cta:active{transform:translateY(1px)}
 
 /* budget */
-.budget{display:flex;align-items:center;gap:14px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:10px 12px}
+.budget{display:flex;align-items:center;gap:14px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:8px 12px}
 .bfree{flex:none;display:flex;align-items:baseline;gap:7px;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .bfree b{font:900 28px/.9 var(--f-display);color:var(--side);letter-spacing:.02em;font-variant-numeric:tabular-nums}
 .bright{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
@@ -335,7 +335,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
    with T under it, the 0-60 s slider beside them), the busiest-second bars, the presets, the route line, then a block per
    design and per sapper: its name, a spread track (when its units leave, 0-20 s) and a slim path strip under it (where
    it is on the route at T). Text sizes: title 22, names 16, details 12 grey, buttons and axis labels 11. */
-.tl{display:flex;flex-direction:column;gap:10px;--dim:#57616b}
+.tl{display:flex;flex-direction:column;gap:10px;--dim:#57616b;user-select:none;-webkit-user-select:none}
 .wp-head{display:flex;align-items:center;gap:14px;min-width:0}
 .wp-title{margin:0;font:700 22px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--paper);white-space:nowrap}
 .wp-help{flex:none;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 6px;border-radius:999px;border:1px solid color-mix(in srgb,var(--warm) 55%,transparent);background:transparent;
@@ -445,7 +445,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .altitle{font:500 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--soft);white-space:nowrap}
 .scseg{flex:1;max-width:220px}
 .scseg button{padding:7px 4px}
-.dragging,.dragging *{cursor:grabbing!important}
+.dragging,.dragging *{cursor:grabbing!important;user-select:none!important;-webkit-user-select:none!important}
 /* the wave plan's How to use card */
 .overlay.guide{background:rgba(4,6,9,.6);z-index:50}
 .guidecard{width:100%;max-width:460px;max-height:100%;overflow-y:auto;background:var(--slate);border:1px solid var(--line-2);border-top:2px solid var(--warm);border-radius:8px;padding:20px 22px;display:flex;flex-direction:column;gap:12px}
@@ -533,7 +533,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 
 /* summary + end */
 .sheet.small{max-width:540px}
-.sum-body{padding:22px 24px 8px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.sum-body{padding:22px 24px 8px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:0;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.sum-body>*,.det>*{flex-shrink:0}
 .sum-kicker{font:500 10.5px/1 var(--f-ui);letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin:0}
 .sum-title{margin:0;font:600 32px/1.05 var(--f-body);letter-spacing:-.02em;text-wrap:balance}
 .bx{display:flex;flex-direction:column;gap:8px;background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:12px}
@@ -545,7 +546,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .bx-row.keep b{color:var(--keep)}
 .sv{display:flex;flex-direction:column;gap:7px}
 .sv-track{position:relative;height:4px;background:linear-gradient(90deg,var(--warm) 0%,#8a8f95 50%,var(--cool) 100%)}
-.sv-mark{position:absolute;top:-6px;width:2px;height:16px;margin-left:-1px;background:var(--paper);box-shadow:0 0 0 2px var(--slate)}
+.sv-mark{position:absolute;top:-5px;width:2px;height:14px;background:var(--paper);box-shadow:0 0 0 2px var(--slate)}
 .sv-ticks{display:flex;justify-content:space-between;font:500 10.5px/1.3 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
 .sv-ticks span{display:flex;flex-direction:column;align-items:center}
 .sv-ticks span:first-child{align-items:flex-start} .sv-ticks span:last-child{align-items:flex-end}
@@ -614,23 +615,24 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .hbox .lbl{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .clockbox{min-width:70px}
 .clockbox .cval{font:900 22px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--paper);white-space:nowrap}
-.clockbox.low{border-color:rgba(255,90,90,.45)} .clockbox.low .cval,.clockbox.low .lbl{color:var(--bad)}
+.clockbox{transition:min-width .35s ease,background-color .35s ease,border-color .35s ease}
+.clockbox .cval{transition:font-size .35s ease,color .35s ease}
+/* the last 30 s: the clock grows, turns red and beats once a second; the last 10 s harder, and a countdown over the board */
+.clockbox.low{min-width:128px;background:rgba(255,77,77,.14);border-color:var(--bad);animation:clockbeat 1s ease-out infinite}
+.clockbox.low .cval{font-size:36px;color:var(--bad)} .clockbox.low .lbl{color:var(--bad)}
+.clockbox.last{background:rgba(255,77,77,.26);animation-name:clockbeat2}
+@keyframes clockbeat{0%{box-shadow:0 0 0 0 rgba(255,77,77,.55)}70%{box-shadow:0 0 0 8px rgba(255,77,77,0)}100%{box-shadow:0 0 0 0 rgba(255,77,77,0)}}
+@keyframes clockbeat2{0%{box-shadow:0 0 0 0 rgba(255,77,77,.8);transform:scale(1.06)}30%{transform:scale(1)}70%{box-shadow:0 0 0 14px rgba(255,77,77,0)}100%{box-shadow:0 0 0 0 rgba(255,77,77,0)}}
+#clockbig{position:absolute;left:50%;top:14px;z-index:6;transform:translateX(-50%);pointer-events:none;padding:6px 16px;border-radius:6px;background:rgba(40,8,8,.86);border:1px solid var(--bad);color:var(--bad);font:900 44px/1 var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:.04em;box-shadow:0 12px 40px -12px #000}
+#clockbig small{display:block;font:500 9.5px/1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:#ffb4b4;text-align:center;margin-bottom:4px}
+#clockbig.beat{animation:bigbeat 1s ease-out}
+@keyframes bigbeat{0%{transform:translateX(-50%) scale(1.12)}35%{transform:translateX(-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){.clockbox.low,#clockbig.beat{animation:none}}
 .wavebox{flex-direction:row;align-items:center;gap:14px}
 .wavebox .wcol{display:flex;flex-direction:column;gap:6px}
 .wavebox b{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
 .wavebox small{font:500 11px/1 var(--f-ui);color:var(--muted);margin-left:3px}
 .wavebox .kd{color:var(--keep)}
-.coinbox{display:grid;grid-template-columns:auto auto;grid-template-areas:"lbl worth" "num worth";column-gap:14px;row-gap:6px;align-content:center;align-items:end}
-.coinbox > .lbl{grid-area:lbl;color:var(--side)}
-.coinbox .cmain,.coinbox .cboth{grid-area:num;display:flex;align-items:baseline;gap:10px;white-space:nowrap}
-.cfree{font:900 28px/.9 var(--f-display);color:var(--side);font-variant-numeric:tabular-nums}
-.cboth b{font:900 22px/.9 var(--f-display);font-variant-numeric:tabular-nums}
-.cboth .c b{color:var(--cool)} .cboth .w b{color:var(--warm)}
-.cworth{grid-area:worth;align-self:center;display:flex;flex-direction:column;gap:5px;font:500 10px/1 var(--f-ui);letter-spacing:.12em;color:var(--muted);white-space:nowrap}
-.cworth b{font:600 14px/1 var(--f-ui);letter-spacing:.02em;font-variant-numeric:tabular-nums}
-.cworth .c b{color:var(--cool)} .cworth .w b{color:var(--warm)}
-.cdelta{font:600 11px/1 var(--f-ui);font-style:normal;color:var(--paper);margin-left:3px;opacity:0;transition:opacity .4s}
-.cdelta.on{opacity:1}
 .potbox{flex-direction:row;align-items:baseline;gap:8px;align-content:center;flex-wrap:nowrap;align-items:center}
 .potbox .pval{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .potbox .prange{font:500 11px/1 var(--f-ui);color:var(--muted);white-space:nowrap}
@@ -653,7 +655,11 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 #a-budget .s1{background:var(--warm-2)} #a-budget .s2{background:var(--warm-3)}
 /* the defender's one row of tools, then Auto-maze, Auto-tune and Undo as icon buttons */
 .toolwrap{position:relative}
-.toolrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) repeat(3,34px);gap:5px}
+.toolrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+/* the helpers: their own row under the tools, icon and name */
+.helprow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.helprow .hbtn{display:flex;align-items:center;justify-content:center;gap:7px;height:34px;font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.helprow .hbtn svg{width:15px;height:15px}
 .toolrow .tool{flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:6px 2px;min-height:56px;text-align:center;min-width:0}
 .toolrow .tool .ico{width:18px;height:18px}
 .toolrow .tname{font-size:12px;white-space:nowrap}
@@ -700,11 +706,38 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .card .presets{gap:4px;flex-wrap:nowrap}
 .card .pre{flex:1;min-width:0;padding:6px 4px;font-size:12px;text-align:center}
 .sliders{display:flex;flex-direction:column;gap:4px}
-.srow.c{display:grid;grid-template-columns:62px minmax(50px,1fr) auto minmax(42px,auto);align-items:center;column-gap:7px;height:34px;padding:0 8px 0 10px;gap:0 7px}
-.srow.c .sname{font:600 12.5px/1 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.srow.c input[type=range]{grid-row:1;grid-column:2;width:100%;height:20px;margin:0}
-.srow.c .sval{grid-row:1;grid-column:3;font:500 10.5px/1 var(--f-ui);color:var(--soft);white-space:nowrap;text-align:right}
+.srow.c{display:grid;grid-template-columns:62px minmax(0,1fr) 94px 46px;align-items:center;column-gap:8px;height:34px;padding:0 8px 0 10px;transition:border-color .25s,box-shadow .25s}
+.srow.c .sname{grid-column:1;font:600 12.5px/1 var(--f-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the track never changes length: its neighbours have fixed widths, the value text is cut short if it must be */
+.strack{grid-row:1;grid-column:2;position:relative;display:flex;align-items:center;height:24px;min-width:0}
+.srow.c .sval{grid-row:1;grid-column:3;font:500 10.5px/1 var(--f-ui);color:var(--soft);white-space:nowrap;text-align:right;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .srow.c .snext{grid-row:1;grid-column:4;justify-self:end}
+.srow.c input[type=range]{-webkit-appearance:none;appearance:none;position:relative;z-index:1;width:100%;height:24px;margin:0;padding:0;background:transparent;cursor:pointer;touch-action:pan-y}
+.srow.c input[type=range]:focus{outline:none}
+.srow.c input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(90deg,var(--side) calc(8px + (100% - 16px) * var(--p,0)),var(--line-2) 0)}
+.srow.c input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line-2)}
+.srow.c input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--side)}
+.srow.c input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--paper);border:3px solid var(--side);box-sizing:border-box;transition:transform .12s ease,box-shadow .2s ease}
+.srow.c input[type=range]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--paper);border:3px solid var(--side);transition:transform .12s ease,box-shadow .2s ease}
+.srow.c input[type=range]:hover::-webkit-slider-thumb{box-shadow:0 0 0 4px color-mix(in srgb,var(--side) 18%,transparent)}
+.srow.c input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2);box-shadow:0 0 0 6px color-mix(in srgb,var(--side) 22%,transparent)}
+.srow.c input[type=range]:active::-moz-range-thumb{transform:scale(1.2)}
+.srow.c input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--ink),0 0 0 5px var(--side)}
+.sticks{position:absolute;left:8px;right:8px;top:calc(50% + 6px);display:flex;justify-content:space-between;pointer-events:none}
+.sticks i{width:1px;height:3px;background:var(--line-2);transition:background-color .2s}
+.sticks i.on{background:color-mix(in srgb,var(--side) 65%,transparent)}
+/* at the top of its range a slider glows: a pop as it gets there, then a slow pulse and a sheen along the track */
+.srow.c.maxed{border-color:color-mix(in srgb,var(--side) 50%,var(--line));box-shadow:0 0 14px -6px var(--side)}
+.srow.c.maxed .snext.max{color:var(--side);text-shadow:0 0 8px color-mix(in srgb,var(--side) 70%,transparent)}
+.srow.c.maxed input[type=range]::-webkit-slider-runnable-track{background:linear-gradient(90deg,var(--side) 0%,color-mix(in srgb,var(--side) 35%,#fff) 50%,var(--side) 100%) 0 0/200% 100%;animation:slshine 2.4s linear infinite}
+.srow.c.maxed input[type=range]::-webkit-slider-thumb{background:var(--side);border-color:#fff;animation:slpulse 1.8s ease-in-out infinite}
+.srow.c.maxed input[type=range]::-moz-range-thumb{background:var(--side);border-color:#fff;box-shadow:0 0 12px 2px var(--side)}
+.srow.c.maxed .sticks i{background:var(--side)}
+.srow.c.pop{animation:slpop .6s ease-out}
+@keyframes slshine{from{background-position:200% 0}to{background-position:0 0}}
+@keyframes slpulse{0%,100%{box-shadow:0 0 0 2px color-mix(in srgb,var(--side) 30%,transparent),0 0 10px 2px color-mix(in srgb,var(--side) 45%,transparent)}50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--side) 20%,transparent),0 0 20px 6px color-mix(in srgb,var(--side) 55%,transparent)}}
+@keyframes slpop{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--side) 70%,transparent)}100%{box-shadow:0 0 0 12px transparent,0 0 14px -6px var(--side)}}
+@media (prefers-reduced-motion:reduce){.srow.c.maxed input[type=range]::-webkit-slider-runnable-track,.srow.c.maxed input[type=range]::-webkit-slider-thumb,.srow.c.pop{animation:none}}
 .snext.free{color:#cfe9a9;border:0;letter-spacing:.12em;text-transform:uppercase;padding-inline:0}
 .fxchips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .fxchip{display:flex;align-items:center;gap:6px;height:32px;padding:0 9px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;font:600 12px/1 var(--f-body);color:var(--soft);min-width:0}
@@ -722,7 +755,11 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .ustats{display:flex;gap:10px;flex-wrap:wrap;font:500 11px/1.2 var(--f-ui);color:var(--soft);font-variant-numeric:tabular-nums}
 .us{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .si{width:10px;height:10px;display:inline-block;color:var(--muted)} .si svg{width:100%;height:100%;display:block}
-.us.x{color:var(--muted)}
+.us.xt{color:var(--muted)}
+.ustats{flex-wrap:nowrap;overflow:hidden;height:15px;align-items:center}
+.us.rs{height:14px;box-sizing:border-box;padding:0 5px;gap:3px;border-radius:3px;border:1px solid var(--line-2);color:var(--muted);font:500 9px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase}
+.us.rs i{width:6px;height:6px;border-radius:50%}
+.us.rs i:first-of-type{margin-left:2px}
 .ued{display:flex;flex-direction:column;gap:6px;padding:0 0 0 4px}
 .uname{display:flex;align-items:center;gap:8px}
 .uname input{flex:1;min-width:0;height:32px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--ink);color:var(--paper);font:600 13px/1 var(--f-body);padding:0 9px;user-select:text;-webkit-user-select:text}
@@ -734,9 +771,11 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .reschips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
 .rchip{border:0;background:transparent;padding:8px 2px;font:500 11px/1.1 var(--f-ui);color:var(--muted);cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .rchip+.rchip{border-left:1px solid var(--line-2)}
-.rchip[aria-pressed=true]{background:var(--side);color:var(--side-ink)}
+.rchip{transition:background-color .15s,color .15s}
+.rchip[aria-pressed=true]{background:color-mix(in srgb,var(--rc) 20%,transparent);color:var(--rc);box-shadow:inset 0 -2px 0 var(--rc)}
+.rchip[data-resist=none][aria-pressed=true]{background:var(--slate-2);color:var(--paper);box-shadow:inset 0 -2px 0 var(--muted)}
 .rchip.poor{color:#ffb4b4}
-.ued .srow.c{background:var(--slate-2)}
+.ued .srow.c{background:var(--slate-2);grid-template-columns:58px minmax(0,1fr) 72px 64px}
 .abtn{gap:10px} .abtn small{display:inline;margin:0 0 0 auto}
 /* sabotage, lean: two one-line cards with their prices */
 .sabo{grid-template-columns:minmax(0,1fr)}
@@ -827,13 +866,12 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
   .hud-row > *{min-height:44px}
   .roundchip{order:1} .keepbox{order:2;flex:1 1 0} .clockbox,.wavebox{order:3} #btn-info{order:4}
   .hud-row > .hbreak{display:block;order:5;flex-basis:100%;height:0;min-height:0} /* coins and the pot always start row 2 */
-  .coinbox{order:6;flex:1 1 auto;padding:0 10px;column-gap:10px} .potbox{order:7;flex:0 1 auto;padding:0 10px} .hud-row .netpill{order:8;min-height:0}
+  .potbox{order:7;flex:0 1 auto;padding:0 10px} .hud-row .netpill{order:8;min-height:0}
   .potbox.live{flex:1 1 auto}
   .potbox .ptag,.pm-top .lbl{display:none} /* the POT label goes before the numbers shrink */
   .pmeter{width:auto;min-width:120px;flex:1}
   .clockbox{min-width:0;padding:0 9px} .clockbox .cval{font-size:20px}
   .wavebox{gap:10px;padding:0 9px} .wavebox b{font-size:17px}
-  .cfree{font-size:24px} .cboth b{font-size:20px}
   .hbox .lbl{font-size:9.5px;letter-spacing:.12em}
   .sb b{font-size:25px} .sb{padding:10px}
   .modes{grid-template-columns:minmax(0,1fr);padding:14px 16px 16px}
@@ -905,12 +943,6 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
       </div>
       <div class="hbox clockbox" id="clockbox" hidden data-tip="Planning time left this round. When it runs out, your plan goes as it stands."><span class="lbl">Time</span><b class="cval" id="t-clock">3:00</b></div>
       <div class="hbox wavebox" id="wavebox" hidden><span class="wcol" data-tip="Units that reached the keep, of all the army sent"><span class="lbl">Leaked</span><b><span id="h-leak">0</span><small id="h-sent">/ 0</small></b></span><span class="wcol" data-tip="Damage to the keep this wave"><span class="lbl">Keep</span><b class="kd" id="h-kdmg">−0</b></span></div>
-      <div class="hbox coinbox" id="coinbox" data-tip="Your free coins, big. Worth: what each side owns in total (free coins plus coins parked in towers, walls, the army and planned sabotage).">
-        <span class="lbl" id="t-who">Defender</span>
-        <span class="cmain" id="c-main"><b class="cfree" id="v-free">300</b><i class="cdelta" id="v-fdelta"></i></span>
-        <span class="cboth" id="c-both" hidden><span class="c"><b id="v-dfree">300</b><i class="cdelta" id="v-ddelta"></i></span><span class="w"><b id="v-afree">300</b><i class="cdelta" id="v-adelta"></i></span></span>
-        <span class="cworth"><span class="c" data-tip="The defender's worth">DEF <b id="v-dworth">300</b></span><span class="w" data-tip="The attacker's worth">ATK <b id="v-aworth">300</b></span></span>
-      </div>
       <div class="hbox potbox" id="potbox" data-tip="This round's pot: the more of the army gets through, the bigger the defender's share. It grows round by round, and so does the swing between the shares.">
         <span class="lbl ptag">Pot</span><b class="pval" id="pot-v">200</b><small class="prange" id="pot-r">35–65</small>
         <span class="pmeter" id="pot-meter" hidden><span class="pm-top"><span class="pm-d" id="pm-d">+100</span><span class="lbl ptag2">Pot <b id="pm-pot">200</b></span><span class="pm-a" id="pm-a">+100</span></span><span class="pm-bar"><i class="d" id="pm-sd" style="width:50%"></i><i class="a" id="pm-sa" style="width:50%"></i></span></span>
@@ -925,13 +957,14 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <div id="boardwrap">
       <canvas id="board" aria-label="Battlefield grid"></canvas>
       <div id="toast" role="status" aria-live="polite"></div>
+      <div id="clockbig" hidden aria-hidden="true"><small>Time left</small><span id="clockbig-v">0:10</span></div>
       <div id="undo-pop" role="status" aria-live="polite" hidden><span id="undo-msg"></span><button class="mini" id="undo-btn">Undo</button></div>
     </div>
 
     <aside id="panel">
       <section class="pane" id="pane-def" hidden>
         <nav class="steps one" id="def-steps" aria-label="Defender"></nav>
-        <div class="budget bare" id="d-budget"><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div>
+        <div class="budget" id="d-budget"><span class="bfree" id="d-fbox">Coins <b id="d-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div></div>
         <div class="testcard" id="d-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="def-body"></div>
@@ -942,13 +975,13 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 
       <section class="pane" id="pane-atk" hidden>
         <nav class="steps" id="atk-steps" aria-label="Attacker steps"></nav>
-        <div class="budget bare" id="a-budget"><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div>
+        <div class="budget" id="a-budget"><span class="bfree" id="a-fbox">Coins <b id="a-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div></div>
         <div class="testcard" id="a-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="atk-body"></div>
           <div class="ctx" id="atk-ctx"></div>
         </div>
-        <div class="navrow"><button class="back" id="atk-test" hidden data-tip="Play your wave, sappers included, against the defense as you last saw it. Nothing in the match changes.">Test</button><button class="back" id="atk-next">Next</button><button class="ready atk" id="atk-lock">Lock in</button></div>
+        <div class="navrow"><button class="back" id="atk-test" hidden data-tip="Play your wave, sappers included, against the defense as you last saw it. Nothing in the match changes.">Test</button><button class="back" id="atk-lock">Lock in</button><button class="ready atk" id="atk-next">Next</button></div>
       </section>
 
       <section class="pane" id="pane-wave" hidden>
@@ -979,7 +1012,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v21</p>
+        <p class="tagline">Two Player Tower Defence · v21.1</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1002,14 +1035,14 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 
       <section id="info-build">
         <h2>Build</h2>
-        <p><strong>Tools.</strong> Wall (<b>W</b>), Tower (<b>T</b>), Remove &amp; Inspect (<b>R</b>), Shapes (<b>S</b>). Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. Drag a tower to move it, or onto a wall or another tower to swap them, free. The chips above the tools are your towers: tap one to open its card.</p>
+        <p><strong>Tools.</strong> Wall (<b>W</b>), Tower (<b>T</b>), Remove &amp; Inspect (<b>R</b>), Shapes (<b>S</b>). Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. A tower placed on a wall replaces it, and the wall’s 5 coins come back. Drag a tower to move it, or onto a wall or another tower to swap them, free. The chips above the tools are your towers: tap one to open its card.</p>
         <p><strong>Shortcuts.</strong> W, T, R and S pick the tools; with Shapes picked, R turns the piece and F flips it. Delete or Backspace removes the selected tower (Undo brings it back) or deletes the open design. Escape is Done. Ctrl+Z (⌘Z) undoes. The space bar plays the wave plan’s preview. None of them work while you type in a field.</p>
         <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">60</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built. <strong>Auto-tune</strong> spends your free coins on upgrades to the towers you’ve placed. <strong>Undo</strong> takes back your last change this round, coins and tuning included, until the wave starts; the starter maze is where a round begins, so Undo never takes it away.</p>
         <p><strong>Remove &amp; Inspect:</strong> hover a wall (on touch, hold it) and a red line shows where units would go if it were bridged. A click or tap takes a wall or tower back for a full refund.</p>
         <p><strong>Copy tuning</strong> on a tower’s card: new towers you place get that tuning (priced as usual) until you clear it with × on the Tower tool.</p>
         <p><strong>Hints</strong> (the switch beside the title): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire.</p>
         <p><strong>On the board.</strong> Bright walls are new this round: the attacker hasn’t seen them and can’t bridge them. Dotted ground is rough: units cross it, nothing can be built on it. Hatched slabs are rock: a free wall. An orange bridge stays open for good: wall off an end, or cover it with towers. Small dots on a tower are its effects: frost, poison, chain.</p>
-        <p><strong>The bar.</strong> Your free coins are the big number, both sides’ worth beside them; the coin bar under the title splits your worth into free coins, towers and walls (hold it for the numbers).</p>
+        <p><strong>Coins.</strong> Your free coins are the big number under the title; the bar beside them splits your worth into free coins, towers and walls (hover or hold it for the numbers). The top bar keeps the round, the keep, the clock (it grows and turns red for the last 30 seconds) and the pot.</p>
       </section>
 
       <section id="info-tower">
@@ -1020,7 +1053,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
           <li><strong>Range</strong>: priced by its square: a bigger circle covers much more of a winding maze.</li>
           <li><strong>Damage</strong>: total damage per second; fire rate decides how it’s split into shots.</li>
           <li><strong>Accuracy.</strong> Every tower starts at 80%. The slider raises it to 87, 94 or 100% (×1.15, ×1.35, ×1.6), and fire rate shifts each shot: heavy shots hit more often, rapid fire less.</li>
-          <li><strong>Fire rate</strong>: free. Heavy shots hit more often and punch through armor; rapid fire keeps frost and poison going.</li>
+          <li><strong>Fire rate</strong>: free; its slider runs from slow, heavy shots on the left to rapid fire on the right. Heavy shots hit more often and punch through armor; rapid fire keeps frost and poison going.</li>
           <li><strong>Splash</strong>: hits everything near the impact; a miss still hits the units around its target. Beats bunched waves and swarms.</li>
           <li><strong>Frost</strong> (×1.35): slows each unit it hits by <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s. A slowed unit is <strong>brittle</strong>: every tower’s hits on it land <span data-rule="brittle%">20</span>% harder (not the hit that slows it, and not poison ticks).</li>
           <li><strong>Poison</strong> (×1.45): adds 60% more damage over 3 s, ignoring armor.</li>
@@ -1032,13 +1065,13 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 
       <section id="info-army">
         <h2>Army</h2>
-        <p>Up to four permanent designs; units that die come back next wave. Tap a design to open it in place: its sliders, resist, name and colour. Health, speed, armor, regeneration and resistance multiply the price, and above 60 coins a surcharge applies, so one giant unit costs more than its parts.</p>
-        <div class="callout"><p><code>15 × health × speed × armor × regen × resist</code></p></div>
+        <p>Up to four permanent designs; units that die come back next wave. Tap a design to open it in place: its sliders, resists, name and colour. Health, speed, armor, regeneration and resistance multiply the price, and above 60 coins a surcharge applies, so one giant unit costs more than its parts.</p>
+        <div class="callout"><p><code>15 × health × speed × armor × regen × each resist</code></p></div>
         <ul>
           <li><strong>Health</strong>: price grows in line with it. <strong>Speed</strong>: fast units spend less time in range, so price grows with it too.</li>
           <li><strong>Armor</strong>: every hit loses 3, 6 or 10, but at least 20% still lands. Beats rapid fire, weak to heavy shots; chain jumps ignore it.</li>
           <li><strong>Regeneration</strong>: heals between towers, from 3 seconds after the last direct hit, and only so much per wave. Beats poison; steady fire keeps it from healing.</li>
-          <li><strong>Resist</strong> (×1.3, one at a time): Splash takes 60% less splash damage; Poison 60% less poison; Frost is slowed 60% less and is never brittle; <strong>Shock</strong> takes 60% less chain damage.</li>
+          <li><strong>Resists</strong> (×1.3 each; take as many as you like, the prices multiply): Splash takes 60% less splash damage; Poison 60% less poison; Frost is slowed 60% less and is never brittle; <strong>Shock</strong> takes 60% less chain damage. None clears them.</li>
         </ul>
       </section>
 
@@ -1107,7 +1140,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v21</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v21.1</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1310,7 +1343,7 @@ const TS = {
   accuracy: { name: 'Accuracy', steps: [80, 87, 94, 100], m: [1, 1.15, 1.35, 1.6],
     val: (v, c) => `${v}% · ${shotAcc(c)}% per shot at this fire rate`, mult: i => TS.accuracy.m[i || 0],
     hint: 'The chance each shot hits; fire rate shifts it. A miss does nothing, though a splash miss still hits the units around its target.' },
-  rate: { name: 'Fire rate', steps: [4, 2.5, 1.6, 1, 0.6, 0.4], free: true,
+  rate: { name: 'Fire rate', steps: [4, 2.5, 1.6, 1, 0.6, 0.4], free: true, flip: true, // its slider runs slow to fast
     val: (v, c) => `${v} per second · ${fmtNum(TS.dps.steps[c.dps] / v)} per hit · ${shotAcc(c)}% accurate`,
     mult: () => 1,
     hint: 'Free. Heavy shots hit more often and punch through armor. Rapid fire keeps frost and poison going.' },
@@ -1368,6 +1401,18 @@ const RESIST = {
   frost: { name: 'Frost', mult: 1.3, color: '#bff3ff', text: 'is slowed 60% less by frost and never brittle' },
   shock: { name: 'Shock', mult: 1.3, color: '#a98bff', text: 'takes 60% less chain damage' },
 };
+// A design can take any number of resists (v21.1): d.resist is 'none' or their keys joined by '+' in this order
+// ("splash+shock"), each one multiplying the price. A unit keeps them as flags, read on every hit (resOf).
+const RES_ORDER = ['splash', 'poison', 'frost', 'shock'];
+const resList = r => (!r || r === 'none' ? [] : String(r).split('+').filter(k => RES_ORDER.includes(k)));
+const resKey = list => { const l = RES_ORDER.filter(k => list.includes(k)); return l.length ? l.join('+') : 'none'; };
+const hasRes = (r, k) => resList(r).includes(k);
+const resToggle = (r, k) => (k === 'none' ? 'none' : resKey(hasRes(r, k) ? resList(r).filter(x => x !== k) : [...resList(r), k]));
+const resFlags = r => { const f = {}; for (const k of resList(r)) f[k] = true; return f; };
+const resOf = u => u.rs || (u.rs = resFlags(u.resist));
+const resMask = r => resList(r).reduce((m, k) => m | (1 << RES_ORDER.indexOf(k)), 0);
+const resFromMask = m => resKey(RES_ORDER.filter((k, j) => m & (1 << j)));
+const resWords = r => { const l = resList(r).map(k => RESIST[k].name.toLowerCase()); return l.length < 2 ? l.join('') : l.slice(0, -1).join(', ') + ' and ' + l[l.length - 1]; };
 const UPRESETS = {
   Runner: { hp: 2, speed: 6, armor: 0, regen: 0, resist: 'none' },
   Brute: { hp: 6, speed: 1, armor: 1, regen: 0, resist: 'none' },
@@ -1382,7 +1427,7 @@ function unitParts(d) {
     { label: 'speed', m: US.speed.mult(d.speed) },
   ];
   for (const k of ['armor', 'regen']) if (d[k]) p.push({ label: k, m: US[k].mult(d[k]) });
-  if (d.resist !== 'none') p.push({ label: RESIST[d.resist].name.toLowerCase() + ' resist', m: RESIST[d.resist].mult });
+  for (const k of resList(d.resist)) p.push({ label: RESIST[k].name.toLowerCase() + ' resist', m: RESIST[k].mult });
   return p;
 }
 // Past RULES.bigUnit coins a unit's price climbs steeply, so stacking every upgrade onto one unit doesn't pay.
@@ -1441,7 +1486,8 @@ function unitSVG(d) {
   else body = `<circle cx="16" cy="16" r="${f(r)}"`;
   const sw = d.armor ? 1.4 + d.armor * 0.9 : 1;
   const main = `${body} fill="${d.color}" stroke="#2c1004" stroke-width="${sw}"/>`;
-  const ring = d.resist !== 'none' ? `<circle cx="16" cy="16" r="${f(Math.min(14.5, r + 3.2))}" fill="none" stroke="${RESIST[d.resist].color}" stroke-width="1.7" stroke-dasharray="3 2.2"/>` : '';
+  const rl = resList(d.resist), rp = 5.2 * rl.length;
+  const ring = rl.map((k, j) => `<circle cx="16" cy="16" r="${f(Math.min(14.5, r + 3.2))}" fill="none" stroke="${RESIST[k].color}" stroke-width="1.7" stroke-dasharray="3 ${f(rp - 3)}" stroke-dashoffset="${f(-5.2 * j)}"/>`).join('');
   const dot = d.regen ? '<circle cx="16" cy="16" r="2.2" fill="#fff3c4"/>' : '';
   return `<svg viewBox="0 0 32 32" aria-hidden="true">${ring}${main}${dot}</svg>`;
 }
@@ -1453,8 +1499,8 @@ const $ = s => document.querySelector(s);
 const canvas = $('#board'), ctx = canvas.getContext('2d');
 const wrap = $('#boardwrap');
 const el = {
-  round: $('#v-round'), rounds: $('#v-rounds'), keep: $('#v-keep'), keepMax: $('#v-keepmax'), clock: $('#t-clock'), clockbox: $('#clockbox'), keepbar: $('#v-keepbar'), keepbox: $('#keepbox'), dworth: $('#v-dworth'), aworth: $('#v-aworth'),
-  who: $('#t-who'), panel: $('#panel'),
+  round: $('#v-round'), rounds: $('#v-rounds'), keep: $('#v-keep'), keepMax: $('#v-keepmax'), clock: $('#t-clock'), clockbox: $('#clockbox'), keepbar: $('#v-keepbar'), keepbox: $('#keepbox'),
+  panel: $('#panel'),
   paneDef: $('#pane-def'), paneAtk: $('#pane-atk'), paneWave: $('#pane-wave'),
   defSteps: $('#def-steps'), defBody: $('#def-body'), defCtx: $('#def-ctx'), defLock: $('#def-lock'),
   atkSteps: $('#atk-steps'), atkBody: $('#atk-body'), atkCtx: $('#atk-ctx'), atkNext: $('#atk-next'), atkLock: $('#atk-lock'),
@@ -1857,11 +1903,13 @@ function canBuild(cell, kind) {
   if (cell < 0) return { ok: false, quiet: true };
   const site = siteBlock(cell);
   if (site) return site;
-  if (S.grid[cell]) return { ok: false, quiet: true };
-  const cost = kind === 'wall' ? RULES.wall : newTowerPrice();
-  if (S.dFree < cost) return { ok: false, reason: `Not enough coins. A ${kind} costs ${cost} and you have ${S.dFree} free.`, gold: true };
-  if (!routeOpenWithout(cell)) return { ok: false, reason: 'Path must stay open', block: true };
-  return { ok: true };
+  // a tower on a wall replaces it: the wall's coins come back, and the cell stays blocked, so the route stays open
+  const onWall = kind === 'tower' && S.grid[cell] && S.grid[cell].t === 'wall';
+  if (S.grid[cell] && !onWall) return { ok: false, quiet: true };
+  const cost = kind === 'wall' ? RULES.wall : newTowerPrice(), back = onWall ? RULES.wall : 0;
+  if (S.dFree + back < cost) return { ok: false, reason: `Not enough coins. A ${kind} costs ${cost} and you have ${S.dFree} free${back ? ` (${S.dFree + back} with the wall’s ${back} back)` : ''}.`, gold: true };
+  if (!onWall && !routeOpenWithout(cell)) return { ok: false, reason: 'Path must stay open', block: true };
+  return { ok: true, onWall };
 }
 function tryBuild(cell, kind, loud) {
   const v = canBuild(cell, kind);
@@ -1873,6 +1921,7 @@ function tryBuild(cell, kind, loud) {
     puff(x, y, '#8fd3ef');
   } else {
     const cfg = placeCfg(), fee = nextFee();
+    if (v.onWall) { S.dFree += RULES.wall; floatText(x, y - 0.35, '+' + RULES.wall, '#8fd3ef', 13); } // the wall it replaces
     S.dFree -= towerCost(cfg) + fee;
     S.grid[cell] = { t: 'tower', cfg, fee, off: 0, fresh: !seenAs(cell, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
     if (!brushNow()) S.sel = { k: 'tower', cell }; // with a copied tuning there's nothing to tune: keep placing
@@ -2408,7 +2457,7 @@ function buildPreview() {
   } else if (tool === 'shape') {
     const parts = shapeCells(cell), cells = shapeBuild(parts);
     pv = { kind: 'shape', cell, parts, cells, v: checkCells(cells) };
-  } else if (!S.grid[cell]) pv = { kind: tool, cell, cells: [[cell, tool]], v: canBuild(cell, tool) };
+  } else if (!S.grid[cell] || (tool === 'tower' && S.grid[cell].t === 'wall')) pv = { kind: tool, cell, cells: [[cell, tool]], v: canBuild(cell, tool) };
   if (pv && pv.v.ok) pv.r = routeWith(S.grid, pv.cells, S.bridges, pv.kind === 'tower' ? placeCfg() : defaultTower());
   hypCache = { key, S, pv };
   return pv;
@@ -2541,7 +2590,7 @@ function makeUnit(di, ox, oy, sd) {
     id: ++uid, di, design: d, name: d.name, color: d.color, shape: unitShape(d), r: unitRadius(d.hp),
     x: -0.55, y: MID + 0.5, ox, oy, target: ENTRY, dir: 0, ang: 0, walked: 0, // walked: distance along its way (the scrubber reads it)
     hp, max: hp, speed: US.speed.steps[d.speed], armorLvl: d.armor, armor: US.armor.steps[d.armor],
-    regen: US.regen.steps[d.regen] / 100, resist: d.resist, value: unitCost(d),
+    regen: US.regen.steps[d.regen] / 100, resist: d.resist, rs: resFlags(d.resist), value: unitCost(d),
     healed: 0, healCap: hp * US.regen.steps[d.regen] * RULES.regenCap / 100, lastHit: -99,
     slowT: 0, slowF: 0, poisonT: 0, poisonDps: 0, poisonSrc: null, flash: 0, dead: false, gone: false, carried: 0,
   };
@@ -2586,7 +2635,7 @@ function damage(u, dmg, g, style) {
   if (u.hp <= 0) { u.hp = 0; u.dead = true; onKill(u); }
 }
 // A frost-resistant unit is slowed 60% less (and is never brittle, see strike).
-const frostOn = u => (u.resist === 'frost' ? RULES.frostSlow * 4 / 10 : RULES.frostSlow); // × 4 / 10: v20's 0.16 to the bit
+const frostOn = u => (resOf(u).frost ? RULES.frostSlow * 4 / 10 : RULES.frostSlow); // × 4 / 10: v20's 0.16 to the bit
 function applyEffects(u, raw, cfg) {
   if (cfg.slow) {
     const f = frostOn(u);
@@ -2594,7 +2643,7 @@ function applyEffects(u, raw, cfg) {
     u.slowT = RULES.frostSecs;
   }
   if (cfg.poison) {
-    const pd = raw * 0.6 / 3 * (u.resist === 'poison' ? 0.4 : 1);
+    const pd = raw * 0.6 / 3 * (resOf(u).poison ? 0.4 : 1);
     if (u.poisonT <= 0 || pd >= u.poisonDps) u.poisonDps = pd;
     u.poisonT = 3;
   }
@@ -2605,10 +2654,10 @@ function applyEffects(u, raw, cfg) {
 // any tower are, while the slow lasts.
 function strike(u, raw, kind, g) {
   if (u.dead || u.gone) return;
-  const brittle = u.slowT > 0 && u.resist !== 'frost';
+  const R = resOf(u), brittle = u.slowT > 0 && !R.frost;
   let d = raw;
-  if (kind === 'splash' && u.resist === 'splash') d *= 0.4;
-  if (kind === 'chain' && u.resist === 'shock') d *= 0.4;
+  if (kind === 'splash' && R.splash) d *= 0.4;
+  if (kind === 'chain' && R.shock) d *= 0.4;
   const pre = d;
   if (!(kind === 'chain' && RULES.chainPierce)) d = Math.max(d * 0.2, d - u.armor);
   if (brittle) d *= 1 + RULES.brittle;
@@ -2954,17 +3003,20 @@ function tickClock(fire = true) {
   if (clock.on && !planning) clock.on = false; // the round moved on: a handoff, the wave, the summary
   const left = clock.on ? Math.max(0, clock.end - performance.now()) / 1000 : 0;
   if (clock.on && left <= 0) { if (fire) timeUp(); return; }
-  const show = clock.on && !planLocked();
+  const show = clock.on && !planLocked(), big = $('#clockbig');
   el.clockbox.hidden = !show;
-  if (!show) return;
-  const sec = Math.ceil(left);
-  setText(el.clock, 'clk', `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
+  if (!show) { big.hidden = true; return; }
+  const sec = Math.ceil(left), txt = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+  setText(el.clock, 'clk', txt);
   el.clockbox.classList.toggle('low', sec <= 30);
+  el.clockbox.classList.toggle('last', sec <= 10);
+  big.hidden = sec > 10 || !!replay; // the last ten seconds count down over the board too
+  if (!big.hidden && big.dataset.s !== String(sec)) { big.dataset.s = String(sec); $('#clockbig-v').textContent = txt; big.classList.remove('beat'); void big.offsetWidth; big.classList.add('beat'); }
 }
 setInterval(() => tickClock(), 250); // a timer, not the frame loop, so it keeps counting in a background tab
 function timeUp() {
   Object.assign(clock, { on: false, out: true });
-  el.clockbox.hidden = true;
+  el.clockbox.hidden = true; $('#clockbig').hidden = true;
   if (replay) exitReplay(); // a test run or replay ends; the plan is the live one
   if (S.phase !== 'defend' && S.phase !== 'attack') return;
   if (planLocked()) { $('#wait-back').hidden = true; return; } // already locked in: it just can't be unlocked now
@@ -3006,7 +3058,6 @@ function endRound() {
   if (replay) { replay.done = true; refreshUI(); return; }
   const X = S.wave.x, Y = S.wave.y, sp = splitFor(X, Y), { d: dGain, a: aGain } = potGains(sp), mvp = mvpOf();
   S.dFree += dGain; S.aFree += aGain;
-  Object.assign(coinFx, { S, t0: performance.now(), d0: S.dFree - dGain, a0: S.aFree - aGain, dg: dGain, ag: aGain }); // the pot counts onto both
   S.totals.dPot = (S.totals.dPot || 0) + dGain; S.totals.aPot = (S.totals.aPot || 0) + aGain;
   for (const g of S.grid) if (g) { g.fresh = false; if (g.t === 'tower' && g.off > 0) g.off--; }
   S.gridVer++; recompute();
@@ -3179,7 +3230,7 @@ function splitViz(L) {
       <div class="bx-row big"><span>Breach</span><b>${L.X ? pct + '%' : '—'}</b></div>
     </div>
     <div class="sv" aria-hidden="true">
-      <div class="sv-track"><i class="sv-mark" style="left:${pos}%"></i></div>
+      <div class="sv-track"><i class="sv-mark" style="left:calc(${pos}% - ${(pos / 50).toFixed(2)}px)"></i></div>
       <div class="sv-ticks"><span>0% breach<small>Def ${lo} · Atk ${100 - lo}</small></span><span>${cap / 2}%<small>50 / 50</small></span><span>${cap}%+<small>Def ${hi} · Atk ${100 - hi}</small></span></div>
     </div>
     <p class="fml">${L.X
@@ -3293,7 +3344,7 @@ ovGuide.addEventListener('click', e => { if (e.target === ovGuide) closeGuide();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 11; // 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 12; // 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, // n: waves in the match
@@ -3311,7 +3362,6 @@ const peerReadyNow = () => { const P = NET.peer, s = real(); return !!(P && s &&
 /* ---------- plan and result encoding (compact, and validated on the way in) ---------- */
 const q36 = x => clamp(Math.round(x * 1295), 0, 1295).toString(36).padStart(2, '0');
 const int = (v, lo, hi, d = lo) => (Number.isFinite(+v) ? clamp(Math.round(+v), lo, hi) : d);
-const RES_KEYS = Object.keys(RESIST);
 function encodeGrid(G) {
   const w = [], f = [], t = [];
   G.forEach((g, i) => {
@@ -3346,7 +3396,7 @@ const cleanName = s => String(s || '').replace(/[^\p{L}\p{N} '.-]/gu, '').trim()
 function encodeArmy(ds, withPos) {
   return ds.map(d => {
     const pos = withPos && d.tl.pos && d.tl.pos.length === d.count ? d.tl.pos.map(q36).join('') : '';
-    return [cleanName(d.name), Math.max(0, COLORS.indexOf(d.color)), d.hp, d.speed, d.armor, d.regen, Math.max(0, RES_KEYS.indexOf(d.resist)), d.count, Math.round(d.tl.s * 1295), Math.round(d.tl.e * 1295), pos.length <= 1000 ? pos : ''];
+    return [cleanName(d.name), Math.max(0, COLORS.indexOf(d.color)), d.hp, d.speed, d.armor, d.regen, resMask(d.resist), d.count, Math.round(d.tl.s * 1295), Math.round(d.tl.e * 1295), pos.length <= 1000 ? pos : ''];
   });
 }
 function decodeArmy(list) {
@@ -3358,7 +3408,7 @@ function decodeArmy(list) {
     return {
       name: cleanName(a[0]), color: COLORS[int(a[1], 0, COLORS.length - 1)],
       hp: int(a[2], 0, US.hp.steps.length - 1), speed: int(a[3], 0, US.speed.steps.length - 1), armor: int(a[4], 0, US.armor.steps.length - 1),
-      regen: int(a[5], 0, US.regen.steps.length - 1), resist: RES_KEYS[int(a[6], 0, RES_KEYS.length - 1)],
+      regen: int(a[5], 0, US.regen.steps.length - 1), resist: resFromMask(int(a[6], 0, (1 << RES_ORDER.length) - 1)),
       count, tl: { s, e, pos },
     };
   });
@@ -4677,9 +4727,13 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden && NE
    ===================================================================== */
 const ctxKey = { def: null, atk: null, wave: null };
 const bodyKey = { def: null, atk: null };
-// The coin bar: free coins, then what's parked, as bare segments; the numbers live in their tooltips (a hold on touch).
+// The coin bar: your free coins (v21.1: here, not in the HUD), then a bar of free and parked coins; the parts' numbers
+// live in their tooltips (a hold on touch).
 function setBudget(p, free, a, b, aLbl, bLbl) {
   const tot = free + a + b, pc = v => (tot ? (v / tot * 100) : 0) + '%', s0 = $(`#${p}-s0`), s1 = $(`#${p}-s1`), s2 = $(`#${p}-s2`);
+  putText($(`#${p}-free`), String(free));
+  const fb = $(`#${p}-fbox`), tip = `${free} free coins. Worth ${tot}: free, plus ${aLbl.toLowerCase()} ${a} and ${bLbl.toLowerCase()} ${b}, all refundable.`;
+  if (fb.dataset.tip !== tip) fb.dataset.tip = tip;
   setStyle(s0, 'width', pc(free)); setStyle(s1, 'width', pc(a)); setStyle(s2, 'width', pc(b));
   s0.dataset.tip = `Free ${free}`; s1.dataset.tip = `${aLbl} ${a}`; s2.dataset.tip = `${bLbl} ${b}`;
 }
@@ -4718,9 +4772,10 @@ function buildPanels() {
   });
   // the tower card
   el.defCtx.addEventListener('input', e => {
-    const inp = e.target.closest('input[type=range]'); if (!inp || !S.sel || S.sel.k !== 'tower') return;
-    const cell = S.sel.cell, key = inp.dataset.key, v = +inp.value;
-    if (!undoable(tuneWhat(cell), () => setTowerCfg(cell, { [key]: v }))) inp.value = S.grid[cell].cfg[key];
+    const inp = e.target.closest('input[type=range]'); if (!inp || !S.sel || S.sel.k !== 'tower' || !S.grid[S.sel.cell]) return;
+    const cell = S.sel.cell, key = inp.dataset.key, v = slIdx(inp), g = S.grid[cell];
+    if (v !== g.cfg[key] && !undoable(tuneWhat(cell), () => setTowerCfg(cell, { [key]: v }))) slHeld = null;
+    slSync(inp, TS[key], S.grid[cell] ? S.grid[cell].cfg[key] : v);
   });
   el.defCtx.addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
@@ -4746,7 +4801,7 @@ function buildPanels() {
       if (t.dataset.act === 'close') { S.sel = null; refreshUI(); return; }
       if (t.dataset.act === 'delete') { deleteDesign(i); return; }
       if (t.dataset.act === 'copy-design') { dupDesign(i); return; }
-      if (t.dataset.resist) { setDesign(i, { resist: t.dataset.resist }); return; }
+      if (t.dataset.resist) { setDesign(i, { resist: resToggle(S.designs[i].resist, t.dataset.resist) }); return; }
       if (t.dataset.color) { S.designs[i].color = t.dataset.color; refreshUI(); return; }
     }
     if (t.dataset.rm) { removeCharge(+t.dataset.rm); return; }
@@ -4773,12 +4828,17 @@ function buildPanels() {
     const i = S.sel.i;
     if (e.target.id === 'ue-name') { S.designs[i].name = cleanName(e.target.value).slice(0, 16) || 'Unit'; updateRoster(); return; }
     const inp = e.target.closest('input[type=range]'); if (!inp) return;
-    if (!setDesign(i, { [inp.dataset.key]: +inp.value })) inp.value = S.designs[i][inp.dataset.key];
+    const v = slIdx(inp), k = inp.dataset.key;
+    if (v !== S.designs[i][k] && !setDesign(i, { [k]: v })) slHeld = null;
+    slSync(inp, US[k], S.designs[i][k]);
   });
   el.atkBody.addEventListener('pointerdown', tlDown);
   el.atkBody.addEventListener('pointermove', tlMove);
   el.atkBody.addEventListener('pointerup', tlUp);
   el.atkBody.addEventListener('pointercancel', tlUp);
+  addEventListener('pointerup', tlUp, true); // a release anywhere ends a drag, even one whose pointer capture was lost
+  addEventListener('pointercancel', tlUp, true);
+  addEventListener('blur', () => { if (tlDrag) tlUp({ pointerId: tlDrag.id, type: 'pointercancel' }); });
   // the seen tower's card (knock-outs)
   el.atkCtx.addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
@@ -4808,15 +4868,37 @@ function cardRemove(cell) { const msg = undoable({}, () => removeTower(cell)); i
    One card pattern for every editable thing: a header with its name and price, the controls, and a footer with
    Remove or Delete on the left and Done on the right. Sliders are compact rows: the name, one short value and what one
    more step costs (fire rate: free); the detail is in the row's tooltip (a hold on touch), the hints under "?". */
+// A slider's position for a step index: the fire rate's runs from slow (left) to fast (right), the others as stored.
+const slUi = (def, idx) => (def.flip ? def.steps.length - 1 - idx : idx);
+// The step index a slider is at: it moves smoothly under the pointer and snaps to the nearest step on release.
+const slIdx = inp => { const n = +inp.max, v = clamp(Math.round(+inp.value), 0, n); return inp.dataset.flip ? n - v : v; };
+let slHeld = null; // the slider being dragged: not snapped or rewritten until it's let go
 function sliderHTML(prefix, key, def, idx) {
-  return `<div class="srow c" id="${prefix}-${key}-row"><label class="sname" for="${prefix}-${key}">${def.short || def.name}</label><span class="sval" id="${prefix}-${key}-v"></span><span class="snext" id="${prefix}-${key}-n"></span>
-    <input type="range" id="${prefix}-${key}" min="0" max="${def.steps.length - 1}" step="1" value="${idx}" data-key="${key}"></div>`;
+  const n = def.steps.length - 1, ui = slUi(def, idx);
+  return `<div class="srow c${ui === n ? ' maxed' : ''}" id="${prefix}-${key}-row" style="--p:${ui / n}"><label class="sname" for="${prefix}-${key}">${def.short || def.name}</label>
+    <span class="strack"><input type="range" id="${prefix}-${key}" min="0" max="${n}" step="0.01" value="${ui}" data-key="${key}"${def.flip ? ' data-flip="1"' : ''}><span class="sticks" aria-hidden="true">${'<i></i>'.repeat(n + 1)}</span></span>
+    <span class="sval" id="${prefix}-${key}-v"></span><span class="snext" id="${prefix}-${key}-n"></span></div>`;
+}
+// Put a slider on its step (unless it's being dragged), fill its track to there, and glow when it's at the top.
+function slSync(inp, def, idx) {
+  const n = def.steps.length - 1, ui = slUi(def, idx), row = inp.closest('.srow');
+  if (slHeld !== inp && Math.abs(+inp.value - ui) > 1e-6) inp.value = ui;
+  if (!row) return;
+  const p = String((slHeld === inp ? clamp(+inp.value, 0, n) : ui) / n);
+  if (row.style.getPropertyValue('--p') !== p) row.style.setProperty('--p', p);
+  const top = ui === n;
+  if (top !== row.classList.contains('maxed')) {
+    row.classList.toggle('maxed', top);
+    if (top) { row.classList.remove('pop'); void row.offsetWidth; row.classList.add('pop'); }
+  }
+  const ticks = row.querySelectorAll('.sticks i');
+  ticks.forEach((t, k) => { const on = k <= ui; if (t.classList.contains('on') !== on) t.classList.toggle('on', on); });
 }
 // next: what one more step costs, as { text, poor }, or null at the top of the slider; tip: the row's detail.
 function setSlider(root, prefix, key, def, idx, valText, next, tip) {
   const inp = root.querySelector(`#${prefix}-${key}`);
   if (!inp) return;
-  if (+inp.value !== idx) inp.value = idx;
+  slSync(inp, def, idx);
   putText(root.querySelector(`#${prefix}-${key}-v`), valText);
   const n = root.querySelector(`#${prefix}-${key}-n`);
   if (def.free) { putText(n, 'Free'); n.className = 'snext free'; } else setNext(n, next);
@@ -4843,7 +4925,7 @@ function designStatsLine(d) {
   const bits = [`${US.hp.steps[d.hp]} HP`, `speed ${US.speed.steps[d.speed]}`];
   if (d.armor) bits.push(`armor ${US.armor.steps[d.armor]}`);
   if (d.regen) bits.push(`regen ${US.regen.steps[d.regen]}%`);
-  if (d.resist !== 'none') bits.push(`resists ${RESIST[d.resist].name.toLowerCase()}`);
+  if (resList(d.resist).length) bits.push(`resists ${resWords(d.resist)}`);
   return bits.join(' · ');
 }
 // a tower's effects as small dots in their colours (the strip, the summary, beside the board's icons)
@@ -4857,9 +4939,9 @@ const brushNow = () => (brush && brush.S === S ? brush : null);
 const placeCfg = () => (brushNow() ? { ...brushNow().cfg } : defaultTower());
 function defBodyHTML() {
   return `<div class="tstrip" id="d-tstrip" hidden></div>
-    <div class="toolwrap"><div class="toolrow">${toolBtn('wall', 'Wall', `${RULES.wall} coins`, 'Wall (W)')}${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span>', 'Tower (T)')}${toolBtn('remove', 'Remove', '&amp; inspect', 'Remove &amp; Inspect (R)')}${toolBtn('shape', 'Shapes', '<span id="d-shname"></span>', 'Shapes (S)')}
-      <button class="hbtn" data-act="maze" aria-label="Auto-maze">${ICON.maze}</button><button class="hbtn" data-act="tune" aria-label="Auto-tune towers">${ICON.tune}</button><button class="hbtn" data-act="undo" aria-label="Undo">${ICON.undo}</button></div>
+    <div class="toolwrap"><div class="toolrow">${toolBtn('wall', 'Wall', `${RULES.wall} coins`, 'Wall (W)')}${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span>', 'Tower (T)')}${toolBtn('remove', 'Remove', '&amp; inspect', 'Remove &amp; Inspect (R)')}${toolBtn('shape', 'Shapes', '<span id="d-shname"></span>', 'Shapes (S)')}</div>
     <div class="shapepop" id="d-shapes" hidden></div></div>
+    <div class="helprow"><button class="hbtn" data-act="maze" aria-label="Auto-maze">${ICON.maze}<span>Auto-maze</span></button><button class="hbtn" data-act="tune" aria-label="Auto-tune towers">${ICON.tune}<span>Auto-tune</span></button><button class="hbtn" data-act="undo" aria-label="Undo">${ICON.undo}<span>Undo</span></button></div>
     <div class="routebar" id="d-route"></div>
     <div class="intel" id="d-intel" hidden></div>
     <p class="tunemsg" id="d-help" hidden></p>
@@ -4987,7 +5069,7 @@ function renderDef() {
 // The tower card: header, presets, five compact sliders, the three effects, one stat line, and the footer.
 const towerShort = (k, c) => {
   const v = TS[k].steps[c[k]];
-  return k === 'range' ? `${v} cells` : k === 'dps' ? `${v}/s` : k === 'accuracy' ? `${v}%` : k === 'rate' ? `${v}/s · ${fmtNum(TS.dps.steps[c.dps] / v)} per hit` : v ? `${v} cells` : 'Off';
+  return k === 'range' ? `${v} cells` : k === 'dps' ? `${v}/s` : k === 'accuracy' ? `${v}%` : k === 'rate' ? `${v}/s · ${fmtNum(TS.dps.steps[c.dps] / v)}/hit` : v ? `${v} cells` : 'Off';
 };
 function towerEditorHTML(cell) {
   const g = S.grid[cell], c = g.cfg;
@@ -5062,7 +5144,7 @@ function atkBodyHTML(step) {
 }
 // A design's health, speed and armor as icon and number, never cut short ("112 · 2.3 · 6"), then regen and resist.
 const ustatsHTML = d => `<span class="us" title="Health"><i class="si">${ICON.hp}</i>${US.hp.steps[d.hp]}</span><span class="us" title="Speed, cells a second"><i class="si">${ICON.spd}</i>${US.speed.steps[d.speed]}</span><span class="us" title="Armor, blocked per hit"><i class="si">${ICON.arm}</i>${US.armor.steps[d.armor]}</span>`
-  + (d.regen ? `<span class="us x" title="Regeneration">+${US.regen.steps[d.regen]}%/s</span>` : '') + (d.resist !== 'none' ? `<span class="us x" style="color:${RESIST[d.resist].color}" title="${RESIST[d.resist].text}">${RESIST[d.resist].name}</span>` : '');
+  + (d.regen ? `<span class="us xt" title="Regeneration">+${US.regen.steps[d.regen]}%/s</span>` : '') + (resList(d.resist).length ? `<span class="us rs" title="Resists ${resWords(d.resist)}">Res${resList(d.resist).map(k => `<i style="background:${RESIST[k].color}"></i>`).join('')}</span>` : '');
 // The army: a row per design (name, price, stats, the count), and the open one's editor in place under its row.
 function rosterHTML() {
   return S.designs.map((d, i) => {
@@ -5080,7 +5162,7 @@ function designerHTML(i) {
   return `<div class="ued" id="ue">
     <div class="uname"><input id="ue-name" maxlength="16" value="${esc(d.name)}" aria-label="Design name" autocomplete="off" spellcheck="false"><span class="swatches">${COLORS.map(c => `<button class="sw" data-color="${c}" style="--sw:${c}" aria-pressed="${c === d.color}" aria-label="Colour ${c}"></button>`).join('')}</span><span class="ed-price" id="ue-pbox"><b id="ue-price"></b><small>each</small></span></div>
     <div class="sliders">${UKEYS.map(k => sliderHTML('ue', k, US[k], d[k])).join('')}</div>
-    <div class="reschips">${Object.keys(RESIST).map(k => `<button class="rchip" data-resist="${k}" aria-pressed="false">${RESIST[k].name}</button>`).join('')}</div>
+    <div class="reschips" role="group" aria-label="Resists: pick any">${Object.keys(RESIST).map(k => `<button class="rchip" data-resist="${k}" aria-pressed="false" style="--rc:${RESIST[k].color || 'var(--side)'}">${RESIST[k].name}</button>`).join('')}</div>
     <div class="card-foot"><button class="ed-remove" data-act="delete">Delete design</button><button class="mini" data-act="copy-design">Copy design</button><button class="ed-done" data-act="close">Done</button></div>
   </div>`;
 }
@@ -5111,10 +5193,10 @@ function updateDesigner(i) {
   root.querySelector('#ue-pbox').dataset.tip = formulaText(RULES.unitBase, unitParts(d), cost, 0, unitRaw(d)) + (d.count ? ` each, ${d.count * cost} for ${d.count}` : '');
   const nm = root.querySelector('#ue-name'); if (document.activeElement !== nm && nm.value !== d.name) nm.value = d.name;
   for (const b of root.querySelectorAll('[data-resist]')) {
-    const k = b.dataset.resist, st = up({ resist: k });
-    b.setAttribute('aria-pressed', d.resist === k);
-    b.classList.toggle('poor', d.resist !== k && st.poor);
-    b.dataset.tip = k === 'none' ? 'No resist' : `${RESIST[k].name} resist: ${RESIST[k].text} (×${RESIST[k].mult.toFixed(2)}).${d.resist === k ? '' : ` ${st.text} coins`}`;
+    const k = b.dataset.resist, on = k === 'none' ? d.resist === 'none' : hasRes(d.resist, k), st = up({ resist: resToggle(d.resist, k) });
+    b.setAttribute('aria-pressed', on);
+    b.classList.toggle('poor', !on && k !== 'none' && st.poor);
+    b.dataset.tip = k === 'none' ? (d.resist === 'none' ? 'No resists' : 'Clear every resist') : `${RESIST[k].name} resist: ${RESIST[k].text} (×${RESIST[k].mult.toFixed(2)}). Combine as many as you like; each multiplies the price.${on ? '' : ` ${st.text} coins`}`;
   }
 }
 // Copy design: the same stats, under a new name and colour, none in the army yet; it opens.
@@ -5126,6 +5208,9 @@ function dupDesign(i) {
   S.designs.push({ ...d, name, color: COLORS.find(c => !used.has(c)) || d.color, count: 0, tl: { ...d.tl, pos: null } });
   S.sel = { k: 'design', i: S.designs.length - 1 };
   refreshUI();
+  const row = $(`#roster .urow[data-i="${S.designs.length - 1}"]`); // the copy opens at the bottom: bring it into view
+  if (row) row.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+  toast(`Copied as ${name}. Add units with +.`, 'atk');
 }
 // The wave plan, one column: the title and How to use, the presets, the master panel, the busiest-second bars and the
 // route line, then a block per army design and per planned sabotage's sapper: its name, a spread track for when its
@@ -5542,20 +5627,30 @@ function pathMove(G, x) {
   shiftGroup(G.g, want - now);
   updateTimeline(); renderScrub();
 }
+// Pointer events can come faster than frames (a high-rate mouse, some browsers): a drag keeps only the latest position
+// and applies it once a frame, so the preview's work never piles up behind the pointer.
 function tlMove(e) {
   if (!tlDrag || e.pointerId !== tlDrag.id) return;
+  if (e.pointerType === 'mouse' && !(e.buttons & 1)) { tlUp(e); return; } // the release was lost: the drag ends here
   const D = tlDrag;
-  if (D.kind === 'path') { pathMove(D, e.clientX); return; }
-  const raw = (e.clientX - D.box.left) / D.box.width, f = clamp(raw, 0, 1); // measured at the press: reading it again after each move's changes would lay the page out every move
+  D.x = e.clientX;
+  if (!D.raf) D.raf = requestAnimationFrame(() => { D.raf = 0; if (tlDrag === D) tlApply(D); });
+}
+function tlApply(D) {
+  if (D.x == null) return;
+  if (D.kind === 'path') { pathMove(D, D.x); return; }
+  const raw = (D.x - D.box.left) / D.box.width, f = clamp(raw, 0, 1); // measured at the press: reading it again after each move's changes would lay the page out every move
   if (D.sap != null) {
     const c = S.charges.get(D.sap);
     if (c) { if (D.move) shiftGroup('s' + D.sap, D.t0 + raw - D.f0 - c.t); else c.t = f; }
     updateTimeline(); renderScrub(); return;
   }
   const d = S.designs[D.i];
+  if (!d || !d.count) return;
   if (D.kind === 'move') shiftGroup('d' + D.i, D.s0 + raw - D.f0 - d.tl.s);
   else if (D.kind === 'clip') {
-    d.tl.pos[D.k] = f;
+    if (!d.tl.pos || d.tl.pos.length !== d.count) d.tl.pos = tlPositions(d);
+    if (D.k >= 0 && D.k < d.tl.pos.length) d.tl.pos[D.k] = f;
     d.tl.s = Math.min(...d.tl.pos); d.tl.e = Math.max(...d.tl.pos);
   } else { // a knob: its own end moves, the other stays put, within the window
     if (D.kind === 's') d.tl.s = Math.min(f, d.tl.e); else d.tl.e = Math.max(f, d.tl.s);
@@ -5569,6 +5664,7 @@ function tlMove(e) {
 function tlUp(e) {
   if (!tlDrag || e.pointerId !== tlDrag.id) return;
   const D = tlDrag;
+  if (D.raf) { cancelAnimationFrame(D.raf); D.raf = 0; if (e.type === 'pointerup') { D.x = e.clientX; tlApply(D); } } // the last position counts
   tlDrag = null;
   document.body.classList.remove('dragging');
   if (timingKey() !== D.k0) fadeOut(D.before); // where everything was at T fades out
@@ -5666,7 +5762,11 @@ function renderAtk() {
   el.paneAtk.classList.toggle('drill', !!key);
   el.paneAtk.classList.toggle('editing', openI >= 0 && S.step === A_ARMY);
   renderCap();
+  // the big button goes on to the next step; Lock in is the small one beside it, and the big one on the Wave step
   el.atkNext.hidden = S.step >= A_WAVE;
+  putText(el.atkNext, S.step < A_WAVE ? `Next: ${ATK_STEPS[S.step + 1].name}` : 'Next');
+  const lockCls = S.step >= A_WAVE ? 'ready atk' : 'back';
+  if (el.atkLock.className !== lockCls) el.atkLock.className = lockCls;
   el.atkLock.textContent = S.confirmEmpty ? 'Send nothing?' : 'Lock in';
   $('#atk-test').hidden = !canTest();
   const card = $('#a-test'), r = freshTest();
@@ -5690,7 +5790,7 @@ function seenTowerHTML(cell) {
 /* ---------- wave: live breach + inspector ---------- */
 const SAP_STATE = { wait: 'Waiting to leave', go: 'On its way', done: 'Landed', miss: 'Failed: walks on and does nothing at the keep', lost: 'Shot down' };
 // "Slowed 50% · Brittle": a slowed unit takes more from every tower's next hits, unless it resists frost
-const slowText = u => (u.slowT > 0 ? `Slowed ${Math.round(u.slowF * 100)}%${u.resist !== 'frost' && RULES.brittle > 0 ? ' · Brittle' : ''}` : '');
+const slowText = u => (u.slowT > 0 ? `Slowed ${Math.round(u.slowF * 100)}%${!resOf(u).frost && RULES.brittle > 0 ? ' · Brittle' : ''}` : '');
 function unitLiveHTML(u) {
   const f = Math.max(0, u.hp / u.max), status = [];
   if (u.sap) {
@@ -5720,7 +5820,7 @@ function unitCardHTML(u) {
   return `<div class="card">
     <div class="card-head"><span class="ico" style="width:24px;height:24px">${unitSVG(d)}</span><span class="ed-title">${esc(d.name)}</span>${u.sap ? '' : `<span class="ed-price" data-tip="${formulaText(RULES.unitBase, unitParts(d), u.value, 0, unitRaw(d))}"><b>${u.value}</b><small>coins</small></span>`}</div>
     <div class="live" id="unit-live">${unitLiveHTML(u)}</div>
-    <p class="cline">${designStatsLine(d)}${d.resist !== 'none' ? ` (${RESIST[d.resist].text})` : ''}</p>
+    <p class="cline">${designStatsLine(d)}${resList(d.resist).length ? ` (${resList(d.resist).map(k => RESIST[k].text).join('; ')})` : ''}</p>
     <div class="card-foot"><span></span><button class="ed-done" data-act="close">Done</button></div>
   </div>`;
 }
@@ -5760,24 +5860,13 @@ function refreshUI() {
 const hudCache = {};
 function setText(node, key, val) { if (hudCache[key] !== val) { hudCache[key] = val; node.textContent = val; } }
 let liveTick = 0;
-/* The HUD: round, keep, the clock (tickClock) and the coins in one bar. Planning shows your own free coins big in your
-   colour and both sides' worth beside them (the opponent's free coins stay hidden); a wave, the summary and the end show
-   both sides' free coins, and after a wave the pot counts onto them over about a second ("+120", "+80"). The pot shows
-   as "Pot 260 · 30–70" while planning and as the live meter during any wave: the split the defender would get if the
-   wave ended now (keep damage so far over the army's strength), eased over about 0.3 s. Display only: it reads the
-   wave, never changes it. */
-const coinFx = { S: null, t0: 0, d0: 0, a0: 0, dg: 0, ag: 0 };
+/* The HUD: round, keep, the clock (tickClock) and the pot in one bar (v21.1: the coins live in each side's panel, not
+   here). The pot shows as "Pot 260 · 30–70" while planning and as the live tug of war during any wave: the split the
+   defender would get if the wave ended now (keep damage so far over the army's strength), eased over about 0.3 s.
+   Display only: it reads the wave, never changes it. */
 const potEase = { S: null, round: 0, share: 0.5, live: false };
-const easeOut = f => 1 - (1 - f) * (1 - f) * (1 - f);
-function coinsShown(s, now) {
-  const F = coinFx;
-  if (F.S !== s || now - F.t0 > 1100) return { d: s.dFree, a: s.aFree, fx: F.S === s && now - F.t0 < 2600 ? F : null };
-  const e = easeOut(clamp((now - F.t0) / 1000, 0, 1));
-  return { d: Math.round(F.d0 + F.dg * e), a: Math.round(F.a0 + F.ag * e), fx: F };
-}
-const putDelta = (n, v) => { const t = v ? '+' + v : ''; if (n.textContent !== t) n.textContent = t; n.classList.toggle('on', !!v); };
 function updateHUD(dt) {
-  const now = performance.now(), T = S;
+  const T = S;
   if (testing()) S = replay.live; // a test run plays on a scratch copy: the HUD keeps showing the real match
   try {
     setText(el.round, 'r', String(S.round));
@@ -5786,16 +5875,6 @@ function updateHUD(dt) {
     setText(el.keepMax, 'km', '/ ' + S.keepMax);
     setStyle(el.keepbar, 'width', (S.keep / S.keepMax * 100) + '%');
     el.keepbox.classList.toggle('low', S.keep <= S.keepMax * 0.25);
-    const own = S.phase === 'defend' || S.phase === 'attack', c = coinsShown(S, now);
-    $('#c-main').hidden = !own; $('#c-both').hidden = own;
-    setText(el.who, 'who', own ? PHASE_UI[S.phase].who : 'Coins');
-    if (own) { setText($('#v-free'), 'vf', String(S.phase === 'defend' ? S.dFree : S.aFree)); putDelta($('#v-fdelta'), 0); }
-    else {
-      setText($('#v-dfree'), 'vd', String(c.d)); setText($('#v-afree'), 'va', String(c.a));
-      putDelta($('#v-ddelta'), c.fx ? c.fx.dg : 0); putDelta($('#v-adelta'), c.fx ? c.fx.ag : 0);
-    }
-    setText(el.dworth, 'dw', String(c.fx && !own ? defWorth() - (S.dFree - c.d) : defWorth()));
-    setText(el.aworth, 'aw', String(c.fx && !own ? atkWorth() - (S.aFree - c.a) : atkWorth()));
   } finally { S = T; }
   // the wave's live numbers, and the pot
   const wave = S.phase === 'wave', settled = S.phase === 'summary' || S.phase === 'over';
@@ -5840,6 +5919,20 @@ function explain(v, cell) {
   toast(v.reason, v.block || v.gold ? 'bad' : '');
   if (v.block) flashCell(cell);
 }
+// The cards' sliders move smoothly under the pointer and snap to their step when let go; the arrow keys move a step.
+const slInput = t => t && t.matches && t.matches('.srow.c input[type=range]') ? t : null;
+document.addEventListener('pointerdown', e => { const inp = slInput(e.target); if (inp) slHeld = inp; }, true);
+function slLetGo() { if (!slHeld) return; slHeld = null; refreshUI(); }
+document.addEventListener('pointerup', slLetGo, true);
+document.addEventListener('pointercancel', slLetGo, true);
+document.addEventListener('change', e => { if (slInput(e.target)) slLetGo(); }, true);
+document.addEventListener('keydown', e => {
+  const inp = slInput(e.target); if (!inp) return;
+  const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key], n = +inp.max;
+  const v = d ? clamp(Math.round(+inp.value) + d, 0, n) : e.key === 'Home' ? 0 : e.key === 'End' ? n : null;
+  if (v == null) return;
+  e.preventDefault(); inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); refreshUI();
+});
 // Tooltips: hovering with a mouse, or holding a finger still on the thing for a moment (TIP_HOLD) on touch.
 let tipTimer = 0, tipHold = null;
 const TIP_HOLD = 450;
@@ -5852,17 +5945,33 @@ function showTip(t, text, ms = 0) {
   x = Math.max(8, Math.min(innerWidth - tw - 8, x));
   el.tip.style.left = x + 'px'; el.tip.style.top = Math.max(8, y) + 'px';
   clearTimeout(tipTimer);
+  tipSticky = ms ? performance.now() + ms : 0; // a timed line (the inspect tip, a held finger) stays its time
   if (ms) tipTimer = setTimeout(() => { if (el.tip.textContent === text) el.tip.hidden = true; }, ms);
+}
+// With a mouse a tooltip waits a moment (TIP_HOVER), and after a click none shows until the mouse moves: a click that
+// reshapes the panel would otherwise pop up the tooltip of whatever slid under a still pointer.
+const TIP_HOVER = 320;
+let tipWait = 0, tipQuiet = null, tipSticky = 0;
+function tipSoon(t) {
+  clearTimeout(tipWait);
+  if (performance.now() < tipSticky) return;
+  if (!t || !t.dataset.tip) { el.tip.hidden = true; return; }
+  if (!el.tip.hidden && el.tip.textContent === t.dataset.tip) return;
+  el.tip.hidden = true;
+  if (tipQuiet) return;
+  tipWait = setTimeout(() => { if (t.isConnected && t.matches(':hover') && t.dataset.tip) showTip(t, t.dataset.tip); }, TIP_HOVER);
 }
 document.addEventListener('pointerover', e => {
   if (e.pointerType !== 'mouse') return;
-  const t = e.target.closest && e.target.closest('[data-tip]');
-  if (!t || !t.dataset.tip) { el.tip.hidden = true; return; }
-  showTip(t, t.dataset.tip);
+  tipSoon(e.target.closest && e.target.closest('[data-tip]'));
 });
+document.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse' || !tipQuiet || Math.hypot(e.clientX - tipQuiet.x, e.clientY - tipQuiet.y) < 6) return;
+  tipQuiet = null; tipSoon(e.target.closest && e.target.closest('[data-tip]'));
+}, true);
 document.addEventListener('pointerdown', e => {
-  el.tip.hidden = true; clearTimeout(tipHold && tipHold.timer); tipHold = null;
-  if (e.pointerType === 'mouse') return;
+  el.tip.hidden = true; clearTimeout(tipHold && tipHold.timer); tipHold = null; clearTimeout(tipWait);
+  if (e.pointerType === 'mouse') { tipQuiet = { x: e.clientX, y: e.clientY }; return; }
   const t = e.target.closest && e.target.closest('[data-tip]');
   if (t && t.dataset.tip && !(e.target.closest('canvas'))) tipHold = { t, x: e.clientX, y: e.clientY, timer: setTimeout(() => showTip(t, t.dataset.tip, 2500), TIP_HOLD) };
 }, true);
@@ -6274,8 +6383,9 @@ function drawUnits(c, t) {
       if (S.sel && S.sel.k === 'unit' && S.sel.u === u) { c.beginPath(); c.arc(x, y, R * 1.25 + 0.16, 0, TAU); c.lineWidth = 0.05; c.strokeStyle = '#ffffff'; c.setLineDash([0.08, 0.06]); c.stroke(); c.setLineDash([]); }
       continue;
     }
-    if (u.resist !== 'none') {
-      c.beginPath(); c.arc(0, 0, R + 0.1, 0, TAU); c.setLineDash([0.07, 0.05]); c.lineWidth = 0.035; c.strokeStyle = RESIST[u.resist].color; c.stroke(); c.setLineDash([]);
+    const rl = u.rl || (u.rl = resList(u.resist));
+    for (let j = 0; j < rl.length; j++) {
+      c.beginPath(); c.arc(0, 0, R + 0.1, 0, TAU); c.setLineDash([0.07, 0.12 * rl.length - 0.07]); c.lineDashOffset = -0.12 * j; c.lineWidth = 0.035; c.strokeStyle = RESIST[rl[j]].color; c.stroke(); c.setLineDash([]); c.lineDashOffset = 0;
     }
     if (u.slowT > 0) { c.beginPath(); c.arc(0, 0, R + 0.05, 0, TAU); c.lineWidth = 0.05; c.strokeStyle = 'rgba(191,243,255,0.9)'; c.stroke(); }
     if (u.poisonT > 0) { c.beginPath(); c.arc(0, 0, R + 0.02, 0, TAU); c.fillStyle = 'rgba(143,227,136,0.35)'; c.fill(); }
@@ -6570,6 +6680,10 @@ function drawLabels(c, G) {
     const txt = v.ok ? (v.swap ? `SWAP WITH ${v.swap === 'tower' ? 'TOWER' : 'WALL'}` : 'MOVE TOWER \u00b7 FREE') : v.block ? 'PATH MUST STAY OPEN' : 'CAN\u2019T GO HERE';
     pill(c, sx, Math.max(4, sy - view.cs * 0.5 - 24), txt, v.ok ? '#d9f6ff' : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
   }
+  if (pv && pv.kind === 'tower' && pv.v.onWall) { // a tower on a wall: the wall goes, its coins back
+    const [x, y] = center(pv.cell), [sx, sy] = w2s(x, y);
+    pill(c, sx, Math.max(4, sy - view.cs * 0.5 - 24), pv.v.ok ? `REPLACE WALL · TOWER ${newTowerPrice()} − ${RULES.wall}` : 'NOT ENOUGH COINS', pv.v.ok ? '#d9f6ff' : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
+  }
   if (pv && (pv.kind === 'shape' || pv.kind === 'hot')) {
     const v = pv.v, name = pv.kind === 'hot' ? `PLACE ${pv.cells.length} WALL${pv.cells.length === 1 ? '' : 'S'}` : SEGMENTS[shapeSel.k].name.toUpperCase();
     const txt = v.ok ? `${name} \u00b7 ${v.cost} COINS` : v.block ? 'PATH MUST STAY OPEN' : v.gold ? `${name} \u00b7 ${v.short} COINS SHORT` : 'NOTHING TO BUILD HERE';
@@ -6636,6 +6750,16 @@ function pressDefend(cell, pt) {
     return g.t === 'wall' ? 'remove' : null;
   }
   if (tool === 'shape' && !(g && g.t === 'tower' && !nearPending(cell))) return pressShape(cell, pt);
+  if (g && g.t === 'wall' && tool === 'tower') { // a tower replaces the wall: its coins come back
+    if (pt !== 'mouse' && pending !== cell) {
+      const v = canBuild(cell, 'tower');
+      if (!v.ok) { pending = -1; explain(v, cell); return null; }
+      pending = cell; toast(`Tap again to put a tower on this wall · ${newTowerPrice()} coins, the wall’s ${RULES.wall} back`, 'def');
+      return null;
+    }
+    pending = -1; tryBuild(cell, 'tower', true);
+    return null;
+  }
   if (g) {
     pending = -1;
     if (g.t === 'tower') return 'tower'; // a tap opens its card, a drag moves it (pointerup decides)

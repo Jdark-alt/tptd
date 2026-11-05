@@ -22,7 +22,8 @@ def toast(page): return page.evaluate("() => document.querySelector('#toast').te
 def hand(page):
     page.wait_for_timeout(480); page.click('#ov-hand'); page.wait_for_timeout(60)
 def set_slider(page, sel, v):
-    page.evaluate(f"""() => {{ const i = document.querySelector('{sel}'); i.value = {v}; i.dispatchEvent(new Event('input', {{bubbles:true}})); }}""")
+    """Sets a slider to step index v (the fire rate's slider runs the other way, slow to fast: v21.1)."""
+    page.evaluate(f"""() => {{ const i = document.querySelector('{sel}'); i.value = i.dataset.flip ? +i.max - {v} : {v}; i.dispatchEvent(new Event('input', {{bubbles:true}})); i.dispatchEvent(new Event('change', {{bubbles:true}})); }}""")
 def no_terrain(page):
     """The fixed scenarios click known cells, so their matches start without rough ground or rock, and without the
     planning clock (it has checks of its own), so a slow machine never sends a plan early."""
@@ -72,8 +73,10 @@ with sync_playwright() as p:
     check(page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true' and page.is_visible('#def-steps [data-act=hints]'), 'Hints switch beside the panel title, on by default')
     hints_off(page)
     check(S(page, 'S.terrain.every(v => !v) && S.grid.every(g => !g)'), 'terrain shares at 0: a map without rough ground or rock')
-    tops = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow > *')].map(b => (b.dataset.tool || b.dataset.act) + ':' + Math.round(b.getBoundingClientRect().top))")
-    check([t.split(':')[0] for t in tops] == ['wall', 'tower', 'remove', 'shape', 'maze', 'tune', 'undo'] and len({t.split(':')[1] for t in tops}) == 1, f'v21: one tool row: Wall, Tower, Remove, Shapes, then Auto-maze, Auto-tune, Undo {tops}')
+    tops = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow > *, #def-body .helprow > *')].map(b => (b.dataset.tool || b.dataset.act) + ':' + Math.round(b.getBoundingClientRect().top))")
+    rows = [t.split(':')[1] for t in tops]
+    check([t.split(':')[0] for t in tops] == ['wall', 'tower', 'remove', 'shape', 'maze', 'tune', 'undo'] and len(set(rows[:4])) == 1 and len(set(rows[4:])) == 1 and int(rows[4]) > int(rows[0]),
+          f'v21.1: the tool row (Wall, Tower, Remove, Shapes), and Auto-maze, Auto-tune, Undo in a row of their own under it {tops}')
     check(route_len(page) == 15 and 'under fire' not in page.inner_text('#d-route').lower(), 'route length shown; time under fire hidden with hints off')
     for r in range(0, 10): click_cell(page, 7, r)
     g0 = S(page, 'S.dFree')
@@ -90,14 +93,25 @@ with sync_playwright() as p:
     # v19 (spec test 1): a Basic tower still costs 40, and at the 100% accuracy step 64; the labels give the per-shot chance
     # v21: each slider row shows a short value; the full label is its tooltip
     tt = lambda k: page.get_attribute(f'#te-{k}-row', 'data-tip') or ''
-    check(page.inner_text('#te-price') == '40' and page.inner_text('#te-accuracy-v') == '80%' and page.inner_text('#te-rate-v') == '1/s · 18 per hit'
+    check(page.inner_text('#te-price') == '40' and page.inner_text('#te-accuracy-v') == '80%' and page.inner_text('#te-rate-v') == '1/s · 18/hit'
           and tt('accuracy').startswith('80% · 80% per shot at this fire rate') and tt('rate').startswith('1 per second · 18 per hit · 80% accurate'),
           f'a Basic tower costs 40 at 80% accuracy; short values on the rows, the detail in their tooltips ({page.inner_text("#te-accuracy-v")} / {tt("accuracy")[:40]})')
     set_slider(page, '#te-accuracy', 3)
     check(page.inner_text('#te-price') == '64' and tt('accuracy').startswith('100% · 100% per shot at this fire rate'), f'the 100% accuracy step on a Basic tower costs 64 ({page.inner_text("#te-price")})')
     set_slider(page, '#te-rate', 1)
-    check(tt('accuracy').startswith('100% · 95% per shot at this fire rate') and tt('rate').startswith('2.5 per second · 7.2 per hit · 95% accurate') and page.inner_text('#te-rate-v') == '2.5/s · 7.2 per hit',
+    check(tt('accuracy').startswith('100% · 95% per shot at this fire rate') and tt('rate').startswith('2.5 per second · 7.2 per hit · 95% accurate') and page.inner_text('#te-rate-v') == '2.5/s · 7.2/hit',
           f'fire rate shifts the per-shot accuracy ({tt("accuracy")[:40]} / {tt("rate")[:40]})')
+    check(page.evaluate("() => +document.querySelector('#te-rate').value") == 4 and S(page, f'S.grid[{idx(9,5)}].cfg.rate') == 1,
+          'v21.1: the fire rate slider runs slow to fast: 2.5 shots a second sits right of 1 a second')
+    page.evaluate("() => { const i = document.querySelector('#te-rate'); i.value = 5; i.dispatchEvent(new Event('input', {bubbles:true})); i.dispatchEvent(new Event('change', {bubbles:true})); }")
+    check(page.inner_text('#te-rate-v').startswith('4/s') and 'maxed' in page.get_attribute('#te-rate-row', 'class'), 'raising it to the right end fires fastest (4/s), and the maxed slider glows')
+    page.evaluate("() => { const i = document.querySelector('#te-rate'); i.value = 3.4; i.dispatchEvent(new Event('input', {bubbles:true})); i.dispatchEvent(new Event('change', {bubbles:true})); }")
+    check(page.inner_text('#te-rate-v').startswith('1.6/s') and page.evaluate("() => +document.querySelector('#te-rate').value") == 3, 'a slider let go between steps snaps to the nearest one')
+    w0 = page.evaluate("() => [...document.querySelectorAll('#def-ctx .strack')].map(t => Math.round(t.getBoundingClientRect().width))")
+    for v in (0, 2, 5): set_slider(page, '#te-rate', v); set_slider(page, '#te-range', v)
+    w1 = page.evaluate("() => [...document.querySelectorAll('#def-ctx .strack')].map(t => Math.round(t.getBoundingClientRect().width))")
+    check(len(set(w0)) == 1 and w0 == w1, f'every slider track has the same length, whatever the values ({w0} / {w1})')
+    set_slider(page, '#te-range', 2); set_slider(page, '#te-rate', 1)
     set_slider(page, '#te-accuracy', 1)
     check(tt('accuracy').startswith('87% · 82% per shot at this fire rate'), f'the spec’s example label: 87% · 82% per shot at 2.5/s ({tt("accuracy")[:40]})')
     set_slider(page, '#te-accuracy', 0); set_slider(page, '#te-rate', 3)
@@ -620,7 +634,7 @@ with sync_playwright() as p:
     page.goto('file://' + HARNESS); page.wait_for_timeout(400); page.evaluate('() => { window.siegeline.rules.starterPresses = 0; }')  # terrain on, but an empty board for the shape
     page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
     tops = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow > *')].map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right)]; })")
-    check(len({t for t, _ in tops}) == 1 and max(r for _, r in tops) <= 390 - 16, f'phone: the tool row (four tools, three helpers) fits one row {tops}')
+    check(len({t for t, _ in tops}) == 1 and max(r for _, r in tops) <= 390 - 16, f'phone: the tool row (four tools) fits one row {tops}')
     v0 = page.evaluate('() => [window.siegeline.view.rot, window.siegeline.view.cs]')
     page.tap('.tool[data-tool=shape]'); page.wait_for_timeout(200)
     v1 = page.evaluate('() => [window.siegeline.view.rot, window.siegeline.view.cs]')
@@ -915,7 +929,7 @@ with sync_playwright() as p:
     tools = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow .tool')].map(b => [Math.round(b.getBoundingClientRect().top), b.querySelector('.tcost').scrollWidth <= b.querySelector('.tcost').clientWidth])")
     check(len({t for t, _ in tools}) == 1 and all(fit for _, fit in tools), f'phone: the four tools in one row, "& inspect" not cut off ({tools})')
     page.tap('#def-body [data-act=maze]'); page.wait_for_function('() => !window.siegeline.mazing'); page.wait_for_timeout(50)
-    row = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow > button')].map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right)]; })")
+    row = page.evaluate("() => [...document.querySelectorAll('#def-body .helprow > button')].map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right)]; })")
     check(S(page, 'S.grid.filter(g => g && g.t === "wall").length') > 0 and len({t for t, _ in row}) == 1 and max(r for _, r in row) <= 390 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
           f'phone: Auto-maze builds, and its row fits 390 px ({row})')
     page.tap('.tool[data-tool=tower]'); x, y = xy(1, 1); page.touchscreen.tap(x, y); page.wait_for_timeout(100); page.touchscreen.tap(x, y); page.wait_for_timeout(150)
@@ -1850,8 +1864,8 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
     page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
-    clipped = page.evaluate("() => ['#coinbox', '#potbox', '.keepbox', '.roundchip', '#btn-info'].map(s => { const e = document.querySelector(s), r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= 390 && e.scrollWidth <= e.clientWidth + 1; })")
-    check(all(clipped) and page.is_visible('#v-free') and page.inner_text('#v-free') == '300', f'phone: the free coins are in the HUD and nothing there is clipped ({clipped})')
+    clipped = page.evaluate("() => ['#potbox', '.keepbox', '.roundchip', '#btn-info'].map(s => { const e = document.querySelector(s), r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= 390 && e.scrollWidth <= e.clientWidth + 1; })")
+    check(all(clipped) and page.is_visible('#d-free') and page.inner_text('#d-free') == '300' and not page.query_selector('#coinbox'), f'phone: the free coins are in the panel, not the HUD, and nothing in the HUD is clipped ({clipped})')
     page.tap('.tool[data-tool=tower]'); x, y = page.evaluate(f'() => window.siegeline.cellToClient({idx(12, 8)})'); page.touchscreen.tap(x, y); page.wait_for_timeout(100); page.touchscreen.tap(x, y); page.wait_for_timeout(600)
     sheet = page.locator('#def-ctx').bounding_box()
     check(inview(CARD, 390, 844) and noscroll('#def-ctx') and sheet['height'] <= 844 * 0.55, f'phone: the tower card is a half-height sheet with every control in view and nothing to scroll ({sheet["height"]:.0f} px)')
@@ -1863,6 +1877,98 @@ with sync_playwright() as p:
     check(inview(UE, 390, 844), 'phone: the unit row editor has every control in view')
     page.screenshot(path=f'{OUT}/v21_phone_unit.png')
     check(not errors, f'v21 phone UI: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v21.1: the user's fixes: a tower on a wall, several resists, Next as the attacker's main button, the HUD
+    # without coins, the summary's Details at a laptop's height, the slider tracks, and the clock's last 30 seconds
+    ctx = b.new_context(viewport={'width': 1280, 'height': 720})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + INTERNALS); page.wait_for_timeout(400); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); page.wait_for_timeout(500); hand(page); hints_off(page)
+    check(not page.query_selector('#coinbox') and page.inner_text('#d-free') == '300' and page.is_visible('#potbox') and page.is_visible('#keepbox'),
+          'the HUD shows the round, the keep, the clock and the pot, no coins; the free coins are in the panel')
+    page.click('.tool[data-tool=wall]'); click_cell(page, 5, 3); click_cell(page, 6, 3)
+    L0, f0 = route_len(page), S(page, 'S.dFree')
+    page.click('.tool[data-tool=tower]'); click_cell(page, 5, 3); page.wait_for_timeout(100)
+    g = S(page, f'S.grid[{idx(5,3)}] && [S.grid[{idx(5,3)}].t, S.grid[{idx(5,3)}].fresh]')
+    check(g == ['tower', True] and S(page, 'S.dFree') == f0 + 5 - 40 and route_len(page) == L0, f'the Tower tool on a wall replaces it: the wall’s 5 come back, a 40-coin tower goes up, the route is unchanged ({g}, {f0} → {S(page, "S.dFree")})')
+    if page.is_visible('#def-ctx [data-act=close]'): page.click('#def-ctx [data-act=close]')
+    page.keyboard.press('Control+z'); page.wait_for_timeout(100)
+    check(S(page, f'S.grid[{idx(5,3)}].t') == 'wall' and S(page, 'S.dFree') == f0, 'one Undo puts the wall back and the coins with it')
+    page.evaluate('() => { window.siegeline.state.dFree = 30; window.siegeline.refresh(); }')
+    page.click('.tool[data-tool=tower]'); click_cell(page, 6, 3); page.wait_for_timeout(100)
+    check(S(page, f'S.grid[{idx(6,3)}].t') == 'wall' and 'with the wall’s 5 back' in toast(page), f'without the coins (30 + the wall’s 5 against 50) the wall stays, and the message counts the refund ({toast(page)})')
+    page.evaluate('() => { window.siegeline.state.dFree = 300; window.siegeline.refresh(); }')
+    page.click('#def-lock'); hand(page)
+    # the attacker's footer: Next is the main button on Army and Sabotage, Lock in the small one beside it
+    cls = lambda sel: page.get_attribute(sel, 'class') or ''
+    check('ready' in cls('#atk-next') and page.inner_text('#atk-next').lower() == 'next: sabotage' and 'back' in cls('#atk-lock')
+          and page.locator('#atk-next').bounding_box()['width'] > page.locator('#atk-lock').bounding_box()['width'], 'Army: the main button is Next: Sabotage, Lock in the small one beside it')
+    # several resists on one design, each multiplying the price
+    page.click('#roster .rpick[data-i="1"]'); page.wait_for_timeout(150)
+    hd = lambda: page.locator('#roster .urow[data-i="1"] .uhead').bounding_box()['height']
+    h0, costs = hd(), [page.inner_text('#u1-cost')]
+    for k in ('splash', 'shock', 'frost'): page.click(f'#roster [data-resist={k}]'); costs.append(page.inner_text('#u1-cost'))
+    res = S(page, 'S.designs[1].resist')
+    check(res == 'splash+frost+shock' and costs == ['35 each', '46 each', '59 each', '87 each'], f'a design takes several resists, each ×1.3 on the price (the big-unit surcharge past 60): {res} {costs}')
+    pressed = page.evaluate("() => [...document.querySelectorAll('#roster [data-resist]')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.resist)")
+    check(sorted(pressed) == ['frost', 'shock', 'splash'] and page.locator('#roster .urow[data-i="1"] .us.rs i').count() == 3 and abs(hd() - h0) < 1,
+          f'the editor shows the three pressed; the row shows one Res pill with a dot each, and doesn’t grow ({pressed}, {h0:.0f} → {hd():.0f} px)')
+    check(page.evaluate('() => window.siegeline.encodeArmy(window.siegeline.state.designs)[1][6]') == 1 + 4 + 8, 'an army encodes its resists as a bitmask (splash 1, poison 2, frost 4, shock 8)')
+    page.click('#roster [data-resist=frost]')
+    check(S(page, 'S.designs[1].resist') == 'splash+shock', 'a pressed resist toggles off on its own')
+    page.click('#roster [data-act=copy-design]'); page.wait_for_timeout(500)
+    check(S(page, 'S.designs.length') == 4 and S(page, 'S.designs[3].resist') == 'splash+shock' and page.evaluate("() => { const r = document.querySelector('#roster .urow[data-i=\"3\"]').getBoundingClientRect(), s = document.querySelector('#pane-atk .scroll').getBoundingClientRect(); return r.top >= s.top - 1 && r.top < s.bottom; }"),
+          'Copy design copies the resists and brings the copy into view')
+    page.click('#roster [data-act=close]'); page.click('#roster .step.plus[data-i="1"]'); page.click('#roster .step.plus[data-i="1"]')
+    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(200)
+    check(page.is_hidden('#atk-next') and 'ready' in cls('#atk-lock'), 'Wave: Lock in is the main button')
+    page.click('#atk-lock'); hand(page)
+    rs = page.evaluate('() => { const I = window.siegeline._i, u = window.siegeline.state.units.find(u => u.di === 1); return u ? [!!u.rs.splash, !!u.rs.shock, !!u.rs.frost] : null; }')
+    page.evaluate('() => window.siegeline.advance(4)')
+    rs = rs or page.evaluate('() => { const u = window.siegeline.state.units.find(u => u.di === 1); return u ? [!!u.rs.splash, !!u.rs.shock, !!u.rs.frost] : null; }')
+    check(rs == [True, True, False], f'in the wave the unit resists splash and shock, not frost ({rs})')
+    advance_until(page, 'S.phase === "summary"')
+    page.wait_for_timeout(400)
+    hs = "() => [...document.querySelectorAll('#sum-body > *')].filter(e => e.offsetParent && !e.classList.contains('det')).map(e => Math.round(e.getBoundingClientRect().height))"
+    h_closed = page.evaluate(hs); details(page); page.wait_for_timeout(300); h_open = page.evaluate(hs)
+    sq = [f'{a}→{b}' for a, b in zip(h_closed, h_open) if b < a]
+    nb, tog = page.locator('#sum-next').bounding_box(), page.locator('#ov-sum [data-act=details]').bounding_box()
+    check(not sq and tog['height'] >= 26 and nb['y'] + nb['height'] <= 720, f'at 1280×720 the opened Details squash nothing (the toggle {tog["height"]:.0f} px) and Start round stays in view ({sq})')
+    check(not errors, f'v21.1 fixes: no errors {errors[:3]}')
+    ctx.close()
+
+    # units with several resists, hit by hit: frost and shock together
+    ctx = b.new_context(); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + INTERNALS); page.wait_for_timeout(300)
+    fx = page.evaluate('''() => { const I = window.siegeline._i; I.S = I.newState(); const S = I.S;
+      const D = o => ({ name: 'T', color: '#ffb547', hp: 9, speed: 3, armor: 0, regen: 0, resist: 'none', count: 1, tl: { s: 0, e: 0, pos: null }, ...o });
+      S.sentArmy = [D({ resist: 'frost+shock' }), D({ resist: 'splash+poison' })];
+      const T = cfg => ({ t: 'tower', cfg: { range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: false, ...cfg }, dealt: 0 });
+      const u = I.makeUnit(0, 0, 0); I.strike(u, 10, 'direct', T({ slow: true })); let h = u.hp; I.strike(u, 10, 'direct', T({})); const out = { slow: u.slowF, next: h - u.hp };
+      h = u.hp; I.strike(u, 100, 'chain', T({ chain: true })); out.chain = h - u.hp;
+      const v = I.makeUnit(1, 0, 0); h = v.hp; I.strike(v, 100, 'splash', T({ splash: 1 })); out.splash = h - v.hp; I.strike(v, 10, 'direct', T({ poison: true })); out.pois = v.poisonDps;
+      return out; }''')
+    check(abs(fx['slow'] - 0.2) < 1e-9 and abs(fx['next'] - 10) < 1e-9 and abs(fx['chain'] - 40) < 1e-9, f'frost + shock: slowed 20% and never brittle, and chain hits 60% weaker ({fx})')
+    check(abs(fx['splash'] - 40) < 1e-9 and abs(fx['pois'] - 10 * 0.6 / 3 * 0.4) < 1e-9, f'splash + poison: both resists work on one unit ({fx})')
+    check(not errors, f'v21.1 resists: no errors {errors[:3]}')
+    ctx.close()
+
+    # the clock's last 30 seconds: it grows and turns red, and the last 10 count down over the board too
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); page.evaluate('() => { const r = window.siegeline.rules; r.roughShare = 0; r.rockShare = 0; r.starterPresses = 0; r.planSecsFirst = 33; }')
+    page.click('#info-go'); page.click('#mode-local'); page.wait_for_timeout(500); hand(page)
+    fs0 = page.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#t-clock')).fontSize)")
+    check('low' not in (page.get_attribute('#clockbox', 'class') or '') and page.is_hidden('#clockbig'), 'with 33 s left the clock is its usual size')
+    page.wait_for_function("() => document.querySelector('#clockbox').classList.contains('low')", timeout=20000); page.wait_for_timeout(500)
+    fs1 = page.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#t-clock')).fontSize)")
+    check(fs1 >= fs0 * 1.5 and page.is_hidden('#clockbig'), f'at 30 s it grows ({fs0:.0f} → {fs1:.0f} px) and turns red')
+    page.wait_for_function("() => !document.querySelector('#clockbig').hidden", timeout=30000)
+    check('last' in page.get_attribute('#clockbox', 'class') and page.inner_text('#clockbig-v').startswith('0:'), f'the last 10 seconds also count down over the board ({page.inner_text("#clockbig-v")})')
+    check(not errors, f'v21.1 clock: no errors {errors[:3]}')
     ctx.close()
     b.close()
 
