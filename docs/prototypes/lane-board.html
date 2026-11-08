@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lane Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">
+<style>
+/* Layout: left = map, Play, zone strip and runs; right = releases with the selected group's tools, then the selected zone. */
+:root {
+  color-scheme: dark;
+  --bg: #090d12; --panel: #10161e; --panel-2: #161f29; --line: #223040; --line-2: #31455a;
+  --fg: #dde6ee; --muted: #8a9aa8; --dim: #5a6976;
+  --atk: #ff8a3d; --def: #4fd6ee; --bad: #ff5a4f; --good: #6fdc8c; --sap: #c9a7ff; --zone: #ff6a4d;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --sans: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--sans); font-size: 15px; line-height: 1.4; }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 14px 20px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+h1 { margin: 0; font: 700 20px var(--mono); letter-spacing: .06em; }
+.hr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.big { font: 700 34px/1 var(--mono); color: var(--atk); font-variant-numeric: tabular-nums; }
+.lbl { font: 500 10px var(--mono); letter-spacing: .14em; color: var(--muted); }
+.sub { display: grid; line-height: 1.5; }
+.sub b { font: 500 12px var(--mono); color: var(--fg); }
+button { font: 500 12px var(--mono); letter-spacing: .04em; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 6px; padding: 7px 11px; cursor: pointer; white-space: nowrap; }
+button:hover:not(:disabled) { border-color: var(--atk); }
+button.on { border-color: var(--atk); color: var(--atk); }
+button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--atk); outline-offset: 2px; }
+button:disabled { opacity: .35; cursor: default; }
+button.accent { border-color: var(--atk); color: var(--atk); }
+#m-o { width: 150px; } #m-z { width: 72px; }
+select { max-width: 190px; font: 12px var(--mono); color: var(--fg); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 8px; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 16px; align-items: start; }
+@media (max-width: 1120px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.ph-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+canvas { display: block; width: 100%; border-radius: 6px; }
+#map { aspect-ratio: 16 / 11; width: min(100%, calc((100vh - 500px) * 16 / 11)); min-width: min(100%, 440px); margin-inline: auto; }
+.clock { display: flex; align-items: center; gap: 14px; }
+.play { font: 700 15px var(--mono); letter-spacing: .1em; background: var(--atk); color: #1a0d03; border: none; border-radius: 8px; padding: 12px 22px; position: relative; }
+.play:hover:not(:disabled) { filter: brightness(1.08); border: none; }
+.play.pulse::after { content: ""; position: absolute; inset: -5px; border-radius: 11px; border: 2px solid var(--atk); animation: ring 1.6s ease-out infinite; }
+@keyframes ring { from { transform: scale(1); opacity: .6 } to { transform: scale(1.12); opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { .play.pulse::after { animation: none; } }
+.clock input { flex: 1; min-width: 0; accent-color: var(--atk); }
+.tt { font: 500 14px var(--mono); color: var(--muted); min-width: 58px; text-align: right; font-variant-numeric: tabular-nums; }
+.runs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.run { font: 12px var(--mono); padding: 4px 8px; border-radius: 5px; border: 1px solid var(--line-2); background: var(--panel-2); cursor: pointer; font-variant-numeric: tabular-nums; }
+.run.cmp { border-color: var(--fg); }
+.run.auto { border-style: dashed; color: var(--muted); cursor: default; }
+.run.best { color: var(--good); }
+.lens { font: 12px var(--mono); color: var(--muted); min-height: 18px; }
+/* releases */
+.axis { position: relative; height: 14px; margin-left: 24px; font: 10px var(--mono); color: var(--dim); }
+.axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.axis span:first-child { transform: none; } .axis span:last-child { transform: translateX(-100%); color: var(--atk); }
+.rows { display: grid; gap: 2px; }
+.grp { display: grid; grid-template-columns: 18px minmax(0, 1fr); column-gap: 6px; row-gap: 4px; padding: 4px 6px 6px 2px; border: 1px solid transparent; border-radius: 8px; }
+.grp.sel { border-color: var(--atk); background: rgba(255,138,61,.07); }
+.grp.sel .rh { color: var(--atk); }
+.tools-h { display: flex; align-items: center; gap: 8px; font: 500 10px var(--mono); letter-spacing: .14em; color: var(--atk); }
+.tools-h b { font: 600 14px var(--sans); letter-spacing: 0; color: var(--fg); }
+.grp.dragging { opacity: .6; }
+.hdl { grid-row: span 2; align-self: stretch; display: grid; place-items: center; color: var(--dim); cursor: grab; border-radius: 4px; touch-action: none; user-select: none; }
+.hdl:hover { color: var(--fg); background: var(--panel-2); }
+.rh { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; }
+.rh small { font: 11px var(--mono); color: var(--muted); font-weight: 400; }
+.rh .res { margin-left: auto; font: 11px var(--mono); color: var(--muted); font-weight: 400; }
+.rh .res .lost { color: var(--bad); }
+.sw { width: 11px; height: 11px; border-radius: 50%; flex: none; display: inline-block; }
+.sw.dia { border-radius: 2px; transform: rotate(45deg) scale(.85); }
+.track { position: relative; height: 26px; background: #0c1218; border: 1px solid var(--line); border-radius: 6px; touch-action: none; cursor: pointer; }
+.grp.sel .track { border-color: var(--line-2); background: #0e151c; }
+.tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,.04); }
+.tick.m { background: rgba(255,255,255,.09); }
+.gate { position: absolute; right: -1px; top: -3px; bottom: -3px; width: 3px; background: var(--atk); border-radius: 1px; }
+.bar, .ghost { position: absolute; top: 5px; bottom: 5px; border-radius: 5px; }
+.bar { cursor: grab; background: color-mix(in srgb, var(--c) 22%, transparent); border: 1.5px solid var(--c); }
+.grp.sel .bar { border-width: 2px; }
+.bar .h { position: absolute; top: -4px; bottom: -4px; width: 10px; cursor: ew-resize; }
+.bar .h.l { left: -6px; } .bar .h.r { right: -6px; }
+.ghost { border: 1.5px dashed var(--c); opacity: .45; pointer-events: none; }
+.dot { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--c); cursor: ew-resize; z-index: 2; border: 1.5px solid #0c1218; }
+.dot.dia { border-radius: 2px; transform: rotate(45deg); width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+.dot:hover, .dot.lens { width: 12px; height: 12px; margin: -6px 0 0 -6px; border-color: #fff; }
+.dot.dead { box-shadow: inset 0 0 0 2px #0c1218; opacity: .55; }
+.ph { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--fg); pointer-events: none; z-index: 3; }
+.tools { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--atk); border-radius: 8px; background: var(--panel-2); }
+.tool { display: grid; grid-template-columns: 74px minmax(0, 1fr); align-items: center; gap: 10px; }
+.tool > span { font: 500 10px var(--mono); letter-spacing: .12em; color: var(--muted); }
+.seg { display: flex; flex-wrap: wrap; gap: 5px; }
+.seg button { font-size: 11px; padding: 5px 9px; background: #0f161e; }
+.dens { display: flex; align-items: center; gap: 8px; font: 10px var(--mono); color: var(--muted); }
+.dens input { flex: 1; min-width: 0; accent-color: var(--atk); }
+.note { font: 12px var(--mono); color: var(--muted); }
+.note.warn { color: var(--bad); }
+.log { display: grid; gap: 6px; border: 1px solid var(--atk); border-radius: 8px; padding: 12px 14px; background: rgba(255,138,61,.05); }
+.log h4 { margin: 0; font: 600 15px var(--sans); }
+.log .d { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.log .d b { color: var(--good); font-weight: 500; } .log .d i { color: var(--bad); font-style: normal; }
+.log ol { margin: 0; padding-left: 20px; display: grid; gap: 2px; font-size: 14px; }
+#log:empty { display: none; }
+/* zone strip */
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 760px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.zc { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.zc:hover { border-color: var(--line-2); }
+.zc.sel { border-color: var(--zone); }
+.zc.locked { box-shadow: inset 0 0 0 1px var(--def); }
+.zc .t1 { display: flex; align-items: center; gap: 6px; }
+.zid { font: 700 13px var(--mono); color: var(--zone); }
+.gl { font: 14px var(--mono); color: var(--fg); letter-spacing: .1em; }
+.lk { margin-left: auto; font: 10px var(--mono); color: var(--def); letter-spacing: .1em; }
+.zc .t2 { display: flex; align-items: center; gap: 8px; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.stars { color: var(--atk); letter-spacing: 2px; font-size: 13px; }
+.stars .o { color: var(--line-2); }
+.k { color: var(--bad); font-weight: 700; } .k.none { color: var(--dim); font-weight: 400; }
+.dl { font-size: 11px; } .dl.up { color: var(--good); } .dl.down { color: var(--bad); }
+/* zone card */
+.scorebox { gap: 10px; }
+.sc1 { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.sc1 .big { font-size: 40px; }
+.sc2 { display: flex; gap: 8px; }
+.sc2 .accent { flex: 1; padding: 10px; font-weight: 700; letter-spacing: .08em; }
+.info { width: 38px; padding: 0; font-weight: 700; }
+.how { margin: 0; font-size: 14px; color: var(--muted); max-width: 60ch; }
+.ghostkey { font: 10px var(--mono); color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.ghostkey i { width: 18px; height: 9px; border: 1.5px dashed var(--muted); border-radius: 3px; display: inline-block; }
+.zcard { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 10px 20px; align-items: start; padding: 14px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+.zcard .full { grid-column: 1 / -1; }
+@media (max-width: 700px) { .zcard { grid-template-columns: minmax(0, 1fr); } }
+.zcol { display: grid; gap: 8px; align-content: start; }
+.lr { width: 100%; border-collapse: collapse; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.lr td { padding: 4px 6px 4px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.lr tr:first-child td { border-top: 0; }
+.lr tr.on td { color: var(--fg); } .lr tr:not(.on) td { color: var(--muted); }
+.lr td.zid { width: 28px; } .lr td.num { text-align: right; white-space: nowrap; }
+.dd { display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; white-space: nowrap; }
+.dd .sw { width: 8px; height: 8px; }
+.lr .none { color: var(--dim); }
+.presets { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.presets button { font-size: 11px; padding: 5px 9px; }
+.zcard h3 { margin: 0; display: flex; align-items: center; gap: 10px; font: 600 16px var(--sans); }
+.zline { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; font-size: 15px; }
+.zline > span:first-child { font: 500 10px var(--mono); letter-spacing: .12em; color: var(--muted); padding-top: 3px; }
+.zline .beat { color: var(--good); }
+.zacts { display: flex; gap: 8px; flex-wrap: wrap; }
+.hint { font: 12px var(--mono); color: var(--dim); }
+.badge { font: 700 11px var(--mono); letter-spacing: .1em; color: #08130b; background: var(--good); padding: 4px 8px; border-radius: 4px; }
+.flash { animation: fl 1.2s ease-out; }
+@keyframes fl { 0% { box-shadow: 0 0 0 0 rgba(111,220,140,.8) } 100% { box-shadow: 0 0 0 14px rgba(111,220,140,0) } }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>LANE BOARD</h1>
+    <div class="hr">
+      <button id="b-undo" disabled>Undo</button>
+      <button id="b-reset">Reset</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="col">
+      <section class="panel" aria-label="Map">
+        <canvas id="map" aria-label="Map: route, towers, danger zones and your wave"></canvas>
+        <div class="clock">
+          <button class="play pulse" id="b-play">▶ PLAY WAVE</button>
+          <input type="range" id="t" min="0" max="80" step="0.1" value="0" aria-label="Wave clock">
+          <span class="tt" id="tt">0.0 s</span>
+        </div>
+        <div class="strip" id="strip"></div>
+        <div class="zcard" id="zcard" aria-label="Zone"></div>
+        <div class="runs" id="runs"></div>
+      </section>
+    </div>
+
+    <aside class="col">
+      <section class="panel scorebox" aria-label="Result">
+        <div class="sc1"><span class="big" id="big">--</span><span class="sub"><span class="lbl">GETS THROUGH</span><b id="units">--</b></span><span class="badge" id="beat" hidden>BEATS AUTO</span></div>
+        <div class="sc2"><button class="accent" id="b-auto">Auto-sequence</button><button class="info" id="b-how" aria-expanded="false" aria-label="How Auto-sequence works">?</button></div>
+        <p class="how" id="how" hidden>Auto tries one small change at a time on your current plan: a group earlier or later, tighter, looser, in pulses, or leading, and the sapper inside a group. It keeps whichever change gets the most units through, then repeats, up to 4 changes. It never splits groups or times anything to a single zone, so a careful plan can beat it.</p>
+      </section>
+      <section class="panel" aria-label="Releases">
+        <div class="ph-h"><span class="lbl">RELEASES</span><span class="lbl" id="rkey">CLOSER TO THE GATE = LEAVES SOONER</span></div>
+        <div class="presets"><span class="lbl">ALL GROUPS</span><button data-g="even">Even</button><button data-g="seq">One after another</button><button data-g="rush">All at once</button></div>
+        <div class="axis" id="axis"></div>
+        <div class="rows" id="rows"></div>
+        <div class="tools" id="tools"></div>
+      </section>
+      <div id="log"></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+// Wave-plan prototype simulation on a stand-in map. Deterministic: fixed step, no randomness.
+// A group is { id, design, pos: [release times in seconds, 0-20] }. The attacker only decides those times.
+const COLS = 16, ROWS = 11, STEP = 0.05, TMAX = 90, SNAP = 0.1, GATE = 20;
+const CORNERS = [[0, 5], [2, 5], [2, 1], [5, 1], [5, 9], [8, 9], [8, 1], [11, 1], [11, 9], [14, 9], [14, 5], [15, 5]];
+const PATH = (() => {
+  const p = [];
+  for (let k = 0; k < CORNERS.length - 1; k++) {
+    const [ax, ay] = CORNERS[k], [bx, by] = CORNERS[k + 1], n = Math.abs(bx - ax) + Math.abs(by - ay);
+    for (let j = 0; j < n; j++) p.push([ax + Math.sign(bx - ax) * j, ay + Math.sign(by - ay) * j]);
+  }
+  p.push(CORNERS[CORNERS.length - 1]);
+  return p;
+})();
+const LEN = PATH.length - 1;
+function at(d) {
+  const c = Math.max(0, Math.min(LEN, d)), i = Math.min(LEN - 1, Math.floor(c)), f = c - i, a = PATH[i], b = PATH[i + 1];
+  return { x: a[0] + 0.5 + (b[0] - a[0]) * f, y: a[1] + 0.5 + (b[1] - a[1]) * f, dx: b[0] - a[0], dy: b[1] - a[1] };
+}
+const DESIGNS = {
+  brute: { name: 'Brute', plural: 'Brutes', hp: 375, speed: 0.9, armor: 3, cost: 35, color: '#ff7b36', r: 0.24 },
+  swarm: { name: 'Swarm', plural: 'Swarm', hp: 50, speed: 1.6, armor: 0, cost: 6, color: '#ffc04d', r: 0.13 },
+  runner: { name: 'Runner', plural: 'Runners', hp: 112, speed: 2.3, armor: 0, cost: 20, color: '#ff6fa8', r: 0.17 },
+  sapper: { name: 'Sapper', plural: 'Sapper', hp: 112, speed: 1.6, armor: 0, cost: 0, color: '#c9a7ff', r: 0.2, sap: true },
+};
+const TOWERS = [
+  { id: 'T1', kind: 'Splash', x: 3, y: 3, range: 1.7, dps: 9, rate: 1.2, splash: 1.1, frost: true },
+  { id: 'T2', kind: 'Basic', x: 3, y: 7, range: 2.2, dps: 9, rate: 2 },
+  { id: 'T3', kind: 'Heavy', x: 6, y: 5, range: 1.6, dps: 22, rate: 0.6 },
+  { id: 'T4', kind: 'Chain', x: 9, y: 4, range: 2.1, dps: 8, rate: 1.5, chain: true },
+  { id: 'T5', kind: 'Chain', x: 10, y: 7, range: 1.6, dps: 7, rate: 1.5, chain: true },
+  { id: 'T6', kind: 'Heavy', x: 13, y: 6, range: 2.2, dps: 18, rate: 0.6 },
+];
+const RULES = { armorFloor: 0.2, frostSlow: 0.5, frostSecs: 2.5, brittle: 0.2, chainReach: 1.6, chainFall: [0.7, 0.5, 0.35] };
+const SAP_TARGET = 'T3';
+const dist2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+
+function simulate(groups, opts = {}) {
+  const U = [];
+  for (const g of groups) {
+    const D = DESIGNS[g.design];
+    g.pos.forEach(t0 => U.push({ group: g.id, design: g.design, t0, d: 0, out: false, hp: D.hp, max: D.hp, speed: D.speed, armor: D.armor, cost: D.cost, sap: !!D.sap,
+      slowT: 0, dead: false, gone: false, carried: 0, deathT: null, deathD: null, by: null, slowed: false }));
+  }
+  const T = TOWERS.map(t => ({ ...t, cx: t.x + 0.5, cy: t.y + 0.5, cd: 0, off: false, offAt: null, kills: {}, busy: 0, firstIn: null, lastIn: null,
+    shots: {}, blasts: 0, blastHits: 0, jumps: {}, slowedN: 0, dealt: 0 }));
+  const frames = opts.record ? [] : null;
+  const live = u => u.out && !u.dead && !u.gone;
+  const hit = (u, dmg, kind, tw, t) => {
+    if (!live(u)) return;
+    let d = dmg;
+    if (kind !== 'chain') d = Math.max(d * RULES.armorFloor, d - u.armor);
+    if (u.slowT > 0) d *= 1 + RULES.brittle;
+    tw.dealt += Math.min(d, u.hp);
+    u.hp -= d;
+    if (tw.frost) { if (u.slowT <= 0) tw.slowedN++; u.slowT = RULES.frostSecs; u.slowed = true; }
+    if (u.hp <= 0) { u.hp = 0; u.dead = true; u.deathT = t; u.deathD = u.d; u.by = tw.id; tw.kills[u.design] = (tw.kills[u.design] || 0) + 1; }
+  };
+  const rec = t => frames.push({ t, u: U.map(u => (live(u) ? [u.d, u.hp / u.max, u.slowT > 0 ? 1 : 0] : null)), off: T.map(x => x.off) });
+  let t = 0, next = 0;
+  if (frames) { rec(0); next = SNAP; }
+  while (t < TMAX - 1e-9) {
+    t += STEP;
+    for (const u of U) {
+      if (u.dead || u.gone) continue;
+      if (!u.out) { if (t >= u.t0) u.out = true; else continue; }
+      u.slowT = Math.max(0, u.slowT - STEP);
+      u.d += u.speed * (u.slowT > 0 ? 1 - RULES.frostSlow : 1) * STEP;
+      u.p = at(u.d);
+      if (u.sap) {
+        const tg = T.find(x => x.id === SAP_TARGET);
+        if (!tg.off && dist2(u.p, { x: tg.cx, y: tg.cy }) <= tg.range ** 2) { tg.off = true; tg.offAt = t; u.gone = true; u.sapDone = true; continue; }
+      }
+      if (u.d >= LEN) { u.gone = true; if (!u.sap) u.carried = u.cost * u.hp / u.max; }
+    }
+    for (const tw of T) {
+      tw.cd = Math.max(-1, tw.cd - STEP);
+      if (tw.off) continue;
+      let best = null; const c = { x: tw.cx, y: tw.cy };
+      for (const u of U) if (live(u) && dist2(u.p, c) <= tw.range ** 2 && (!best || u.d > best.d)) best = u;
+      if (best) { tw.busy += STEP; if (tw.firstIn == null) tw.firstIn = t; tw.lastIn = t; }
+      if (!best || tw.cd > 0) continue;
+      tw.cd = 1 / tw.rate;
+      const dmg = tw.dps / tw.rate, at0 = best.p;
+      tw.shots[best.design] = (tw.shots[best.design] || 0) + 1;
+      if (tw.splash) { let n = 0; for (const u of U) if (live(u) && dist2(u.p, at0) <= tw.splash ** 2) { n++; hit(u, dmg, 'splash', tw, t); } tw.blasts++; tw.blastHits += n; }
+      else hit(best, dmg, 'direct', tw, t);
+      if (tw.chain) {
+        const struck = new Set([best]); let px = at0;
+        for (const f of RULES.chainFall) {
+          let nb = null, nd = Infinity;
+          for (const u of U) { if (!live(u) || struck.has(u)) continue; const dd = dist2(u.p, px); if (dd <= RULES.chainReach ** 2 && dd < nd) { nd = dd; nb = u; } }
+          if (!nb) break;
+          struck.add(nb); tw.jumps[nb.design] = (tw.jumps[nb.design] || 0) + 1; hit(nb, dmg * f, 'chain', tw, t); px = nb.p;
+        }
+      }
+    }
+    if (frames && t >= next - 1e-9) { rec(t); next += SNAP; }
+    if (U.every(u => u.dead || u.gone)) { if (frames) rec(t); break; }
+  }
+  const army = U.filter(u => !u.sap), X = army.reduce((a, u) => a + u.cost, 0), Y = army.reduce((a, u) => a + u.carried, 0);
+  const sap = U.find(u => u.sap);
+  return { breach: X ? Y / X : 0, end: t, frames, through: army.filter(u => u.gone && !u.dead).length, sent: army.length,
+    deaths: U.map((u, i) => [u, i]).filter(([u]) => u.dead).map(([u, i]) => ({ i, group: u.group, design: u.design, t: u.deathT, d: u.deathD, by: u.by })),
+    towers: T.map(x => ({ id: x.id, kills: x.kills, offAt: x.offAt, busy: x.busy, span: x.firstIn == null ? 0 : x.lastIn - x.firstIn + STEP, shots: x.shots, blasts: x.blasts, blastHits: x.blastHits, jumps: x.jumps, slowedN: x.slowedN, dealt: x.dealt })),
+    sapper: sap ? (sap.sapDone ? 'landed' : sap.dead ? 'shot down' : 'missed') : null,
+    units: U.map(u => ({ group: u.group, design: u.design, t0: u.t0, dead: u.dead, deathT: u.deathT, by: u.by, sap: u.sap })) };
+}
+
+// ---------- zones: overlapping tower stretches merged, in route order ----------
+const ZONES = (() => {
+  const span = TOWERS.map(tw => {
+    let a = null, b = null;
+    for (let d = 0; d <= LEN; d += 0.25) { const p = at(d); if ((p.x - tw.x - .5) ** 2 + (p.y - tw.y - .5) ** 2 <= tw.range ** 2) { if (a == null) a = d; b = d; } }
+    return { id: tw.id, a, b };
+  }).filter(s => s.a != null).sort((x, y) => x.a - y.a);
+  const Z = [];
+  for (const s of span) { const z = Z[Z.length - 1]; if (z && s.a <= z.b + 0.5) { z.towers.push(s.id); z.b = Math.max(z.b, s.b); } else Z.push({ towers: [s.id], a: s.a, b: s.b }); }
+  return Z.map((z, k) => {
+    const tws = z.towers.map(id => TOWERS.find(t => t.id === id)), tags = [];
+    if (tws.some(t => t.splash)) tags.push('Splash');
+    if (tws.some(t => t.chain)) tags.push('Chain');
+    if (tws.some(t => !t.splash && !t.chain && t.dps / t.rate >= 25)) tags.push('Heavy');
+    if (tws.some(t => !t.splash && !t.chain && t.dps / t.rate < 25)) tags.push('Basic');
+    if (tws.some(t => t.frost)) tags.push('Frost');
+    return { id: 'Z' + (k + 1), towers: z.towers, a: z.a, b: z.b, tags };
+  });
+})();
+const inZone = (z, d) => z.towers.some(id => { const t = TOWERS.find(q => q.id === id), p = at(d); return (p.x - t.x - .5) ** 2 + (p.y - t.y - .5) ** 2 <= t.range ** 2; });
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { simulate, ZONES, inZone, PATH, LEN, TOWERS, DESIGNS, GATE, COLS, ROWS, at };
+
+// Group editing, formations, Meet, the teaching optimizer and zone diagnoses. Needs sim3.js first.
+const r1 = v => Math.round(v * 10) / 10;
+const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+const spanOf = g => [Math.min(...g.pos), Math.max(...g.pos)];
+const speedOf = g => DESIGNS[g.design].speed;
+const nameOf = (g, G) => DESIGNS[g.design].plural + (G && G.filter(x => x.design === g.design).length > 1 ? ` (${g.pos.length})` : '');
+const sortPos = g => { g.pos.sort((a, b) => a - b); return g; };
+function shiftGroup(g, dt) { const [s, e] = spanOf(g); dt = cl(dt, -s, GATE - e); g.pos = g.pos.map(t => r1(t + dt)); return g; }
+// new span keeping the pattern; the front stays put unless the end would pass 20 s
+function setSpan(g, len) {
+  const [s, e] = spanOf(g), n = g.pos.length; len = cl(len, 0, GATE);
+  let rel = e > s ? g.pos.map(t => (t - s) / (e - s)) : g.pos.map((_, k) => (n > 1 ? k / (n - 1) : 0));
+  let s2 = Math.min(s, GATE - len);
+  g.pos = rel.map(r => r1(s2 + r * len)); return sortPos(g);
+}
+function formation(g, kind) {
+  const n = g.pos.length; let [s, e] = spanOf(g);
+  if (e - s < 1) e = Math.min(GATE, s + Math.max(2, n * 0.6)), s = Math.min(s, e - Math.max(2, n * 0.6));
+  const L = e - s;
+  if (kind === 'even') g.pos = Array.from({ length: n }, (_, k) => s + (n > 1 ? L * k / (n - 1) : 0));
+  if (kind === 'front') g.pos = Array.from({ length: n }, (_, k) => s + (n > 1 ? L * (k / (n - 1)) ** 2 : 0));
+  if (kind === 'pulses') { const m = n >= 6 ? 3 : 2; g.pos = Array.from({ length: n }, (_, k) => { const c = Math.floor(k * m / n), j = k - Math.ceil(c * n / m); return s + L * (m > 1 ? c / (m - 1) : 0) + j * 0.25; }); }
+  if (kind === 'trickle') { const e2 = Math.min(GATE, Math.max(e, s + n * 1.2)); g.pos = Array.from({ length: n }, (_, k) => s + (n > 1 ? (e2 - s) * k / (n - 1) : 0)); }
+  g.pos = g.pos.map(t => r1(cl(t, 0, GATE))); return sortPos(g);
+}
+function place(g, where) { const [s, e] = spanOf(g), L = e - s; return shiftGroup(g, (where === 'lead' ? 0 : where === 'last' ? GATE - L : (GATE - L) / 2) - s); }
+function escort(g, sapT) { const [s, e] = spanOf(g), L = Math.max(e - s, 3); setSpan(g, L); const [s2] = spanOf(g); return shiftGroup(g, (sapT - 0.4 * L) - s2); }
+function split(G, g) { const a = Math.ceil(g.pos.length / 2), b = { id: 'g' + Math.random().toString(36).slice(2, 7), design: g.design, pos: g.pos.slice(a) }; g.pos = g.pos.slice(0, a); G.splice(G.indexOf(g) + 1, 0, b); return b; }
+const canMerge = (a, b) => a !== b && !DESIGNS[a.design].sap && !DESIGNS[b.design].sap && speedOf(a) === speedOf(b);
+function merge(G, a, b) { a.pos = a.pos.concat(b.pos); sortPos(a); G.splice(G.indexOf(b), 1); }
+
+// when a group's units are inside a zone, from a recorded run
+function presence(res, gid, z) {
+  let a = null, b = null;
+  for (const f of res.frames) f.u.forEach((u, i) => { if (u && res.units[i].group === gid && inZone(z, u[0])) { if (a == null) a = f.t; b = f.t; } });
+  return a == null ? null : [a, b];
+}
+const zoneEntry = z => { for (let d = 0; d <= LEN; d += 0.1) if (inZone(z, d)) return d; return 0; };
+// Meet: line up g so the middle of its time inside zone z matches the middle of other's time there.
+function meet(G, g, other, z) {
+  const res0 = simulate(G, { record: true }), po = presence(res0, other.id, z);
+  if (!po) return { ok: false, why: `${DESIGNS[other.design].plural} never reach ${z.id}` };
+  const want = (po[0] + po[1]) / 2, [s, e] = spanOf(g);
+  shiftGroup(g, want - zoneEntry(z) / speedOf(g) - (s + e) / 2);
+  for (let k = 0; k < 2; k++) { const r = simulate(G, { record: true }), p = presence(r, g.id, z); if (!p) break; shiftGroup(g, want - (p[0] + p[1]) / 2); }
+  const r = simulate(G, { record: true }), p = presence(r, g.id, z);
+  return { ok: !!p, clipped: p && Math.abs((p[0] + p[1]) / 2 - want) > 1.5 };
+}
+
+// ---------- optimizer: named moves, greedy, up to `steps` ----------
+const clone = G => G.map(g => ({ ...g, pos: g.pos.slice() }));
+function movesFor(G) {
+  const out = [];
+  G.forEach((g, i) => {
+    const n = nameOf(g, G), add = (fn, why) => { const H = clone(G); fn(H[i], H); if (JSON.stringify(H[i].pos) !== JSON.stringify(g.pos)) out.push({ G: H, why }); };
+    const [s, e] = spanOf(g);
+    add(h => shiftGroup(h, -3), `${n} leave 3 s earlier`);
+    add(h => shiftGroup(h, 3), `${n} leave 3 s later`);
+    if (g.pos.length > 1) {
+      add(h => setSpan(h, Math.max(0.5, (e - s) * 0.5)), `${n} tighter`);
+      add(h => setSpan(h, Math.max(3, (e - s) * 1.7)), `${n} looser`);
+      add(h => formation(h, 'pulses'), `${n} in pulses`);
+    }
+    add(h => place(h, 'lead'), `${n} lead the wave`);
+    if (DESIGNS[g.design].sap) G.forEach(o => { if (o !== g && !DESIGNS[o.design].sap) { const [a, b] = spanOf(o); add(h => { h.pos = [r1(a + (b - a) * 0.35)]; }, `Sapper inside the ${DESIGNS[o.design].plural}`); } });
+  });
+  return out;
+}
+function optimize(G, score, steps = 4) {
+  let cur = clone(G), curS = score(simulate(cur)); const log = [];
+  for (let k = 0; k < steps; k++) {
+    let best = null;
+    for (const m of movesFor(cur)) { const s = score(simulate(m.G)); if (s > curS + 1e-6 && (!best || s > best.s)) best = { ...m, s }; }
+    if (!best) break;
+    cur = best.G; curS = best.s; log.push(best.why);
+  }
+  return { G: cur, log };
+}
+const zoneLoss = (res, z) => res.deaths.reduce((a, d) => a + (z.towers.includes(d.by) ? (DESIGNS[d.design].cost || 20) : 0), 0);
+const scoreAll = r => r.breach;
+const scoreZone = z => r => -zoneLoss(r, z) + r.breach * 5;
+
+// ---------- diagnoses: what happened in a zone, from the run's own counts ----------
+function diagnose(res, G, z) {
+  const T = res.towers.filter(t => z.towers.includes(t.id)), out = [];
+  const kills = res.deaths.filter(d => z.towers.includes(d.by));
+  const tw = id => TOWERS.find(t => t.id === id);
+  const grpOf = design => G.filter(g => g.design === design).sort((a, b) => b.pos.length - a.pos.length)[0];
+  const P = v => Math.round(v * 100) + '%';
+  // splash: how many units each blast caught
+  const sp = T.filter(t => tw(t.id).splash), blasts = sp.reduce((a, t) => a + t.blasts, 0), hits = sp.reduce((a, t) => a + t.blastHits, 0);
+  if (blasts && hits / blasts >= 1.6) {
+    const by = {}; kills.filter(d => tw(d.by).splash).forEach(d => { by[d.design] = (by[d.design] || 0) + 1; });
+    const worst = Object.entries(by).sort((a, b) => b[1] - a[1])[0], g = worst && grpOf(worst[0]);
+    out.push({ text: `Splash hit <b>${(hits / blasts).toFixed(1)} units per blast</b>.${g ? ` ${DESIGNS[g.design].plural} came through bunched.` : ''}`,
+      act: g && g.pos.length > 1 ? { label: `${DESIGNS[g.design].plural} looser`, kind: 'looser', g: g.id } : null });
+  } else if (blasts) out.push({ text: `Splash hit ${(hits / blasts).toFixed(1)} units per blast. Spacing is working.` });
+  // chain: who the jumps landed on
+  const ch = T.filter(t => tw(t.id).chain), J = {}; ch.forEach(t => Object.entries(t.jumps).forEach(([d, n]) => { J[d] = (J[d] || 0) + n; }));
+  const jt = Object.values(J).reduce((a, x) => a + x, 0);
+  if (jt >= 3) {
+    const top = Object.entries(J).sort((a, b) => b[1] - a[1])[0], share = top[1] / jt, D = DESIGNS[top[0]];
+    if (D.cost >= 20 && share >= 0.45) {
+      const sw = grpOf('swarm'), g = grpOf(top[0]);
+      out.push({ text: `<b>${P(share)} of chain jumps</b> landed on ${D.plural}. They came through without cover.`,
+        act: sw && g ? { label: `Swarm meets ${D.plural} in ${z.id}`, kind: 'meet', g: sw.id, other: g.id, z: z.id } : null });
+    } else if (top[0] === 'swarm') out.push({ text: `${P(share)} of chain jumps were spent on Swarm. Cover is working.` });
+  }
+  // heavy and basic: who the single shots went to
+  const sg = T.filter(t => !tw(t.id).splash && !tw(t.id).chain);
+  if (sg.length) {
+    const S = {}; sg.forEach(t => Object.entries(t.shots).forEach(([d, n]) => { S[d] = (S[d] || 0) + n; }));
+    const st = Object.values(S).reduce((a, x) => a + x, 0);
+    const picked = kills.filter(d => sg.some(t => t.id === d.by)), pk = {}; picked.forEach(d => { pk[d.design] = (pk[d.design] || 0) + 1; });
+    const worst = Object.entries(pk).sort((a, b) => b[1] - a[1])[0];
+    if (worst && worst[1] >= 2) {
+      const g = grpOf(worst[0]);
+      out.push({ text: `Single-shot towers picked off <b>${worst[1]} ${DESIGNS[worst[0]].plural}</b> one at a time. Bunch them so the towers can't keep up.`,
+        act: g && g.pos.length > 1 ? { label: `${DESIGNS[g.design].plural} tighter`, kind: 'tighter', g: g.id } : null });
+    } else if (st && (S.brute || 0) / st >= 0.5) out.push({ text: `${P((S.brute || 0) / st)} of single shots hit Brutes. Your tanks are soaking.` });
+  }
+  const fr = T.filter(t => tw(t.id).frost).reduce((a, t) => a + t.slowedN, 0);
+  if (fr >= 4) out.push({ text: `Frost slowed ${fr} units here, bunching them for the next zone.` });
+  if (!kills.length) out.unshift({ text: 'Clean pass. Nothing lost here.' });
+  else if (!out.length) { const by = {}; kills.forEach(d => { by[d.design] = (by[d.design] || 0) + 1; }); out.push({ text: `Lost ${kills.length} here: ` + Object.entries(by).map(([d, n]) => `${n} ${DESIGNS[d].plural}`).join(', ') + '.' }); }
+  return out.slice(0, 3);
+}
+const towerLoad = t => (t.span > 0 ? t.busy / t.span : 0);
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { setSpan, formation, place, escort, split, merge, canMerge, meet, optimize, scoreAll, scoreZone, diagnose, presence, shiftGroup, spanOf, clone, towerLoad, zoneLoss };
+
+// ---------- zone reads for the strip and card ----------
+const THREAT = {
+  Splash: { g: '✸', threat: 'hits everyone near its target', beat: 'Spread out. Send tanks first.' },
+  Chain: { g: 'ϟ', threat: 'jumps between nearby units', beat: 'Mix cheap units in with your tanks, or space out.' },
+  Heavy: { g: '■', threat: 'big, slow single shots', beat: 'Tank in front. Cheap units waste its shots.' },
+  Basic: { g: '•', threat: 'steady single shots', beat: 'Bunch up to swamp it.' },
+  Frost: { g: '✻', threat: 'slows and clumps you', beat: 'Expect bunching after it.' },
+};
+function zoneStats(res, z) {
+  const entered = new Set();
+  res.frames.forEach(f => f.u.forEach((u, i) => { if (u && !res.units[i].sap && inZone(z, u[0])) entered.add(i); }));
+  const lost = res.deaths.filter(d => z.towers.includes(d.by));
+  const n = entered.size, k = lost.length, r = n ? k / n : 0;
+  return { entered: n, lost: k, stars: !n ? 3 : r <= 0.05 ? 3 : r <= 0.2 ? 2 : r <= 0.4 ? 1 : 0 };
+}
+function verdict(res, G, z) {
+  const T = res.towers.filter(t => z.towers.includes(t.id)), tw = id => TOWERS.find(t => t.id === id);
+  const kills = res.deaths.filter(d => z.towers.includes(d.by));
+  if (!kills.length) return 'Clean pass.';
+  const lines = [];
+  const sp = T.filter(t => tw(t.id).splash), bl = sp.reduce((a, t) => a + t.blasts, 0), bh = sp.reduce((a, t) => a + t.blastHits, 0);
+  if (bl) { const by = {}; kills.filter(d => tw(d.by).splash).forEach(d => { by[d.design] = (by[d.design] || 0) + 1; }); const w = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
+    lines.push(bh / bl >= 1.6 && w ? `${DESIGNS[w[0]].plural} came through bunched.` : 'Your spacing held against splash.'); }
+  const J = {}; T.filter(t => tw(t.id).chain).forEach(t => Object.entries(t.jumps).forEach(([d, n]) => { J[d] = (J[d] || 0) + n; }));
+  const jt = Object.values(J).reduce((a, x) => a + x, 0);
+  if (jt >= 3) { const top = Object.entries(J).sort((a, b) => b[1] - a[1])[0]; lines.push(top[0] === 'swarm' ? 'Decoys soaked the chain jumps.' : `${DESIGNS[top[0]].plural} walked in without decoys.`); }
+  const pk = {}; kills.filter(d => { const t = tw(d.by); return !t.splash && !t.chain; }).forEach(d => { pk[d.design] = (pk[d.design] || 0) + 1; });
+  const w2 = Object.entries(pk).sort((a, b) => b[1] - a[1])[0];
+  if (w2 && w2[1] >= 2) lines.push(`${DESIGNS[w2[0]].plural} came in one at a time and got picked off.`);
+  return lines.slice(0, 2).join(' ') || `Lost ${kills.length} here.`;
+}
+const zoneKills = (res, z) => res.deaths.filter(d => z.towers.includes(d.by)).length;
+// score with locked zones: a locked zone may not lose more than when it was locked
+const withLocks = (base, locks) => r => base(r) - 1000 * Object.entries(locks).reduce((a, [id, cap]) => a + Math.max(0, zoneKills(r, ZONES.find(z => z.id === id)) - cap), 0);
+if (typeof module !== 'undefined' && module.exports) Object.assign(module.exports, { THREAT, zoneStats, verdict, zoneKills, withLocks });
+
+</script>
+<script>
+(() => {
+  const mk = (id, design, n, s, e) => ({ id, design, pos: Array.from({ length: n }, (_, k) => +(n > 1 ? s + (e - s) * k / (n - 1) : s).toFixed(1)) });
+  const START = [mk('g1', 'brute', 5, 0, 4), mk('g2', 'swarm', 16, 2, 12), mk('g3', 'runner', 6, 8, 14), mk('g4', 'sapper', 1, 3, 3)];
+  const $ = s => document.querySelector(s), pct = v => (v * 100).toFixed(1) + '%';
+  let before = null, locks = {}, G = clone(START), sel = 'g2', selZ = null, undo = [], res, T = 0, playing = false, ghosts = null, lensI = -1, runs = [], cmp = null, seq = 10;
+  const AUTO = optimize(START, scoreAll, 5); const autoScore = simulate(AUTO.G).breach;
+
+  // ---------- core ----------
+  function run(full = true) {
+    res = simulate(G, { record: true });
+    $('#big').textContent = pct(res.breach);
+    $('#units').textContent = `${res.through} of ${res.sent} units`;
+    if (full) { buildRows(); buildTools(); } else placeRows();
+    $('#beat').hidden = !(res.breach > autoScore + 1e-9);
+    renderStrip(); renderCard(); renderRuns(); draw();
+  }
+  const firstIdx = gid => { let n = 0; for (const g of G) { if (g.id === gid) return n; n += g.pos.length; } return -1; };
+  function pushUndo() { before = Object.fromEntries(ZONES.map(z => [z.id, zoneKills(res, z)])); const s = JSON.stringify(G); if (undo[undo.length - 1] !== s) undo.push(s); if (undo.length > 80) undo.shift(); $('#b-undo').disabled = false; }
+  function edited() { ghosts = null; $('#log').innerHTML = ''; }
+  $('#b-undo').onclick = () => { const s = undo.pop(); if (s) { G = JSON.parse(s); if (!G.find(g => g.id === sel)) sel = G[0].id; edited(); run(); } $('#b-undo').disabled = !undo.length; };
+  $('#b-reset').onclick = () => { pushUndo(); G = clone(START); sel = 'g2'; edited(); stop(); setT(0); run(); };
+  const gOf = id => G.find(g => g.id === id);
+  const D = g => DESIGNS[g.design];
+
+  // ---------- releases (gate on the right) ----------
+  const X = t => (1 - t / GATE) * 100;
+  $('#axis').innerHTML = [20, 15, 10, 5, 0].map(k => `<span style="left:${X(k)}%">${k ? k + ' s' : '0 s ▶ GATE'}</span>`).join('');
+  const ticks = Array.from({ length: GATE + 1 }, (_, k) => `<i class="tick${k % 5 ? '' : ' m'}" style="left:${X(k)}%"></i>`).join('');
+  function buildRows() {
+    $('#rows').innerHTML = G.map(g => `<div class="grp${g.id === sel ? ' sel' : ''}" data-id="${g.id}">
+      <span class="hdl" title="Drag to reorder">⋮⋮</span>
+      <div class="rh"><span class="sw${D(g).sap ? ' dia' : ''}" style="background:${D(g).color}"></span>${D(g).name} <small>×${g.pos.length} · ${D(g).speed} c/s</small><span class="res"></span></div>
+      <div class="track" style="--c:${D(g).color}">${ticks}<div class="bar"><div class="h l"></div><div class="h r"></div></div><div class="gate"></div><div class="ph"></div></div>
+    </div>`).join('');
+    placeRows();
+  }
+  function placeRows() {
+    G.forEach(g => {
+      const el = document.querySelector(`.grp[data-id="${g.id}"]`); if (!el) return;
+      const tr = el.querySelector('.track'), bar = tr.querySelector('.bar'), [s, e] = spanOf(g);
+      bar.style.left = X(e) + '%'; bar.style.width = Math.max(0, X(s) - X(e)) + '%'; bar.hidden = g.pos.length < 2;
+      tr.querySelectorAll('.dot,.ghost').forEach(x => x.remove());
+      const old = ghosts && ghosts.find(o => o.id === g.id);
+      if (old && JSON.stringify(old.pos) !== JSON.stringify(g.pos)) { const [os, oe] = spanOf(old), gh = document.createElement('div'); gh.className = 'ghost'; gh.style.left = X(oe) + '%'; gh.style.width = Math.max(1.5, X(os) - X(oe)) + '%'; tr.insertBefore(gh, bar); }
+      const base = firstIdx(g.id);
+      g.pos.forEach((t, k) => {
+        const d = document.createElement('i'), ui = base + k, u = res.units[ui];
+        d.className = 'dot' + (D(g).sap ? ' dia' : '') + (u && u.dead ? ' dead' : '') + (ui === lensI ? ' lens' : ''); d.dataset.k = k; d.dataset.ui = ui; d.style.left = X(t) + '%';
+        tr.appendChild(d);
+      });
+      const lost = res.deaths.filter(x => x.group === g.id).length;
+      el.querySelector('.res').innerHTML = D(g).sap ? `<span class="${res.sapper === 'landed' ? '' : 'lost'}">${res.sapper}</span>` : lost ? `<span class="lost">${lost} lost</span>` : 'none lost';
+    });
+    placeHead();
+  }
+  function ghostKey() { $('#rkey').innerHTML = ghosts ? '<span class="ghostkey"><i></i>BEFORE THE LAST CHANGE</span>' : 'CLOSER TO THE GATE = LEAVES SOONER'; }
+  function placeHead() { ghostKey(); document.querySelectorAll('.track .ph').forEach(p => { p.style.left = X(Math.min(GATE, T)) + '%'; p.style.opacity = T > GATE ? .2 : 1; }); }
+  const tAt = (tr, x) => { const r = tr.getBoundingClientRect(); return Math.max(0, Math.min(GATE, (1 - (x - r.left) / r.width) * GATE)); };
+  let drag = null;
+  $('#rows').addEventListener('pointerdown', ev => {
+    const grp = ev.target.closest('.grp'); if (!grp) return;
+    const g = gOf(grp.dataset.id);
+    if (ev.target.closest('.hdl')) { drag = { kind: 'row', g, el: grp }; grp.classList.add('dragging'); ev.target.closest('.hdl').setPointerCapture(ev.pointerId); return; }
+    if (sel !== g.id) { sel = g.id; document.querySelectorAll('.grp').forEach(x => x.classList.toggle('sel', x === grp)); buildTools(); draw(); }
+    const tr = ev.target.closest('.track'); if (!tr) return;
+    pushUndo(); edited(); stop();
+    const t = tAt(tr, ev.clientX), [s, e] = spanOf(g);
+    if (ev.target.classList.contains('dot')) drag = { kind: 'dot', g, k: +ev.target.dataset.k, tr };
+    else if (ev.target.closest('.h.r')) drag = { kind: 'front', g, tr, s, e, pos0: g.pos.slice() };
+    else if (ev.target.closest('.h.l')) drag = { kind: 'back', g, tr, s, e, pos0: g.pos.slice() };
+    else { if (!ev.target.closest('.bar')) shiftGroup(g, t - (s + e) / 2); drag = { kind: 'move', g, tr, t0: t, pos0: g.pos.slice() }; }
+    tr.setPointerCapture(ev.pointerId); schedule();
+  });
+  $('#rows').addEventListener('pointermove', ev => {
+    if (!drag) { const d = ev.target.closest('.dot'); setLens(d ? +d.dataset.ui : -1); return; }
+    if (drag.kind === 'row') {
+      const rows = [...document.querySelectorAll('.grp')].filter(r => r !== drag.el);
+      const after = rows.find(r => { const b = r.getBoundingClientRect(); return ev.clientY < b.top + b.height / 2; });
+      $('#rows').insertBefore(drag.el, after || null); return;
+    }
+    const { g, tr } = drag, t = tAt(tr, ev.clientX);
+    if (drag.kind === 'dot') g.pos[drag.k] = Math.round(t * 10) / 10;
+    if (drag.kind === 'move') { g.pos = drag.pos0.slice(); shiftGroup(g, t - drag.t0); }
+    if (drag.kind === 'front') { const s2 = Math.min(t, drag.e); g.pos = drag.pos0.map(p => +(drag.e - (drag.e - p) * (drag.e - s2) / Math.max(1e-6, drag.e - drag.s)).toFixed(1)); }
+    if (drag.kind === 'back') { const e2 = Math.max(t, drag.s); g.pos = drag.pos0.map(p => +(drag.s + (p - drag.s) * (e2 - drag.s) / Math.max(1e-6, drag.e - drag.s)).toFixed(1)); }
+    schedule();
+  });
+  const endDrag = () => {
+    if (!drag) return; const d = drag; drag = null;
+    if (d.kind === 'row') { d.el.classList.remove('dragging'); const ids = [...document.querySelectorAll('.grp')].map(x => x.dataset.id); G.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)); run(); return; }
+    d.g.pos.sort((a, b) => a - b); run();
+  };
+  $('#rows').addEventListener('pointerup', endDrag); $('#rows').addEventListener('pointercancel', endDrag);
+  $('#rows').addEventListener('pointerleave', () => { if (!drag) setLens(-1); });
+  let pend = 0; function schedule() { if (pend) return; pend = requestAnimationFrame(() => { pend = 0; run(false); }); }
+
+  // ---------- whole-wave presets (the game's existing three) ----------
+  document.querySelector('.presets').addEventListener('click', ev => {
+    const b = ev.target.closest('[data-g]'); if (!b) return;
+    pushUndo(); edited(); stop();
+    const army = G.filter(g => !D(g).sap), total = army.reduce((a, g) => a + g.pos.length, 0);
+    let cur = 0;
+    army.forEach(g => {
+      const n = g.pos.length;
+      if (b.dataset.g === 'even') g.pos = g.pos.map((_, k) => Math.round((n > 1 ? GATE * k / (n - 1) : 0) * 10) / 10);
+      if (b.dataset.g === 'rush') g.pos = g.pos.map((_, k) => Math.round(k * 0.15 * 10) / 10);
+      if (b.dataset.g === 'seq') { const L = GATE * n / total; g.pos = g.pos.map((_, k) => Math.round((cur + (n > 1 ? L * k / n : 0)) * 10) / 10); cur += L; }
+    });
+    setT(0); run();
+  });
+
+  // ---------- tools for the selected group ----------
+  function buildTools() {
+    const g = gOf(sel); if (!g) { $('#tools').innerHTML = ''; return; }
+    const others = G.filter(o => o !== g), sap = G.find(o => D(o).sap), mergeable = G.filter(o => canMerge(g, o));
+    const [s, e] = spanOf(g), opt = (arr, f) => arr.map(f).join('');
+    const head = `<div class="tools-h">EDITING <span class="sw${D(g).sap ? ' dia' : ''}" style="background:${D(g).color}"></span><b>${D(g).sap ? 'Sapper · knocks out T3' : D(g).plural + ' ×' + g.pos.length}</b>${(() => { const same = G.filter(x => x.design === g.design); return same.length > 1 ? `<span class="lbl">GROUP ${same.indexOf(g) + 1} OF ${same.length}</span>` : ''; })()}</div>`;
+    if (D(g).sap) {
+      $('#tools').innerHTML = head + `<div class="tool"><span>SAPPER</span><div class="seg">${opt(others, o => `<button data-a="inside" data-o="${o.id}">Inside ${nameOf(o, G)}</button>`)}</div></div>
+        <div class="note">Drag the ◆ on its row to time it. It knocks out T3 when it reaches its range.</div>`;
+      return;
+    }
+    $('#tools').innerHTML = head + `
+      <div class="tool"><span>POSITION</span><div class="seg"><button data-a="lead">Lead</button><button data-a="middle">Middle</button><button data-a="last">Last</button></div></div>
+      <div class="tool"><span>DENSITY</span><label class="dens">TIGHT<input type="range" id="dens" min="0" max="1" step="0.01" value="${Math.sqrt((e - s) / GATE).toFixed(2)}" aria-label="Density">LOOSE</label></div>
+      <div class="tool"><span>SHAPE</span><div class="seg"><button data-a="f" data-f="even">Even</button><button data-a="f" data-f="pulses">Pulses</button><button data-a="f" data-f="front">Front-heavy</button><button data-a="f" data-f="trickle">Trickle</button></div></div>
+      <div class="tool"><span>MEET</span><div class="seg"><select id="m-o" aria-label="Meet which group">${opt(others.slice().sort((a, b) => D(b).sap - D(a).sap), o => `<option value="${o.id}">${D(o).sap ? '◆ Sapper · knocks out T3' : nameOf(o, G)}</option>`)}</select><select id="m-z" aria-label="In which zone">${opt(ZONES, z => `<option value="${z.id}"${z.id === selZ ? ' selected' : ''}>in ${z.id}</option>`)}</select><button data-a="meet">Meet</button></div></div>
+      <div class="tool"><span>GROUP</span><div class="seg">${g.pos.length > 1 ? '<button data-a="split">Split</button>' : ''}${mergeable.length ? `<select id="mg" aria-label="Merge with">${opt(mergeable, o => `<option value="${o.id}">${nameOf(o, G)}</option>`)}</select><button data-a="merge">Merge</button>` : ''}</div></div>
+      <div class="note" id="tnote"></div>`;
+  }
+  $('#tools').addEventListener('pointerdown', ev => { if (ev.target.id === 'dens') { pushUndo(); edited(); stop(); } });
+  $('#tools').addEventListener('input', ev => { if (ev.target.id !== 'dens') return; const g = gOf(sel), v = +ev.target.value; setSpan(g, Math.max(0.3, v * v * GATE)); schedule(); });
+  $('#tools').addEventListener('change', ev => { if (ev.target.id === 'dens') run(); });
+  $('#tools').addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    const g = gOf(sel), a = b.dataset.a, sap = G.find(o => D(o).sap);
+    pushUndo(); edited(); stop();
+    let note = '';
+    if (a === 'lead' || a === 'middle' || a === 'last') place(g, a);
+    if (a === 'f') formation(g, b.dataset.f);
+    if (a === 'escort') escort(g, sap.pos[0]);
+    if (a === 'inside') { const o = gOf(b.dataset.o), [s, e] = spanOf(o); g.pos = [Math.round((s + (e - s) * 0.35) * 10) / 10]; }
+    if (a === 'split') { const n = split(G, g); n.id = 'g' + (seq++); }
+    if (a === 'merge') merge(G, g, gOf($('#mg').value));
+    if (a === 'meet') {
+      const o = gOf($('#m-o').value), z = ZONES.find(z => z.id === $('#m-z').value), before = clone(G);
+      const r = meet(G, g, o, z);
+      note = !r.ok ? `<span class="warn">${r.why}</span>` : r.clipped ? `Closest possible: the gate closes at 20 s, and ${DESIGNS[o.design].plural} reach ${z.id} too late for ${D(g).plural} to match.` : `${D(g).plural} now pass through ${z.id} with the ${DESIGNS[o.design].plural}.`;
+      ghosts = before; selZ = z.id;
+    }
+    run();
+    if (note) { const n = $('#tnote'); if (n) n.innerHTML = note; }
+    if (a === 'meet') { const z = ZONES.find(z => z.id === selZ), p = presence(res, g.id, z); if (p) setT((p[0] + p[1]) / 2); }
+  });
+
+  // ---------- optimizing, with its working and its cost shown ----------
+  const deltas = (a, b) => ZONES.map(z => ({ z: z.id, a: a[z.id], b: b[z.id] })).filter(x => x.a !== x.b);
+  function doOptimize(z) {
+    $('#log').innerHTML = '<div class="note">Working it out…</div>';
+    setTimeout(() => {
+      const b = res.breach, k0 = Object.fromEntries(ZONES.map(q => [q.id, zoneKills(res, q)]));
+      const base = z ? scoreZone(z) : scoreAll, o = optimize(G, withLocks(base, locks));
+      if (!o.log.length) { $('#log').innerHTML = `<div class="log"><h4>${z ? 'No better plan for ' + z.id + (Object.keys(locks).length ? ' without hurting a locked zone' : '') : 'No better sequence found'}</h4></div>`; return; }
+      pushUndo(); ghosts = clone(G); G = o.G; stop(); run();
+      const k1 = Object.fromEntries(ZONES.map(q => [q.id, zoneKills(res, q)]));
+      const lst = o.log.reduce((a, m) => { const l = a[a.length - 1]; if (l && l.m === m) l.n++; else a.push({ m, n: 1 }); return a; }, []);
+      const cls = res.breach >= b ? 'b' : 'i';
+      $('#log').innerHTML = `<div class="log"><h4>${z ? 'Optimized ' + z.id : 'Auto-sequenced'}${Object.keys(locks).length ? ` · kept ${Object.keys(locks).join(', ')} locked` : ''}</h4>
+        <span class="d">${deltas(k0, k1).map(x => `${x.z} ✕${x.a}→${x.b} <${x.b < x.a ? 'b' : 'i'}>${x.b < x.a ? '▲' : '▼'}</${x.b < x.a ? 'b' : 'i'}>`).join(' · ') || 'Zone losses unchanged'} · through ${pct(b)} → <${cls}>${pct(res.breach)}</${cls}></span>
+        <ol>${lst.map(x => `<li>${x.m}${x.n > 1 ? ' (×' + x.n + ')' : ''}</li>`).join('')}</ol></div>`;
+      setT(0);
+    }, 20);
+  }
+  $('#b-auto').onclick = () => doOptimize(null);
+  $('#b-how').onclick = () => { const h = $('#how'); h.hidden = !h.hidden; $('#b-how').setAttribute('aria-expanded', String(!h.hidden)); };
+
+  // ---------- zone strip and card ----------
+  const starsHTML = n => `<span class="stars">${'★'.repeat(n)}<span class="o">${'★'.repeat(3 - n)}</span></span>`;
+  const glyphs = z => z.tags.map(t => THREAT[t].g).join(' ');
+  function renderStrip() {
+    $('#strip').innerHTML = ZONES.map(z => {
+      const st = zoneStats(res, z), live = res.deaths.filter(d => d.t <= T && z.towers.includes(d.by)).length, shown = T > 0 && T < res.end - 0.05 ? live : st.lost;
+      const d = before && before[z.id] !== st.lost ? `<span class="dl ${st.lost < before[z.id] ? 'up' : 'down'}">${before[z.id]}→${st.lost} ${st.lost < before[z.id] ? '▲' : '▼'}</span>` : '';
+      return `<button class="zc${selZ === z.id ? ' sel' : ''}${locks[z.id] != null ? ' locked' : ''}" data-z="${z.id}" aria-label="Zone ${z.id}">
+        <span class="t1"><span class="zid">${z.id}</span><span class="gl">${glyphs(z)}</span>${locks[z.id] != null ? '<span class="lk">LOCKED</span>' : ''}</span>
+        <span class="t2">${starsHTML(st.stars)}<span class="k${shown ? '' : ' none'}">✕${shown}</span>${d}</span></button>`;
+    }).join('');
+  }
+  function liveStrip() {
+    const playingNow = T > 0 && T < res.end - 0.05;
+    ZONES.forEach(z => {
+      const el = document.querySelector(`.zc[data-z="${z.id}"] .k`); if (!el) return;
+      const n = playingNow ? res.deaths.filter(d => d.t <= T && z.towers.includes(d.by)).length : zoneStats(res, z).lost;
+      el.textContent = '✕' + n; el.classList.toggle('none', !n);
+    });
+  }
+  function renderCard() {
+    const z = ZONES.find(q => q.id === selZ);
+    if (!z) { $('#zcard').innerHTML = '<span class="hint full">Pick a zone above to see what it does, how to beat it and how your wave did there.</span>'; return; }
+    const st = zoneStats(res, z), lk = locks[z.id] != null;
+    $('#zcard').innerHTML = `<div class="zcol"><h3><span class="zid">${z.id}</span>${z.tags.join(' + ')} ${starsHTML(st.stars)}</h3>
+        <div class="zline"><span>THREAT</span><span>${z.tags.map(t => `${THREAT[t].g} ${THREAT[t].threat}`).join('<br>')}</span></div>
+        <div class="zline"><span>BEAT IT</span><span class="beat">${[...new Set(z.tags.map(t => THREAT[t].beat))].join(' ')}</span></div></div>
+      <div class="zcol"><span class="lbl">LAST RUN · EVERY ZONE</span>${lastRunTable()}
+        <div class="zacts"><button class="accent" data-opt="${z.id}">Optimize ${z.id}</button><button data-lock="${z.id}" title="${lk ? `Locked at ✕${locks[z.id]}: optimizing other zones can't push losses here higher` : 'Protect this zone: optimizing other zones will not let losses here go up'}">${lk ? 'Unlock' : 'Lock'} ${z.id}</button></div>
+        </div>`;
+  }
+  function lastRunTable() {
+    return `<table class="lr"><tbody>${ZONES.map(q => {
+      const by = {}; res.deaths.filter(d => q.towers.includes(d.by)).forEach(d => { by[d.design] = (by[d.design] || 0) + 1; });
+      const died = Object.entries(by).sort((a, b) => b[1] - a[1]).map(([d, n]) => `<span class="dd"><span class="sw${DESIGNS[d].sap ? ' dia' : ''}" style="background:${DESIGNS[d].color}"></span>${n} ${n === 1 ? DESIGNS[d].name : DESIGNS[d].plural}</span>`).join('') || '<span class="none">0 died</span>';
+      const dmg = res.towers.filter(t => q.towers.includes(t.id)).reduce((a, t) => a + t.dealt, 0);
+      return `<tr class="${q.id === selZ ? 'on' : ''}"><td class="zid">${q.id}</td><td>${died}</td><td class="num">${Math.round(dmg).toLocaleString()} dmg</td></tr>`;
+    }).join('')}</tbody></table>`;
+  }
+  function pickZone(id) { selZ = selZ === id ? null : id; renderStrip(); renderCard(); if (selZ) { stop(); setT(peak(ZONES.find(z => z.id === selZ)).t); } draw(); }
+  function peak(z) { let best = { n: 0, t: 0 }; for (const f of res.frames) { let n = 0; f.u.forEach(u => { if (u && inZone(z, u[0])) n++; }); if (n > best.n) best = { n, t: f.t }; } return best; }
+  $('#strip').addEventListener('click', ev => { const c = ev.target.closest('.zc'); if (c) pickZone(c.dataset.z); });
+  $('#zcard').addEventListener('click', ev => {
+    const o = ev.target.closest('[data-opt]'); if (o) { doOptimize(ZONES.find(z => z.id === o.dataset.opt)); return; }
+    const l = ev.target.closest('[data-lock]'); if (l) { const id = l.dataset.lock; if (locks[id] != null) delete locks[id]; else locks[id] = zoneKills(res, ZONES.find(z => z.id === id)); renderStrip(); renderCard(); }
+  });
+
+  // ---------- runs ----------
+  function recordRun() {
+    if (runs.length && JSON.stringify(runs[runs.length - 1].G) === JSON.stringify(G)) return;
+    const prevBest = runs.length ? Math.max(...runs.map(r => r.score)) : -1;
+    runs.push({ score: res.breach, G: clone(G), deaths: res.deaths.map(d => ({ d: d.d, i: d.i })), stars: ZONES.reduce((a, z) => a + zoneStats(res, z).stars, 0) }); if (runs.length > 8) runs.shift(); renderRuns();
+    if (res.breach > prevBest + 1e-9 && runs.length > 1) { const el = document.querySelector('.run.best'); if (el) el.classList.add('flash'); }
+  }
+  function renderRuns() {
+    const best = runs.length ? Math.max(...runs.map(r => r.score)) : -1;
+    $('#runs').innerHTML = `<span class="lbl">RUNS</span>` + (runs.length ? runs.map((r, k) => `<span class="run${cmp === k ? ' cmp' : ''}${r.score === best ? ' best' : ''}" data-k="${k}" tabindex="0" title="Show this run's losses on the map">${pct(r.score)} · ${r.stars}★</span>`).join('') : '<span class="note">Each Play saves a run</span>') +
+      `<span class="run auto" title="Auto-sequence on the starting army">AUTO ${pct(autoScore)}</span>` + (cmp != null ? `<button id="restore">Restore this run</button>` : '');
+  }
+  $('#runs').addEventListener('click', ev => {
+    if (ev.target.id === 'restore') { pushUndo(); G = clone(runs[cmp].G); cmp = null; edited(); run(); return; }
+    const r = ev.target.closest('.run[data-k]'); if (!r) return; cmp = cmp === +r.dataset.k ? null : +r.dataset.k; renderRuns(); draw();
+  });
+
+  // ---------- lens ----------
+  function setLens(i) {
+    if (i === lensI) return; lensI = i;
+    document.querySelectorAll('.dot').forEach(d => d.classList.toggle('lens', +d.dataset.ui === i));
+    const u = res.units[i], lensEl = $('#lens'); if (lensEl) lensEl.innerHTML = u ? `<span class="sw${DESIGNS[u.design].sap ? ' dia' : ''}" style="background:${DESIGNS[u.design].color};width:8px;height:8px"></span> ${DESIGNS[u.design].name} · leaves ${u.t0.toFixed(1)} s · ${u.sap ? res.sapper : u.dead ? `killed by ${u.by} at ${u.deathT.toFixed(1)} s` : 'reaches the keep'}` : '';
+    draw();
+  }
+
+  // ---------- map ----------
+  const cv = $('#map'), ctx = cv.getContext('2d');
+  let W = 800, H = 550, cs = 50;
+  const onPath = new Set(PATH.map(([x, y]) => x + ',' + y));
+  const lane = i => { let h = Math.imul(i + 7, 2654435761) >>> 0; h ^= h >>> 13; h = Math.imul(h, 2246822507) >>> 0; return ((h % 1000) / 1000 - 0.5) * 0.62; };
+  const zoneCells = ZONES.map(z => PATH.filter(([x, y]) => z.towers.some(id => { const t = TOWERS.find(q => q.id === id); return (x - t.x) ** 2 + (y - t.y) ** 2 <= t.range ** 2; })));
+  const pos = (d, i) => { const p = at(d), o = lane(i); return [(p.x - p.dy * o) * cs, (p.y + p.dx * o) * cs]; };
+  function frameAt(t) { const F = res.frames; let k = Math.min(F.length - 1, Math.round(t / 0.1)); while (k > 0 && F[k].t > t + 1e-9) k--; return F[k]; }
+  const font = (w, k) => `${w} ${Math.max(9, Math.round(cs * k))}px JetBrains Mono, monospace`;
+  const xmark = (c, x, y, r) => { c.beginPath(); c.moveTo(x - r, y - r); c.lineTo(x + r, y + r); c.moveTo(x + r, y - r); c.lineTo(x - r, y + r); c.stroke(); };
+  function draw() {
+    if (!res) return;
+    ctx.clearRect(0, 0, W, H);
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+      if (onPath.has(x + ',' + y)) { ctx.fillStyle = '#0a0f14'; ctx.fillRect(x * cs, y * cs, cs, cs); }
+      else { ctx.fillStyle = '#1a2533'; ctx.fillRect(x * cs + 2, y * cs + 2, cs - 4, cs - 4); ctx.strokeStyle = '#243447'; ctx.strokeRect(x * cs + 2.5, y * cs + 2.5, cs - 5, cs - 5); }
+    }
+    const fr = frameAt(T);
+    ZONES.forEach((z, k) => {
+      const on = selZ === z.id;
+      ctx.fillStyle = on ? 'rgba(255,106,77,.30)' : 'rgba(255,106,77,.10)';
+      zoneCells[k].forEach(([x, y]) => ctx.fillRect(x * cs, y * cs, cs, cs));
+      if (on) z.towers.forEach(id => { const tw = TOWERS.find(t => t.id === id); ctx.strokeStyle = 'rgba(79,214,238,.6)'; ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc((tw.x + .5) * cs, (tw.y + .5) * cs, tw.range * cs, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]); });
+      const [lx, ly] = zoneCells[k][0], kills = res.deaths.filter(d => d.t <= T && z.towers.includes(d.by)).length, label = z.id + (kills ? ' ✕' + kills : '');
+      ctx.font = font(700, .2); const w = ctx.measureText(label).width + 10;
+      ctx.fillStyle = on ? '#ff6a4d' : 'rgba(255,106,77,.85)'; ctx.beginPath(); ctx.roundRect(lx * cs + 3, ly * cs + 3, w, cs * .3, 3); ctx.fill();
+      ctx.fillStyle = '#1a0806'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(label, lx * cs + 8, ly * cs + 3 + cs * .15);
+    });
+    const [ex, ey] = PATH[0], [kx, ky] = PATH[PATH.length - 1];
+    ctx.fillStyle = '#ff8a3d'; ctx.fillRect(ex * cs, ey * cs + 4, 4, cs - 8);
+    ctx.strokeStyle = '#dde6ee'; ctx.lineWidth = 2; ctx.strokeRect(kx * cs + 6, ky * cs + 6, cs - 12, cs - 12); ctx.lineWidth = 1;
+    TOWERS.forEach((tw, k) => {
+      const off = fr.off[k], x = tw.x * cs, y = tw.y * cs, t = res.towers[k], l = towerLoad(t);
+      ctx.fillStyle = '#0d2a33'; ctx.fillRect(x + 5, y + 5, cs - 10, cs - 10);
+      ctx.strokeStyle = off ? '#c9a7ff' : '#4fd6ee'; ctx.lineWidth = 1.5; ctx.strokeRect(x + 5.5, y + 5.5, cs - 11, cs - 11); ctx.lineWidth = 1;
+      ctx.fillStyle = off ? '#c9a7ff' : '#4fd6ee'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = font(700, .16);
+      const full = off ? 'OFF' : tw.kind.toUpperCase(), lab = ctx.measureText(full).width <= cs - 14 ? full : (off ? 'OFF' : { Splash: 'SPL', Basic: 'BAS', Heavy: 'HVY', Chain: 'CHN' }[tw.kind]);
+      ctx.fillText(lab, x + cs / 2, y + cs / 2);
+      if (tw.id === 'T3' && !off) { ctx.strokeStyle = '#c9a7ff'; ctx.setLineDash([3, 3]); ctx.strokeRect(x + 2, y + 2, cs - 4, cs - 4); ctx.setLineDash([]); }
+    });
+    if (cmp != null && runs[cmp]) { ctx.strokeStyle = '#8a9aa8'; ctx.globalAlpha = .45; ctx.lineWidth = 1.5; runs[cmp].deaths.forEach(d => { const [x, y] = pos(d.d, d.i); xmark(ctx, x, y, cs * .08); }); ctx.globalAlpha = 1; ctx.lineWidth = 1; }
+    res.deaths.forEach(dth => { if (dth.t > T) return; const [x, y] = pos(dth.d, dth.i); ctx.strokeStyle = DESIGNS[dth.design].color; ctx.globalAlpha = dth.i === lensI ? 1 : .55; ctx.lineWidth = dth.i === lensI ? 2.5 : 1.5; xmark(ctx, x, y, cs * (dth.i === lensI ? .14 : .09)); ctx.globalAlpha = 1; ctx.lineWidth = 1; });
+    let waiting = 0;
+    fr.u.forEach((u, i) => {
+      const m = res.units[i];
+      if (!u) { if (m.t0 > T) waiting++; return; }
+      const Dz = DESIGNS[m.design], [x, y] = pos(u[0], i), r = Dz.r * cs;
+      ctx.globalAlpha = (0.25 + 0.75 * u[1]) * (lensI >= 0 ? (i === lensI ? 1 : .3) : m.group !== sel ? .55 : 1);
+      ctx.fillStyle = Dz.color;
+      if (Dz.sap) { ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.fill(); }
+      else { ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); }
+      if (u[2]) { ctx.strokeStyle = '#4fd6ee'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r + 3, 0, 6.2832); ctx.stroke(); ctx.lineWidth = 1; }
+      if (i === lensI) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, r + 5, 0, 6.2832); ctx.stroke(); ctx.lineWidth = 1; }
+      ctx.globalAlpha = 1;
+    });
+    if (waiting) { ctx.fillStyle = '#ff8a3d'; ctx.font = font(700, .2); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(waiting + ' to leave', ex * cs + 2, ey * cs - 4); }
+    if (T >= res.end - 0.05) {
+      ctx.fillStyle = 'rgba(9,13,18,.85)'; ctx.fillRect(W - cs * 4.6, cs * .3, cs * 4.3, cs * 1.3);
+      ctx.fillStyle = '#ff8a3d'; ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.font = font(700, .55); ctx.fillText(pct(res.breach), W - cs * .6, cs * .42);
+      ctx.fillStyle = '#8a9aa8'; ctx.font = font(400, .18); ctx.fillText('GOT THROUGH', W - cs * .6, cs * 1.12);
+    }
+  }
+  cv.addEventListener('click', ev => {
+    const r = cv.getBoundingClientRect(), cx = Math.floor((ev.clientX - r.left) / cs), cy = Math.floor((ev.clientY - r.top) / cs);
+    const k = zoneCells.findIndex(c => c.some(([x, y]) => x === cx && y === cy)); if (k >= 0) pickZone(ZONES[k].id);
+  });
+
+  function resize() {
+    const dpr = Math.min(2, devicePixelRatio || 1), r = cv.getBoundingClientRect();
+    W = r.width; H = r.height; cs = W / COLS; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); draw();
+  }
+
+  // ---------- clock ----------
+  const tIn = $('#t');
+  function setT(v) { T = Math.max(0, Math.min(+tIn.max, v)); tIn.value = T; $('#tt').textContent = T.toFixed(1) + ' s'; placeHead(); draw(); if (res) liveStrip(); }
+  function stop() { playing = false; $('#b-play').textContent = '▶ PLAY WAVE'; }
+  tIn.addEventListener('input', () => { stop(); setT(+tIn.value); });
+  let last = 0;
+  function tick(ts) {
+    if (!playing) return;
+    const dt = last ? (ts - last) / 1000 : 0; last = ts;
+    if (T >= res.end) { stop(); setT(res.end); return; }
+    let sp = 3;
+    if (selZ) { const z = ZONES.find(z => z.id === selZ), f = frameAt(T); if (f.u.some(u => u && inZone(z, u[0]))) sp = 1; }
+    setT(T + dt * sp); requestAnimationFrame(tick);
+  }
+  $('#b-play').onclick = () => { $('#b-play').classList.remove('pulse'); if (playing) { stop(); return; } if (T >= res.end - 0.05) setT(0); recordRun(); playing = true; last = 0; $('#b-play').textContent = '❚❚ PAUSE'; requestAnimationFrame(tick); };
+  document.addEventListener('keydown', ev => { if (ev.code === 'Space' && !/INPUT|BUTTON|SELECT/.test(document.activeElement.tagName) && !document.activeElement.closest('.zh,.run')) { ev.preventDefault(); $('#b-play').click(); } });
+
+  new ResizeObserver(resize).observe(cv);
+  run(); resize(); setT(0);
+  document.fonts && document.fonts.ready.then(draw);
+})();
+</script>
+</body>
+</html>

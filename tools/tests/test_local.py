@@ -186,37 +186,47 @@ with sync_playwright() as p:
           'Sabotage is step 2, before the wave, and says “No sabotage this wave.” in round 1')
     check(page.is_hidden('#atk-test'), 'no attacker Test in round 1: nothing seen yet')
     page.click('#atk-next'); page.wait_for_timeout(300)
-    check(S(page, 'S.step') == 2 and page.is_visible('#tl .lane'), 'Wave step (3) shows the timeline')
+    check(S(page, 'S.step') == 2 and page.locator('#wv-rows .wv-grp').count() == 3 and page.is_visible('#wv-play'), 'v22: the Wave step shows a release row per group and ▶ PLAY WAVE under the map')
     check(S(page, 'S.designs[0].tl.e') == 0.3, 'default timeline window is 6 seconds')
-    # drag the end handle of track 0 to the far right
-    hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box()
-    lb = page.locator('.lane[data-i="0"]').bounding_box()
-    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lb['x'] + lb['width'] - 2, hb['y'] + hb['height'] / 2)
+    check(page.is_hidden('#atk-test'), 'v22: no attacker Test on the Wave step (the forecast plays the wave)')
+    # the bar's left end is the latest release (20 s at the left, the gate on the right): drag it to the left end
+    row0 = '#wv-rows .wv-grp[data-id] >> nth=0'
+    hb = page.locator(f'{row0} >> .bar .h.l').bounding_box(); tb = page.locator(f'{row0} >> .track').bounding_box()
+    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, tb['x'] + 1, hb['y'] + hb['height'] / 2)
     e0 = S(page, 'S.designs[0].tl.e')
-    check(e0 > 0.95, f'dragging the end handle stretches the group ({e0:.2f})')
-    # drag one clip of the swarm track to the middle
-    page.locator('.lane[data-i="2"]').scroll_into_view_if_needed()  # the wave plan scrolls; a lower track may sit under the nav
-    cb = page.locator('.lane[data-i="2"] .clip').nth(0).bounding_box()
-    lb2 = page.locator('.lane[data-i="2"]').bounding_box()
-    drag(page, cb['x'] + cb['width'] / 2, cb['y'] + cb['height'] / 2, lb2['x'] + lb2['width'] * 0.5, cb['y'] + cb['height'] / 2)  # the spread tracks span 20 s
-    pos = S(page, 'S.designs[2].tl.pos')
-    check(pos is not None and abs(pos[0] - 0.5) < 0.05, f'dragging a single dot places it ({pos[0] if pos else None})')
-    # the whole group: drag the swarm's track (away from its tab and dots) 5 s later; its spread stays
-    s0, e0 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
-    y = lb2['y'] + 16  # above the dots, between the knobs
-    drag(page, lb2['x'] + lb2['width'] * 0.6, y, lb2['x'] + lb2['width'] * 0.85, y)
-    s1, e1 = S(page, 'S.designs[2].tl.s'), S(page, 'S.designs[2].tl.e')
-    check(abs((s1 - s0) * 20 - 5) < 0.3 and abs((e1 - s1) - (e0 - s0)) < 1e-9, f'sliding a track moves the whole group, keeping its spread ({s0 * 20:.1f}s → {s1 * 20:.1f}s)')
-    drag(page, lb2['x'] + lb2['width'] * 0.6, y, lb2['x'] + lb2['width'] * 0.99, y)
-    check(abs(S(page, 'Math.max(...window.siegeline.tlPositions(window.siegeline.state.designs[2]))') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s',
-          f'a wave dragged past 20 s stops there ({toast(page)})')
-    peak = page.inner_text('#tl-peak')
+    check(e0 > 0.95 and S(page, 'S.designs[0].tl.s') == 0, f'dragging the bar’s left end stretches the group to 20 s, the first release kept ({e0:.2f})')
+    # one dot of the swarm to the middle: only that unit's release changes
+    p0 = S(page, 'S.designs[2].tl.pos.slice()')
+    row2 = '#wv-rows .wv-grp[data-id] >> nth=2'
+    db = page.locator(f'{row2} >> .dot >> nth=0').bounding_box(); tb2 = page.locator(f'{row2} >> .track').bounding_box()
+    drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, tb2['x'] + tb2['width'] * 0.5, db['y'] + db['height'] / 2)
+    p1 = S(page, 'S.designs[2].tl.pos.slice()')
+    moved = [round(v, 3) for v in p1 if all(abs(v - u) > 1e-9 for u in p0)]
+    check(len(moved) == 1 and abs(moved[0] - 0.5) < 0.04 and sorted(p0[1:]) == [v for v in p1 if abs(v - moved[0]) > 1e-9], f'v22 test 3: a dot dragged on its own changes only that unit’s release ({moved})')
+    # the whole group: drag the swarm's bar 5 s toward the gate; its spread stays, and it leaves sooner
+    s0, e0 = S(page, 'Math.min(...S.designs[2].tl.pos)'), S(page, 'Math.max(...S.designs[2].tl.pos)')
+    page.mouse.move(5, 5); page.wait_for_timeout(30)  # off the dot just dragged: a hovered dot is enlarged and would take the press
+    page.evaluate("() => { const S = window.siegeline.state; S.designs[2].tl = { s: 0.4, e: 0.6, pos: null }; window.siegeline.refresh(); }")
+    bb = page.locator(f'{row2} >> .bar').bounding_box(); y = bb['y'] + 2  # the bar's top edge, clear of the unit dots
+    tb2 = page.locator(f'{row2} >> .track').bounding_box()
+    T = 11.0  # both still on the way: 3 s after the old first release, 8 s after the new one
+    before = page.evaluate(f'() => window.siegeline.wave.at(2, 0, {T})')
+    drag(page, bb['x'] + bb['width'] / 2, y, bb['x'] + bb['width'] / 2 + tb2['width'] * 0.25, y)
+    s1, e1 = S(page, 'Math.min(...S.designs[2].tl.pos)'), S(page, 'Math.max(...S.designs[2].tl.pos)')
+    after = page.evaluate(f'() => window.siegeline.wave.at(2, 0, {T})')
+    check(abs((0.4 - s1) * 20 - 5) < 0.3 and abs((e1 - s1) - 0.2) < 1e-6 and before and after and 'w' in before and 'w' in after and after['w'] > before['w'] + 4,
+          f'v22 test 2: a bar dragged toward the gate leaves sooner, its spread kept, and its units are further along the route at the same clock time ({0.4 * 20:.1f}s → {s1 * 20:.1f}s; walked {before} → {after})')
+    bb = page.locator(f'{row2} >> .bar').bounding_box()
+    drag(page, bb['x'] + bb['width'] / 2, y, tb2['x'] + tb2['width'] + 200, y)
+    drag(page, page.locator(f'{row2} >> .bar').bounding_box()['x'] + 3, y, tb2['x'] - 300, y)
+    check(S(page, 'Math.max(...S.designs[2].tl.pos) <= 1 && Math.min(...S.designs[2].tl.pos) >= 0 && Math.max(...S.designs[2].tl.pos) > 0.999'),
+          'v22 test 4: a group dragged past either end stops at 0 s or 20 s')
     page.screenshot(path=f'{OUT}/a1_wave.png')
-    page.click('.mini[data-act=rush]')
-    check(S(page, 'S.designs.every(d=>d.tl.e<=0.12 && !d.tl.pos)'), 'All at once bunches every track')
-    page.click('.mini[data-act=even]')
-    check(S(page, 'S.designs.every(d=>d.tl.s===0 && d.tl.e===1)'), 'Even spreads every track')
-    page.click('.mini[data-act=rush]')
+    page.click('[data-wv=rush]')
+    check(S(page, 'S.designs.every(d => !d.count || Math.max(...d.tl.pos) <= 0.12 + 1e-9)'), 'All at once bunches every track')
+    page.click('[data-wv=even]')
+    check(S(page, 'S.designs.every(d => !d.count || (d.tl.s === 0 && d.tl.e === 1))'), 'Even spreads every track')
+    page.click('[data-wv=rush]')
     check(page.is_hidden('#atk-next') and page.inner_text('#atk-lock').lower() == 'lock in' and len(page.evaluate("() => [...document.querySelectorAll('#atk-steps [data-step]')]")) == 3,
           'v21: three steps (Army, Sabotage, Wave); the Wave step has Lock in and no Next')
     army = S(page, 'S.designs.reduce((v,d)=>v+d.count*window.siegeline.unitCost(d),0)')
@@ -323,33 +333,21 @@ with sync_playwright() as p:
     click_cell(page, T95 % COLS, T95 // COLS); page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
     check(S(page, f'S.charges.get({T95}).cost') == p95 and S(page, 'S.aFree') == 500 - 25 - p95, f'planned again after the bridge, the knock-out still costs {p95}: plan order doesn’t matter')
     page.screenshot(path=f'{OUT}/a2_bridge_planned.png')
-    # step 3: each sapper is a track with one dot
+    # step 3: each sapper is a row of its own with a single ◆, named by its job (v22)
     page.click('#atk-next'); page.wait_for_timeout(300)
-    check(S(page, 'S.step') == 2 and page.locator('.lane.sap').count() == 2 and 'reaches target' in page.inner_text('#tl'), 'Wave step: a block for each sapper, with when it reaches its target')
+    names = page.evaluate("() => [...document.querySelectorAll('#wv-rows .wv-grp.sap .nm')].map(e => e.textContent)")
+    check(S(page, 'S.step') == 2 and page.locator('#wv-rows .wv-grp.sap').count() == 2 and page.locator('#wv-rows .wv-grp.sap .dot').count() == 2
+          and any(n.startswith('Bridge → wall ') for n in names) and any(n.startswith('Knock-out → Tower ') for n in names), f'Wave step: a row per sapper with one ◆, named by its job ({names})')
     t0 = S(page, f'S.charges.get({bw}).t')
-    page.locator(f'.lane.sap[data-sap="{bw}"]').scroll_into_view_if_needed()
-    db = page.locator(f'.lane.sap[data-sap="{bw}"] .clip').bounding_box(); lb = page.locator(f'.lane.sap[data-sap="{bw}"]').bounding_box()
+    sr = f'#wv-rows .wv-grp[data-id="s{bw}"]'
+    page.locator(sr).scroll_into_view_if_needed()
+    db = page.locator(f'{sr} .dot').bounding_box(); lb = page.locator(f'{sr} .track').bounding_box()
     drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25, db['y'] + db['height'] / 2)
     t1 = S(page, f'S.charges.get({bw}).t')
-    check(abs(t1 - 0.25) < 0.03 and t1 != t0, f'dragging a sapper’s dot sets when it leaves ({t0:.3f} → {t1:.3f})')
-    page.evaluate(f'() => {{ const S = window.siegeline.state; S.charges.get({bw}).t = 0.02; S.charges.get({T95}).t = 0.02; }}')
+    check(abs(t1 - 0.75) < 0.03 and t1 != t0, f'dragging a sapper’s ◆ sets when it leaves: a quarter of the way from the 20 s end is 15 s ({t0:.3f} → {t1:.3f})')
+    page.evaluate(f'() => {{ const S = window.siegeline.state; S.charges.get({bw}).t = 0.02; S.charges.get({T95}).t = 0.02; window.siegeline.refresh(); }}')
     page.screenshot(path=f'{OUT}/a3_sapper_tracks.png')
-    # the attacker's test run: the planned wave against the defense as seen
-    plan = S(page, 'JSON.stringify([S.aFree, [...S.charges], S.designs.map(d => d.count), S.round])')
-    check(page.is_visible('#atk-test'), 'the Wave step offers Test from round 2')
-    page.click('#atk-test')
-    check(page.evaluate('() => window.siegeline.testing') and S(page, 'S.phase') == 'wave' and S(page, 'JSON.stringify(S.grid.map(g => g && g.t))') == S(page, 'JSON.stringify(S.seenGrid.map(g => g && g.t))')
-          and S(page, 'S.units.length + S.spawnList.length') > 0, 'Test plays the planned wave, sappers included, against the defense as last seen')
-    check(page.is_visible('#pane-wave .speed') and page.get_attribute('#pane-wave .speed [data-speed="5"]', 'aria-pressed') == 'true', 'a test run has 1×, 5×, 10× and starts at 5×')
-    page.click('#pane-wave .speed [data-speed="10"]')
-    check(page.get_attribute('#pane-wave .speed [data-speed="10"]', 'aria-pressed') == 'true', 'the test speed can be changed')
-    page.wait_for_timeout(1200); page.screenshot(path=f'{OUT}/a4_atk_test.png')
-    page.click('#test-skip')
-    r = page.evaluate('() => window.siegeline.testResult')
-    check(not page.evaluate('() => window.siegeline.testing') and S(page, 'S.phase') == 'attack' and S(page, 'S.step') == 2
-          and S(page, 'JSON.stringify([S.aFree, [...S.charges], S.designs.map(d => d.count), S.round])') == plan, 'after the test the plan is exactly as it was')
-    check(r and r['side'] == 'atk' and r['sappers'] == 2 and page.is_visible('#a-test') and f"Sappers {r['sapOk']}/2 landed" in page.inner_text('#a-test'),
-          f'the result card says how many sappers landed ({page.inner_text("#a-test")})')
+    check(page.is_hidden('#atk-test'), 'v22: the attacker has no separate test run')
     page.click('#atk-lock'); hand(page)
     check(page.get_attribute('#pane-wave .speed [data-speed="1"]', 'aria-pressed') == 'true' and page.evaluate('() => window.siegeline.speed') == 1, 'the real wave keeps its own speed (1×), whatever the test ran at')
     d0 = S(page, 'S.dFree')
@@ -420,7 +418,7 @@ with sync_playwright() as p:
     page.click('#atk-next'); page.wait_for_timeout(300)
     a0 = S(page, 'S.aFree'); click_cell(page, *W3)
     check(S(page, f'S.charges.get({w3}).cost') == 38 and S(page, 'S.aFree') == a0 - 38, 'the third bridge costs 25 × (1 + 2 × 0.25) = 38')
-    page.click('#atk-next'); page.click('.mini[data-act=rush]'); page.click('#atk-lock'); hand(page)
+    page.click('#atk-next'); page.click('[data-wv=rush]'); page.click('#atk-lock'); hand(page)
     check(advance_until(page, f'S.sapList[0].state !== "go" && S.sapList[0].state !== "wait"'), 'the sapper gets to the end of its job')
     check(S(page, f'S.grid[{w3}].t') == 'tower' and not S(page, f'S.bridges.has({w3})') and S(page, 'S.wave.missed + S.wave.sapMissed') >= 1, 'a bridge on a wall that became a tower misses')
     page.evaluate('() => window.siegeline.advance(120)'); page.wait_for_timeout(2000)
@@ -490,16 +488,17 @@ with sync_playwright() as p:
     for _ in range(6): page.tap('.step.plus[data-i="2"]')
     page.screenshot(path=f'{OUT}/m2_army.png')
     page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(200)
-    page.locator('.lane[data-i="0"]').scroll_into_view_if_needed()
-    hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box(); lb = page.locator('.lane[data-i="0"]').bounding_box()
+    row0 = '#wv-rows .wv-grp[data-id] >> nth=0'
+    page.locator(row0).scroll_into_view_if_needed(); page.wait_for_timeout(100)
+    hb = page.locator(f'{row0} >> .bar .h.l').bounding_box(); lb = page.locator(f'{row0} >> .track').bounding_box()
     cdp = ctx.new_cdp_session(page)
     x0, y0 = hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2
     cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x0, 'y': y0}]})
     for k in range(1, 9):
-        cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (lb['x'] + lb['width'] * 0.9 - x0) * k / 8, 'y': y0}]}); page.wait_for_timeout(20)
+        cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (lb['x'] + lb['width'] * 0.1 - x0) * k / 8, 'y': y0}]}); page.wait_for_timeout(20)
     cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
     e0 = S(page, 'S.designs[0].tl.e')
-    check(e0 > 0.8, f'phone: touch-drag a timeline handle ({e0:.2f})')
+    check(e0 > 0.8, f'phone: touch-drag the bar’s left end (the last release) out toward 20 s ({e0:.2f})')
     page.screenshot(path=f'{OUT}/m3_wave.png')
     ov = page.evaluate('() => document.documentElement.scrollWidth > innerWidth')
     check(not ov, 'phone: no horizontal overflow')
@@ -522,7 +521,7 @@ with sync_playwright() as p:
     check(S(page, f'S.charges.has({idx(4,4)}) && S.charges.get({idx(4,4)}).kind') == 'bridge', 'phone: tapping a seen wall plans a bridge')
     page.screenshot(path=f'{OUT}/m7_bridge_planned.png')
     page.tap('#atk-next'); page.wait_for_timeout(300)
-    check(page.is_visible('.lane.sap') and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'), 'phone: the sapper’s track fits the Wave step')
+    check(page.locator('#wv-rows .wv-grp.sap').count() == 1 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'), 'phone: the sapper’s row fits the Wave step')
     page.screenshot(path=f'{OUT}/m7b_sapper_track.png')
     page.tap('#atk-lock'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(1200)
     check(advance_until(page, f'S.bridges.has({idx(4,4)})'), 'phone: the bridge goes down when its sapper gets there')
@@ -1024,360 +1023,408 @@ with sync_playwright() as p:
     card = page.inner_text('#atk-ctx')
     check('72% per shot' in card and 'expected 13/s' in card, f'a tower card shows its accuracy at 4 shots/s and expected damage after misses ({card[:200]!r})')
     page.click('#atk-ctx [data-act=close]')
-    # the scrubber and the v20.1 "Spread + Path planner" spec on the Wave step: Runners ×3 and Brutes ×2, no bridge yet
+    # v22: the tower card still shows accuracy; on to the Wave step, whose forecast plays this round's plan
     page.click('#atk-next'); page.wait_for_timeout(250)
-    check(page.is_visible('#a-scrub') and page.inner_text('#scrub-lbl') == 'T = 0.0 s' and page.is_hidden('#scrub-br') and page.locator('#tl [data-al]').count() == 0,
-          'the Wave step opens the scrubber at T = 0 s, no bridge toggle without a bridge, and auto-align is gone')
-    check(page.get_attribute('#scrub-t', 'max') == '60' and all(page.locator(f'.lane[data-i="{i}"]').count() == 1 and page.locator(f'.pth[data-g="d{i}"]').count() == 1 for i in (0, 1)),
-          'one master time slider (0–60 s), then a row per design with a spread track and a path slider')
-    check(S(page, 'window.siegeline.scrub.view().dots.length') == 0 and page.inner_text('.pth[data-g="d0"]').strip() == '+3' and page.inner_text('.pth[data-g="d1"]').strip() == '+2',
-          'at 0 s nothing has set out: each path slider shows its group waiting at the entry')
-    paths = lambda: page.evaluate('() => window.siegeline.scrub.paths()')
-    pbox = lambda g: page.locator(f'.pth[data-g="{g}"]').bounding_box()
-    def px(box, D, L): return box['x'] + 1 + D / L * (box['width'] - 2)  # a route distance on a path slider (inside its 1 px border)
-    # spec test 1: the spread track spans the release window, 0-20 s; spreading keeps the front's release time
-    lane = page.locator('.lane[data-i="0"]').bounding_box(); y = lane['y'] + 16
-    drag(page, lane['x'] + lane['width'] * 0.15, y, lane['x'] + lane['width'] * 0.40, y)
-    tl = S(page, 'S.designs[0].tl')
-    check(abs(tl['s'] - 0.25) < 0.02 and abs((tl['e'] - tl['s']) - 0.3) < 1e-9, f'sliding a band on its spread track moves its release time, spread kept ({tl["s"] * 20:.1f}–{tl["e"] * 20:.1f}s)')
-    s0 = tl['s']; hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box()
-    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] * 0.75, hb['y'] + hb['height'] / 2)
-    tl = S(page, 'S.designs[0].tl')
-    check(tl['s'] == s0 and abs(tl['e'] - 0.75) < 0.02, f'spec test 1: the tab changes the spread and keeps the front’s release time ({s0 * 20:.2f}s → {tl["s"] * 20:.2f}s, the end at {tl["e"] * 20:.1f}s)')
-    hb = page.locator('.lane[data-i="0"] .hdl.e').bounding_box()
-    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] + 60, hb['y'] + hb['height'] / 2)
-    tl = S(page, 'S.designs[0].tl'); dots = page.locator('.lane[data-i="0"] .clip'); first, last = dots.nth(0).bounding_box(), dots.nth(2).bounding_box()
-    check(tl['s'] == s0 and tl['e'] == 1 and abs(last['x'] + last['width'] / 2 - (lane['x'] + lane['width'] - 1)) < 3 and abs(first['x'] + first['width'] / 2 - (lane['x'] + 1 + (lane['width'] - 2) * s0)) < 3
-          and page.inner_text('.tl-ruler').split() == ['0s', '5s', '10s', '15s', '20s'],
-          f'spec test 1: the spread track spans 0–20 s, and a spread pulled past 20 s stops there (front {tl["s"] * 20:.1f}s, end {tl["e"] * 20:.1f}s)')
-    # spec test 3: with the same spread, the fast group's band is longer on the route than the slow one's
-    page.click('.mini[data-act=rush]'); page.wait_for_timeout(150); set_slider(page, '#scrub-t', 5); page.wait_for_timeout(50)
-    P = paths(); fast, slow = P['rows']['d0'], P['rows']['d1']
-    bf, bs = fast['on'][-1] - fast['on'][0], slow['on'][-1] - slow['on'][0]
-    wf, ws = page.locator('.pth[data-g="d0"] .band').bounding_box()['width'], page.locator('.pth[data-g="d1"] .band').bounding_box()['width']
-    check(len(fast['on']) == 3 and len(slow['on']) == 2 and bf > bs * 1.5 and wf > ws * 1.5,
-          f'spec test 3: with the same spread the Runners’ band is longer than the Brutes’ ({bf:.2f} vs {bs:.2f} cells, {wf:.0f} vs {ws:.0f} px)')
-    # spec test 5: every path slider shares one scale: the same route distance sits at the same x on every row
-    b0, b1 = pbox('d0'), pbox('d1')
-    marks = page.evaluate("() => [...document.querySelectorAll('#tl .pth .mk')].map(m => m.innerHTML)")
-    ticks = page.evaluate("() => Object.fromEntries([...document.querySelectorAll('#tl .pth')].map(p => [p.dataset.g, [...p.querySelectorAll('.dyn .tk')].map(t => { const r = t.getBoundingClientRect(); return r.left + r.width / 2; })]))")
-    off = max(abs(x - px(pbox(g), D, P['L'])) for g in ('d0', 'd1') for x, D in zip(ticks[g], P['rows'][g]['on']))
-    check(abs(b0['x'] - b1['x']) < 0.5 and abs(b0['width'] - b1['width']) < 0.5 and len(set(marks)) == 1 and 'fire' in marks[0] and off < 1.5,
-          f'spec test 5: every path slider has the same place, width and tower-range shading, and each unit sits at its route distance on that scale (off by {off:.2f} px)')
-    page.screenshot(path=f'{OUT}/v201_rows.png')
-    # spec test 2: a path drag at T = 10 s puts the front unit within 0.2 cells of the drop point, its spread unchanged
-    set_slider(page, '#scrub-t', 10); page.wait_for_timeout(50)
-    P = paths(); f0, L = P['rows']['d0']['front'], P['L']; box = pbox('d0'); y = box['y'] + box['height'] / 2
-    tl0 = S(page, 'S.designs[0].tl'); x0 = px(box, f0, L); dx = -box['width'] * 0.2
-    drag(page, x0, y, x0 + dx, y); page.wait_for_timeout(150)
-    want = f0 + dx / box['width'] * L
-    tl1 = S(page, 'S.designs[0].tl'); P1 = paths(); v = page.evaluate('() => window.siegeline.scrub.view()')
-    d = next((x for x in v['dots'] if x['g'] == 'd0' and x['k'] == P1['rows']['d0']['frontK']), None)
-    wx, wy = page.evaluate(f'() => window.siegeline.scrub.pointAt({want})')
-    gap = ((d['x'] - wx) ** 2 + (d['y'] - wy) ** 2) ** 0.5 if d else 9
-    check(tl1['s'] > tl0['s'] and abs((tl1['e'] - tl1['s']) - (tl0['e'] - tl0['s'])) < 1e-9 and gap < 0.2 and abs(P1['rows']['d0']['front'] - want) < 0.2,
-          f'spec test 2: dragged along its path slider at T = 10 s, the Runners’ front unit is {gap:.3f} cells from the drop point ({f0:.1f} → {want:.1f} of {L:.1f}), spread kept ({(tl1["e"] - tl1["s"]) * 20:.2f}s)')
-    check(page.evaluate("() => document.querySelector('.pth[data-g=\"d0\"] .was').classList.contains('go')"),
-          'after a path drag the group’s old place fades out on its path slider')
-    page.screenshot(path=f'{OUT}/v201_path_drag.png')
-    # spec test 4: past 0 s or 20 s the group stops at the limit, and a toast says why
-    P = paths(); box = pbox('d0')
-    drag(page, px(box, P['rows']['d0']['front'], P['L']), y, box['x'] + box['width'] - 3, y); page.wait_for_timeout(100)
-    check(abs(S(page, 'S.designs[0].tl.s')) < 1e-9 and toast(page) == 'Can’t release before 0 s', f'spec test 4: dragged toward the keep, the group stops when its front would leave before 0 s ({toast(page)})')
-    page.wait_for_timeout(150); set_slider(page, '#scrub-t', 40); page.wait_for_timeout(50)
-    P = paths()
-    check(P['rows']['d0']['keep'] == 3 and not P['rows']['d0']['on'] and page.inner_text('.pth[data-g="d0"]').strip() == '×3', f'at 40 s all three Runners stack at the keep end ({P["rows"]["d0"]})')
-    drag(page, box['x'] + box['width'] - 4, y, box['x'] + 4, y); page.wait_for_timeout(100)
-    check(abs(S(page, 'Math.max(...window.siegeline.tlPositions(window.siegeline.state.designs[0]))') - 1) < 1e-9 and toast(page) == 'Must be released by 20 s',
-          f'spec test 4: dragged back from the keep at 40 s, the group stops when its last unit would leave after 20 s ({toast(page)})')
-    # dragged to the left end at T: the front releases at T, so the group waits at the entry
-    page.wait_for_timeout(150); page.click('.mini[data-act=rush]'); page.wait_for_timeout(150); set_slider(page, '#scrub-t', 6); page.wait_for_timeout(50)
-    P = paths(); box = pbox('d0')
-    drag(page, px(box, P['rows']['d0']['front'], P['L']), y, box['x'] + 2, y); page.wait_for_timeout(150)
-    pos = page.evaluate('() => window.siegeline.tlPositions(window.siegeline.state.designs[0])'); P = paths()
-    check(abs(min(pos) * 20 - 6) < 1e-6 and P['rows']['d0']['wait'] == 3 and not P['rows']['d0']['on'], f'dragged to the left end at 6 s, the front releases at 6 s and the group waits at the entry ({min(pos) * 20:.2f}s)')
-    # dragged to the right end at T: the front reaches the keep exactly then
-    set_slider(page, '#scrub-t', 15); page.wait_for_timeout(50)
-    P = paths(); box = pbox('d0')
-    drag(page, px(box, P['rows']['d0']['front'], P['L']), y, box['x'] + box['width'] + 30, y); page.wait_for_timeout(150)
-    k = paths()['rows']['d0']['frontK']
-    set_slider(page, '#scrub-t', 14.8); page.wait_for_timeout(50); A = paths()['rows']['d0']
-    set_slider(page, '#scrub-t', 15.2); page.wait_for_timeout(50); B = paths()['rows']['d0']
-    check(A['frontK'] == k and A['keep'] == 0 and A['front'] > A['on'][-1] - 1e-9 and A['front'] > paths()['L'] - 1 and B['keep'] >= 1,
-          f'dragged to the right end at 15 s, the front reaches the keep then (at 14.8 s it is {A["front"]:.2f} along, at 15.2 s {B["keep"]} at the keep)')
-    # spec test 6: dragging on the map does nothing
-    set_slider(page, '#scrub-t', 10); page.wait_for_timeout(50)
-    v = page.evaluate('() => window.siegeline.scrub.view()'); d = max((x for x in v['dots'] if x['g'] == 'd0'), key=lambda d: d['w'])
-    timing = lambda: S(page, 'JSON.stringify([S.designs.map(d => d.tl), [...S.charges].map(([i, c]) => c.t)])')
-    t0 = timing()
-    drag(page, *page.evaluate(f"() => window.siegeline.worldToClient({d['x'] + d['ox']}, {d['y'] + d['oy']})"), *page.evaluate(f'() => window.siegeline.cellToClient({v["route"][2]})')); page.wait_for_timeout(150)
-    check(timing() == t0 and S(page, 'S.phase') == 'attack' and S(page, 'S.step') == 2, 'spec test 6: dragging a unit on the map changes nothing (the map only shows the preview)')
-    # play runs the preview at 1×, and moving the slider pauses it
-    set_slider(page, '#scrub-t', 2); page.click('#scrub-play'); page.wait_for_timeout(600)
-    T = page.evaluate('() => window.siegeline.scrub.T')
-    check(page.evaluate('() => window.siegeline.scrub.playing') and 2.3 < T < 3.5, f'Play runs the preview at 1× ({T:.2f}s after 0.6 s)')
-    def press(sel):  # a press held a tenth of a second, like a finger: frames go by between down and up
-        bx = page.locator(sel).bounding_box(); page.mouse.move(bx['x'] + bx['width'] / 2, bx['y'] + bx['height'] / 2)
-        page.mouse.down(); page.wait_for_timeout(100); page.mouse.up(); page.wait_for_timeout(150)
-    press('#scrub-play')
-    check(not page.evaluate('() => window.siegeline.scrub.playing'), 'the play button pauses on the next press while playing, with nothing in between')
-    press('#scrub-play')
-    check(page.evaluate('() => window.siegeline.scrub.playing'), 'and plays again on the press after')
-    press('#scrub-play')
-    set_slider(page, '#scrub-t', 5)
-    check(not page.evaluate('() => window.siegeline.scrub.playing') and page.evaluate('() => window.siegeline.scrub.T') == 5, 'moving the slider pauses the preview')
-    # spec test 8 (v19): with a bridge planned, Lands changes the route the moment its sapper arrives; Fails never does
-    atk_back(page); page.wait_for_timeout(150)
-    # without the tower the seen route runs beside the wall at (7,5), so a bridge there is a real shortcut
-    page.evaluate(f'() => {{ const S = window.siegeline.state; S.seenGrid[{idx(8, 9)}] = null; S.seenVer++; }}')
-    bw = idx(7, 5)
-    click_cell(page, 7, 5); page.click('#atk-next'); page.wait_for_timeout(250)
-    check(page.is_visible('#scrub-br') and page.get_attribute('#scrub-br [data-lands="1"]', 'aria-pressed') == 'true' and 'plan with bridge' in page.inner_text('#scrub-br').lower(),
-          'a planned bridge shows the toggle, Plan with bridge: Lands / Fails, on Lands')
-    R = page.evaluate('() => window.siegeline.scrub.routes()'); sp = page.evaluate('() => window.siegeline.scrub.saps()')[0]
-    at = lambda T: (set_slider(page, '#scrub-t', T), page.evaluate('() => window.siegeline.scrub.view().route'))[1]
-    check(len(R) == 2 and R[1]['by'] == bw and sp['end'] == 'used' and abs(R[1]['t'] - sp['tEnd']) < 1e-9 and R[0]['path'] != R[1]['path']
-          and at(round(sp['tEnd'] - 0.15, 1)) == R[0]['path'] and at(round(sp['tEnd'] + 0.15, 1)) == R[1]['path'],
-          f'spec test 8: on Lands the route changes when the sapper reaches its tile ({sp["tEnd"]:.2f}s), and the map shows it when the slider passes then {[(r["t"], r["by"], len(r["path"])) for r in R]} {sp} bridge {bw}')
-    before, after = (at(round(sp['tEnd'] - 0.15, 1)), paths())[1], (at(round(sp['tEnd'] + 0.15, 1)), paths())[1]
-    n_pth = page.locator('#tl .pth').count()
-    check(before['cells'] == len(R[0]['path']) and after['cells'] == len(R[1]['path']) and after['L'] < before['L'] and n_pth == 3 and page.locator('#tl .pth .brk').count() == n_pth,
-          f'the path sliders follow the route at T: {before["cells"]} cells before the bridge lands, {after["cells"]} after; the planned bridge is marked on every row')
-    at(round(sp['t0'] + 1, 1))
-    check(page.locator(f'.pth[data-g="s{bw}"] .dyn .tk').count() == 1 and '+' not in page.inner_text(f'.pth[data-g="s{bw}"]'), 'the sapper has a path slider too, with a single tick')
-    page.screenshot(path=f'{OUT}/v19_lands.png')
-    page.click('#scrub-br [data-lands="0"]'); page.wait_for_timeout(100)
-    R = page.evaluate('() => window.siegeline.scrub.routes()'); sp = page.evaluate('() => window.siegeline.scrub.saps()')[0]
-    check(len(R) == 1 and sp['tFail'] == sp['t0'] and at(30) == R[0]['path'], 'spec test 8: on Fails the route never changes and the sapper fails at once')
-    page.screenshot(path=f'{OUT}/v19_fails.png')
-    check(not errors, f'v19 and v20.1: no errors {errors[:3]}')
+    check(page.is_visible('#wv-play') and page.locator('#wv-rows .wv-grp').count() == 2, 'v22: the Wave step opens with ▶ PLAY WAVE and a row per group')
+    check(not errors, f'v19 accuracy: no errors {errors[:3]}')
     ctx.close()
-    # the path slider on a phone: drag a group by touch
-    ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
-    page = ctx.new_page(); errors = []
-    page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
-    page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
-    page.tap('#def-lock'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
-    for _ in range(3): page.tap('.step.plus[data-i="0"]')
-    page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(250)
-    set_slider(page, '#scrub-t', 6); page.wait_for_timeout(50)
-    P = page.evaluate('() => window.siegeline.scrub.paths()'); page.locator('.pth[data-g="d0"]').scroll_into_view_if_needed(); box = page.locator('.pth[data-g="d0"]').bounding_box()
-    x0 = box['x'] + 1 + P['rows']['d0']['front'] / P['L'] * (box['width'] - 2); y0 = box['y'] + box['height'] / 2
-    x1 = x0 - box['width'] * 0.15  # back toward the entry: it releases later
-    s0 = S(page, 'S.designs[0].tl.s')
-    cdp = ctx.new_cdp_session(page)
-    cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x0, 'y': y0}]})
-    for k in range(1, 9): cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (x1 - x0) * k / 8, 'y': y0}]}); page.wait_for_timeout(20)
-    cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []}); page.wait_for_timeout(150)
-    check(S(page, 'S.designs[0].tl.s') > s0 and box['x'] + box['width'] <= 390 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
-          f'phone: a group dragged along its path slider by touch leaves later ({s0 * 20:.2f}s → {S(page, "S.designs[0].tl.s") * 20:.2f}s); the rows fit, no horizontal overflow')
-    page.screenshot(path=f'{OUT}/m13_scrub.png')
-    check(not errors, f'phone path slider: no errors {errors[:3]}')
-    ctx.close()
-    # ---------- v20.2 (the "Wave planner layout" spec), on a device that hasn't seen the wave plan's How to use card
-    ctx = b.new_context_fresh(viewport={'width': 1366, 'height': 860})
+
+    # ---------- v22: the Wave step (the user's "Attacker wave screen" spec, Part E) on a 1440×900 screen
+    def v22_round2(page, bridge=True, ko=True):
+        """Round 1: an Auto-maze and four towers beside the route; the attacker sends Runners, Brutes and Swarm. Round 2:
+        the same defense; the attacker plans a bridge and a knock-out and opens the Wave step."""
+        page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+        page.click('#def-body [data-act=maze]'); page.wait_for_function('() => !window.siegeline.mazing'); page.wait_for_timeout(50)
+        page.click('.tool[data-tool=tower]')
+        cells = page.evaluate("""() => { const S = window.siegeline.state, p = S.path, out = [];
+          for (let k = 4; k < p.length - 3 && out.length < 4; k += 6) for (const d of [16, -16, 1, -1]) { const j = p[k] + d; if (j >= 0 && j < 176 && !S.grid[j] && !p.includes(j) && j !== 80 && j !== 95) { out.push(j); break; } }
+          return out; }""")
+        for j in cells: click_cell(page, j % COLS, j // COLS); page.keyboard.press('Escape')
+        page.click('#def-lock'); hand(page)
+        for i, n in ((0, 3), (1, 2), (2, 8)):
+            for _ in range(n): page.click(f'.step.plus[data-i="{i}"]')
+        page.click('#atk-lock'); hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(80)
+        page.click('#sum-next'); hand(page); page.click('#def-lock'); hand(page)
+        page.click('#atk-next'); page.wait_for_timeout(150)
+        if bridge:
+            sp = spot(page)
+            if sp: click_cell(page, *sp)
+        if ko:
+            tw = page.evaluate('() => window.siegeline.state.seenGrid.map((g, i) => g && g.t === "tower" ? i : -1).filter(i => i >= 0)')
+            if tw: click_cell(page, tw[0] % COLS, tw[0] // COLS); page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
+        page.click('#atk-next'); page.wait_for_timeout(300)
+        return cells
+    ctx = b.new_context(viewport={'width': 1440, 'height': 900})
     page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.on('console', lambda m: errors.append(m.text) if m.type == 'error' and 'ERR_' not in m.text else None)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page); sure_sappers(page)
+    v22_round2(page)
+    W = 'window.siegeline.wave'
+    ev = lambda e: page.evaluate('() => ' + e)
+    ztags = ev(W + '.zones().map(z => z.id + " " + z.tags.join("+"))')
+    check(S(page, 'S.round') == 2 and S(page, 'S.step') == 2 and S(page, 'S.charges.size') == 2 and len(ztags) >= 1,
+          f'v22: round 2 with a bridge and a knock-out planned, and zones on the route ({ztags})')
+    # test 1: the layout fits 1440×900 and 1920×1080 with no page scroll; at 1280×800 the overflow is at most 30 px
+    def overflow():
+        return page.evaluate("""() => { const d = document.documentElement, sc = document.querySelector('#pane-atk .scroll'), u = document.querySelector('#wvx').getBoundingClientRect();
+          return { page: Math.max(0, d.scrollHeight - innerHeight), wide: Math.max(0, d.scrollWidth - innerWidth), panel: Math.max(0, sc.scrollHeight - sc.clientHeight), under: Math.max(0, Math.ceil(u.bottom - innerHeight)) }; }""")
+    for (w, h, most) in ((1440, 900, 0), (1920, 1080, 0), (1280, 800, 30)):
+        page.set_viewport_size({'width': w, 'height': h}); page.wait_for_timeout(250)
+        o = overflow()
+        check(o['wide'] == 0 and o['page'] == 0 and max(o['panel'], o['under']) <= most, f'v22 test 1: at {w}×{h} the Wave step fits (overflow {o}, allowed {most})')
+        page.screenshot(path=f'{OUT}/v22_wave_{w}x{h}.png')
+    page.set_viewport_size({'width': 1440, 'height': 900}); page.wait_for_timeout(200)
+    # test 15: the forecast never changes S, the match's random stream or the encoded plan
+    snap = lambda: page.evaluate("""() => { const sl = window.siegeline, S = sl.state; return JSON.stringify([S.round, S.phase, S.aFree, S.dFree, S.keep, S.path, [...S.bridges], S.grid.map(g => g && [g.t, g.off || 0, g.dealt || 0]),
+      S.seenGrid.map(g => g && g.t), S.totals, S.units.length, sl.wave.plan(), sl.streamId()]); }""")
+    s0 = snap()
+    for k in range(3): page.evaluate(f'() => {{ window.siegeline.state.designs[0].tl.pos[0] += 0; return window.siegeline.wave.forecast(); }}')
+    page.click('#wv-play'); page.wait_for_timeout(500); page.click('#wv-play')
+    check(snap() == s0, 'v22 test 15: running and playing the forecast changes nothing in the match, its random stream or the plan')
+    # selection: exactly one group, highlighted in the timeline and named in the tools panel
+    def sel_ok():
+        return page.evaluate("""() => { const rows = [...document.querySelectorAll('#wv-rows .wv-grp.sel')], ed = document.querySelector('#wv-tools .tools-h b');
+          if (rows.length !== 1 || !ed) return false; const id = rows[0].dataset.id, g = window.siegeline.wave.groups().find(x => x.id === id);
+          return id === window.siegeline.wave.sel && !!g && ed.textContent.replace(/\\s+/g, ' ').includes(rows[0].querySelector('.nm').textContent.replace(/^◆ /, '')); }""")
+    check(sel_ok(), 'v22: exactly one group is selected, its row highlighted and named in the tools panel’s EDITING line')
+    page.click('#wv-rows .wv-grp >> nth=2 >> .rh'); page.wait_for_timeout(60)
+    check(sel_ok() and ev(f'{W}.sel') == page.get_attribute('#wv-rows .wv-grp >> nth=2', 'data-id'), 'v22 test 9: clicking a row selects its group')
+    # test 5: Split then Merge restores the original release times; test 16: the plan for a split design is the plan
+    p0 = S(page, 'JSON.stringify(S.designs[2].tl)'); plan0 = ev(f'{W}.plan()')
+    page.click('[data-wv=split]'); page.wait_for_timeout(60)
+    gs = ev(f'{W}.groups().filter(g => g.di === 2)')
+    check(len(gs) == 2 and sel_ok() and ev(f'{W}.sel') == gs[0]['id'] and 'Group 1 of 2'.lower() in page.inner_text('#wv-tools .tools-h').lower(),
+          f'v22: Split makes two groups of the design, the first half selected ({[len(g["idx"]) for g in gs]})')
+    check(ev(f'{W}.plan()') == plan0, 'v22 test 16: splitting alone leaves the plan sent online exactly as it was')
+    page.click('[data-wv=place][data-w=last]'); page.wait_for_timeout(60)
+    split_plan = ev(f'{W}.plan()'); split_pos = S(page, 'S.designs[2].tl.pos.slice()')
+    page.select_option('#wv-mg', gs[1]['id']); page.click('[data-wv=merge]'); page.wait_for_timeout(60)
+    check(len(ev(f'{W}.groups().filter(g => g.di === 2)')) == 1 and sel_ok(), 'v22: Merge joins them again, the merged group selected')
+    page.keyboard.press('Control+z'); page.keyboard.press('Control+z'); page.keyboard.press('Control+z'); page.wait_for_timeout(60)
+    check(S(page, 'JSON.stringify(S.designs[2].tl)') == p0 and len(ev(f'{W}.groups().filter(g => g.di === 2)')) == 1 and sel_ok(),
+          'v22 Undo: three presses take back Merge, Last and Split, one each, to the times and the group it started with')
+    page.click('[data-wv=split]'); page.click('[data-wv=merge]') if page.is_visible('[data-wv=merge]') else None
+    page.wait_for_timeout(60)
+    check(S(page, 'JSON.stringify(S.designs[2].tl)') == p0, 'v22 test 5: Split then Merge restores the original release times')
+    page.evaluate(f"() => {{ const S = window.siegeline.state; S.designs[2].tl = {{ s: Math.min(...{split_pos}), e: Math.max(...{split_pos}), pos: {split_pos} }}; window.siegeline.refresh(); }}")
+    check(ev(f'{W}.plan()') == split_plan, 'v22 test 16: the plan sent for a split design equals the same release times entered without splitting')
+    # test 6: Merge never across designs; Link only for equal speeds
+    page.click('#wv-rows .wv-grp >> nth=0 >> .rh'); page.wait_for_timeout(60)
+    check(page.locator('#wv-mg').count() == 0 and page.locator('[data-wv=link]').count() == 0, 'v22 test 6: Runners (2.3 c/s) get no Merge with other designs, and no Link: no other design has their speed')
+    page.evaluate("() => { const S = window.siegeline.state; S.designs[1].speed = S.designs[2].speed; window.siegeline.refresh(); }")
+    page.click('#wv-rows .wv-grp >> nth=1 >> .rh'); page.wait_for_timeout(60)
+    opts = page.evaluate("() => [...document.querySelectorAll('#wv-lk option')].map(o => o.textContent)")
+    check(page.locator('#wv-mg').count() == 0 and opts and all('Swarm' in o for o in opts), f'v22 test 6: Brutes at the Swarm’s speed are offered Link with it, never Merge ({opts})')
+    page.click('[data-wv=link]'); page.wait_for_timeout(60)
+    lk = ev(f'{W}.groups().filter(g => g.cell == null).map(g => g.link)')
+    page.click('[data-wv=place][data-w=lead]'); page.wait_for_timeout(60)
+    check(lk[1] and lk[1] == lk[2] and S(page, 'Math.min(...S.designs[1].tl.pos, ...S.designs[2].tl.pos)') < 1e-9 and page.locator('#wv-rows .chain').count() == 2,
+          'v22: linked groups move together (Lead puts the earliest of both at 0 s) and show a chain icon')
+    page.click('[data-wv=unlink]'); page.keyboard.press('Control+z'); page.keyboard.press('Control+z'); page.keyboard.press('Control+z')
+    page.evaluate("() => { const S = window.siegeline.state; S.designs[1].speed = 1; window.siegeline.refresh(); }")
+    # test 8: every planned sapper is in the Meet list by its job name; test 7: Meet with a sapper
+    page.click('#wv-rows .wv-grp >> nth=2 >> .rh'); page.wait_for_timeout(60)
+    mo = page.evaluate("() => [...document.querySelectorAll('#wv-mo option')].map(o => o.textContent)")
+    check(any(o.startswith('◆ Bridge → wall ') for o in mo) and any(o.startswith('◆ Knock-out → Tower ') for o in mo), f'v22 test 8: every planned sapper is in the Meet list, named by its job ({mo})')
+    ko = S(page, '[...S.charges].find(([, c]) => c.kind === "tower")[0]')
+    zones = ev(f'{W}.zones()'); zk = next((z['id'] for z in zones if ko in z['towers']), zones[0]['id'])
+    page.select_option('#wv-mo', f's{ko}'); page.select_option('#wv-mz', zk); page.click('[data-wv=meet]'); page.wait_for_timeout(150)
+    note = page.inner_text('#wv-note')
+    mid = page.evaluate(f"""() => {{ const sl = window.siegeline, f = sl.wave.forecast(), z = sl.wave.zones().find(q => q.id === '{zk}'), cells = new Set(z.cells);
+      return null; }}""")
+    check(('now pass' in note and 'Knock-out sapper' in note and zk in note) or note.startswith('Closest possible') or 'never reach' in note,
+          f'v22 test 7: Meet lines the Swarm up with the knock-out sapper in {zk}, or says why it can’t ({note})')
+    check(sel_ok() and ev(f'{W}.selZ') == zk and 'Met in' in page.inner_text('#wv-log'), 'v22 test 9: after Meet the Swarm stays selected, the zone is picked and the log says what changed')
+    page.keyboard.press('Control+z'); page.wait_for_timeout(60)
+    check(sel_ok(), 'v22 test 9: and after Undo the highlighted row is still the group in the EDITING line')
+    def pick_zone(zid):
+        if ev(f'{W}.selZ') != zid: page.click(f'.wv-zc[data-z="{zid}"]'); page.wait_for_timeout(60)
+    # test 10: zone stars, ✕ counts and the LAST RUN rows match the forecast's deaths and each tower's damage
+    f = ev(f'{W}.forecast()'); zones = ev(f'{W}.zones()')
+    ok = True
+    for z in zones:
+        ts = set(z['towers']); lost = sum(1 for d in f['deaths'] if not d['sap'] and d['by'] in ts); dmg = sum(f['dealt'].get(str(i), 0) for i in z['towers'])
+        q = lost / z['entered'] if z['entered'] else 0; st = 3 if not z['entered'] else 3 if q <= 0.05 else 2 if q <= 0.2 else 1 if q <= 0.4 else 0
+        ok = ok and z['lost'] == lost and abs(z['dmg'] - dmg) < 1e-6 and z['stars'] == st
+    pick_zone(zones[0]['id'])
+    page.evaluate(f'() => {{ {W}.T = 0; }}'); page.wait_for_timeout(60)
+    chips = page.evaluate("() => [...document.querySelectorAll('.wv-zc')].map(c => [c.dataset.z, c.querySelector('.k').textContent, c.querySelectorAll('.stars').length ? c.querySelector('.stars').textContent.split('').filter(x => x === '★').length : -1])")
+    rows = page.evaluate("() => [...document.querySelectorAll('#wv-zcard .lr tr')].map(r => r.textContent)")
+    ok2 = all(c[1] == f'✕{z["lost"]}' and c[2] == z['stars'] for c, z in zip(chips, zones)) and len(rows) == len(zones) and all(f'{round(z["dmg"]):,} dmg' in r and (('0 died' in r) == (z['lost'] == 0)) for r, z in zip(rows, zones))
+    check(ok and ok2, f'v22 test 10: zone stars, ✕ counts and the LAST RUN rows match the forecast’s deaths and its towers’ damage ({chips}, {rows})')
+    card = page.inner_text('#wv-zcard').upper()
+    check('THREAT' in card and 'BEAT IT' in card and 'LAST RUN' in card and f'OPTIMIZE {zones[0]["id"]}' in card and f'LOCK {zones[0]["id"]}' in card, f'v22: the zone card has its threats, how to beat it, LAST RUN, Optimize and Lock ({card[:120]!r})')
+    # test 13: each Play press saves a run, unless nothing changed; test 14: Restore brings that plan back exactly
+    n0 = len(ev(f'{W}.runs'))
+    page.click('#wv-play'); page.wait_for_timeout(200); page.click('#wv-play'); page.wait_for_timeout(50)
+    n1 = len(ev(f'{W}.runs'))
+    page.click('#wv-play'); page.wait_for_timeout(200); page.click('#wv-play'); page.wait_for_timeout(50)
+    n2 = len(ev(f'{W}.runs'))
+    check(n1 == n0 + 1 and n2 == n1, f'v22 test 13: Play saves a run; Play again with no change doesn’t ({n0} → {n1} → {n2})')
+    saved = ev(f'{W}.plan()')
+    page.click('[data-wv=rush]'); page.wait_for_timeout(60)
+    page.click('#wv-play'); page.wait_for_timeout(100); page.click('#wv-play')
+    check(len(ev(f'{W}.runs')) == n1 + 1 and ev(f'{W}.plan()') != saved, 'v22: a changed plan saves a new run')
+    page.click(f'.run[data-run="{n1 - 1}"]'); page.wait_for_timeout(60)
+    check(page.is_visible('[data-wv=restore]'), 'v22: tapping a run offers Restore this run (its losses show as grey ✕s on the map)')
+    page.screenshot(path=f'{OUT}/v22_run_cmp.png')
+    page.click('[data-wv=restore]'); page.wait_for_timeout(80)
+    check(ev(f'{W}.plan()') == saved, 'v22 test 14: Restore brings back that run’s plan exactly')
+    # test 11: lock a zone, optimize another: the locked zone's losses never go up; test 12: the log lists every zone that changed
+    zones = ev(f'{W}.zones()')
+    if len(zones) >= 2:
+        za, zb = zones[0], zones[1]
+        pick_zone(za['id'])
+        page.click(f'[data-wv=lock][data-z="{za["id"]}"]'); page.wait_for_timeout(40); cap = ev(f'{W}.locks')[za['id']]
+        check(cap == za['lost'] and 'LOCKED' in page.inner_text(f'.wv-zc[data-z="{za["id"]}"]').upper(), f'v22: Lock records {za["id"]}’s losses ({cap}) as its cap')
+        pick_zone(zb['id'])
+        k0 = {z['id']: z['lost'] for z in ev(f'{W}.zones()')}
+        page.click(f'[data-wv=opt][data-z="{zb["id"]}"]')
+        page.wait_for_function(f'() => !{W}.busy', timeout=60000); page.wait_for_timeout(100)
+        k1 = {z['id']: z['lost'] for z in ev(f'{W}.zones()')}
+        log = page.inner_text('#wv-log')
+        check(k1[za['id']] <= cap, f'v22 test 11: optimizing {zb["id"]} never raises locked {za["id"]}’s losses ({k0} → {k1}, cap {cap})')
+        check(all(z in log for z in k0 if k0[z] != k1[z]) and (f'Optimized {zb["id"]}' in log or 'No better plan' in log),
+              f'v22 test 12: the change log lists every zone whose losses changed ({log[:160]!r})')
+        pick_zone(za['id']); page.click(f'[data-wv=lock][data-z="{za["id"]}"]')
+    else: print('SKIP v22 tests 11-12: only one zone on this map')
+    # Auto-sequence: in chunks, "Working it out…", up to 4 changes, ghosts of where groups were, BEATS AUTO when it should
+    b0 = ev(f'{W}.forecast().breach')
+    page.click('[data-wv=auto]')
+    check(page.text_content('[data-wv=auto]') == 'Working it out…' and page.is_disabled('[data-wv=auto]') and ev(f'{W}.busy'), 'v22: Auto-sequence works in chunks: “Working it out…”, its button disabled')
+    page.wait_for_function(f'() => !{W}.busy', timeout=60000); page.wait_for_timeout(100)
+    b1 = ev(f'{W}.forecast().breach'); log = page.inner_text('#wv-log')
+    check(b1 >= b0 - 1e-9 and (('Auto-sequenced' in log and f'through {b0 * 100:.1f}%' in log) or 'No better sequence' in log) and len(page.locator('#wv-log ol li').all()) <= 4,
+          f'v22: Auto-sequence never makes the plan worse, and says what it did ({b0:.3f} → {b1:.3f}; {log[:120]!r})')
+    if 'Auto-sequenced' in log:
+        check(page.locator('#wv-rows .ghost:not([hidden])').count() >= 1 and 'BEFORE THE LAST CHANGE' in page.inner_text('#wv-key').upper(), 'v22: moved groups show a dashed ghost of where they were, and the header says so')
+    a = ev(f'{W}.auto')
+    check(a is None or page.is_visible('#wv-beat') == (b1 > a + 1e-9), f'v22: BEATS AUTO shows exactly when the plan beats Auto-sequence’s best from the step’s opening ({b1:.3f} vs {a})')
+    # any edit while Auto-sequence works cancels it
+    page.click('[data-wv=auto]'); page.wait_for_timeout(20)
+    if ev(f'{W}.busy'):
+        page.click('[data-wv=even]'); page.wait_for_timeout(80)
+        check(not ev(f'{W}.busy') and page.inner_text('#wv-log') == '', 'v22: an edit while Auto-sequence works cancels it')
+        page.keyboard.press('Control+z'); page.wait_for_timeout(40)
+    else: page.wait_for_function(f'() => !{W}.busy', timeout=60000)
+    # a manual edit clears the log and the ghosts
+    row0 = '#wv-rows .wv-grp >> nth=0'
+    bb = page.locator(f'{row0} >> .bar').bounding_box()
+    if bb and bb['width'] > 4:
+        drag(page, bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2, bb['x'] + bb['width'] / 2 + 6, bb['y'] + bb['height'] / 2)
+        check(page.inner_text('#wv-log') == '' and page.locator('#wv-rows .ghost:not([hidden])').count() == 0, 'v22: the next manual edit clears the change log and the ghosts')
+    # the clock: 3× normal speed; the space bar toggles; the result shows at the end
+    page.evaluate(f'() => {{ {W}.T = 0; }}'); page.mouse.click(5, 450)
+    page.keyboard.press(' '); t0 = ev(f'{W}.T'); page.wait_for_timeout(1000); t1 = ev(f'{W}.T')
+    check(ev(f'{W}.playing') and 2.0 < t1 - t0 < 4.2, f'v22: the space bar plays the forecast at 3× ({t1 - t0:.2f} s of clock in a second)')
+    page.keyboard.press(' ')
+    check(not ev(f'{W}.playing'), 'v22: and pauses it')
+    page.evaluate(f'() => {{ {W}.T = 999; }}'); page.wait_for_timeout(120)
+    page.screenshot(path=f'{OUT}/v22_end.png')
+    # the lens: hovering a dot lights up its unit
+    d = page.locator('#wv-rows .dot >> nth=1').bounding_box(); page.mouse.move(d['x'] + 4, d['y'] + 4); page.wait_for_timeout(60)
+    check(page.locator('#wv-rows .dot.lens').count() == 1, 'v22: hovering a dot enlarges it and lights up its unit on the map')
+    page.mouse.move(5, 5)
+    # test 17: every control once, no console errors
+    for sel in ['[data-wv=how]', '[data-wv=how]', '[data-wv=even]', '[data-wv=seq]', '[data-wv=rush]', '#wv-rows .wv-grp >> nth=1 >> .rh', '[data-wv=place][data-w=middle]',
+                '[data-wv=shape][data-f=pulses]', '[data-wv=shape][data-f=front]', '[data-wv=shape][data-f=trickle]', '[data-wv=shape][data-f=even]', '[data-wv=split]',
+                '[data-wv=undo]', '.wv-zc >> nth=0', '[data-wv=lock]', '[data-wv=lock]', '.wv-zc >> nth=0']:
+        if page.locator(sel).count(): page.locator(sel).first.click(); page.wait_for_timeout(40)
+    sap = page.locator('#wv-rows .wv-grp.sap >> nth=0 >> .rh'); sap.click(); page.wait_for_timeout(40)
+    if page.locator('[data-wv=inside]').count(): page.locator('[data-wv=inside]').first.click()
+    dens = page.locator('#wv-rows .wv-grp >> nth=0 >> .rh'); dens.click(); page.wait_for_timeout(40)
+    db = page.locator('#wv-dens').bounding_box()
+    if db: drag(page, db['x'] + 4, db['y'] + db['height'] / 2, db['x'] + db['width'] * 0.3, db['y'] + db['height'] / 2)
+    hd = page.locator('#wv-rows .wv-grp >> nth=0 >> .hdl').bounding_box()
+    order0 = page.evaluate("() => [...document.querySelectorAll('#wv-rows .wv-grp')].map(e => e.dataset.id)")
+    drag(page, hd['x'] + 6, hd['y'] + 6, hd['x'] + 6, hd['y'] + 130)
+    order1 = page.evaluate("() => [...document.querySelectorAll('#wv-rows .wv-grp')].map(e => e.dataset.id)")
+    check(order1 != order0 and sorted(order1) == sorted(order0), f'v22: dragging ⋮⋮ reorders the rows ({order0} → {order1})')
+    tr = page.locator('#wv-rows .wv-grp >> nth=0 >> .track').bounding_box(); page.mouse.click(tr['x'] + tr['width'] * 0.5, tr['y'] + 3)
+    page.click('#wv-play'); page.wait_for_timeout(300); page.click('#wv-play')
+    page.click('#atk-steps [data-step="0"]'); page.click('#atk-steps [data-step="2"]'); page.wait_for_timeout(100)
+    check(not errors, f'v22 test 17: every control on the Wave step, and no console errors {errors[:3]}')
+    page.screenshot(path=f'{OUT}/v22_after_clicks.png')
+    # Part A test 3: a planned bridge that changes the route carries no warning on the Sabotage step
+    page.click('#atk-steps [data-step="1"]'); page.wait_for_timeout(150)
+    bridges = ev(f'{W}.forecast().bridges')
+    check(bridges and not bridges[0]['same'] and page.is_hidden('#a-sabo-warn') and 'won’t take this bridge' not in page.inner_text('#a-charges'),
+          f'v22 Part A test 3: a bridge that changes the route shows no warning ({bridges})')
+    ctx.close()
+
+    # ---------- v22 Part A: a bridge landing re-routes on the towers firing then (internals, a fixed layout)
+    # Column 8 is walled but for row 1, so the route goes round over row 1. Six towers in row 8 (range 4) fire on row 5,
+    # the straight line a bridge at (8,5) would open: with every tower counted it's dearer than the detour, so nobody
+    # takes the bridge. Knock out the one at (6,8) first, and counting only the towers firing when the bridge lands, the
+    # bridge route is the cheaper one.
+    API = write_build('local_a.html', game_html().replace('window.siegeline = {', 'window.siegeline = { _i: { recompute, layBridge, get S() { return S; } },', 1))
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    LAY = """(skip) => { const sl = window.siegeline, I = sl._i, S = I.S, at = (c, r) => r * 16 + c;
+      const T = () => ({ t: 'tower', cfg: { range: 5, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: false }, fee: 0, off: 0, n: 1, fresh: false, cd: 0, ang: 0, kick: 0, dealt: 0 });
+      S.grid = S.grid.map(() => null); S.bridges = new Set(); S.routeSkip = null;
+      for (let r = 0; r < 11; r++) if (r !== 1) S.grid[at(8, r)] = { t: 'wall', fresh: false };
+      for (const c of [2, 4, 6, 10, 12, 14]) S.grid[at(c, 8)] = T();
+      I.recompute(); const before = S.path.slice();
+      if (skip !== null) S.grid[at(6, 8)].off = 1; // the knock-out has landed
+      if (skip === 'v21') { S.grid[at(8, 5)] = null; S.bridges.add(at(8, 5)); I.recompute(); } // v21.1: recompute counts every tower
+      else if (skip !== null) I.layBridge(at(8, 5));
+      return { before, after: S.path.slice(), br: at(8, 5) }; }"""
+    for build, tag in ((API, 'v22'),):
+        page.goto('file://' + build); page.wait_for_timeout(300); no_terrain(page)
+        page.click('#info-go'); page.click('#mode-local'); hand(page)
+        r0 = page.evaluate(LAY, None)
+        r1 = page.evaluate(LAY, 'ko')
+        r2 = page.evaluate(LAY, 'v21')
+        check(r0['br'] not in r0['before'] and idx(8, 1) in r0['before'], 'Part A: with every tower firing the route goes round over row 1')
+        check(r1['br'] in r1['after'] and r1['after'] != r1['before'], f'v22 Part A test 1: the knock-out lands first; when the bridge lands units take it, counting only the towers firing ({len(r1["before"])} → {len(r1["after"])} cells)')
+        check(r2['br'] not in r2['after'], 'Part A test 1: under v21.1’s rule (the knocked-out tower still counted) the same plan keeps the old route')
+        page.evaluate(LAY, 'ko')
+        g = page.evaluate("() => { const S = window.siegeline._i.S; S.grid[10 + 8 * 16].off = 1; window.siegeline._i.recompute(); return S.path.slice(); }")
+        check(g == r1['after'], 'v22 Part A: a knock-out after the bridge never moves the route again')
+    try: v21 = subprocess.run(['git', 'show', 'c601237:index.html'], cwd=ROOT, capture_output=True, text=True).stdout
+    except Exception: v21 = ''
+    if 'const PROTO = 12' in v21:
+        old = write_build('v21_a.html', v21.replace('window.siegeline = {', 'window.siegeline = { _i: { recompute, layBridge, get S() { return S; } },', 1))
+        page.goto('file://' + old); page.wait_for_timeout(300); no_terrain(page)
+        page.click('#info-go'); page.click('#mode-local'); hand(page)
+        r = page.evaluate(LAY, 'ko')
+        check(r['br'] not in r['after'], 'v22 Part A test 1: on the v21.1 build (c601237) the same knock-out then bridge keeps the old route')
+    else: print('SKIP Part A on v21.1: the v21.1 build (c601237) is not in this checkout')
+    check(not errors, f'Part A: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v22 Part A test 3: a bridge nobody will take is flagged on the Sabotage step (a warning, not a block)
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page); sure_sappers(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page); page.click('#def-lock'); hand(page)
+    page.evaluate("""() => { const sl = window.siegeline, S = sl.state, at = (c, r) => r * 16 + c;
+      const T = () => ({ t: 'tower', cfg: { range: 5, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: false }, fee: 0, off: 0, n: 1, fresh: false, cd: 0, ang: 0, kick: 0, dealt: 0 });
+      const G = S.seenGrid.map(() => null); for (let r = 0; r < 11; r++) if (r !== 1) G[at(8, r)] = { t: 'wall', fresh: false };
+      for (const c of [2, 4, 6, 10, 12, 14]) G[at(c, 8)] = T();
+      S.seenGrid = G; S.grid = G.map(g => g && { ...g, cfg: g.cfg && { ...g.cfg } }); S.seenVer++; S.gridVer++; S.seenRound = 1; S.round = 2; S.aFree = 500;
+      S.designs.forEach(d => { d.count = 0; }); S.designs[0].count = 3;
+      const route = sl.seenRoute(); S.charges = new Map([[at(8, 5), { kind: 'bridge', cost: 25, t: 0.02, at: route[2] }]]); S.chargeVer++; sl.refresh(); }""")
+    page.click('#atk-next'); page.wait_for_timeout(200)
+    br = page.evaluate(f'() => {W}.forecast().bridges')
+    check(br and br[0]['same'] and page.is_visible('#a-sabo-warn') and 'Units won’t take this bridge: the route over it is under more fire.' in page.inner_text('#a-charges')
+          and 'Units won’t take this bridge' in page.inner_text('#a-sabo-warn'), f'v22 Part A test 3: a bridge that leaves the route as it was is flagged on its row and its card ({br})')
+    check(S(page, 'S.charges.size') == 1, 'Part A: the warning doesn’t block the bridge')
+    check(not errors, f'Part A warning: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v22 Part B: toughness surcharge (every row of the spec's table, presets unchanged)
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page()
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+    table = [((0, 4, 0, 0), 6), ((2, 6, 0, 0), 20), ((2, 5, 0, 0), 16), ((6, 1, 1, 0), 35), ((5, 5, 2, 0), 74), ((6, 4, 0, 3), 98), ((7, 5, 0, 0), 160),
+             ((8, 4, 0, 0), 209), ((9, 3, 0, 0), 248), ((9, 0, 0, 3), 109), ((9, 7, 0, 0), 1204), ((9, 7, 3, 0), 2529)]
+    price_all = '(rows) => rows.map(([h, s, a, r]) => window.siegeline.unitCost({ hp: h, speed: s, armor: a, regen: r, resist: "none" }))'
+    page.evaluate('() => { const R = window.siegeline.rules; R.__k = R.toughK; R.__b = R.bigUnit; R.toughK = 0.5; R.bigUnit = 0; }')  # the spec's rule
+    got = page.evaluate(price_all, [list(r[0]) for r in table])
+    page.evaluate('() => { const R = window.siegeline.rules; R.toughK = R.__k; R.bigUnit = R.__b; }')
+    check(got == [r[1] for r in table], f'v22 Part B test 1: the spec’s rule (toughK 0.5, no big-unit surcharge) prices every row of its table ({got})')
+    # what ships is the spec's fallback (its armor-and-regen check found designs over 50%): v6's surcharge back, toughK 0.25
+    shipped = [6, 20, 16, 35, 76, 98, 128, 172, 207, 109, 1256, 3823]
+    got = page.evaluate(price_all, [list(r[0]) for r in table])
+    check(page.evaluate('() => [window.siegeline.rules.toughK, window.siegeline.rules.bigUnit]') == [0.25, 60] and got == shipped,
+          f'v22 Part B: the shipped fallback (big-unit surcharge above 60, then +25% a point of toughness above 2.5) prices the table {got}')
+    slow = page.evaluate('() => window.siegeline.unitCost({ hp: 6, speed: 1, armor: 3, regen: 3, resist: "none" })')
+    check(slow == 110, f'v22 Part B: armor-and-regen slow units keep v21.1’s price under the fallback (375 HP, 0.9, armor 3, regen 3: {slow})')
+    pre = page.evaluate("() => ['Runner', 'Brute', 'Swarm', 'Ghost'].map(n => window.siegeline.unitCost({ ...{ Runner: { hp: 2, speed: 6, armor: 0 }, Brute: { hp: 6, speed: 1, armor: 1 }, Swarm: { hp: 0, speed: 4, armor: 0 }, Ghost: { hp: 2, speed: 5, armor: 0 } }[n], regen: 0, resist: 'none' }))")
+    check(pre == [20, 35, 6, 16], f'v22 Part B test 2: the four presets cost what they did (Runner 20, Brute 35, Swarm 6, Ghost 16: {pre})')
+    ctx.close()
+
+    # ---------- v22 Part C: moving or removing a tower the attacker saw costs a fee
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
     page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
-    for r in range(4, 9): click_cell(page, 7, r)  # a short wall: the route goes round it, 20 cells
-    page.click('.tool[data-tool=tower]'); click_cell(page, 1, 10); page.click('#def-ctx [data-act=close]')  # a tower the route never comes near
-    page.click('#def-lock'); hand(page)
-    for _ in range(2): page.click('.step.plus[data-i="0"]')
-    page.click('.step.plus[data-i="1"]')
-    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(250)
-    guide = page.inner_text('#ov-guide') if page.is_visible('#ov-guide') else ''
-    lines = ['Plan your wave', 'Press play.', 'Watch your units walk the route. Drag the big slider to jump to any moment.', 'Choose WHEN units leave (top track of each group).',
-             'Drag the left knob to set when the first unit leaves.', 'Drag the right knob to set when the last unit leaves.', 'Close together = a tight bunch. Far apart = a long line.',
-             'Drag the middle to move the whole group earlier or later.', 'Choose WHERE they are (thin strip under it).', 'Stop the big slider at a moment, say 12 s.',
-             'Drag the group along the strip to where you want it at 12 s.', 'The game works out when it has to leave.', 'Line them up.', 'Every strip is the same route, left = entry, right = keep.',
-             'Put groups at the same spot, or one just behind another.', 'Sappers work the same way.', 'Drag a sapper to where you want it, and it leaves at the right time.',
-             'All units must leave between 0 s and 20 s.', 'If a group won’t move further, that’s the limit.', 'Frost and the defender’s changes can still slow you down.']
-    check(all(l.lower() in guide.lower() for l in lines) and page.is_visible('#guide-ok') and page.is_visible('#guide-x'), f'spec test 8: the How to use card opens by itself on the first visit, with the spec’s text ({[l for l in lines if l.lower() not in guide.lower()]})')
-    page.screenshot(path=f'{OUT}/v202_guide.png')
-    page.click('#guide-ok')
-    check(page.is_hidden('#ov-guide'), 'Got it closes the card')
-    atk_back(page); page.click('#atk-next'); page.wait_for_timeout(150)
-    check(page.is_hidden('#ov-guide'), 'spec test 8: back on the Wave step the card stays closed')
-    check(page.is_hidden('.wp-help') and page.is_hidden('.wp-hist') and page.is_visible('#tl [data-act=more]'), 'v21: once the card has been seen, How to use and the busiest-second bars sit behind More')
-    page.click('#tl [data-act=more]'); page.wait_for_timeout(60)
-    check(page.is_visible('.wp-help') and page.is_visible('.wp-hist'), 'More shows them again')
-    page.click('.wp-help'); page.wait_for_timeout(100)
-    check(page.is_visible('#ov-guide'), 'spec test 8: the How to use button opens it')
-    page.mouse.click(20, 20); page.wait_for_timeout(100)
-    check(page.is_hidden('#ov-guide'), 'a tap outside the card closes it')
-    page.click('.wp-help'); page.click('#guide-x'); page.wait_for_timeout(50)
-    check(page.is_hidden('#ov-guide'), 'and so does its ×')
-    # the layout: one column, the master panel first, then a block per design (header, spread track, path strip)
-    play = lambda: page.evaluate('() => window.siegeline.scrub.playing'); T = lambda: page.evaluate('() => window.siegeline.scrub.T')
-    sizes = page.evaluate("() => ['#scrub-lbl', '.wp-title', '.blk-name', '.wp-help', '.wp-pre .mini', '.blk-sub', '.tl-ruler'].map(s => getComputedStyle(document.querySelector(s)).fontSize)")
-    biggest = page.evaluate("() => Math.max(...[...document.querySelectorAll('#tl *')].filter(e => e.offsetParent && !e.closest('.wp-title') && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())).map(e => parseFloat(getComputedStyle(e).fontSize)))")
-    order = page.evaluate("() => ['.wp-head', '.wp-master', '.wp-hist', '.wp-pre', '.wp-route', '.blk'].map(s => Math.round(document.querySelector(s).getBoundingClientRect().top))")
-    help_box, title_box = page.locator('.wp-help').bounding_box(), page.locator('.wp-title').bounding_box()
-    check(sizes == ['11px', '22px', '16px', '11px', '11px', '12px', '11px'] and biggest < 22 and order == sorted(order) and page.inner_text('.wp-title').lower() == 'wave plan'
-          and 0 < help_box['x'] - (title_box['x'] + title_box['width']) < 24 and abs(help_box['y'] + help_box['height'] / 2 - (title_box['y'] + title_box['height'] / 2)) < 3,
-          f'v20.3: the title is the biggest text (22 px; the next biggest {biggest:.0f}) with How to use beside it; T, buttons and axis 11, names 16, details 12 ({sizes}); top to bottom: title, master panel, histogram, presets, route, blocks')
-    play_box, lbl_box, sl_box = page.locator('#scrub-play').bounding_box(), page.locator('#scrub-lbl').bounding_box(), page.locator('#scrub-t').bounding_box()
-    mb = page.locator('#a-scrub').bounding_box()
-    check(abs(play_box['width'] - 34) < 1 and abs(play_box['height'] - 34) < 1 and page.evaluate("() => getComputedStyle(document.querySelector('#scrub-play')).borderRadius") == '50%'
-          and play_box['x'] - mb['x'] < 30 and lbl_box['y'] >= play_box['y'] + play_box['height'] and abs((lbl_box['x'] + lbl_box['width'] / 2) - (play_box['x'] + play_box['width'] / 2)) < 2
-          and sl_box['x'] > play_box['x'] + play_box['width'] and abs((sl_box['y'] + sl_box['height'] / 2) - (play_box['y'] + play_box['height'] / 2)) < 2,
-          'v20.3: the master panel: a 34 px round play button at its left, T under it, the slider to its right')
-    check(page.locator('.wp-rel').count() == 1 and page.get_attribute('.wp-ticks .rel', 'title') == 'Releases end at 20 s' and page.inner_text('.wp-ticks .rel') == '20s'
-          and page.inner_text('.wp-ticks').split()[:7] == ['0s', '10s', '20s', '30s', '40s', '50s', '60s'],
-          'the master panel: ticks every 10 s to 60 s and a marker at 20 s, where releases end')
-    lanes = page.evaluate("() => [...document.querySelectorAll('#tl .lane')].map(l => l.getBoundingClientRect().height)")
-    knob = page.evaluate("() => { const h = document.querySelector('#tl .lane .hdl'); const s = getComputedStyle(h, '::before'); return [h.getBoundingClientRect().height, parseFloat(s.height), parseFloat(s.width)]; }")
-    dot = page.locator('.lane[data-i="0"] .clip').nth(1).bounding_box()
-    check(all(abs(h - 39) < 0.5 for h in lanes) and knob == [17, 17, 7] and abs(dot['width'] - 8) < 0.5,
-          f'v20.3: the spread tracks are 70% as tall as before (39 px: {lanes}), their knobs 7 × 17 px ({knob}) and dots 8 px ({dot["width"]:.1f})')
-    check('nudge' in (page.get_attribute('#scrub-play', 'class') or '') and page.inner_text('#scrub-nudge') == 'Press play, or drag the dot, to watch your wave move.',
-          'until the first touch in a match the play button pulses and the line under the slider says what to do')
-    blocks = page.evaluate("() => [...document.querySelectorAll('#tl .blk')].map(b => [...b.children].map(c => c.className.split(' ')[0]))")
-    check(blocks == [['blk-head', 'lane', 'tl-ruler', 'pth']] * 2 and page.inner_text('#trk-sub-0') == '×2 · leaves 0.0–6.0 s',
-          f'each design is a block: its header (“×2 · leaves 0.0–6.0 s”), its spread track and its path strip under it ({blocks})')
-    # spec test 5: every spread track and path strip starts and ends at the same x
-    boxes = [page.locator(s).nth(k).bounding_box() for s in ('#tl .lane', '#tl .pth') for k in range(2)]
-    check(max(b_['x'] for b_ in boxes) - min(b_['x'] for b_ in boxes) < 0.5 and max(b_['x'] + b_['width'] for b_ in boxes) - min(b_['x'] + b_['width'] for b_ in boxes) < 0.5
-          and all(abs(page.locator('#tl .pth').nth(k).bounding_box()['height'] - 16) < 0.5 for k in range(2)),
-          'spec test 5: spread tracks and path strips all share the same left and right x; the strips are 16 px tall')
-    # spec test 1: play runs T at real speed from where it is, stops at 60 s, and starts again from 0
-    page.click('#scrub-play'); page.wait_for_timeout(1000)
-    t1 = T()
-    check(play() and 0.7 < t1 < 1.6 and 'nudge' not in (page.get_attribute('#scrub-play', 'class') or '') and page.is_hidden('#scrub-nudge'),
-          f'spec test 1: on a fresh match, play runs T at real speed ({t1:.2f} s after 1 s); the pulse and the line are gone')
-    mh = page.locator('#a-scrub').bounding_box()['height']
-    check(mh <= 73, f'v20.3: the master panel is half as tall as v20.2’s (146 px): {mh:.0f} px')
-    lane = page.locator('.lane[data-i="0"]').bounding_box(); tnow = page.locator('.lane[data-i="0"] .tnow').bounding_box()
-    check(tnow and abs(tnow['x'] - (lane['x'] + 1 + (lane['width'] - 2) * T() / 20)) < 4, 'while T is under 20 s a line on each spread track marks it')
-    set_slider(page, '#scrub-t', 58.5); page.click('#scrub-play'); page.wait_for_timeout(2300)
-    check(T() == 60 and not play() and page.get_attribute('#scrub-play', 'aria-pressed') == 'false' and page.is_hidden('.lane[data-i="0"] .tnow'),
-          f'spec test 1: playback stops at 60 s and shows the play icon (T {T():.1f}); past 20 s the spread tracks’ line is gone')
-    page.click('#scrub-play'); page.wait_for_timeout(250)
-    check(play() and T() < 1, f'spec test 1: pressed at 60 s, play starts again from 0 s ({T():.2f})')
-    # spec test 2: dragging the master slider, a knob, a band or a path strip pauses playback
-    def pauses(label, act):
-        if not play(): page.click('#scrub-play')
-        page.wait_for_timeout(120); was = play(); act(); page.wait_for_timeout(80)
-        check(was and not play(), f'spec test 2: {label} pauses playback')
-    sb = page.locator('#scrub-t').bounding_box()
-    pauses('dragging the master slider', lambda: drag(page, sb['x'] + sb['width'] * 0.2, sb['y'] + sb['height'] / 2, sb['x'] + sb['width'] * 0.3, sb['y'] + sb['height'] / 2))
-    hb = page.locator('.lane[data-i="0"] .hdl.s').bounding_box()
-    pauses('dragging a knob', lambda: drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, hb['x'] + hb['width'] / 2 + 3, hb['y'] + hb['height'] / 2))
-    pauses('dragging a band', lambda: drag(page, lane['x'] + lane['width'] * 0.15, lane['y'] + 16, lane['x'] + lane['width'] * 0.15 + 4, lane['y'] + 16))
-    pb = page.locator('.pth[data-g="d0"]').bounding_box()
-    pauses('dragging a path strip', lambda: drag(page, pb['x'] + pb['width'] * 0.3, pb['y'] + 8, pb['x'] + pb['width'] * 0.3 + 6, pb['y'] + 8))
-    # spec test 3: the space bar plays and pauses; leaving the Wave step pauses, and coming back keeps T
-    page.click('.mini[data-act=rush]'); page.wait_for_timeout(100)
-    page.focus('#scrub-play'); page.keyboard.press(' '); page.wait_for_timeout(100)
-    a = play(); page.keyboard.press(' '); page.wait_for_timeout(100)
-    b_ = play(); page.evaluate('() => document.activeElement.blur()'); page.keyboard.press(' '); page.wait_for_timeout(300)
-    check(a and not b_ and play(), 'spec test 3: the space bar toggles play and pause (once a press, with the play button focused too)')
-    atk_back(page); page.wait_for_timeout(100); left = T()
-    check(not play(), 'spec test 3: leaving the Wave step pauses the preview')
-    page.click('#atk-next'); page.wait_for_timeout(150)
-    check(not play() and abs(T() - left) < 1e-9 and page.inner_text('#scrub-lbl') == f'T = {left:.1f} s', f'coming back keeps the same T ({left:.1f} s)')
-    # the play button after editing the army
-    atk_back(page); atk_back(page); page.click('.step.plus[data-i="0"]'); page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(150)
-    page.click('#scrub-play'); page.wait_for_timeout(200)
-    check(play() and page.locator('.lane[data-i="0"] .clip').count() == 3, 'after editing the army the play button still plays')
-    page.click('#scrub-play')
-    # spec test 4: both knobs on every design's spread track, each moving only its own end
-    page.click('.mini[data-act=even]'); page.wait_for_timeout(100)
-    knobs = page.evaluate("() => [...document.querySelectorAll('#tl .lane:not(.sap)')].map(l => [l.querySelectorAll('.hdl.s').length, l.querySelectorAll('.hdl.e').length])")
-    lane = page.locator('.lane[data-i="1"]').bounding_box()
-    tl0 = S(page, 'S.designs[1].tl'); hb = page.locator('.lane[data-i="1"] .hdl.s').bounding_box()
-    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] * 0.3, hb['y'] + hb['height'] / 2)
-    tl1 = S(page, 'S.designs[1].tl'); hb = page.locator('.lane[data-i="1"] .hdl.e').bounding_box()
-    drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, lane['x'] + lane['width'] * 0.6, hb['y'] + hb['height'] / 2)
-    tl2 = S(page, 'S.designs[1].tl')
-    check(knobs == [[1, 1], [1, 1]] and page.is_visible('.lane[data-i="0"] .hdl.s') and abs(tl1['s'] - 0.3) < 0.02 and tl1['e'] == tl0['e'] and abs(tl2['e'] - 0.6) < 0.02 and tl2['s'] == tl1['s'],
-          f'spec test 4: both knobs on every spread track; the start knob moves only the first release ({tl0["s"] * 20:.1f} → {tl1["s"] * 20:.1f} s, end kept), the end knob only the last ({tl1["e"] * 20:.1f} → {tl2["e"] * 20:.1f} s)')
-    check(page.inner_text('#trk-sub-1') == f'×1 · leaves {(tl2["s"] + tl2["e"]) / 2 * 20:.1f} s', f'a one-unit group’s header gives its one release time ({page.inner_text("#trk-sub-1")})')
-    page.screenshot(path=f'{OUT}/v202_round1.png')
-    # round 2: the defense seen, a bridge and a knock-out planned
-    page.click('#atk-lock'); hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
-    page.click('#sum-next'); hand(page); page.click('#def-lock'); hand(page)
-    sure_sappers(page)
-    page.evaluate('() => { const d = window.siegeline.state.designs[0]; d.count = 2; d.tl = { s: 0, e: 10 / 2.3 / 20, pos: null }; }')  # two Runners (2.3 cells/s) leaving 10 cells apart
-    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(250)
-    # spec test 6: a group whose front and rear are 10 cells apart on a 20-cell route fills half its path strip
-    set_slider(page, '#scrub-t', 7); page.wait_for_timeout(100)
-    P = page.evaluate('() => window.siegeline.scrub.paths()'); on = P['rows']['d0']['on']
-    band = page.locator('.pth[data-g="d0"] .dyn .band').bounding_box(); pin = page.locator('.pth[data-g="d0"] .pin').bounding_box()
-    check(P['cells'] == 20 and abs(P['L'] - 20) < 1e-6 and len(on) == 2 and abs(on[1] - on[0] - 10) < 0.25 and abs(band['width'] / (pin['width'] - 2) - 0.5) < 0.015
-          and page.inner_text('#pth-len').lower() == '20 cells',
-          f'spec test 6: two Runners 10 cells apart ({on[1] - on[0] if len(on) == 2 else "?"}) on a {P["cells"]}-cell route fill half the strip ({band["width"] / (pin["width"] - 2):.3f})')
-    atk_back(page); page.wait_for_timeout(150)
-    w = spot(page)
-    click_cell(page, *w)
-    click_cell(page, 1, 10); page.click('#atk-ctx [data-act=plant]'); page.click('#atk-ctx [data-act=close]')
-    page.click('#atk-next'); page.wait_for_timeout(250)
-    # spec test 7: sapper blocks: a release knob and a dot; dragging the dot changes the release time; the header says when
-    # it reaches its target, or that it won't
-    bw = w[1] * COLS + w[0]; ko = idx(1, 10)
-    heads = [page.inner_text(f'.blk[data-g="s{c}"] .blk-head') for c in (bw, ko)]
-    check(heads[0].startswith('Sapper · Bridge 1') and 'reaches target' in heads[0] and heads[1].startswith('Sapper · Knock-out: Basic') and 'won’t reach target' in heads[1]
-          and page.locator(f'.blk[data-g="s{ko}"] .blk-sub .bad').count() == 1,
-          f'spec test 7: “Sapper · Bridge 1 … reaches target”, and the knock-out on a tower the route never nears “won’t reach target” in red {heads}')
-    t0 = S(page, f'S.charges.get({bw}).t'); sp = [x for x in page.evaluate('() => window.siegeline.scrub.saps()') if x['cell'] == bw][0]
-    set_slider(page, '#scrub-t', round(sp['t0'] + 1, 1)); page.wait_for_timeout(100)
-    page.locator(f'.blk[data-g="s{bw}"]').scroll_into_view_if_needed()  # the panel scrolls; the strip may sit under the nav
-    P = page.evaluate('() => window.siegeline.scrub.paths()'); pb = page.locator(f'.pth[data-g="s{bw}"]').bounding_box()
-    x0 = pb['x'] + 1 + P['rows'][f's{bw}']['front'] / P['L'] * (pb['width'] - 2)
-    check(page.locator(f'.pth[data-g="s{bw}"] .dyn .tk').count() == 1 and page.locator(f'.pth[data-g="s{bw}"] .brk').count() == 1 and page.locator(f'.lane.sap[data-sap="{bw}"] .clip').count() == 1
-          and abs(page.locator(f'.lane.sap[data-sap="{bw}"]').bounding_box()['height'] - 24) < 0.5,
-          'a sapper’s block has one release knob on a 24 px track (70% of v20.2’s), and one dot on its strip with a “B” for its bridge')
-    drag(page, x0, pb['y'] + 8, x0 - pb['width'] * 0.1, pb['y'] + 8); page.wait_for_timeout(150)
-    t1 = S(page, f'S.charges.get({bw}).t'); head = page.inner_text(f'.blk[data-g="s{bw}"] .blk-head')
-    check(t1 > t0 and f'leaves {t1 * 20:.1f} s' in head and 'reaches target' in head, f'spec test 7: dragging the sapper’s dot back along the strip makes it leave later ({t0 * 20:.1f} → {t1 * 20:.1f} s): {head}')
-    page.screenshot(path=f'{OUT}/v202_sappers.png')
-    # the play button after switching the bridge toggle
-    page.click('#scrub-br [data-lands="0"]'); page.wait_for_timeout(150); page.click('#scrub-play'); page.wait_for_timeout(200)
-    check(play(), 'after switching the bridge toggle the play button still plays')
-    page.click('#scrub-play')
-    # v20.5: dragging a strip past where its group's recorded walk ends (a sapper used up on the way, or a route at T
-    # longer than the walk, over a bridge) froze the page: the search for when a unit gets there never stopped
-    def fling(g):
-        el = page.locator(f'.pth[data-g="{g}"]'); el.scroll_into_view_if_needed(); bb = el.bounding_box()
-        page.mouse.move(bb['x'] + bb['width'] * 0.3, bb['y'] + 8); page.mouse.down()
-        for k in range(1, 13): page.mouse.move(bb['x'] + bb['width'] * (0.3 + 0.09 * k), bb['y'] + 8)
-        for k in range(1, 13): page.mouse.move(bb['x'] + bb['width'] * (1.3 - 0.11 * k), bb['y'] + 8)
-        page.mouse.up(); page.wait_for_timeout(30)
-    flung = 0
-    for lands in ('1', '0'):
-        page.click(f'#scrub-br [data-lands="{lands}"]'); page.wait_for_timeout(80)
-        for T in (5, 15, 30, 45):
-            set_slider(page, '#scrub-t', T); page.wait_for_timeout(40)
-            for g in page.evaluate("() => [...document.querySelectorAll('#tl .pth')].map(e => e.dataset.g)"): fling(g); flung += 1
-    times = page.evaluate('() => { const S = window.siegeline.state; return [...S.designs.flatMap(d => [d.tl.s, d.tl.e, ...(d.tl.pos || [])]), ...[...S.charges.values()].map(c => c.t)]; }')
-    check(page.evaluate('() => 1 + 1') == 2 and all(0 <= x <= 1 for x in times) and not errors,
-          f'v20.5: every strip flung past both ends at 5, 15, 30 and 45 s, with the bridge landing and failing ({flung} drags): the page keeps answering and every release stays within 0–20 s')
-    check(not errors, f'v20.2: no errors {errors[:3]}')
-    # a new page on the same device: the card doesn't open by itself again
-    page.reload(); page.wait_for_timeout(300); no_terrain(page)
-    page.click('#info-go'); page.click('#mode-local'); hand(page)
-    page.click('#def-lock'); hand(page); page.click('.step.plus[data-i="0"]'); page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(200)
-    check(page.is_visible('#a-scrub') and page.is_hidden('#ov-guide'), 'spec test 8: on the same device the card only opens from its button')
+    for r in range(0, 10): click_cell(page, 7, r)
+    page.click('.tool[data-tool=tower]')
+    for c, r in ((4, 5), (10, 3), (12, 8), (12, 2)): click_cell(page, c, r); page.keyboard.press('Escape')
+    xy = lambda c, r: page.evaluate(f'() => window.siegeline.cellToClient({idx(c, r)})')
+    def drag_cells(a, z):
+        (x0, y0), (x1, y1) = xy(*a), xy(*z)
+        page.mouse.move(x0, y0); page.mouse.down()
+        for k in range(1, 9): page.mouse.move(x0 + (x1 - x0) * k / 8, y0 + (y1 - y0) * k / 8)
+        page.mouse.up(); page.wait_for_timeout(60)
+    drag_cells((4, 5), (4, 7)); drag_cells((4, 7), (4, 5))
+    check(S(page, 'S.totals.moveTries') == 0, 'v22 Part C: round 1 moves are free (nothing seen yet)')
+    page.click('#def-lock'); hand(page); page.click('#atk-lock')
+    if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    page.click('#sum-next'); hand(page)
+    page.click('.tool[data-tool=wall]')
+    mt = lambda: S(page, 'S.totals.moveTries')
+    click_cell(page, 4, 5)
+    check(page.inner_text('#te-move').startswith('Next move: 10% · 4 coins'), f'v22 Part C: the tower card shows “Next move: 10%” ({page.inner_text("#te-move")})')
+    page.keyboard.press('Escape')
+    f0 = S(page, 'S.dFree'); drag_cells((4, 5), (4, 8))
+    check(S(page, 'S.dFree') == f0 - 4 and mt() == 1 and S(page, f'S.grid[{idx(4, 8)}].mfee') == 4, f'v22 Part C test 1: a seen tower moved in round 2 pays 10% of its tuning (40 → 4; {f0} → {S(page, "S.dFree")})')
+    f1 = S(page, 'S.dFree'); drag_cells((10, 3), (10, 6))
+    check(S(page, 'S.dFree') == f1 - 6 and mt() == 2, 'v22 Part C test 1: the next relocation pays 15% (6)')
+    # test 2: removing a seen tower refunds its value minus the fee (now 20%: 8)
+    click_cell(page, 12, 8); val = int(page.inner_text('#te-refund')); sv = page.evaluate(f'() => {{ const S = window.siegeline.state, g = S.grid[{idx(12, 8)}]; return window.siegeline.towerCost(g.cfg) + Math.max(...S.grid.filter(h => h && h.t === "tower").map(h => h.fee || 0)); }}')
+    f2 = S(page, 'S.dFree'); page.click('#def-ctx [data-act=remove]'); page.wait_for_timeout(60)
+    check(val == sv - 8 and S(page, 'S.dFree') == f2 + sv - 8 and mt() == 3, f'v22 Part C test 2: removing a seen tower refunds its value minus the fee ({sv} − 8 = {val}; the card said so)')
+    # test 5: back onto its seen cell refunds its fee (and takes the relocation back)
+    f3 = S(page, 'S.dFree'); drag_cells((4, 8), (4, 5))
+    check(S(page, 'S.dFree') == f3 + 4 and mt() == 2 and S(page, f'S.grid[{idx(4, 5)}].mfee') == 0, 'v22 Part C test 5: dragged back onto its seen cell, the tower gets its fee back')
+    # test 3: a tower placed this round moves and sells free
+    page.click('.tool[data-tool=tower]'); click_cell(page, 2, 2); page.keyboard.press('Escape'); page.click('.tool[data-tool=wall]')
+    f4 = S(page, 'S.dFree'); drag_cells((2, 2), (2, 8))
+    check(S(page, 'S.dFree') == f4 and mt() == 2, 'v22 Part C test 3: a tower placed this round moves free')
+    click_cell(page, 2, 8); full = int(page.inner_text('#te-refund')); page.click('#def-ctx [data-act=remove]'); page.wait_for_timeout(60)
+    check(S(page, 'S.dFree') == f4 + full and mt() == 2 and page.evaluate('() => window.siegeline.towerCost({ range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0 })') + 0 <= full,
+          f'v22 Part C test 3: and sells for its full value ({full})')
+    # test 4: swapping two seen towers charges two fees (20% and 25%: 8 and 10); test 6: Undo puts coins and the count back
+    f5, m5 = S(page, 'S.dFree'), mt()
+    drag_cells((4, 5), (12, 2))
+    check(S(page, 'S.dFree') == f5 - 8 - 10 and mt() == m5 + 2, f'v22 Part C test 4: swapping two seen towers charges two fees ({f5} → {S(page, "S.dFree")})')
+    page.keyboard.press('Control+z'); page.wait_for_timeout(60)
+    check(S(page, 'S.dFree') == f5 and mt() == m5 and S(page, f'S.grid[{idx(4, 5)}].t') == 'tower', 'v22 Part C test 6: Undo restores the coins and the relocation count exactly')
+    for _ in range(4): page.keyboard.press('Control+z')
+    page.wait_for_timeout(60)
+    check(mt() == 3 and S(page, f'!!S.grid[{idx(4, 8)}]') and not S(page, f'!!S.grid[{idx(4, 5)}]'), 'v22 Part C test 6: Undo walks back through the removal and the move back, count and all')
+    page.evaluate('() => { window.siegeline.state.totals.moveTries = 12; window.siegeline.refresh(); }')
+    click_cell(page, 12, 2)
+    check(page.inner_text('#te-move').startswith('Next move: 40% · 16 coins'), f'v22 Part C test 1: never above 40% ({page.inner_text("#te-move")})')
+    page.keyboard.press('Escape')
+    check(not errors, f'Part C: no errors {errors[:3]}')
     ctx.close()
-    # the wave plan on a phone: one column, nothing wider than the screen
-    ctx = b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=3, is_mobile=True, has_touch=True)
-    page = ctx.new_page(); errors = []
+
+    # ---------- v22 Part D: Auto-army on the Army step
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
-    page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
-    page.tap('#def-lock'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(200)
-    for _ in range(3): page.tap('.step.plus[data-i="0"]')
-    page.tap('#atk-next'); page.wait_for_timeout(100); page.tap('#atk-next'); page.wait_for_timeout(250)
-    page.tap('#scrub-play'); page.wait_for_timeout(400)
-    wide = page.evaluate("() => Math.max(...[...document.querySelectorAll('#tl *')].map(e => e.getBoundingClientRect().right))")
-    tb = page.locator('#scrub-t').bounding_box()
-    check(page.evaluate('() => window.siegeline.scrub.playing') and wide <= 390 and tb['height'] >= 44 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
-          f'phone: the wave plan is one column within 390 px ({wide:.0f}), the slider’s touch area is 44 px, and the play button plays')
-    page.screenshot(path=f'{OUT}/m14_waveplan.png')
-    check(not errors, f'phone wave plan: no errors {errors[:3]}')
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page)
+    page.click('#def-body [data-act=maze]'); page.wait_for_function('() => !window.siegeline.mazing')
+    page.click('#def-lock'); hand(page)
+    army = lambda: S(page, 'JSON.stringify([S.aFree, S.designs.map(d => [d.name, d.hp, d.speed, d.armor, d.regen, d.resist, d.count])])')
+    a0 = army(); free0 = S(page, 'S.aFree'); ds0 = S(page, 'S.designs.map(d => [d.hp, d.speed, d.armor, d.regen, d.resist])')
+    check(S(page, 'S.designs.every(d => !d.count)'), 'Part D: the army starts empty')
+    page.click('#atk-body [data-act=army]'); page.wait_for_function('() => !document.querySelector("#atk-body [data-act=army]").disabled', timeout=30000); page.wait_for_timeout(80)
+    n_on = S(page, 'S.designs.filter(d => d.count > 0).length'); free1 = S(page, 'S.aFree')
+    ds1 = S(page, 'S.designs.map(d => [d.hp, d.speed, d.armor, d.regen, d.resist])')
+    up = all(all(a >= b for a, b in zip(n[:4], o[:4])) and all(r in n[4] for r in o[4].split('+') if r != 'none') for n, o in zip(ds1, ds0))
+    check(n_on >= 2, f'v22 Part D test 4: from an empty army Auto-army ends with at least two designs ({n_on})')
+    check(0 <= free1 <= free0 and len(ds1) >= len(ds0) and up, f'v22 Part D tests 1-2: it spends no more than the free coins ({free0} → {free1}), deletes no design and lowers no slider')
+    line = page.inner_text('#a-help')
+    check(line.startswith(f'Spent {free0 - free1} coins:'), f'v22 Part D: the line under the buttons says what it did ({line})')
+    page.click('#atk-body [data-act=army-undo]'); page.wait_for_timeout(60)
+    check(army() == a0, 'v22 Part D test 3: one Undo restores the army and the coins')
+    for _ in range(2): page.click('.step.plus[data-i="1"]')
+    for _ in range(3): page.click('.step.plus[data-i="2"]')
+    b0 = army(); free0 = S(page, 'S.aFree'); ds0 = S(page, 'S.designs.map(d => [d.hp, d.speed, d.armor, d.regen, d.resist, d.count])')
+    page.click('#atk-body [data-act=army]'); page.wait_for_function('() => !document.querySelector("#atk-body [data-act=army]").disabled', timeout=30000); page.wait_for_timeout(80)
+    ds1 = S(page, 'S.designs.map(d => [d.hp, d.speed, d.armor, d.regen, d.resist, d.count])')
+    check(all(all(a >= b for a, b in zip(n[:4], o[:4])) and n[5] >= o[5] for n, o in zip(ds1, ds0)) and 0 <= S(page, 'S.aFree') <= free0 and len(ds1) >= len(ds0),
+          'v22 Part D tests 1-2: with an army it adds units and upgrades, never taking any away, within the free coins')
+    page.click('#atk-body [data-act=army-undo]'); page.wait_for_timeout(60)
+    check(army() == b0, 'v22 Part D test 3: and one Undo takes it back')
+    check(not errors, f'Part D: no errors {errors[:3]}')
     ctx.close()
 
     ctx = b.new_context(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)
@@ -1560,14 +1607,18 @@ with sync_playwright() as p:
     page.evaluate(f"() => {{ const S = window.siegeline.state; S.charges = new Map([[{KO}, {{ kind: 'tower', cost: 0, t: 0 }}]]); S.chargeVer++; }}")
     page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(100)
     check(S(page, 'S.step') == 2 and 'if your bridge lands' not in page.inner_text('#atk-body'), 'a knock-out alone doesn’t promise a different route')
-    page.click('#atk-test'); page.wait_for_timeout(50)
+    f = page.evaluate('() => window.siegeline.wave.forecast()')
+    check(len(f['routes']) == 1 and any(o['cell'] == KO for o in f['offs']), f'v22: in the forecast the knock-out lands and the route never changes ({len(f["routes"])} routes, offs {f["offs"]})')
+    page.click('#atk-lock')
+    if not page.is_visible('#ov-hand'): page.click('#atk-lock')  # nothing but a sapper: Lock in asks twice
+    hand(page)
     p0 = S(page, 'S.path')
-    check(page.evaluate('() => window.siegeline.testing') and idx(4, 3) in p0, 'test run: units head for the far gap')
+    check(S(page, 'S.phase') == 'wave' and idx(4, 3) in p0, 'the real wave: units head for the far gap')
     landed = advance_until(page, f'S.grid[{KO}].off > 0')
     p1 = S(page, 'S.path')
-    check(landed and p1 == p0 and idx(4, 6) not in p1, f'the knock-out lands mid-wave and the route stays as it was ({len(p0)} → {len(p1)} cells)')
+    check(landed and p1 == p0 and idx(4, 6) not in p1, f'the knock-out lands mid-wave and the route stays as it was ({len(p0)} → {len(p1)} cells, landed {landed}, same {p1 == p0}, phase {S(page, "S.phase")})')
     page.evaluate('() => window.siegeline.advance(30)')
-    check(S(page, 'S.path') == p0, 'and it stays so for the rest of the wave')
+    check(S(page, 'S.path') == p0 or S(page, 'S.phase') != 'wave', 'and it stays so for the rest of the wave')
     check(not errors, f'knock-outs keep the route: no errors {errors[:3]}')
     ctx.close()
 
@@ -1731,12 +1782,9 @@ with sync_playwright() as p:
     a0 = S(page, 'S.aFree'); click_cell(page, a1[0] % COLS, a1[0] // COLS)
     check(page.inner_text('#a-chg-note') == 'No sabotage this wave.' and S(page, 'S.charges.size') == 0 and S(page, 'S.aFree') == a0, f'no sabotage in round 1, starter maze or not ({toast(page)})')
     page.click('#atk-next'); page.wait_for_timeout(200)
-    check(page.is_visible('#atk-test') and S(page, 'window.siegeline.scrub.view() && window.siegeline.scrub.view().route.length') == len(S(page, 'S.seenGrid.map(()=>0)')) * 0 + S(page, '(window.siegeline.seenRoute() || []).length'),
-          'the attacker’s Test and the wave preview work in round 1, against the starter maze')
-    page.click('#atk-test'); page.wait_for_timeout(100)
-    check(page.evaluate('() => window.siegeline.testing') and page.evaluate('() => window.siegeline.tag') == 'TEST · STARTER MAZE', 'the attacker’s round-1 Test plays on the starter maze')
-    page.click('#test-skip')
-    check(page.is_visible('#a-test') and 'through' in page.inner_text('#a-test'), f'and reports ({page.inner_text("#a-test")})')
+    f = page.evaluate('() => window.siegeline.wave.forecast()')
+    check(f and f['routes'][0]['path'] == S(page, '(window.siegeline.seenRoute() || [])') and f['sent'] == 6 and page.is_visible('#wv-play'),
+          'v22: the Wave step’s forecast works in round 1, against the starter maze')
     page.click('#atk-lock'); hand(page)
     # the live pot meter: the no-breach split at the start, the defender's share growing as units reach the keep, the result at the end
     pm = lambda: (page.inner_text('#pm-d'), page.inner_text('#pm-a'), page.inner_text('#pm-pot'))
@@ -1911,7 +1959,7 @@ with sync_playwright() as p:
     h0, costs = hd(), [page.inner_text('#u1-cost')]
     for k in ('splash', 'shock', 'frost'): page.click(f'#roster [data-resist={k}]'); costs.append(page.inner_text('#u1-cost'))
     res = S(page, 'S.designs[1].resist')
-    check(res == 'splash+frost+shock' and costs == ['35 each', '46 each', '59 each', '87 each'], f'a design takes several resists, each ×1.3 on the price (the big-unit surcharge past 60): {res} {costs}')
+    check(res == 'splash+frost+shock' and costs == ['35 each', '46 each', '59 each', '87 each'], f'a design takes several resists, each ×1.3 on the price (the big-unit surcharge past 60; a Brute’s toughness is under 2.5): {res} {costs}')
     pressed = page.evaluate("() => [...document.querySelectorAll('#roster [data-resist]')].filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.resist)")
     check(sorted(pressed) == ['frost', 'shock', 'splash'] and page.locator('#roster .urow[data-i="1"] .us.rs i').count() == 3 and abs(hd() - h0) < 1,
           f'the editor shows the three pressed; the row shows one Res pill with a dot each, and doesn’t grow ({pressed}, {h0:.0f} → {hd():.0f} px)')

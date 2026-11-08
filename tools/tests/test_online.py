@@ -189,9 +189,18 @@ try:
             stale = f"S.charges.set({idx(13, 4)},{{kind:'tower',t:0,cost:1}}); S.aFree-=1;"
             v13 = ev(B, f"window.siegeline.towerCost(S.seenGrid[{idx(13, 4)}].cfg)"); want = int((15 + 0.2 * v13) * 1.25 + 0.5)
             defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else '') + stale)
+            # v22 Part C: the defender drags a tower the attacker saw (the splash tower) onto a wall: it pays the move fee
+            fee_want = int(0.1 * ev(A, f"window.siegeline.towerCost(S.grid[{idx(9, 6)}].cfg)") + 0.5); d_before = ev(A, 'S.dFree')
+            (x0, y0), (x1, y1) = [A.evaluate(f'()=>window.siegeline.cellToClient({i})') for i in (idx(9, 6), idx(7, 5))]
+            A.mouse.move(x0, y0); A.mouse.down()
+            for k in range(1, 9): A.mouse.move(x0 + (x1 - x0) * k / 8, y0 + (y1 - y0) * k / 8)
+            A.mouse.up(); A.wait_for_timeout(100)
+            check('v22 Part C: dragging a seen tower costs the defender the move fee', ev(A, 'S.dFree') == d_before - fee_want and ev(A, 'S.totals.moveTries') == 1, f"{d_before} → {ev(A, 'S.dFree')} (fee {fee_want})")
             A.evaluate("()=>document.querySelector('#def-lock').click()"); B.evaluate("()=>document.querySelector('#atk-lock').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
+            check('v22 Part C test 7: both devices have the same coins and relocation count after the fee', ev(A, '[S.dFree, S.totals.moveTries]') == ev(B, '[S.dFree, S.totals.moveTries]') == [d_before - fee_want, 1],
+                  f"{ev(A, '[S.dFree, S.totals.moveTries]')} / {ev(B, '[S.dFree, S.totals.moveTries]')}")
             check(f'a knock-out is priced by the rules on both devices (the second knock-out: {want})', ev(A, "S.wave.chargeCoins") == want and ev(B, "S.wave.chargeCoins") == want, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
             # the charges each device started the wave with (the live list empties as they go off, sooner on the 10x device)
             pre = "S.preWave.charges.map(c => c[0])"

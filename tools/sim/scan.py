@@ -6,6 +6,8 @@ when even the defense that suits it best lets a lot through.
   python tools/sim/scan.py --rules '{"regenCap": 8}' --regen 3 --hp 6,9
   python tools/sim/scan.py --summary tools/.build/scan.jsonl
   python tools/sim/scan.py --resist none,shock     # v21: each design with and without the Shock resist (chain is a defense here)
+  python tools/sim/scan.py --hp 5,6,7,8,9 --speed 1,2,3,4,5,6,7 --armor 0 --regen 0 --defenses basic,heavy,splash,mixed,chain,doctrine
+                                                   # v22: the toughness scan (six defenses, the doctrine mix among them)
 
 Results append to tools/.build/scan.jsonl (or --out); --summary prints the strongest designs.
 """
@@ -22,6 +24,8 @@ DEFENSES = {  # six towers each in a 4-column maze; all land near 750 coins
               {'range': 3, 'dps': 1, 'rate': 3, 'slow': True}, {'dps': 2, 'rate': 5, 'poison': True}],
     # v21: chain towers (with --defenses), the defense the Shock resist answers
     'chain': [{'dps': 3, 'chain': True}, {'dps': 2, 'chain': True}] * 3,
+    # v22: the doctrine mix, 2 splash+frost, 2 chain and 2 heavy (the v22 spec's scan used it as one of its six)
+    'doctrine': [{'dps': 2, 'rate': 4, 'splash': 2, 'slow': True}, {'dps': 2, 'chain': True}, {'dps': 3, 'rate': 5}] * 2,
 }
 ints = lambda s: [int(x) for x in s.split(',')]
 ap = argparse.ArgumentParser()
@@ -54,12 +58,20 @@ with sync_playwright() as p:
     pg.goto('file://' + sim_page()); pg.wait_for_timeout(300)
     budget = a.budget or pg.evaluate('([t,r]) => runWave(t, [["Swarm", 1, 0, 0.1]], r)', [DEFENSES['basic'], rules])['defenseCost']
     print(f'army budget {budget}', flush=True)
+    # v22: rows already in the output file are kept (a run cut short picks up where it stopped), and a design's price is
+    # read once (it doesn't depend on the defense)
+    done = set()
+    if os.path.exists(a.out):
+        for l in open(a.out):
+            try: r = json.loads(l); done.add((json.dumps(r['design'], sort_keys=True), r['wave'], json.dumps(r.get('rules', {}), sort_keys=True)))
+            except Exception: pass
     for hp, sp, ar, rg, rs in grid[k::n]:
         d = {'hp': hp, 'speed': sp, 'armor': ar, 'regen': rg, 'resist': rs}
+        cost = pg.evaluate('([t,a,r]) => runWave(t, a, r)', [DEFENSES['basic'][:1], [[d, 0, 0, 0.12]], rules])['unitCosts'][0]
         for wave, end in (('bunched', 0.12), ('spread', 1.0)):
+            if (json.dumps(d, sort_keys=True), wave, json.dumps(rules, sort_keys=True)) in done: continue
             res, info = {}, None
             for dn, towers in DEF.items():
-                cost = pg.evaluate('([t,a,r]) => runWave(t, a, r)', [towers, [[d, 1, 0, end]], rules])['unitCosts'][0]
                 count = budget // cost
                 if not count: res = None; break
                 r = pg.evaluate('([t,a,r]) => runWave(t, a, r)', [towers, [[d, count, 0, end]], rules])

@@ -78,12 +78,14 @@ def build_maze(page, strong=False):
 def play_out(page, side, label, ready):
     """Plays rounds until the match ends: ready() does the player's turn. Checks the computer's side each round."""
     rounds, coins_ok, worth_ok, rules_ok, most, notes, sent, landed = 0, True, True, True, 0, 0, 0, 0
-    charges, first_last = 0, []
+    charges, first_last, fees, fee_rounds = 0, [], 0, 0
     for _ in range(8):
         rounds += 1
         before = S(page, AWORTH if side == 'def' else DWORTH)
         ready(); hand(page)
-        worth_ok &= before == S(page, AWORTH if side == 'def' else DWORTH)
+        # v22: a computer defender's worth goes down by exactly the move fees it paid for the seen towers it didn't rebuild in place
+        worth_ok &= before - (0 if side == 'def' else S(page, 'SOLO.fees || 0')) == S(page, AWORTH if side == 'def' else DWORTH)
+        if side != 'def': f = S(page, 'SOLO.fees || 0'); fees += f; fee_rounds += f > 0
         coins_ok &= S(page, 'S.aFree >= 0 && S.dFree >= 0 && S.path !== null')
         n = S(page, 'S.charges.size'); charges += n; most = max(most, n)
         rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])') and S(page, TERRAIN_OK) and S(page, 'S.grid.every(g => !(g && g.t === "tower" && g.cfg.chain && g.cfg.splash > 0))')
@@ -93,10 +95,11 @@ def play_out(page, side, label, ready):
         notes += bool(S(page, 'SOLO.note'))
         if page.is_visible('#ov-end'): break
         page.click('#sum-next'); page.wait_for_timeout(60)
-    check(worth_ok, f'{label}: the computer\'s plan moves no coins in or out of its worth')
+    check(worth_ok, f'{label}: the computer\'s plan moves no coins in or out of its worth (but the move fees it pays, v22)')
     check(coins_ok, f'{label}: no side overspends and the route stays open')
     check(rules_ok and not any(first_last), f'{label}: sabotage only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge or rough ground, rock in place, no tower with both Chain and Splash')
     check(notes == rounds, f'{label}: the computer explains every wave ({notes}/{rounds})')
+    if side != 'def': check(S(page, 'S.totals.moveTries || 0') >= fee_rounds, f'{label}: v22 Part C test 8: the computer defender pays move fees through its reduced refunds ({fees} coins in {fee_rounds} rounds, {S(page, "S.totals.moveTries || 0")} relocations)')
     if sent: print(f'      {label}: {landed} of {sent} sappers landed')
     check(page.is_visible('#ov-end') and text(page, '#end-title') in ('You win', 'The computer wins'), f'{label}: match ends with a solo result ({text(page, "#end-title")}, {rounds} rounds)')
     return charges, most
@@ -206,29 +209,41 @@ with sync_playwright() as p:
 
     # ---------- knock-outs against the computer: targets are tied to the cell, so Hard moves the towers it expects the
     # player to target, and sappers sent for their old cells find nothing
+    page.evaluate('() => { window.siegeline.solo.thinkMs = 600000; }')  # every variant gets tested, however busy the machine
     start(page, 'atk', 'hard', seed=11)
     for _ in range(12): page.click('.step.plus[data-i="0"]')
     page.click('#atk-lock')
     hand(page); run_wave(page); page.click('#sum-next')
-    dodges, planted, knocked, moved_note = 0, 0, 0, False
+    dodges, planted, knocked, moved_note, expected, dodge_missed = 0, 0, 0, False, 0, True
     for rnd in range(2, 8):
         thought(page)
-        dodges += 1 if S(page, 'SOLO.mem.def.info && SOLO.mem.def.info.dodged') else 0
+        d = S(page, 'SOLO.mem.def.info && SOLO.mem.def.info.dodged') or 0
+        dodges += 1 if d else 0
+        expected += 1 if S(page, 'SOLO.mem.def.info && SOLO.mem.def.info.expected') else 0
         page.evaluate('() => { window.siegeline.state.aFree += 120; }')  # coins for a knock-out every round
         page.click('#atk-next'); page.wait_for_timeout(250)  # to Sabotage
         # the seen tower worth most: the obvious target
         cell = S(page, 'S.seenGrid.reduce((b, g, i) => g && g.t === "tower" && !(g.off > 0) && (b < 0 || window.siegeline.towerValue(g) > window.siegeline.towerValue(S.seenGrid[b])) ? i : b, -1)')
+        sent = False
         if cell >= 0:
             click_cell(page, cell % COLS, cell // COLS)
-            if page.is_visible('#atk-ctx [data-act=plant]'): page.click('#atk-ctx [data-act=plant]'); planted += 1
+            if page.is_visible('#atk-ctx [data-act=plant]'): page.click('#atk-ctx [data-act=plant]'); planted += 1; sent = True
             if page.is_visible('#atk-ctx [data-act=close]'): page.click('#atk-ctx [data-act=close]')
-        page.click('#atk-lock'); hand(page); run_wave(page)
-        knocked += S(page, 'S.last ? S.last.jammed : 0')
+        page.click('#atk-lock'); hand(page)
+        # the computer dodges the towers it would target itself, not always the one the player picks: what counts is
+        # whether a tower still stands on the cell the sapper was sent for
+        gone = sent and not S(page, f'!!(S.grid[{cell}] && S.grid[{cell}].t === "tower")')
+        run_wave(page)
+        k = S(page, 'S.last ? S.last.jammed : 0'); knocked += k
+        if gone: dodge_missed &= k == 0  # a moved tower leaves the sapper nothing on the old cell
         moved_note |= 'to a new cell' in S(page, 'SOLO.note')
         if page.is_visible('#ov-end'): break
         page.click('#sum-next')
-    check(dodges > 0 and moved_note, f'hard computer moves the towers it expects to be targeted, and says so ({dodges} of the rounds)')
-    check(planted > 0 and knocked < planted, f'player knock-outs on the old cells miss ({knocked} of {planted} knocked a tower out)')
+    # v22: moving a seen tower costs a fee now, so Hard weighs dodging against paying for it and in this match mostly keeps
+    # its towers where they were (it dodged every round it could before)
+    check(expected > 0, f'hard computer expects knock-outs once the player sends one, and tests dodged builds ({expected} rounds)')
+    check((dodges == 0 or moved_note) and dodge_missed, f'v22: when it moves the targeted towers it says so, and the knock-out on the old cell misses ({dodges} rounds dodged, note {moved_note}, old cell missed {dodge_missed})')
+    check(planted > 0 and knocked <= planted, f'player knock-outs: {knocked} of {planted} knocked a tower out')
     if page.is_visible('#ov-end'): page.click('#end-menu')
     else:
         page.evaluate('() => { window.siegeline.state.keep = 1; }')
@@ -258,7 +273,7 @@ with sync_playwright() as p:
     waited = S(page, 'SOLO.locked') and page.is_visible('#ov-wait')
     check(waited and 'computer' in page.inner_text('#wait-sub').lower(), 'locking in early shows the wait card')
     page.screenshot(path=f'{OUT}/5_wait.png')
-    if waited:
+    if waited and page.is_visible('#wait-back'):  # (on a busy machine the computer may be done by now: then the wave follows)
         page.click('#wait-back')
         check(not page.is_visible('#ov-wait') and S(page, 'S.phase') == 'attack' and not S(page, 'SOLO.locked'), 'Keep planning goes back to planning')
         thought(page)

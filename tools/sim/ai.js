@@ -60,7 +60,7 @@
   function defend(S, opt, seed) {
     if (opt.game) {
       const r = I.brainPlan('def', opt.game, seed), p = r.plan;
-      S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; I.recompute();
+      S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; if (p.mt != null) S.totals.moveTries = p.mt; I.recompute();
       if ([...S.bridges].some(i => S.grid[i])) throw new Error('game defender built on a bridge');
       if (p.g.w.concat(p.g.f, p.g.t.map(a => a[0])).some(i => S.terrain[i])) throw new Error('game defender built on rough ground or rock');
       if (!S.path) throw new Error('game defender blocked the path');
