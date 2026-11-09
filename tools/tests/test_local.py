@@ -1094,28 +1094,28 @@ with sync_playwright() as p:
     p0 = S(page, 'JSON.stringify(S.designs[2].tl)'); plan0 = ev(f'{W}.plan()')
     page.click('[data-wv=split]'); page.wait_for_timeout(60)
     gs = ev(f'{W}.groups().filter(g => g.di === 2)')
-    check(len(gs) == 2 and sel_ok() and ev(f'{W}.sel') == gs[0]['id'] and 'Group 1 of 2'.lower() in page.inner_text('#wv-tools .tools-h').lower(),
-          f'v22: Split makes two groups of the design, the first half selected ({[len(g["idx"]) for g in gs]})')
+    check(len(gs) == 2 and sel_ok() and ev(f'{W}.sel') == gs[0]['id'] and [len(g['idx']) for g in gs] == [4, 4] and page.inner_text('#wv-tools .tools-h .glt') == 'A'
+          and [g['name'] for g in gs] == ['Swarm A', 'Swarm B'], f'v22: Split makes two groups of the design, Swarm A (the first half to leave, selected) and Swarm B ({[(g["name"], len(g["idx"])) for g in gs]})')
     check(ev(f'{W}.plan()') == plan0, 'v22 test 16: splitting alone leaves the plan sent online exactly as it was')
     page.click('[data-wv=place][data-w=last]'); page.wait_for_timeout(60)
     split_plan = ev(f'{W}.plan()'); split_pos = S(page, 'S.designs[2].tl.pos.slice()')
-    page.select_option('#wv-mg', gs[1]['id']); page.click('[data-wv=merge]'); page.wait_for_timeout(60)
+    page.click(f'[data-wv=merge][data-o="{gs[1]["id"]}"]'); page.wait_for_timeout(60)
     check(len(ev(f'{W}.groups().filter(g => g.di === 2)')) == 1 and sel_ok(), 'v22: Merge joins them again, the merged group selected')
     page.keyboard.press('Control+z'); page.keyboard.press('Control+z'); page.keyboard.press('Control+z'); page.wait_for_timeout(60)
     check(S(page, 'JSON.stringify(S.designs[2].tl)') == p0 and len(ev(f'{W}.groups().filter(g => g.di === 2)')) == 1 and sel_ok(),
           'v22 Undo: three presses take back Merge, Last and Split, one each, to the times and the group it started with')
-    page.click('[data-wv=split]'); page.click('[data-wv=merge]') if page.is_visible('[data-wv=merge]') else None
+    page.click('[data-wv=split]'); page.locator('[data-wv=merge]').first.click() if page.locator('[data-wv=merge]').count() else None
     page.wait_for_timeout(60)
     check(S(page, 'JSON.stringify(S.designs[2].tl)') == p0, 'v22 test 5: Split then Merge restores the original release times')
     page.evaluate(f"() => {{ const S = window.siegeline.state; S.designs[2].tl = {{ s: Math.min(...{split_pos}), e: Math.max(...{split_pos}), pos: {split_pos} }}; window.siegeline.refresh(); }}")
     check(ev(f'{W}.plan()') == split_plan, 'v22 test 16: the plan sent for a split design equals the same release times entered without splitting')
     # test 6: Merge never across designs; Link only for equal speeds
     page.click('#wv-rows .wv-grp >> nth=0 >> .rh'); page.wait_for_timeout(60)
-    check(page.locator('#wv-mg').count() == 0 and page.locator('[data-wv=link]').count() == 0, 'v22 test 6: Runners (2.3 c/s) get no Merge with other designs, and no Link: no other design has their speed')
+    check(page.locator('[data-wv=merge]').count() == 0 and page.locator('[data-wv=link]').count() == 0, 'v22 test 6: Runners (2.3 c/s) get no Merge with other designs, and no Link: no other design has their speed')
     page.evaluate("() => { const S = window.siegeline.state; S.designs[1].speed = S.designs[2].speed; window.siegeline.refresh(); }")
     page.click('#wv-rows .wv-grp >> nth=1 >> .rh'); page.wait_for_timeout(60)
-    opts = page.evaluate("() => [...document.querySelectorAll('#wv-lk option')].map(o => o.textContent)")
-    check(page.locator('#wv-mg').count() == 0 and opts and all('Swarm' in o for o in opts), f'v22 test 6: Brutes at the Swarm’s speed are offered Link with it, never Merge ({opts})')
+    opts = page.evaluate("() => [...document.querySelectorAll('[data-wv=link]')].map(o => o.textContent)")
+    check(page.locator('[data-wv=merge]').count() == 0 and opts and all('Swarm' in o for o in opts), f'v22 test 6: Brutes at the Swarm’s speed are offered Link with it, never Merge ({opts})')
     page.click('[data-wv=link]'); page.wait_for_timeout(60)
     lk = ev(f'{W}.groups().filter(g => g.cell == null).map(g => g.link)')
     page.click('[data-wv=place][data-w=lead]'); page.wait_for_timeout(60)
@@ -1126,7 +1126,7 @@ with sync_playwright() as p:
     # test 8: every planned sapper is in the Meet list by its job name; test 7: Meet with a sapper
     page.click('#wv-rows .wv-grp >> nth=2 >> .rh'); page.wait_for_timeout(60)
     mo = page.evaluate("() => [...document.querySelectorAll('#wv-mo option')].map(o => o.textContent)")
-    check(any(o.startswith('◆ Bridge → wall ') for o in mo) and any(o.startswith('◆ Knock-out → Tower ') for o in mo), f'v22 test 8: every planned sapper is in the Meet list, named by its job ({mo})')
+    check(any(o.startswith('◆ Bridge ') for o in mo) and any(o.startswith('◆ Knock-out T') for o in mo), f'v22 test 8: every planned sapper is in the Meet list, named by its job ({mo})')
     ko = S(page, '[...S.charges].find(([, c]) => c.kind === "tower")[0]')
     zones = ev(f'{W}.zones()'); zk = next((z['id'] for z in zones if ko in z['towers']), zones[0]['id'])
     page.select_option('#wv-mo', f's{ko}'); page.select_option('#wv-mz', zk); page.click('[data-wv=meet]'); page.wait_for_timeout(150)
@@ -1251,6 +1251,157 @@ with sync_playwright() as p:
     bridges = ev(f'{W}.forecast().bridges')
     check(bridges and not bridges[0]['same'] and page.is_hidden('#a-sabo-warn') and 'won’t take this bridge' not in page.inner_text('#a-charges'),
           f'v22 Part A test 3: a bridge that changes the route shows no warning ({bridges})')
+    ctx.close()
+
+    # ---------- v22.1: the user's fixes to the Wave step (split groups on their own, Split/Merge, Meet at any cells, the
+    # map keeping its size, quick buy and sell on the Army step, timing kept when a count changes, buttons vs labels)
+    ctx = b.new_context(viewport={'width': 1440, 'height': 900})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.on('console', lambda m: errors.append(m.text) if m.type == 'error' and 'ERR_' not in m.text else None)
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page); sure_sappers(page)
+    v22_round2(page)
+    W = 'window.siegeline.wave'
+    ev = lambda e: page.evaluate('() => ' + e)
+    grp = lambda gid: ev(f'{W}.groups().find(g => g.id === "{gid}")')
+    sw = ev(f'{W}.groups().find(g => g.di === 2).id')
+    page.evaluate(f'() => {W}.select("{sw}")'); page.wait_for_timeout(60)
+    # Split with a chosen size: the stepper moves the cut, hovering Split marks it on the track
+    page.click('[data-wv=cut][data-d="-1"]'); page.wait_for_timeout(40)
+    page.hover('#wv-split'); page.wait_for_timeout(80)
+    cutv = page.inner_text('#wv-cutv').replace('\n', ' ')
+    marks = page.evaluate("() => [document.querySelectorAll('#wv-rows .wv-grp.sel .cutm:not([hidden])').length, document.querySelectorAll('#wv-rows .wv-grp.sel .dot.cutoff').length]")
+    check(cutv.split() == ['3', '✂', '5'] and marks == [1, 5], f'v22.1: Split’s stepper sets the cut (3 ✂ 5), and hovering it marks the cut and the 5 that would go on the track ({cutv!r}, {marks})')
+    page.click('[data-wv=split]'); page.wait_for_timeout(80)
+    gs = ev(f'{W}.groups().filter(g => g.di === 2)')
+    A, B = gs[0]['id'], gs[1]['id']
+    check([len(g['idx']) for g in gs] == [3, 5] and [g['name'] for g in gs] == ['Swarm A', 'Swarm B'] and max(gs[0]['secs']) <= min(gs[1]['secs']) + 1e-9,
+          f'v22.1: Split keeps the first 3 to leave as Swarm A and makes the last 5 Swarm B ({[(g["name"], len(g["idx"])) for g in gs]})')
+    rowA, rowB = f'#wv-rows .wv-grp[data-id="{A}"]', f'#wv-rows .wv-grp[data-id="{B}"]'
+    check('A' in page.inner_text(f'{rowA} .glt') and 'B' in page.inner_text(f'{rowB} .glt'), 'v22.1: the rows say which group is which (A, B)')
+    # split groups are independent: drag B past A toward the gate and back; A never moves, each row's dots stay its own
+    def dots_ok(gid):
+        g = grp(gid); left = page.evaluate(f"() => [...document.querySelectorAll('#wv-rows .wv-grp[data-id=\"{gid}\"] .dot')].map(d => parseFloat(d.style.left)).sort((a, b) => a - b)")
+        want = sorted((1 - t / 20) * 100 for t in g['secs'])
+        return len(left) == len(want) and all(abs(a - b) < 0.05 for a, b in zip(left, want))
+    secsA = grp(A)['secs']
+    tb = page.locator(f'{rowB} .track').bounding_box(); bb = page.locator(f'{rowB} .bar').bounding_box()
+    drag(page, bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2, tb['x'] + tb['width'] - 4, bb['y'] + bb['height'] / 2, steps=14); page.wait_for_timeout(120)
+    g1 = grp(B)
+    check(grp(A)['secs'] == secsA and min(g1['secs']) < max(secsA) and dots_ok(A) and dots_ok(B),
+          f'v22.1: dragging Swarm B past Swarm A toward the gate moves only B; A keeps its times and each row shows its own units ({secsA} / {g1["secs"]})')
+    bb = page.locator(f'{rowB} .bar').bounding_box()
+    drag(page, bb['x'] + bb['width'] / 2, bb['y'] + bb['height'] / 2, tb['x'] + 30, bb['y'] + bb['height'] / 2, steps=14); page.wait_for_timeout(120)
+    check(grp(A)['secs'] == secsA and min(grp(B)['secs']) > max(secsA) and dots_ok(A) and dots_ok(B) and [len(g['idx']) for g in ev(f'{W}.groups().filter(g => g.di === 2)')] == [3, 5],
+          'v22.1: and dragging it back past A again moves only B')
+    # each group's own tools: Lead on A moves A only
+    page.evaluate(f'() => {W}.select("{A}")'); secsB = grp(B)['secs']
+    page.click('[data-wv=place][data-w=middle]'); page.wait_for_timeout(60)
+    check(grp(B)['secs'] == secsB and grp(A)['secs'] != secsA and dots_ok(A) and dots_ok(B), 'v22.1: Position on Swarm A moves A only')
+    # Merge is a button per group of the same design
+    mg = page.evaluate("() => [...document.querySelectorAll('[data-wv=merge]')].map(b => [b.dataset.o, b.textContent])")
+    check(len(mg) == 1 and mg[0][0] == B and 'Swarm B' in mg[0][1] and '×5' in mg[0][1], f'v22.1: Merge offers Swarm B ×5 as a button ({mg})')
+    page.click(f'[data-wv=merge][data-o="{B}"]'); page.wait_for_timeout(60)
+    gs = ev(f'{W}.groups().filter(g => g.di === 2)')
+    check(len(gs) == 1 and len(gs[0]['idx']) == 8 and gs[0]['name'] == 'Swarm' and dots_ok(gs[0]['id']), 'v22.1: Merge makes one group of 8 again, named plainly Swarm')
+    page.keyboard.press('Control+z'); page.wait_for_timeout(60)
+    check(len(ev(f'{W}.groups().filter(g => g.di === 2)')) == 2, 'v22.1: Undo splits them again')
+    # a group linked to another design splits its own units only
+    page.evaluate("() => { const S = window.siegeline.state; S.designs[1].speed = S.designs[2].speed; window.siegeline.refresh(); }")
+    page.evaluate(f'() => {W}.select("{A}")'); page.wait_for_timeout(60)
+    page.locator('[data-wv=link]').first.click(); page.wait_for_timeout(60)
+    page.click('[data-wv=split]'); page.wait_for_timeout(60)
+    lg = ev(f'{W}.groups().filter(g => g.cell == null).map(g => [g.di, g.idx.length, g.link])')
+    check(sorted(x[1] for x in lg if x[0] == 2) == [1, 2, 5] and [x[1] for x in lg if x[0] == 1] == [2] and sum(x[1] for x in lg if x[0] == 2) == 8,
+          f'v22.1: splitting Swarm A while it’s linked to the Brutes cuts only its own units ({lg})')
+    page.keyboard.press('Control+z'); page.keyboard.press('Control+z'); page.wait_for_timeout(60)
+    page.evaluate("() => { const S = window.siegeline.state; S.designs[1].speed = 1; window.siegeline.refresh(); }")
+    check(not any(g['link'] for g in ev(f'{W}.groups()')) and len(ev(f'{W}.groups().filter(g => g.di === 2)')) == 2, 'v22.1: two Undos take back that Split and the Link')
+    # the map keeps its size whatever zone is picked
+    box = lambda: page.evaluate("() => { const r = document.querySelector('#board').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }")
+    b0 = box(); sizes = []
+    for z in ev(f'{W}.zones()'):
+        page.click(f'.wv-zc[data-z="{z["id"]}"]'); page.wait_for_timeout(120); sizes.append(box())
+    page.click('.wv-zc >> nth=0'); page.wait_for_timeout(60)
+    if ev(f'{W}.selZ'): page.click('.wv-zc >> nth=0'); page.wait_for_timeout(120)
+    sizes.append(box())
+    check(all(x == b0 for x in sizes), f'v22.1: picking a zone (and clearing it) never changes the map’s size ({b0}, {sizes})')
+    for k in range(3): page.click('#wv-play'); page.wait_for_timeout(120); page.click('[data-wv=rush]' if k % 2 else '[data-wv=even]'); page.wait_for_timeout(60)
+    check(box() == b0, f'v22.1: neither do saved runs ({box()})')
+    # Meet at cells picked on the map: a drag along the route takes that stretch of it
+    page.evaluate(f'() => {W}.select("{A}")'); page.wait_for_timeout(60)
+    route = ev(f'{W}.forecast().routes[0].path')
+    page.click('[data-wv=pick]'); page.wait_for_timeout(40)
+    check(ev(f'{W}.pick') and page.get_attribute('[data-wv=pick]', 'aria-pressed') == 'true', 'v22.1: the crosshair starts picking cells on the map')
+    page.keyboard.press('Escape'); page.wait_for_timeout(40)
+    check(not ev(f'{W}.pick'), 'v22.1: Escape stops picking')
+    page.click('[data-wv=pick]'); page.wait_for_timeout(40)
+    selz = ev(f'{W}.selZ')
+    xy = lambda i: page.evaluate(f'() => window.siegeline.cellToClient({i})')
+    (x0, y0), (x1, y1) = xy(route[6]), xy(route[10])
+    drag(page, x0, y0, x1, y1, steps=12); page.wait_for_timeout(120)
+    pl = ev(f'{W}.place')
+    check(pl and sorted(pl['cells']) == sorted(route[6:11]) and not ev(f'{W}.pick') and page.input_value('#wv-mz') == 'cells' and ev(f'{W}.selZ') == selz,
+          f'v22.1: a drag from one route cell to another picks that stretch of route (5 cells), shown as {pl and pl["label"]!r} in the Meet line; no zone gets picked')
+    brute = ev(f'{W}.groups().find(g => g.di === 1).id')
+    page.select_option('#wv-mo', brute); page.click('[data-wv=meet]'); page.wait_for_timeout(200)
+    note = page.inner_text('#wv-note'); pa, pb = ev(f'{W}.presence("{A}", "cells")'), ev(f'{W}.presence("{brute}", "cells")')
+    met = pa and pb and abs((pa[0] + pa[1]) / 2 - (pb[0] + pb[1]) / 2) < 1.5
+    check((met and 'now pass through cells ' in note) or note.startswith('Closest possible') or 'never reach' in note,
+          f'v22.1: Meet at those cells lines Swarm A up with the Brutes there, or says why it can’t ({note!r}, {pa}, {pb})')
+    check('Met at cells' in page.inner_text('#wv-log'), 'v22.1: the change log says where they met')
+    page.keyboard.press('Control+z'); page.wait_for_timeout(60)
+    # a tap picks one cell
+    page.click('[data-wv=pick]'); page.mouse.click(*xy(route[3])); page.wait_for_timeout(100)
+    check(ev(f'{W}.place')['cells'] == [route[3]] and ev(f'{W}.place')['label'].startswith('Cell '), f'v22.1: a tap picks a single cell ({ev(W + ".place")})')
+    # buttons and labels read apart; no "none lost"
+    st = page.evaluate("""() => { const b = document.querySelector('[data-wv=even]'), l = document.querySelector('.wv-tools .wvt > span'), cs = e => getComputedStyle(e);
+      return [cs(b).textTransform, cs(b).fontFamily, cs(l).textTransform, cs(l).fontFamily, cs(b).backgroundColor]; }""")
+    check(st[0] == 'none' and 'Mono' not in st[1] and st[2] == 'uppercase' and 'Mono' in st[3] and st[4] not in ('rgba(0, 0, 0, 0)', 'transparent'),
+          f'v22.1: buttons are filled, in sentence case and a sans font; labels small mono capitals ({st})')
+    check('none lost' not in page.inner_text('#wv-rows') and 'closer to the gate' not in page.inner_text('#wv').lower() and 'group 1 of' not in page.inner_text('#wv').lower(),
+          'v22.1: the explanatory lines are gone (none lost, closer to the gate, group n of m)')
+    page.screenshot(path=f'{OUT}/v221_wave.png')
+    # the Army step: Max buys as many as the coins allow, 0 sells them all
+    page.click('#atk-steps [data-step="0"]'); page.wait_for_timeout(150)
+    c0 = S(page, '[S.aFree, S.designs[0].count, window.siegeline.unitCost(S.designs[0])]')
+    page.click('.step.max[data-i="0"]'); page.wait_for_timeout(60)
+    c1 = S(page, '[S.aFree, S.designs[0].count]')
+    check(c1[1] == c0[1] + c0[0] // c0[2] and c1[0] == c0[0] % c0[2] and page.is_disabled('.step.max[data-i="0"]'), f'v22.1: Max buys as many as the coins allow ({c0} → {c1})')
+    page.click('.step.zero[data-i="0"]'); page.wait_for_timeout(60)
+    c2 = S(page, '[S.aFree, S.designs[0].count]')
+    check(c2 == [c0[0] + c0[1] * c0[2], 0] and page.is_disabled('.step.zero[data-i="0"]') and page.is_disabled('.step.minus[data-i="0"]'), f'v22.1: 0 sells them all ({c2})')
+    page.click('.step.plus[data-i="0"]'); page.click('.step.plus[data-i="0"]'); page.click('.step.plus[data-i="0"]')
+    # a count change keeps the Wave step's timing: one more Swarm joins the group that leaves last, two fewer drop the last ones
+    before = {g['id']: g['secs'] for g in ev(f'{W}.groups()') if g['di'] == 2}
+    page.click('.step.plus[data-i="2"]'); page.wait_for_timeout(60)
+    page.click('#atk-steps [data-step="2"]'); page.wait_for_timeout(200)
+    after = {g['id']: g['secs'] for g in ev(f'{W}.groups()') if g['di'] == 2}
+    rest = list(after[B])
+    for t in before[B]: rest.remove(t) if t in rest else None
+    check(list(after) == [A, B] and after[A] == before[A] and len(after[B]) == 6 and len(rest) == 1 and min(before[B]) <= rest[0] <= 20 and len({round(t, 6) for t in after[B]}) == 6,
+          f'v22.1: one more Swarm keeps both groups and their times; the new one joins Swarm B (which ends at 20 s, so into its widest gap, never on top of another) ({after})')
+    before = {g['id']: g['secs'] for g in ev(f'{W}.groups()') if g['di'] == 2}
+    page.click('#atk-steps [data-step="0"]'); page.wait_for_timeout(100)
+    for _ in range(4): page.click('.step.minus[data-i="2"]')
+    page.click('#atk-steps [data-step="2"]'); page.wait_for_timeout(200)
+    after = {g['id']: g['secs'] for g in ev(f'{W}.groups()') if g['di'] == 2}
+    check(after.get(A) == before[A] and after.get(B) == before[B][:2], f'v22.1: four fewer drop the last ones to leave, from Swarm B ({after})')
+    for _ in range(3): page.click('#atk-steps [data-step="0"]'); page.click('.step.minus[data-i="2"]'); page.click('#atk-steps [data-step="2"]')
+    page.wait_for_timeout(150)
+    gs = ev(f'{W}.groups().filter(g => g.di === 2)')
+    check(len(gs) == 1 and gs[0]['id'] == A and gs[0]['secs'] == before[A][:2] and gs[0]['name'] == 'Swarm', f'v22.1: a group whose units are all gone goes, and the last one loses its letter ({gs})')
+    # on a phone: one column, nothing wider than the screen, the zone chips in a row
+    page.set_viewport_size({'width': 390, 'height': 844}); page.wait_for_timeout(300)
+    wide = page.evaluate('() => document.documentElement.scrollWidth - innerWidth')
+    dirn = page.evaluate("() => getComputedStyle(document.querySelector('#wv-strip')).flexDirection")
+    check(wide == 0 and dirn == 'row', f'v22.1 on a phone: nothing wider than 390 px, the zone chips in a row ({wide}, {dirn})')
+    page.screenshot(path=f'{OUT}/v221_wave_390.png', full_page=True)
+    page.click('#atk-steps [data-step="0"]'); page.wait_for_timeout(200)
+    rw = page.evaluate("() => [...document.querySelectorAll('#roster .uhead')].map(h => [Math.round(h.scrollWidth - h.clientWidth), Math.round(h.querySelector('.stepper').getBoundingClientRect().right)])")
+    check(all(o <= 0 and r <= 390 for o, r in rw), f'v22.1 on a phone: each design row fits with 0, −, +, Max ({rw})')
+    page.screenshot(path=f'{OUT}/v221_army_390.png')
+    check(not errors, f'v22.1: no errors {errors[:3]}')
     ctx.close()
 
     # ---------- v22 Part A: a bridge landing re-routes on the towers firing then (internals, a fixed layout)

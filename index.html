@@ -222,6 +222,9 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .step{width:32px;height:32px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;font:400 18px/1 var(--f-ui);cursor:pointer;display:grid;place-items:center;padding:0;color:var(--soft)}
 .step.plus{border-color:rgba(255,138,61,.5);color:var(--warm)}
 .step:disabled{opacity:.3;cursor:default}
+.step.qk{width:auto;min-width:30px;padding:0 6px;font:600 10.5px/1 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.step.qk:hover:not(:disabled){color:var(--paper);border-color:var(--soft)}
+.step.qk.max{color:var(--warm);border-color:rgba(255,138,61,.35)}
 .count{min-width:26px;text-align:center;font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .abtn{display:flex;align-items:center;gap:10px;padding:8px 10px;min-height:46px;border-radius:var(--r2);background:transparent;border:1px dashed rgba(255,138,61,.4);cursor:pointer;text-align:left}
 .abtn:hover{background:var(--warm-wash)}
@@ -342,14 +345,25 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 #panel.wv{width:clamp(400px,32vw,470px)}
 body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its room goes to the releases */
 .wv{display:flex;flex-direction:column;gap:8px;user-select:none;-webkit-user-select:none;--zone:#ff6a4d;--good:#6fdc8c}
-.wv .lbl,#wvx .lbl{font:500 10px/1.2 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.wv .lbl,#wvx .lbl{font:500 9.5px/1.2 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+/* v22.1: on the Wave step what you can press is a filled button in sentence case (Geist), and what only names things is
+   small grey mono capitals, so the two never read alike */
+.wvb,.wv-tools .wvs button,.wv-tools .wvs select,#wvx .zacts .mini{height:26px;padding:0 10px;border-radius:5px;border:1px solid #2f3945;background:#17202a;color:var(--paper);font:500 12px/1 var(--f-body);letter-spacing:0;text-transform:none;cursor:pointer;white-space:nowrap}
+.wvb:hover:not(:disabled),.wv-tools .wvs button:hover:not(:disabled),#wvx .zacts .mini:hover{border-color:var(--warm);background:#1c2632}
+.wvb:disabled,.wv-tools .wvs button:disabled{opacity:.4;cursor:default}
+.wv-tools .wvs button.go{border-color:var(--warm);background:var(--warm-wash);color:var(--warm);font-weight:600}
+.wv-tools .wvs button[aria-pressed=true]{border-color:var(--paper);background:#243041}
+.wv-tools .wvs button small{font:500 10.5px/1 var(--f-ui);color:var(--muted);margin-left:3px}
+.glt{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 3px;box-sizing:border-box;margin-left:3px;border-radius:4px;border:1.5px solid var(--c,var(--line-2));font:700 10.5px/1 var(--f-ui);color:var(--paper);vertical-align:1px}
 .wv-score{display:flex;flex-direction:column;gap:7px;padding:8px 12px;border:1px solid var(--line);border-left:2px solid var(--warm);border-radius:var(--r2);background:var(--slate)}
-.wv-sc1{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wv-sc1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wv-sc1 .wv-sc2{margin-left:auto}
 .wv-big{font:700 32px/1 var(--f-ui);letter-spacing:-.01em;color:var(--warm);font-variant-numeric:tabular-nums;min-width:4.4ch}
 .wv-sub{display:grid;gap:3px}
 .wv-sub b{font:500 12px/1 var(--f-ui);color:var(--paper)}
-.wv-badge{margin-left:auto;font:700 10.5px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:#08130b;background:var(--good);padding:5px 8px;border-radius:var(--r)}
+.wv-badge{justify-self:start;font:700 10px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:#08130b;background:var(--good);padding:5px 8px;border-radius:var(--r)}
 .wv-sc2{display:flex;gap:6px}
+.wv-sc2 .wv-auto{flex:none;padding:0 12px}
 .wv-auto{flex:1;height:30px;border-radius:var(--r);border:1px solid var(--warm);background:var(--warm-wash);color:var(--warm);font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 .wv-auto:hover:not(:disabled){background:color-mix(in srgb,var(--warm) 20%,transparent)}
 .wv-auto:disabled{opacity:.45;cursor:default}
@@ -358,20 +372,20 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .wv-how{margin:0;font:400 12.5px/1.45 var(--f-body);color:var(--soft)}
 .wv-rel{display:flex;flex-direction:column;gap:6px}
 .wv-rh{display:flex;align-items:center;gap:8px;min-width:0}
-.wv-rh .wv-key{margin-left:auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wv-rh .mini{height:24px;padding:0 8px;flex:none}
+.wv-rh{flex-wrap:wrap}
+.wv-rh .wv-undo{flex:none;margin-left:auto}
 .ghostkey{display:inline-flex;align-items:center;gap:6px}
 .ghostkey i{width:18px;height:9px;border:1.5px dashed var(--muted);border-radius:3px;display:inline-block}
-.wv-pre{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.wv-pre .lbl{margin-right:4px}
-.wv-pre .mini{height:24px;padding:0 8px;font-size:10.5px;letter-spacing:.06em;border-color:var(--line);color:var(--muted)}
-.wv-pre .mini:hover{border-color:var(--line-2);color:var(--paper)}
+.wv-pre{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-left:6px}
+.wv-key{display:block}
 .wv-axis{position:relative;height:13px;margin-left:24px;font:500 10px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
 .wv-axis span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
 .wv-axis span:first-child{transform:none}
-.wv-axis span.gate{transform:translateX(-100%);color:var(--warm);letter-spacing:.06em;text-transform:uppercase}
-.wv-rows{display:flex;flex-direction:column;gap:2px}
-.wv-grp{display:grid;grid-template-columns:18px minmax(0,1fr);column-gap:6px;row-gap:2px;padding:2px 6px 4px 2px;border:1px solid transparent;border-radius:var(--r2)}
+.wv-axis span.gate{transform:translateX(-100%)}
+.wv-axis span.gate i{font-style:normal}
+.wv-axis span.gate b{font-weight:600;color:var(--warm);letter-spacing:.08em;text-transform:uppercase;margin-left:4px}
+.wv-rows{display:flex;flex-direction:column;gap:4px}
+.wv-grp{display:grid;grid-template-columns:18px minmax(0,1fr);column-gap:7px;row-gap:3px;padding:5px 9px 7px 4px;border:1px solid var(--line);border-radius:var(--r2);background:rgba(255,255,255,.012)}
 .wv-grp.sel{border-color:var(--warm);background:var(--warm-wash)}
 .wv-grp.sel .nm{color:var(--warm)}
 .wv-grp.dragging{opacity:.6}
@@ -390,7 +404,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .wv-grp .tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,.035)}
 .wv-grp .tick.m{background:rgba(255,255,255,.09)}
 .wv-grp .gate{position:absolute;right:-1px;top:-3px;bottom:-3px;width:3px;background:var(--warm);border-radius:1px}
-.wv-grp .bar,.wv-grp .ghost{position:absolute;top:4px;bottom:4px;border-radius:4px}
+.wv-grp .bar,.wv-grp .ghost{position:absolute;top:3px;bottom:3px;border-radius:4px} /* 3 px of bar clear of the dots, to grab the group */
 .wv-grp .bar{cursor:grab;background:color-mix(in srgb,var(--c) 22%,transparent);border:1.5px solid var(--c)}
 .wv-grp.sel .bar{border-width:2px}
 .wv-grp .bar .h{position:absolute;top:-4px;bottom:-4px;width:12px;cursor:ew-resize}
@@ -402,21 +416,32 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .wv-grp .dot:hover,.wv-grp .dot.lens{width:12px;height:12px;margin:-6px 0 0 -6px;border-color:#fff}
 .wv-grp .dot.dead{opacity:.5;box-shadow:inset 0 0 0 2px var(--ink)}
 .wv-grp .ph{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--paper);pointer-events:none;z-index:3}
+.wv-grp .cutm{position:absolute;top:-5px;bottom:-5px;width:0;margin-left:-1px;border-left:2px dashed var(--paper);pointer-events:none;z-index:4}
+.wv-grp .dot.cutoff{background:var(--ink);border:1.5px dashed var(--c)}
 @media (pointer:coarse){.wv-grp .track{height:34px}.wv-grp .dot{width:12px;height:12px;margin:-6px 0 0 -6px}}
-.wv-tools{display:flex;flex-direction:column;gap:5px;padding:8px 10px;border:1px solid var(--warm);border-radius:var(--r2);background:var(--slate)}
+.wv-tools{display:flex;flex-direction:column;gap:7px;padding:10px 12px 12px;border:1px solid var(--warm);border-radius:var(--r2);background:var(--slate);position:sticky;bottom:0;z-index:6}
+.wv-tools::after{content:"";position:absolute;left:-1px;right:-1px;top:100%;height:8px;background:var(--ink)} /* no rows peek out under it */
 .wv-tools:empty{display:none}
-.tools-h{display:flex;align-items:center;gap:8px;font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--warm)}
-.tools-h b{font:600 14px/1 var(--f-body);letter-spacing:0;text-transform:none;color:var(--paper)}
-.tools-h .lbl{margin-left:auto}
+.tools-h{display:flex;align-items:center;gap:8px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+.tools-h .lbl{color:var(--warm)}
+.tools-h b{font:600 14px/1 var(--f-body);color:var(--paper)}
+.tools-h small{font:500 11px/1 var(--f-ui);color:var(--muted)}
+.tools-h .lkd{margin-left:auto}
 .tools-h .wsw{flex:none}
-.wv-tools .wvt{display:grid;grid-template-columns:66px minmax(0,1fr);align-items:center;gap:8px}
-.wv-tools .wvt > span{font:500 10px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.wv-tools .wvs{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
-.wv-tools .wvs button{height:24px;padding:0 8px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--slate-2);color:var(--soft);font:500 10.5px/1 var(--f-ui);letter-spacing:.04em;cursor:pointer;white-space:nowrap}
-.wv-tools .wvs button:hover:not(:disabled){border-color:var(--warm);color:var(--paper)}
-.wv-tools select{max-width:170px;height:24px;font:500 11px/1 var(--f-ui);color:var(--paper);background:var(--slate-2);border:1px solid var(--line-2);border-radius:var(--r);padding:0 6px}
-.wv-tools .dens{display:flex;align-items:center;gap:8px;font:500 10px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.wv-tools .wvt{display:grid;grid-template-columns:62px minmax(0,1fr);align-items:center;gap:10px}
+.wv-tools .wvt > span{font:500 9.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.wv-tools .wvs{display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-width:0}
+.wv-tools .wvs select{max-width:150px;min-width:0;padding:0 4px;font-size:12px}
+.wv-tools .conj{font:500 9.5px/1 var(--f-ui);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 2px}
+.wv-tools .wvs button.sq.pick{width:28px;padding:0;display:inline-grid;place-items:center}
+.wv-tools .dens{flex:1;display:flex;align-items:center;gap:10px}
+.wv-tools .dens i{font:500 9.5px/1 var(--f-ui);font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .wv-tools .dens input{flex:1;min-width:0;accent-color:var(--warm)}
+.wv-tools .stepr{display:inline-flex;align-items:center;height:26px;border:1px solid #2f3945;border-radius:5px;overflow:hidden;background:#17202a}
+.wv-tools .wvs .stepr button.sq{width:26px;height:24px;padding:0;border:0;border-radius:0;background:transparent;font:600 14px/1 var(--f-ui);color:var(--paper)}
+.wv-tools .wvs .stepr button.sq:hover:not(:disabled){background:#243041}
+.wv-tools .cutv{display:inline-flex;align-items:center;gap:6px;padding:0 8px;height:24px;border-left:1px solid #2f3945;border-right:1px solid #2f3945;font:600 12px/1 var(--f-ui);color:var(--paper);font-variant-numeric:tabular-nums}
+.wv-tools .cutv i{font-style:normal;color:var(--muted);font-weight:400}
 .wv-note{margin:0;font:400 12px/1.4 var(--f-body);color:var(--soft);min-height:0}
 .wv-note:empty{display:none}
 .wv-note .bad,.wv-note .warn{color:var(--bad)}
@@ -434,8 +459,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 @media (prefers-reduced-motion:reduce){.wv-pbtn.pulse::after{animation:none;opacity:.5}}
 .wv-play input{flex:1;min-width:0;accent-color:var(--warm);height:24px}
 .wv-tt{flex:none;min-width:52px;text-align:right;font:500 13px/1 var(--f-ui);color:var(--soft);font-variant-numeric:tabular-nums}
-.wv-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
-.wv-strip .wv-hint{grid-column:1/-1}
+.wv-zones{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px;height:140px}
+.wv-zones.none{grid-template-columns:minmax(0,1fr);height:auto}
+.wv-strip{display:flex;flex-direction:column;gap:5px;min-height:0;overflow-y:auto}
 .wv-zc{display:flex;flex-direction:column;gap:4px;padding:7px 9px;border:1px solid var(--line);border-radius:var(--r2);background:var(--slate);cursor:pointer;text-align:left;font:inherit;color:inherit}
 .wv-zc:hover{border-color:var(--line-2)}
 .wv-zc.sel{border-color:var(--zone)}
@@ -449,8 +475,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .stars .o{color:var(--line-2)}
 .wv-zc .k{color:var(--bad);font-weight:700} .wv-zc .k.none{color:var(--muted);font-weight:400}
 .dl{font-size:10.5px} .dl.up{color:var(--good)} .dl.down{color:var(--bad)}
-.wv-zcard{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px 18px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r2);background:var(--slate)}
-.wv-zcard .wv-hint{grid-column:1/-1}
+.wv-zcard{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:8px 18px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r2);background:var(--slate);min-height:0;overflow-y:auto;box-sizing:border-box}
+.wv-zcard:empty{display:none}
 .wv-zcard .zcol{display:flex;flex-direction:column;gap:7px;min-width:0}
 .wv-zcard h3{margin:0;display:flex;align-items:center;gap:8px;font:600 14px/1.2 var(--f-body)}
 .zline{display:grid;grid-template-columns:58px minmax(0,1fr);gap:8px;font:400 13px/1.35 var(--f-body)}
@@ -467,7 +493,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .lr .none{color:var(--muted)}
 .zacts{display:flex;gap:6px;flex-wrap:wrap}
 .wv-hint{margin:0;font:400 12px/1.4 var(--f-ui);color:var(--muted)}
-.wv-runs{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-height:26px}
+.wv-runs{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow-x:auto;min-height:26px;scrollbar-width:thin}
+.wv-runs > *{flex:none}
 .wv-runs .lbl{margin-right:4px}
 .run{height:24px;padding:0 8px;font:500 11.5px/1 var(--f-ui);border-radius:var(--r);border:1px solid var(--line-2);background:var(--slate);color:var(--soft);cursor:pointer;font-variant-numeric:tabular-nums;white-space:nowrap;display:inline-flex;align-items:center}
 .run.cmp{border-color:var(--paper);color:var(--paper)}
@@ -476,14 +503,28 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .run.flash{animation:wvFlash 1.2s ease-out}
 @keyframes wvFlash{0%{box-shadow:0 0 0 0 rgba(111,220,140,.8)}100%{box-shadow:0 0 0 12px rgba(111,220,140,0)}}
 @media (prefers-reduced-motion:reduce){.run.flash{animation:none}}
-.wv-runs .mini{height:24px;padding:0 8px}
+.wv-runs .wvb{height:24px}
 /* the Sabotage step's warning (Part A) */
 .sowarn{grid-column:1/-1;font:400 11.5px/1.35 var(--f-body);color:#ffb4b4;text-align:left;white-space:normal}
 .rrow.warn{border-color:rgba(255,90,90,.45)}
 .warnline{color:#ffb4b4;white-space:normal}
 .helprow.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* short screens with the two columns (1280×800 and the like): a little less room around each group */
+@media (min-width:1120px) and (max-height:860px){
+  .wv-big{font-size:28px}
+  .wv-score{padding:6px 10px}
+  .wv-grp{padding:4px 8px 5px 4px;row-gap:2px}
+  .wv-rows{gap:3px}
+  .wv-tools{gap:5px;padding:8px 10px 10px}
+  .tools-h{padding-bottom:5px}
+  .wv-tools .wvs button,.wv-tools .wvs select,.wv-tools .stepr{height:24px}
+}
 /* narrower than 1120 px: the columns stack and the stage scrolls */
 @media (max-width:1119px){
+  .wv-zones{grid-template-columns:minmax(0,1fr);height:auto}
+  .wv-strip{flex-direction:row;overflow-x:auto;overflow-y:visible}
+  .wv-strip .wv-zc{flex:none;min-width:124px}
+  .wv-tools{position:static} .wv-tools::after{display:none} /* one column: the tools sit under the rows */
   body.wvmode #stage{flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
   body.wvmode #leftcol{flex:none}
   body.wvmode #leftcol > #boardwrap{flex:none;height:min(62vh,68vw)}
@@ -494,7 +535,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 @media (max-width:560px){
   .wv-zcard{grid-template-columns:minmax(0,1fr)}
   .wv-pbtn{padding:0 14px;font-size:12px}
-  .wv-tools .wvt{grid-template-columns:58px minmax(0,1fr)}
+  .wv-tools .wvt{grid-template-columns:54px minmax(0,1fr)}
+  .wv-grp{padding:6px 7px 8px 3px}
+  .wv-axis span.gate i{display:none}
 }
 .scrow{display:flex;align-items:center;gap:10px;min-width:0}
 .altitle{font:500 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--soft);white-space:nowrap}
@@ -1009,8 +1052,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     </div>
     <section id="wvx" hidden aria-label="Wave forecast">
       <div class="wv-play"><button class="wv-pbtn pulse" id="wv-play" data-wv="play" aria-pressed="false">▶ Play wave</button><input type="range" id="wv-t" min="0" max="60" step="0.1" value="0" aria-label="Wave clock"><span class="wv-tt" id="wv-tt">0.0 s</span></div>
-      <div class="wv-strip" id="wv-strip"></div>
-      <div class="wv-zcard" id="wv-zcard"></div>
+      <div class="wv-zones" id="wv-zones"><div class="wv-strip" id="wv-strip"></div><div class="wv-zcard" id="wv-zcard"></div></div>
       <div class="wv-runs" id="wv-runs"></div>
     </section>
     </div>
@@ -1066,7 +1108,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v22</p>
+        <p class="tagline">Two Player Tower Defence · v22.1</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1120,7 +1162,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 
       <section id="info-army">
         <h2>Army</h2>
-        <p>Up to four permanent designs; units that die come back next wave. Tap a design to open it in place: its sliders, resists, name and colour. Health, speed, armor, regeneration and resistance multiply the price; above <span data-rule="bigUnit">60</span> coins a surcharge applies, so one giant unit costs more than its parts. Tough units cost more too: above a toughness of <span data-rule="toughT0">2.5</span> (health × speed), each point adds <span data-rule="toughK%">25</span>% to the price.</p>
+        <p>Up to four permanent designs; units that die come back next wave. Tap a design to open it in place: its sliders, resists, name and colour. − and + sell or buy one unit; Max buys as many as your coins allow, 0 sells them all. Health, speed, armor, regeneration and resistance multiply the price; above <span data-rule="bigUnit">60</span> coins a surcharge applies, so one giant unit costs more than its parts. Tough units cost more too: above a toughness of <span data-rule="toughT0">2.5</span> (health × speed), each point adds <span data-rule="toughK%">25</span>% to the price.</p>
         <div class="callout"><p><code>15 × health × speed × armor × regen × each resist</code>, past 60 coins <code>60 × (price ÷ 60)^1.5</code>, then <code>× (1 + 0.25 × max(0, toughness − 2.5))</code></p><p>Toughness = (HP ÷ 150) × (speed ÷ 1.3). A Brute is 1.7, a 500 HP unit at 1.9 cells/s is 4.9.</p></div>
         <ul>
           <li><strong>Health</strong>: price grows in line with it. <strong>Speed</strong>: fast units spend less time in range, so price grows with it too.</li>
@@ -1133,7 +1175,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       <section id="info-wave">
         <h2>Wave plan</h2>
         <p><strong>Play.</strong> ▶ PLAY WAVE runs a forecast of your wave on the defense you saw, towers firing, misses, frost, chain, knock-outs and bridges included, at 3× (the space bar too). Units fade as they’re hurt; a ✕ marks where one fell. Each press saves a run; tap a run to see its losses and restore it. The forecast is your plan against the defense you saw: the defender may have changed it since.</p>
-        <p><strong>Releases.</strong> A row per group on a 20-second track, the gate on the right: a bar nearer the gate leaves sooner. Drag the bar to move the group, its ends to stretch or squeeze it, a dot to move one unit. A sapper is a single ◆. Split a design into groups to time them apart; merge them back; link groups of different designs at the same speed so they move as one. Meet lines a group (or a sapper) up with another in a zone.</p>
+        <p><strong>Releases.</strong> A row per group on a 20-second track, the gate on the right: a bar nearer the gate leaves sooner. Drag the bar to move the group, its ends to stretch or squeeze it, a dot to move one unit. A sapper is a single ◆. Split a group (pick how many leave first; hovering Split marks the cut) and each part, A and B, moves on its own; Merge joins them again; Link ties groups of different designs at the same speed so they move as one. Meet lines a group (or a sapper) up with another in a zone, or at cells you pick on the map (⌖: tap a cell, or drag along the route for a stretch of it). Adding or selling units on the Army step keeps your timing: new ones join the group that leaves last.</p>
         <p><strong>Zones</strong> are where the danger is: towers whose ranges overlap on the route. Each shows what it does, how to beat it, its stars (how few you lose there) and what died there last run. Optimize works on one zone; Lock keeps a zone’s losses from going up when Auto-sequence or Optimize work on another. <strong>Auto-sequence</strong> tries one small change at a time and keeps the best, up to four; a careful plan can beat it.</p>
       </section>
 
@@ -1196,7 +1238,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v22</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v22.1</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -2581,17 +2623,50 @@ function setDesign(i, patch) {
   refreshUI();
   return true;
 }
+// n units more (or fewer): +1, −1, Infinity for as many as the coins allow (Max), −Infinity to sell all (0).
 function changeCount(i, n) {
   const d = S.designs[i];
-  if (!d) return;
+  if (!d || !n) return;
+  const c = unitCost(d), n0 = d.count;
   if (n > 0) {
-    const c = unitCost(d);
-    if (S.aFree < c) { toast(`Not enough coins. A ${d.name} costs ${c} and you have ${S.aFree} free.`, 'bad'); return; }
-    S.aFree -= c; d.count++;
-  } else if (d.count > 0) { S.aFree += unitCost(d); d.count--; }
-  d.tl.pos = null;
+    const k = Math.min(n, Math.floor(S.aFree / c));
+    if (k < 1) { toast(`Not enough coins. A ${d.name} costs ${c} and you have ${S.aFree} free.`, 'bad'); return; }
+    S.aFree -= c * k; d.count += k;
+  } else {
+    const k = Math.min(-n, d.count); if (k < 1) return;
+    S.aFree += c * k; d.count -= k;
+  }
+  keepTiming(i, n0, d.count);
   S.confirmEmpty = false;
   refreshUI();
+}
+// A count change keeps the release times planned on the Wave step this round: new units leave after the last one, at
+// the group's usual spacing, and join its group; fewer drops the last to leave. Before the Wave step was opened this
+// round (or from or to none) the design's pattern is laid out afresh, as before.
+function keepTiming(di, n0, n1) {
+  const d = S.designs[di], pos = d.tl.pos, here = WV.S === S && WV.round === S.round;
+  if (!here || !pos || pos.length !== n0 || !n0 || !n1) { d.tl.pos = null; return; }
+  const mine = WV.groups.filter(g => g.cell == null && g.di === di);
+  if (n1 > n0) {
+    const last = mine.find(g => g.idx.includes(n0 - 1)), ks0 = last ? last.idx : [n0 - 1];
+    const gap = ks0.length > 1 ? Math.max(0.01, (pos[ks0[ks0.length - 1]] - pos[ks0[0]]) / (ks0.length - 1)) : 0.03;
+    for (let j = n0; j < n1; j++) {
+      const P = d.tl.pos, ks = last ? last.idx : [P.length - 1];
+      let t = P[ks[ks.length - 1]] + gap;
+      if (t > 1 + 1e-9) { // no room after it (the group ends at 20 s): into the group's widest gap instead
+        let q = -1, w = 0; for (let k = 1; k < ks.length; k++) if (P[ks[k]] - P[ks[k - 1]] > w) { w = P[ks[k]] - P[ks[k - 1]]; q = k; }
+        t = q > 0 ? (P[ks[q]] + P[ks[q - 1]]) / 2 : 1;
+      }
+      P.push(t); if (last) last.idx.push(P.length - 1);
+      if (last) commitPos(di); // back in order; the groups follow their units
+    }
+    if (!last) d.tl.pos.sort((a, b) => a - b);
+  } else {
+    pos.length = n1;
+    for (const g of mine) g.idx = g.idx.filter(k => k < n1);
+    WV.groups = WV.groups.filter(g => g.cell != null || g.di !== di || g.idx.length);
+  }
+  d.tl.s = d.tl.pos[0]; d.tl.e = d.tl.pos[n1 - 1];
 }
 function addDesign() {
   if (S.designs.length >= RULES.maxDesigns) return;
@@ -5203,7 +5278,7 @@ function buildPanels() {
   // attacker body (roster with its inline editor, sabotage, the wave plan)
   el.atkBody.addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
-    if (t.classList.contains('step')) { changeCount(+t.dataset.i, t.dataset.act === 'plus' ? 1 : -1); return; }
+    if (t.classList.contains('step')) { changeCount(+t.dataset.i, { plus: 1, minus: -1, max: Infinity, zero: -Infinity }[t.dataset.act] || 0); return; }
     if (t.classList.contains('rpick')) { const i = +t.dataset.i; S.sel = S.sel && S.sel.k === 'design' && S.sel.i === i ? null : { k: 'design', i }; refreshUI(); return; }
     if (t.id === 'add-design') { addDesign(); return; }
     if (t.dataset.act === 'replay') { startReplay(); return; }
@@ -5235,7 +5310,11 @@ function buildPanels() {
     wvDown(e);
   });
   el.atkBody.addEventListener('keydown', e => { if (e.target.id === 'wv-dens' && /^Arrow|^Page|^Home$|^End$/.test(e.key)) wvChange(); });
-  el.atkBody.addEventListener('change', e => { if (e.target.id === 'wv-dens') { if (wvDrag && wvDrag.kind === 'dens') wvDrag = null; fcData(true); refreshUI(); } });
+  el.atkBody.addEventListener('change', e => {
+    if (e.target.id === 'wv-mo') { WV.mo = e.target.value; return; }
+    if (e.target.id === 'wv-mz') { WV.mz = e.target.value; return; }
+    if (e.target.id === 'wv-dens') { if (wvDrag && wvDrag.kind === 'dens') wvDrag = null; fcData(true); refreshUI(); }
+  });
   el.atkBody.addEventListener('input', e => {
     if (e.target.id === 'wv-dens') { wvDens(e); return; }
     if (!S.sel || S.sel.k !== 'design' || !S.designs[S.sel.i]) return;
@@ -5247,7 +5326,7 @@ function buildPanels() {
     slSync(inp, US[k], S.designs[i][k]);
   });
   el.atkBody.addEventListener('pointermove', wvMove);
-  el.atkBody.addEventListener('pointerleave', () => { if (!wvDrag && WV.lens) { WV.lens = ''; placeRows(); } });
+  el.atkBody.addEventListener('pointerleave', () => { if (!wvDrag && (WV.lens || WV.cutShow)) { WV.lens = ''; WV.cutShow = false; placeRows(); } });
   const wvEnd = e => { if (wvDrag && wvDrag.kind === 'dens') { wvDrag = null; fcData(true); refreshUI(); return; } wvUp(e); };
   addEventListener('pointerup', wvEnd, true); // a release anywhere ends a drag, even one whose pointer capture was lost
   addEventListener('pointercancel', wvEnd, true);
@@ -5574,7 +5653,7 @@ function rosterHTML() {
     const open = S.sel && S.sel.k === 'design' && S.sel.i === i;
     return `<div class="urow${open ? ' open' : ''}" data-i="${i}" style="--c:${d.color}">
       <div class="uhead"><button class="rpick" data-i="${i}" aria-expanded="${open}" aria-label="Edit design ${i + 1}"><span class="ico" id="u${i}-ico"></span><span class="rmain"><span class="rname"><span id="u${i}-name"></span><small id="u${i}-cost"></small></span><span class="ustats" id="u${i}-stats"></span></span></button>
-      <span class="stepper"><button class="step minus" data-i="${i}" data-act="minus" aria-label="Remove one">−</button><output class="count" id="u${i}-count"></output><button class="step plus" data-i="${i}" data-act="plus" aria-label="Add one">+</button></span></div>
+      <span class="stepper"><button class="step qk zero" data-i="${i}" data-act="zero" aria-label="Sell all">0</button><button class="step minus" data-i="${i}" data-act="minus" aria-label="Remove one">−</button><output class="count" id="u${i}-count"></output><button class="step plus" data-i="${i}" data-act="plus" aria-label="Add one">+</button><button class="step qk max" data-i="${i}" data-act="max" aria-label="Buy as many as your coins allow">Max</button></span></div>
       ${open ? designerHTML(i) : ''}
     </div>`;
   }).join('');
@@ -5597,7 +5676,12 @@ function updateRoster() {
     putText(root.querySelector(`#u${i}-name`), d.name); putText(root.querySelector(`#u${i}-cost`), `${unitCost(d)} each`);
     const st = root.querySelector(`#u${i}-stats`), sh = ustatsHTML(d); if (st.dataset.k !== sh) { st.dataset.k = sh; st.innerHTML = sh; }
     putText(root.querySelector(`#u${i}-count`), String(d.count));
-    root.querySelector(`.urow[data-i="${i}"] .minus`).disabled = !d.count;
+    const row = root.querySelector(`.urow[data-i="${i}"]`), c = unitCost(d), can = Math.floor(S.aFree / c);
+    row.querySelector('.minus').disabled = row.querySelector('.zero').disabled = !d.count;
+    row.querySelector('.max').disabled = can < 1;
+    const zt = d.count ? `Sell all ${d.count} · +${d.count * c} coins` : 'None to sell', mt = can ? `Buy ${can} more · ${can * c} coins` : `Not enough coins for another (${c} each)`;
+    if (row.querySelector('.zero').dataset.tip !== zt) row.querySelector('.zero').dataset.tip = zt;
+    if (row.querySelector('.max').dataset.tip !== mt) row.querySelector('.max').dataset.tip = mt;
   });
   if (S.sel && S.sel.k === 'design' && S.designs[S.sel.i]) updateDesigner(S.sel.i);
 }
@@ -5647,13 +5731,15 @@ const putText = (e, v) => { if (e && e.textContent !== v) e.textContent = v; };
    together as one bar. Everything else here (the selection, the clock, runs, locks, the change log, Undo) is this round's
    planning only. */
 const WV = { S: null, round: 0, groups: [], seq: 1, sel: '', T: 0, playing: false, selZ: '', locks: {}, before: null, ghosts: null, log: '', note: '',
-  runs: [], cmp: -1, undo: [], lens: -1, how: false, flash: 0, fc: null, fcKey: '', fcAt: 0, zones: null, zKey: '', zoneSt: null, auto: null, rowsK: '', toolsK: '', busy: '' };
+  runs: [], cmp: -1, undo: [], lens: -1, how: false, flash: 0, fc: null, fcKey: '', fcAt: 0, zones: null, zKey: '', zoneSt: null, auto: null, rowsK: '', toolsK: '', busy: '',
+  cut: null, cutShow: false, mo: '', mz: '', pick: false, picking: null, place: null };
 function wvState() {
   if (WV.S !== S || WV.round !== S.round) {
     const keep = WV.S === S ? WV.groups.filter(g => g.cell == null) : [];
     stopJobs();
     Object.assign(WV, { S, round: S.round, groups: keep, sel: '', T: 0, playing: false, selZ: '', locks: {}, before: null, ghosts: null, log: '', note: '',
-      runs: [], cmp: -1, undo: [], lens: -1, fc: null, fcKey: '', zones: null, zKey: '', zoneSt: null, auto: null, rowsK: '', toolsK: '', busy: '' });
+      runs: [], cmp: -1, undo: [], lens: -1, fc: null, fcKey: '', zones: null, zKey: '', zoneSt: null, auto: null, rowsK: '', toolsK: '', busy: '',
+      cut: null, cutShow: false, mo: '', mz: '', pick: false, picking: null, place: null });
   }
   syncGroups();
   return WV;
@@ -5719,15 +5805,27 @@ function sapJob(cell) {
   const g = S.seenGrid[cell];
   return `Knock-out → Tower ${g && g.n ? g.n : colName(cell)}`;
 }
+// A sapper in a short list: "Bridge M10", "Knock-out T3".
+const sapTag = cell => { const c = S.charges.get(cell), g = S.seenGrid[cell]; return c && c.kind === 'bridge' ? `Bridge ${colName(cell)}` : `Knock-out T${g && g.n ? g.n : colName(cell)}`; };
 const sapShort = cell => { const c = S.charges.get(cell); return c && c.kind === 'bridge' ? 'Bridge sapper' : 'Knock-out sapper'; };
+// Groups of one design are told apart by a letter, in the order they were made (Swarm A, Swarm B); one group has none.
+const gSeq = g => +String(g.id).slice(1) || 0;
+function gLetter(g) {
+  if (!g || isSap(g)) return '';
+  const same = WV.groups.filter(h => h.cell == null && h.di === g.di);
+  if (same.length < 2) return '';
+  return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[same.slice().sort((a, b) => gSeq(a) - gSeq(b)).indexOf(g)] || '';
+}
 function gName(g, opts = {}) {
   if (isSap(g)) return opts.sapper ? `the ${sapShort(g.cell)}` : sapJob(g.cell);
-  const d = S.designs[g.di], same = WV.groups.filter(h => h.cell == null && h.di === g.di);
-  return plur(d.name) + (same.length > 1 && opts.n !== false ? ` (${g.idx.length})` : '');
+  const L = gLetter(g);
+  return plur(S.designs[g.di].name) + (L ? ' ' + L : '');
 }
 
 /* ---------- group operations: on lists of [member, seconds], kept in the order the units leave ---------- */
 const pairs = g => members(g).map(m => [m, secOf(m)]).sort((a, b) => a[1] - b[1]);
+// A group's own units only (its links left out), in the order they leave: what Split cuts.
+const ownPairs = g => g.idx.map(k => { const m = { di: g.di, k }; return [m, secOf(m)]; }).sort((a, b) => a[1] - b[1]);
 const spanSec = P => [P[0][1], P[P.length - 1][1]];
 const r1 = v => Math.round(v * 10) / 10;
 // The whole group earlier or later by dt, its spread kept, within 0-20 s.
@@ -5833,7 +5931,7 @@ function* autoSeq(score, steps, locks, zones) {
   let cur = base, curR = run(cur); yield;
   let curS = score(curR);
   const log = [];
-  const named = g => (isSap(g) ? sapShort(g.cell) : plur(S.designs[g.di].name) + (G.filter(h => h.cell == null && h.di === g.di).length > 1 ? ` (${g.idx.length})` : ''));
+  const named = g => (isSap(g) ? sapShort(g.cell) : gName(WV.groups.find(h => h.id === g.id) || g));
   for (let step = 0; step < steps; step++) {
     let best = null;
     const tried = new Set();
@@ -5911,22 +6009,25 @@ function startAutoChip() {
   startJob('auto', autoSeq(scoreAll, 4, {}, zones), res => { if (Z.auto === mine) { mine.score = res.score; refreshUI(); } });
 }
 
-/* ---------- Meet: line a group (or a sapper) up with another in a zone ----------
-   It shifts this group so the middle of its time inside the zone matches the middle of the other's time there, from the
-   forecast, then corrects twice for frost and slowdowns. */
+/* ---------- Meet: line a group (or a sapper) up with another at a place ----------
+   A place is a zone (inside its towers' ranges) or cells picked on the map (one, or a stretch of the route). It shifts
+   this group so the middle of its time at the place matches the middle of the other's time there, from the forecast,
+   then corrects twice for frost and slowdowns. */
+const inPlace = (p, x, y) => (p.tw ? inZone(p, x, y) : p.cells.has(cellOf([x, y])));
+const placeName = p => (p.tw ? p.id : p.label.replace(/^Cells?/, w => w.toLowerCase()));
 function presence(fc, g, z) {
   let a = null, b = null;
   const ms = members(g), want = new Set(ms.map(m => (m.cell != null ? 's' + m.cell : m.di + ':' + m.k)));
   for (const r of fc.units) {
     if (!want.has(r.sap ? 's' + r.cell : r.di + ':' + r.k)) continue;
-    for (let m = 0; m < r.x.length; m++) if (inZone(z, r.x[m] + r.ox, r.y[m] + r.oy)) { const t = (r.j0 + m) * RULES.scrubStep; if (a == null || t < a) a = t; if (b == null || t > b) b = t; }
+    for (let m = 0; m < r.x.length; m++) if (inPlace(z, r.x[m] + r.ox, r.y[m] + r.oy)) { const t = (r.j0 + m) * RULES.scrubStep; if (a == null || t < a) a = t; if (b == null || t > b) b = t; }
   }
   return a == null ? null : [a, b];
 }
 function meet(g, o, z) {
-  const fc0 = fcData(true), po = presence(fc0, o, z), name = gName(g, { sapper: true, n: false }), other = gName(o, { sapper: true, n: false });
+  const fc0 = fcData(true), po = presence(fc0, o, z), name = gName(g, { sapper: true }), other = gName(o, { sapper: true }), at = placeName(z);
   const cap = s => s[0].toUpperCase() + s.slice(1);
-  if (!po) return { ok: false, text: `${cap(other)} never reach${isSap(o) ? 'es' : ''} ${z.id}` };
+  if (!po) return { ok: false, text: `${cap(other)} never reach${isSap(o) ? 'es' : ''} ${at}` };
   const want = (po[0] + po[1]) / 2;
   const mid = () => { const p = presence(fcData(true), g, z); return p ? (p[0] + p[1]) / 2 : null; };
   let m = mid();
@@ -5938,9 +6039,9 @@ function meet(g, o, z) {
   writeSecs(opShift(pairs(g), want - m));
   for (let k = 0; k < 2; k++) { const now = mid(); if (now == null) break; writeSecs(opShift(pairs(g), want - now)); }
   const end = mid();
-  if (end == null) return { ok: false, text: `${cap(name)} never reach${isSap(g) ? 'es' : ''} ${z.id}` };
-  if (Math.abs(end - want) > 1.5) return { ok: true, at: end, text: end < want ? `Closest possible: the gate closes at ${WLEN()} s, and ${other} reach${isSap(o) ? 'es' : ''} ${z.id} too late for ${name} to match.` : `Closest possible: releases start at 0 s, and ${other} reach${isSap(o) ? 'es' : ''} ${z.id} too early for ${name} to match.` };
-  return { ok: true, at: want, text: `${cap(name)} now pass${isSap(g) ? 'es' : ''} through ${z.id} with ${isSap(o) ? other : 'the ' + other}.` };
+  if (end == null) return { ok: false, text: `${cap(name)} never reach${isSap(g) ? 'es' : ''} ${at}` };
+  if (Math.abs(end - want) > 1.5) return { ok: true, at: end, text: end < want ? `Closest possible: the gate closes at ${WLEN()} s, and ${other} reach${isSap(o) ? 'es' : ''} ${at} too late for ${name} to match.` : `Closest possible: releases start at 0 s, and ${other} reach${isSap(o) ? 'es' : ''} ${at} too early for ${name} to match.` };
+  return { ok: true, at: want, text: `${cap(name)} now pass${isSap(g) ? 'es' : ''} through ${at} with ${isSap(o) ? other : 'the ' + other}.` };
 }
 
 /* ---------- the Wave step's screen (v22) ----------
@@ -5954,14 +6055,13 @@ function waveBodyHTML() {
   const W = WLEN();
   return `<div class="wv" id="wv">
     <section class="wv-score">
-      <div class="wv-sc1"><span class="wv-big" id="wv-big">--</span><span class="wv-sub"><span class="lbl">Gets through</span><b id="wv-units">--</b></span><span class="wv-badge" id="wv-beat" hidden>Beats auto</span></div>
-      <div class="wv-sc2"><button class="wv-auto" data-wv="auto">Auto-sequence</button><button class="wv-info" data-wv="how" aria-expanded="false" aria-label="How Auto-sequence works">?</button></div>
+      <div class="wv-sc1"><span class="wv-big" id="wv-big">--</span><span class="wv-sub"><span class="lbl">Gets through</span><b id="wv-units">--</b><span class="wv-badge" id="wv-beat" hidden>Beats auto</span></span>
+        <span class="wv-sc2"><button class="wv-auto" data-wv="auto">Auto-sequence</button><button class="wv-info" data-wv="how" aria-expanded="false" aria-label="How Auto-sequence works">?</button></span></div>
       <p class="wv-how" id="wv-how" hidden>${AUTO_HOW}</p>
     </section>
     <section class="wv-rel">
-      <div class="wv-rh"><span class="lbl">Releases</span><span class="lbl wv-key" id="wv-key"></span><button class="mini wv-undo" data-wv="undo" aria-label="Undo the last change on this step">Undo</button></div>
-      <div class="wv-pre"><span class="lbl">All groups</span><button class="mini" data-wv="even">Even</button><button class="mini" data-wv="seq">One after another</button><button class="mini" data-wv="rush">All at once</button></div>
-      <div class="wv-axis">${[W, W * 0.75, W / 2, W / 4].map(k => `<span style="left:${wvX(k)}%">${fmtNum(k)} s</span>`).join('')}<span class="gate" style="left:100%">0 s ▶ Gate</span></div>
+      <div class="wv-rh"><span class="lbl">Releases</span><span class="wv-pre" role="group" aria-label="Every group at once"><button class="wvb" data-wv="even" data-tip="Every group: spread evenly over the 20 s">Even</button><button class="wvb" data-wv="seq" data-tip="Every group: one design after another">One after another</button><button class="wvb" data-wv="rush" data-tip="Every group: all out in the first seconds">All at once</button></span><button class="wvb wv-undo" data-wv="undo" aria-label="Undo the last change on this step">↶ Undo</button></div>
+      <div class="wv-axis">${[W, W * 0.75, W / 2, W / 4].map(k => `<span style="left:${wvX(k)}%">${fmtNum(k)} s</span>`).join('')}<span class="gate" style="left:100%"><i>0 s</i><b>▶ Gate</b></span></div>
       <div class="wv-rows" id="wv-rows"></div>
       <div class="wv-tools" id="wv-tools"></div>
     </section>
@@ -5980,10 +6080,10 @@ function rowsHTML() {
         <div class="rh"><span class="wsw dia"></span><b class="nm">${esc(sapJob(g.cell))}</b><span class="res"></span></div>
         <div class="track">${ticks}<i class="ghost dia" hidden></i><i class="gate"></i><i class="ph"></i><i class="dot dia" data-m="s:${g.cell}"></i></div></div>`;
     }
-    const d = S.designs[g.di];
+    const d = S.designs[g.di], L = gLetter(g);
     return `<div class="wv-grp" data-id="${g.id}" style="--c:${d.color}"><span class="hdl" title="Drag to reorder">⋮⋮</span>
-      <div class="rh"><span class="wsw"></span><b class="nm">${esc(d.name)}</b><small>×${g.idx.length} · ${US.speed.steps[d.speed]} c/s</small>${g.link ? '<span class="chain" title="Linked: moves and stretches with its partner">⛓</span>' : ''}<span class="res"></span></div>
-      <div class="track">${ticks}<i class="ghost" hidden></i><div class="bar"><i class="h l" title="Drag: when the last one leaves"></i><i class="h r" title="Drag: when the first one leaves"></i></div><i class="gate"></i><i class="ph"></i>${g.idx.map(k => `<i class="dot" data-m="${g.di}:${k}"></i>`).join('')}</div></div>`;
+      <div class="rh"><span class="wsw"></span><b class="nm">${esc(d.name)}${L ? ` <span class="glt">${L}</span>` : ''}</b><small>×${g.idx.length} · ${US.speed.steps[d.speed]} c/s</small>${g.link ? '<span class="chain" title="Linked: moves and stretches with its partner">⛓</span>' : ''}<span class="res"></span></div>
+      <div class="track">${ticks}<i class="ghost" hidden></i><div class="bar"><i class="h l" title="Drag: when the last one leaves"></i><i class="h r" title="Drag: when the first one leaves"></i></div><i class="gate"></i><i class="cutm" hidden></i><i class="ph"></i>${g.idx.map(k => `<i class="dot" data-m="${g.di}:${k}"></i>`).join('')}</div></div>`;
   }).join('');
 }
 // The groups' units in the forecast: what became of each ("3 lost", "landed").
@@ -5992,7 +6092,7 @@ function groupResult(g, fc) {
   if (isSap(g)) { const s = fc.saps[g.cell] || ''; return `<span class="${s === 'landed' ? 'ok' : 'lost'}">${s}</span>`; }
   const want = new Set(g.idx);
   const n = fc.deaths.filter(d => !d.sap && d.di === g.di && want.has(d.k)).length;
-  return n ? `<span class="lost">${n} lost</span>` : 'none lost';
+  return n ? `<span class="lost">${n} lost</span>` : '';
 }
 const deadSet = fc => new Set((fc ? fc.deaths : []).map(d => (d.sap ? 's:' + d.cell : d.di + ':' + d.k)));
 function placeRows() {
@@ -6016,8 +6116,13 @@ function placeRows() {
       gh.hidden = !moved;
       if (moved) { const os = Math.min(...old.secs), oe = Math.max(...old.secs); setStyle(gh, 'left', wvX(oe) + '%'); setStyle(gh, 'width', Math.max(1.5, wvX(os) - wvX(oe)) + '%'); }
     }
+    if (bar) tr.querySelectorAll('.dot').forEach((dot, j) => { const k = g.idx[j]; if (k != null && dot.dataset.m !== g.di + ':' + k) dot.dataset.m = g.di + ':' + k; });
+    const cm = tr.querySelector('.cutm'), cutting = bar && Z.cutShow && g.id === Z.sel && g.idx.length > 1, gone = new Set();
+    if (cm) cm.hidden = !cutting;
+    if (cutting) { const a = splitCut(g), Q = ownPairs(g); Q.slice(a).forEach(([m]) => gone.add(g.di + ':' + m.k)); setStyle(cm, 'left', wvX((Q[a - 1][1] + Q[a][1]) / 2) + '%'); }
     for (const dot of tr.querySelectorAll('.dot')) {
       const key = dot.dataset.m, m = key[0] === 's' ? { cell: +key.slice(2) } : { di: +key.split(':')[0], k: +key.split(':')[1] };
+      dot.classList.toggle('cutoff', gone.has(key));
       if (m.cell == null && !(S.designs[m.di] && S.designs[m.di].tl.pos && m.k < S.designs[m.di].tl.pos.length)) continue;
       setStyle(dot, 'left', wvX(secOf(m)) + '%');
       dot.classList.toggle('dead', dead.has(key)); dot.classList.toggle('lens', key === Z.lens);
@@ -6031,35 +6136,53 @@ function placeRows() {
 function wvHead() {
   const T = WV.T;
   for (const p of document.querySelectorAll('#wv-rows .ph')) { setStyle(p, 'left', wvX(Math.min(WLEN(), T)) + '%'); setStyle(p, 'opacity', T > WLEN() ? '0.15' : '1'); }
-  const k = $('#wv-key'); if (k) { const h = WV.ghosts ? '<span class="ghostkey"><i></i>Before the last change</span>' : 'Closer to the gate = leaves sooner'; if (k.innerHTML !== h) k.innerHTML = h; }
+
 }
-// The tools for the selected group, one labelled line per job.
+// The tools for the selected group, one labelled line per job. Labels are small grey capitals; everything you can press
+// is a filled button.
 function toolsHTML() {
   const Z = WV, g = gById(Z.sel); if (!g) return '';
-  const zones = wvZones(), others = Z.groups.filter(o => o !== g);
-  const optZ = zones.map(z => `<option value="${z.id}"${z.id === Z.selZ ? ' selected' : ''}>in ${z.id}</option>`).join('');
-  const meetOpts = others.slice().sort((a, b) => isSap(b) - isSap(a)).map(o => `<option value="${o.id}">${isSap(o) ? '◆ ' + esc(sapJob(o.cell)) : esc(gName(o))}</option>`).join('');
-  const meetLine = others.length && zones.length ? `<div class="wvt"><span>Meet</span><div class="wvs"><select id="wv-mo" aria-label="Meet which group">${meetOpts}</select><select id="wv-mz" aria-label="In which zone">${optZ}</select><button data-wv="meet">Meet</button></div></div>` : '';
+  const others = Z.groups.filter(o => o !== g), meet = meetHTML(g, others);
   if (isSap(g)) {
-    const army = others.filter(o => !isSap(o));
-    return `<div class="tools-h">Editing <span class="wsw dia" style="background:${S.charges.get(g.cell).kind === 'bridge' ? 'var(--warm)' : 'var(--chain)'}"></span><b>◆ ${esc(sapJob(g.cell))}</b></div>
-      ${army.length ? `<div class="wvt"><span>Sapper</span><div class="wvs">${army.map(o => `<button data-wv="inside" data-o="${o.id}">Inside ${esc(gName(o))}</button>`).join('')}</div></div>` : ''}
-      ${meetLine}<p class="wv-note" id="wv-note"></p>`;
+    const army = others.filter(o => !isSap(o)), col = S.charges.get(g.cell).kind === 'bridge' ? 'var(--warm)' : 'var(--chain)';
+    return `<div class="tools-h"><span class="lbl">Editing</span><span class="wsw dia" style="background:${col}"></span><b>${esc(sapJob(g.cell))}</b></div>
+      ${army.length ? `<div class="wvt"><span>Send</span><div class="wvs">${army.map(o => `<button data-wv="inside" data-o="${o.id}">Inside ${esc(gName(o))}</button>`).join('')}</div></div>` : ''}
+      ${meet}<p class="wv-note" id="wv-note"></p>`;
   }
-  const d = S.designs[g.di], same = Z.groups.filter(h => h.cell == null && h.di === g.di), n = linkSet(g).reduce((v, h) => v + h.idx.length, 0);
-  const merge = same.filter(h => h !== g), link = Z.groups.filter(h => h.cell == null && h.di !== g.di && US.speed.steps[S.designs[h.di].speed] === US.speed.steps[d.speed] && (!g.link || h.link !== g.link));
-  const grp = [g.idx.length > 1 ? '<button data-wv="split">Split</button>' : '',
-    merge.length ? `<select id="wv-mg" aria-label="Merge with">${merge.map(o => `<option value="${o.id}">${esc(gName(o))}</option>`).join('')}</select><button data-wv="merge">Merge</button>` : '',
-    g.link ? '<button data-wv="unlink">Unlink</button>' : link.length ? `<select id="wv-lk" aria-label="Link with">${link.map(o => `<option value="${o.id}">${esc(gName(o))}</option>`).join('')}</select><button data-wv="link" title="Different designs can’t merge: the plan sends release times per design. Linked groups move and stretch together as one bar.">Link</button>` : ''].filter(Boolean).join('');
-  return `<div class="tools-h">Editing <span class="wsw" style="background:${d.color}"></span><b>${esc(d.name)} ×${g.idx.length}</b>${same.length > 1 ? `<span class="lbl">Group ${same.indexOf(g) + 1} of ${same.length}</span>` : ''}${g.link ? '<span class="lbl">⛓ linked</span>' : ''}</div>
+  const d = S.designs[g.di], n = linkSet(g).reduce((v, h) => v + h.idx.length, 0), L = gLetter(g);
+  const merge = Z.groups.filter(h => h !== g && h.cell == null && h.di === g.di);
+  const link = Z.groups.filter(h => h.cell == null && h.di !== g.di && US.speed.steps[S.designs[h.di].speed] === US.speed.steps[d.speed] && (!g.link || h.link !== g.link));
+  const cut = splitCut(g), m = g.idx.length;
+  return `<div class="tools-h"><span class="lbl">Editing</span><span class="wsw" style="background:${d.color}"></span><b>${esc(d.name)}${L ? ` <span class="glt">${L}</span>` : ''}</b><small>×${m}</small>${g.link ? '<span class="lbl lkd">⛓ Linked</span>' : ''}</div>
     <div class="wvt"><span>Position</span><div class="wvs"><button data-wv="place" data-w="lead">Lead</button><button data-wv="place" data-w="middle">Middle</button><button data-wv="place" data-w="last">Last</button></div></div>
-    ${n > 1 ? `<div class="wvt"><span>Density</span><label class="dens">Tight<input type="range" id="wv-dens" min="0" max="1" step="0.01" value="0" aria-label="Density">Loose</label></div>
+    ${n > 1 ? `<div class="wvt"><span>Density</span><label class="dens"><i>Tight</i><input type="range" id="wv-dens" min="0" max="1" step="0.01" value="0" aria-label="Density"><i>Loose</i></label></div>
     <div class="wvt"><span>Shape</span><div class="wvs"><button data-wv="shape" data-f="even">Even</button><button data-wv="shape" data-f="pulses">Pulses</button><button data-wv="shape" data-f="front">Front-heavy</button><button data-wv="shape" data-f="trickle">Trickle</button></div></div>` : ''}
-    ${meetLine}
-    ${grp ? `<div class="wvt"><span>Group</span><div class="wvs">${grp}</div></div>` : ''}
+    ${meet}
+    ${m > 1 ? `<div class="wvt split" id="wv-split"><span>Split</span><div class="wvs"><span class="stepr" role="group" aria-label="How many leave first"><button class="sq" data-wv="cut" data-d="-1" aria-label="One fewer in the first part"${cut <= 1 ? ' disabled' : ''}>−</button><span class="cutv" id="wv-cutv"><b>${cut}</b><i>✂</i><b>${m - cut}</b></span><button class="sq" data-wv="cut" data-d="1" aria-label="One more in the first part"${cut >= m - 1 ? ' disabled' : ''}>+</button></span><button class="go" data-wv="split" data-tip="The first ${cut} to leave stay in this group; the last ${m - cut} become a new group you can move on its own.">Split</button></div></div>` : ''}
+    ${merge.length ? `<div class="wvt"><span>Merge</span><div class="wvs">${merge.map(o => `<button data-wv="merge" data-o="${o.id}" data-tip="Join ${esc(gName(o))} into ${esc(gName(g))}: one group again, each unit keeping its release time">${esc(gName(o))} <small>×${o.idx.length}</small></button>`).join('')}</div></div>` : ''}
+    ${g.link ? '<div class="wvt"><span>Link</span><div class="wvs"><button data-wv="unlink">Unlink</button></div></div>' : link.length ? `<div class="wvt"><span>Link</span><div class="wvs">${link.map(o => `<button data-wv="link" data-o="${o.id}" data-tip="Different designs can’t merge: the plan sends release times per design. Linked groups move and stretch together as one bar.">⛓ ${esc(gName(o))}</button>`).join('')}</div></div>` : ''}
     <p class="wv-note" id="wv-note"></p>`;
 }
-const toolsKey = () => JSON.stringify([WV.sel, WV.groups.map(g => [g.id, g.di, g.idx ? g.idx.length : 0, g.link]), (WV.zones || []).map(z => z.id), WV.selZ]);
+// How many of a group stay in it when it splits: the first ones to leave, half by default.
+function splitCut(g) {
+  const m = g.idx.length, Z = WV;
+  if (!Z.cut || Z.cut.id !== g.id || Z.cut.m !== m) Z.cut = { id: g.id, m, n: Math.ceil(m / 2) };
+  Z.cut.n = clamp(Z.cut.n, 1, m - 1);
+  return Z.cut.n;
+}
+// Meet: with which group (or sapper), at which place: a zone, or cells picked on the map (one, or a stretch of route).
+function meetHTML(g, others) {
+  const Z = WV, zones = wvZones();
+  if (!others.length) return '';
+  const mo = others.some(o => o.id === Z.mo) ? Z.mo : others.slice().sort((a, b) => isSap(b) - isSap(a))[0].id;
+  const places = zones.map(z => [z.id, z.id]);
+  if (Z.place) places.push(['cells', Z.place.label.replace(/^Cells? /, '')]);
+  const mz = places.some(([v]) => v === Z.mz) ? Z.mz : (places.find(([v]) => v === Z.selZ) || places[0] || [''])[0];
+  const withOpts = others.slice().sort((a, b) => isSap(b) - isSap(a)).map(o => `<option value="${o.id}"${o.id === mo ? ' selected' : ''}>${isSap(o) ? '◆ ' + esc(sapTag(o.cell)) : esc(gName(o))}</option>`).join('');
+  const atOpts = places.map(([v, t]) => `<option value="${v}"${v === mz ? ' selected' : ''}>${esc(t)}</option>`).join('');
+  return `<div class="wvt"><span>Meet</span><div class="wvs"><select id="wv-mo" aria-label="Meet which group">${withOpts}</select><i class="conj">at</i>${places.length ? `<select id="wv-mz" aria-label="Where">${atOpts}</select>` : ''}<button class="sq pick" data-wv="pick" aria-pressed="${!!Z.pick}" aria-label="Pick cells on the map" data-tip="${Z.pick ? 'Picking: tap a cell on the map, or drag along the route for a stretch of it (Esc to stop)' : 'Pick cells on the map: tap one, or drag along the route for a stretch of it'}"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 0v4M8 12v4M0 8h4M12 8h4" stroke="currentColor" stroke-width="1.5"/></svg></button><button class="go" data-wv="meet"${places.length ? '' : ' disabled'}>Meet</button></div></div>`;
+}
+const toolsKey = () => JSON.stringify([WV.sel, WV.groups.map(g => [g.id, g.di, g.idx ? g.idx.length : 0, g.link]), (WV.zones || []).map(z => z.id), WV.selZ, WV.cut && WV.cut.n, WV.place && WV.place.label, !!WV.pick, WV.mo, WV.mz]);
 // The zone strip: a chip per zone with its symbols, stars, losses (counting up while the wave plays), the change since
 // the plan before the last change, and LOCKED.
 function stripHTML(zones, st, fc) {
@@ -6075,24 +6198,28 @@ function stripHTML(zones, st, fc) {
 }
 const starsHTML = n => `<span class="stars">${'★'.repeat(n)}<span class="o">${'☆'.repeat(3 - n)}</span></span>`;
 const zoneLive = (fc, z, T) => { const set = new Set(z.towers); return fc.deaths.reduce((n, d) => n + (!d.sap && d.t <= T && set.has(d.by) ? 1 : 0), 0); };
+// The zone card: the picked zone's threat, how to beat it, Optimize and Lock; beside it the last run in every zone.
+// It keeps one height whatever is picked, so the map never changes size under it.
 function zcardHTML(zones, st, fc) {
+  if (!zones.length) return '';
   const Z = WV, z = zones.find(q => q.id === Z.selZ);
-  if (!z) return '<p class="wv-hint">Pick a zone above to see what it does, how to beat it and how your wave did there.</p>';
-  const o = st[z.id], lk = Z.locks[z.id] != null;
   const rows = zones.map(q => {
     const s = st[q.id], died = Object.entries(s.by).sort((a, b) => b[1] - a[1]).map(([di, n]) => { const d = S.designs[di]; return `<span class="dd"><i class="wsw" style="background:${d.color}"></i>${n} ${n === 1 ? esc(d.name) : esc(plur(d.name))}</span>`; }).join('') || '<span class="none">0 died</span>';
-    return `<tr class="${q.id === z.id ? 'on' : ''}"><td class="zid">${q.id}</td><td>${died}</td><td class="num">${Math.round(s.dmg).toLocaleString()} dmg</td></tr>`;
+    return `<tr class="${z && q.id === z.id ? 'on' : ''}"><td class="zid">${q.id}</td><td>${died}</td><td class="num">${Math.round(s.dmg).toLocaleString()} dmg</td></tr>`;
   }).join('');
+  const table = `<div class="zcol ztab"><span class="lbl">Last run · every zone</span><table class="lr"><tbody>${rows}</tbody></table></div>`;
+  if (!z) return `<div class="zcol"><p class="wv-hint">Pick a zone to see its threat and how to beat it.</p></div>${table}`;
+  const o = st[z.id], lk = Z.locks[z.id] != null;
+  void fc;
   return `<div class="zcol"><h3><b class="zid">${z.id}</b>${z.tags.join(' + ')} ${starsHTML(o.stars)}</h3>
       <div class="zline"><span>Threat</span><span>${z.tags.map(t => `${THREAT[t].g} ${THREAT[t].threat}`).join('<br>')}</span></div>
-      <div class="zline"><span>Beat it</span><span class="beat">${[...new Set(z.tags.map(t => THREAT[t].beat))].join(' ')}</span></div></div>
-    <div class="zcol"><span class="lbl">Last run · every zone</span><table class="lr"><tbody>${rows}</tbody></table>
-      <div class="zacts"><button class="wv-auto sm" data-wv="opt" data-z="${z.id}">Optimize ${z.id}</button><button class="mini" data-wv="lock" data-z="${z.id}" data-tip="${lk ? `Locked at ✕${Z.locks[z.id]}: Auto-sequence and Optimize can’t push losses here any higher. Your own changes can.` : 'Protect this zone: Auto-sequence and Optimize won’t let losses here go up from what they are now. Your own changes still can.'}">${lk ? 'Unlock' : 'Lock'} ${z.id}</button></div></div>`;
+      <div class="zline"><span>Beat it</span><span class="beat">${[...new Set(z.tags.map(t => THREAT[t].beat))].join(' ')}</span></div>
+      <div class="zacts"><button class="wv-auto sm" data-wv="opt" data-z="${z.id}">Optimize ${z.id}</button><button class="mini" data-wv="lock" data-z="${z.id}" data-tip="${lk ? `Locked at ✕${Z.locks[z.id]}: Auto-sequence and Optimize can’t push losses here any higher. Your own changes can.` : 'Protect this zone: Auto-sequence and Optimize won’t let losses here go up from what they are now. Your own changes still can.'}">${lk ? 'Unlock' : 'Lock'} ${z.id}</button></div></div>${table}`;
 }
 function runsHTML() {
   const Z = WV, best = Z.runs.length ? Math.max(...Z.runs.map(r => r.score)) : -1;
   const a = Z.auto, auto = a ? `<span class="run auto" data-tip="Auto-sequence on the plan as it stood when you opened this step">AUTO ${a.score == null ? '…' : pct1(a.score)}</span>` : '';
-  return `<span class="lbl">Runs</span>${Z.runs.length ? Z.runs.map((r, k) => `<button class="run${Z.cmp === k ? ' cmp' : ''}${r.score === best ? ' best' : ''}${r.score === best && Z.flash ? ' flash' : ''}" data-run="${k}" data-tip="Show this run’s losses on the map">${pct1(r.score)} · ${r.stars}★</button>`).join('') : '<span class="wv-hint">Each Play saves a run</span>'}${auto}${Z.cmp >= 0 ? '<button class="mini" data-wv="restore">Restore this run</button>' : ''}`;
+  return `<span class="lbl">Runs</span>${Z.runs.length ? Z.runs.map((r, k) => `<button class="run${Z.cmp === k ? ' cmp' : ''}${r.score === best ? ' best' : ''}${r.score === best && Z.flash ? ' flash' : ''}" data-run="${k}" data-tip="Show this run’s losses on the map">${pct1(r.score)} · ${r.stars}★</button>`).join('') : '<span class="wv-hint">Play saves a run</span>'}${auto}${Z.cmp >= 0 ? '<button class="wvb" data-wv="restore">Restore this run</button>' : ''}`;
 }
 function renderWv() {
   const root = $('#wv'), under = $('#wvx');
@@ -6117,7 +6244,9 @@ function renderWv() {
   const dens = $('#wv-dens'), g = gById(Z.sel);
   if (dens && g && document.activeElement !== dens && !(wvDrag && wvDrag.kind === 'dens')) { const P = linkSet(g).flatMap(h => pairs(h)).sort((a, b) => a[1] - b[1]), [s, e] = spanSec(P); dens.value = Math.sqrt((e - s) / WLEN()).toFixed(2); }
   const note = $('#wv-note'); if (note && note.innerHTML !== Z.note) note.innerHTML = Z.note;
-  const log = $('#wv-log'); if (log.innerHTML !== Z.log) log.innerHTML = Z.log;
+  // the change log, with the key to the dashed ghosts it leaves on the tracks
+  const lh = Z.log && Z.ghosts ? Z.log.replace('<div class="wv-log">', '<div class="wv-log"><span class="lbl wv-key" id="wv-key"><span class="ghostkey"><i></i>Dashed: before the last change</span></span>') : Z.log;
+  const log = $('#wv-log'); if (log.dataset.k !== lh) { log.dataset.k = lh; log.innerHTML = lh; }
   if (!fc) return;
   // under the map
   const play = $('#wv-play'), t = $('#wv-t');
@@ -6127,6 +6256,7 @@ function renderWv() {
   wvTick();
   const sh = stripHTML(zones, st, fc), sEl = $('#wv-strip'); if (sEl.dataset.k !== sh) { sEl.dataset.k = sh; sEl.innerHTML = sh; }
   const ch = zcardHTML(zones, st, fc), cEl = $('#wv-zcard'); if (cEl.dataset.k !== ch) { cEl.dataset.k = ch; cEl.innerHTML = ch; }
+  $('#wv-zones').classList.toggle('none', !zones.length);
   const rh = runsHTML(), rEl = $('#wv-runs'); if (rEl.dataset.k !== rh) { rEl.dataset.k = rh; rEl.innerHTML = rh; }
 }
 // What changes as the clock moves: the slider, the readout, the playheads and the live ✕ counts.
@@ -6215,7 +6345,11 @@ function wvDown(e) {
   refreshUI();
 }
 function wvMove(e) {
-  if (!wvDrag) { const d = e.target.closest && e.target.closest('#wv-rows .dot'); const k = d ? d.dataset.m : ''; if (WV.lens !== k) { WV.lens = k; placeRows(); } return; }
+  if (!wvDrag) {
+    const d = e.target.closest && e.target.closest('#wv-rows .dot'), k = d ? d.dataset.m : '', cut = !!(e.target.closest && e.target.closest('#wv-split'));
+    if (WV.lens !== k || WV.cutShow !== cut) { WV.lens = k; WV.cutShow = cut; placeRows(); }
+    return;
+  }
   if (e.pointerId !== wvDrag.id || wvDrag.kind === 'dens') return; // the density slider moves itself
   if (e.pointerType === 'mouse' && !(e.buttons & 1)) { wvUp(e); return; }
   const D = wvDrag;
@@ -6233,10 +6367,12 @@ function wvApply(D) {
   if (D.kind === 'dot') {
     const maps = writeSecs([[D.m, t]]);
     if (D.m.cell == null && maps[D.m.di]) D.m = { di: D.m.di, k: maps[D.m.di][D.m.k] }; // the unit keeps its place in its design's order
-  } else if (D.kind === 'move') writeSecs(opShift(D.P0, t - D.t0));
-  else writeSecs(opEnd(D.P0, D.kind, t));
+  } else follow(D.P0, writeSecs(D.kind === 'move' ? opShift(D.P0, t - D.t0) : opEnd(D.P0, D.kind, t)));
   fcData(); renderWv();
 }
+// A design's units are kept in the order they leave, so moving one group past another of the same design renumbers
+// them; members held across writes (a drag's starting list) follow their own units, never the other group's.
+function follow(P, maps) { for (const [m] of P) if (m.cell == null && maps[m.di]) m.k = maps[m.di][m.k]; }
 function wvUp(e) {
   if (!wvDrag || (e.pointerId != null && e.pointerId !== wvDrag.id)) return;
   const D = wvDrag;
@@ -6269,34 +6405,38 @@ function wvTool(b) {
   if (act === 'place') { wvChange(); writeSecs(opPlace(P(), b.dataset.w)); }
   else if (act === 'shape') { wvChange(); writeSecs(opShape(P(), b.dataset.f)); }
   else if (act === 'inside') { const o = gById(b.dataset.o); if (!o) return; wvChange(); const [s, e] = spanSec(pairs(o)); writeSecs([[{ cell: g.cell }, s + (e - s) * 0.35]]); }
-  else if (act === 'split') { // the first half (the ones that leave first) stays selected
+  else if (act === 'cut') { Z.cut.n = clamp(splitCut(g) + +b.dataset.d, 1, g.idx.length - 1); Z.cutShow = true; }
+  else if (act === 'split') { // the first ones to leave stay (and stay selected); the rest are a new group of their own
+    const a = splitCut(g), P = ownPairs(g);
     wvChange();
-    const a = Math.ceil(g.idx.length / 2), h = { id: 'g' + Z.seq++, di: g.di, idx: g.idx.slice(a), link: '' };
-    g.idx = g.idx.slice(0, a);
-    Z.groups.splice(Z.groups.indexOf(g) + 1, 0, h);
+    const keep = new Set(P.slice(0, a).map(([m]) => m.k)), h = { id: 'g' + Z.seq++, di: g.di, idx: g.idx.filter(k => !keep.has(k)), link: '' };
+    g.idx = g.idx.filter(k => keep.has(k));
+    Z.groups.splice(Z.groups.indexOf(g) + 1, 0, h); Z.cut = null; Z.cutShow = false;
+    Z.note = `Split: ${esc(gName(g))} ×${g.idx.length} and ${esc(gName(h))} ×${h.idx.length} now move on their own.`;
   } else if (act === 'merge') {
-    const o = gById($('#wv-mg').value); if (!o) return;
+    const o = gById(b.dataset.o); if (!o) return;
     wvChange();
     g.idx = g.idx.concat(o.idx).sort((a, b) => a - b); if (o.link && !g.link) g.link = o.link;
     Z.groups.splice(Z.groups.indexOf(o), 1);
   } else if (act === 'link') {
-    const o = gById($('#wv-lk').value); if (!o) return;
+    const o = gById(b.dataset.o); if (!o) return;
     wvChange();
     const id = g.link || o.link || 'L' + Z.seq++;
     for (const h of [...linkSet(g), ...linkSet(o)]) h.link = id;
   } else if (act === 'unlink') { wvChange(); for (const h of linkSet(g)) h.link = ''; }
+  else if (act === 'pick') { Z.pick = !Z.pick; Z.picking = null; }
   else if (act === 'meet') {
-    const o = gById($('#wv-mo').value), z = (Z.zones || []).find(q => q.id === $('#wv-mz').value); if (!o || !z) return;
+    const o = gById(($('#wv-mo') || {}).value), at = ($('#wv-mz') || {}).value, z = at === 'cells' ? Z.place : (Z.zones || []).find(q => q.id === at); if (!o || !z) return;
     const before = Z.groups.map(q => ({ id: q.id, secs: members(q).map(secOf) }));
     wvChange();
-    const r = meet(g, o, z);
-    Z.ghosts = before; Z.selZ = z.id;
+    const r = meet(g, o, z), where = placeName(z);
+    Z.ghosts = before; if (z.tw) Z.selZ = z.id;
     const f = fcData(true);
     Z.note = r.ok ? esc(r.text) : `<span class="bad">${esc(r.text)}</span>`;
     if (r.ok && f) { const p = presence(f, g, z); Z.T = p ? (p[0] + p[1]) / 2 : Z.T; }
     if (f && Z.before) {
       const zs = Z.zones, k1 = Object.fromEntries(zs.map(q => [q.id, zoneKills(f, q)])), dz = zs.filter(q => Z.before[q.id] !== k1[q.id]).map(q => `${q.id} ✕${Z.before[q.id]}→${k1[q.id]} ${k1[q.id] < Z.before[q.id] ? '<b>▲</b>' : '<i>▼</i>'}`);
-      Z.log = `<div class="wv-log"><h4>Met in ${z.id}</h4><span class="d">${dz.join(' · ') || 'Zone losses unchanged'}</span><ol><li>${esc(gName(g, { n: false }))} meet ${esc(gName(o, { sapper: true, n: false }))} in ${z.id}</li></ol></div>`;
+      Z.log = `<div class="wv-log"><h4>Met ${z.tw ? 'in' : 'at'} ${esc(where)}</h4><span class="d">${dz.join(' · ') || 'Zone losses unchanged'}</span><ol><li>${esc(gName(g))} meet ${esc(gName(o, { sapper: true }))} ${z.tw ? 'in' : 'at'} ${esc(where)}</li></ol></div>`;
     }
     Z.toolsK = ''; refreshUI(); return;
   }
@@ -6347,6 +6487,14 @@ function drawZones(c, fc) {
     for (const i of z.cells) c.fillRect(i % COLS, (i / COLS) | 0, 1, 1);
     if (on) for (const i of z.towers) { const [x, y] = center(i); c.beginPath(); c.arc(x, y, TS.range.steps[S.seenGrid[i].cfg.range], 0, TAU); c.setLineDash([0.12, 0.1]); c.lineWidth = px * 1.4; c.strokeStyle = 'rgba(79,214,238,0.6)'; c.stroke(); c.setLineDash([]); }
   }
+  // Meet's picked cells: white dashed squares (brighter while picking)
+  const cells = WV.picking ? WV.picking.cells : WV.place ? WV.place.cells : null;
+  if (cells) {
+    c.fillStyle = WV.picking ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.07)';
+    c.strokeStyle = 'rgba(255,255,255,0.85)'; c.lineWidth = px * 1.5; c.setLineDash([px * 4, px * 3]);
+    for (const i of cells) { const x = i % COLS, y = (i / COLS) | 0; c.fillRect(x, y, 1, 1); c.strokeRect(x + px, y + px, 1 - 2 * px, 1 - 2 * px); }
+    c.setLineDash([]);
+  }
   void fc;
 }
 const xMark = (c, x, y, r) => { c.beginPath(); c.moveTo(x - r, y - r); c.lineTo(x + r, y + r); c.moveTo(x + r, y - r); c.lineTo(x - r, y + r); c.stroke(); };
@@ -6392,6 +6540,32 @@ function drawWvLabels(c, fc) {
     const [sx, sy] = w2s(COLS / 2, 0.6);
     pill(c, sx, Math.max(4, sy), `${pct1(fc.breach)} GOT THROUGH`, '#1f0b02', 'rgba(255,138,61,0.97)', 'center');
   }
+  if (Z.pick) { // Meet's place: what to do, and how many cells so far
+    const [sx, sy] = w2s(COLS / 2, ROWS - 0.75), n = Z.picking ? Z.picking.cells.size : 0;
+    pill(c, sx, sy, n ? `${n} CELL${n > 1 ? 'S' : ''}` : 'MEET AT · TAP A CELL OR DRAG ALONG THE ROUTE', '#0b0f12', 'rgba(255,255,255,0.92)', 'center');
+  }
+}
+// Meet's place picked on the map: a tap is one cell; a drag from one route cell to another takes the stretch of route
+// between them (any route the forecast takes), else the cells it crossed.
+function wvPickAdd(cell) {
+  const P = WV.picking; if (!P || cell < 0) return;
+  (P.touched || (P.touched = new Set([P.from]))).add(cell);
+  P.cells = new Set(P.touched);
+  for (const { path } of (WV.fc ? WV.fc.routes : [])) {
+    const a = path.indexOf(P.from), b = path.indexOf(cell);
+    if (a >= 0 && b >= 0) { P.cells = new Set(path.slice(Math.min(a, b), Math.max(a, b) + 1)); break; }
+  }
+}
+function wvPickEnd() {
+  const P = WV.picking, fc = WV.fc; WV.picking = null;
+  if (!P || P.from < 0) return;
+  const cells = P.cells, route = fc ? (fc.routes.find(r => [...cells].some(c => r.path.includes(c))) || fc.routes[0]).path : [];
+  const at = c => { const k = route.indexOf(c); return k < 0 ? 1e3 + c : k; }, order = [...cells].sort((a, b) => at(a) - at(b));
+  WV.place = { cells, label: order.length === 1 ? `Cell ${colName(order[0])}` : `Cells ${colName(order[0])}–${colName(order[order.length - 1])}` };
+  WV.mz = 'cells'; WV.pick = false;
+  const passes = fc && fc.units.some(r => r.x.some((x, m) => cells.has(cellOf([x + r.ox, r.y[m] + r.oy]))));
+  if (!passes) toast(`No unit passes ${order.length === 1 ? 'that cell' : 'those cells'} in the forecast, so nothing can meet there.`, 'atk');
+  refreshUI();
 }
 // A click on the map on the Wave step picks the zone of the tile (or of the tower) under it.
 function wvMapPick(cell) {
@@ -7486,6 +7660,7 @@ function pressDefend(cell, pt) {
 }
 function pressAttack(cell, p, pt) {
   if (cell < 0) { if (S.sel) { S.sel = null; refreshUI(); } return null; }
+  if (S.step === A_WAVE && WV.pick && WV.S === S) { WV.picking = { from: cell, cells: new Set([cell]) }; return 'wvpick'; } // Meet: cells on the map
   if (S.step === A_WAVE && wvMapPick(cell)) return null; // the Wave step: a zone's tile or tower picks the zone
   const g = S.seenGrid[cell];
   if (g && g.t === 'tower') { if (S.step === A_SABO && chargeStatus().ok) saboMode = 'tower'; selectTower(cell); return null; }
@@ -7540,6 +7715,7 @@ function removeTower(cell) { // returns the pop-up's line, or '' if the tower st
   return S.grid[cell] ? '' : `Tower ${g.n} removed · +${val}`;
 }
 function paint(cell, mode) {
+  if (mode === 'wvpick') { wvPickAdd(cell); return; }
   if (towerMode(mode) || mode === 'rm-hold') return; // the ghost or the preview follows drag.cell; pointermove decides when a press became a drag
   if (cell < 0 || S.phase !== 'defend' || planLocked()) return;
   if (mode === 'shape' || mode === 'shape-tap') {
@@ -7595,6 +7771,7 @@ canvas.addEventListener('pointerup', e => {
   const d = drag, live = S.phase === 'defend' && !planLocked();
   drag = null; clearTimeout(holdTimer);
   let pop = '';
+  if (d.mode === 'wvpick') { wvPickEnd(); return; }
   if (d.mode === 'shape-tap' && !d.moved && live && S.tool === 'shape' && pending >= 0 && placeShape(pending)) pending = -1;
   if (d.mode === 'rm-hold' && !d.held && live && S.grid[d.from] && S.grid[d.from].t === 'wall') removeAt(d.from); // a quick tap
   if (towerMode(d.mode) && live) {
@@ -7609,6 +7786,7 @@ canvas.addEventListener('pointerup', e => {
 canvas.addEventListener('pointercancel', e => {
   if (!drag || e.pointerId !== drag.id) return;
   const d = drag; drag = null; clearTimeout(holdTimer);
+  if (d.mode === 'wvpick') WV.picking = null;
   if (d.undo) undoEnd();
 });
 canvas.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = -1; });
@@ -7655,6 +7833,7 @@ document.addEventListener('keydown', e => {
   if (waveKeys && e.key === ' ' && !e.repeat) { e.preventDefault(); wvPlay(); return; }
   if (e.key !== 'Escape') return;
   if (!el.ovInfo.hidden) closeInfo();
+  else if (S && WV.pick && S.phase === 'attack' && S.step === A_WAVE) { WV.pick = false; WV.picking = null; refreshUI(); }
   else if (S.sel && (S.phase === 'defend' || S.phase === 'attack' || S.phase === 'wave')) { S.sel = null; refreshUI(); }
   else if (testing()) skipTest();
   else if (replay) exitReplay();
@@ -7804,7 +7983,9 @@ window.siegeline = {
       units: fc.units.map(r => ({ di: r.di, k: r.k, cell: r.cell, t0: r.t0, tEnd: r.tEnd, end: r.end })) }; },
     at(di, k, t) { const fc = fcData(true), r = fc && fc.units.find(u => u.di === di && u.k === k); const p = r && fcAt(r, t); return p ? { x: p.x + r.ox, y: p.y + r.oy, h: p.h, w: p.w } : r ? { t0: r.t0, tEnd: r.tEnd, end: r.end } : null; },
     zones() { const zs = wvZones(), st = wvZoneStats(); return zs.map(z => ({ id: z.id, towers: z.towers.slice(), cells: [...z.cells], tags: z.tags.slice(), ...st[z.id], by: { ...(st[z.id] || {}).by } })); },
-    groups() { wvState(); return WV.groups.map(g => ({ id: g.id, di: g.di, idx: g.idx ? g.idx.slice() : null, cell: g.cell, link: g.link, secs: members(g).map(secOf) })); },
+    groups() { wvState(); return WV.groups.map(g => ({ id: g.id, di: g.di, idx: g.idx ? g.idx.slice() : null, cell: g.cell, link: g.link, secs: members(g).map(secOf), name: gName(g) })); },
+    get pick() { return WV.pick; }, get place() { return WV.place && { label: WV.place.label, cells: [...WV.place.cells] }; }, // v22.1: Meet's place picked on the map
+    presence(id, at) { const fc = fcData(true), g = gById(id), z = at === 'cells' ? WV.place : (WV.zones || []).find(q => q.id === at); return fc && g && z ? presence(fc, g, z) : null; },
     get sel() { return WV.sel; }, select(id) { wvState(); WV.sel = id; WV.toolsK = ''; refreshUI(); }, get selZ() { return WV.selZ; },
     get locks() { return { ...WV.locks }; }, get runs() { return WV.runs.map(r => ({ score: r.score, stars: r.stars })); }, get auto() { return WV.auto && WV.auto.score; },
     get undoDepth() { return WV.S === S ? WV.undo.length : 0; }, get log() { return WV.log; }, get note() { return WV.note; },
