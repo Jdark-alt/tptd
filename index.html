@@ -101,7 +101,10 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .speed button[aria-pressed=true]{background:var(--paper);color:var(--ink)}
 .scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:3px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
 .browse{display:flex;flex-direction:column;gap:10px}
-.pane.drill .browse{display:none}
+#pane-atk.drill .browse{display:none}
+/* v22.2: the defender's tower card opens under the tools, which stay in reach (no Done needed to pick Wall or Remove);
+   while it's open the lines that only explain things step aside so the card fits */
+#pane-def.drill #d-intel,#pane-def.drill #d-help,#pane-def.drill #d-line{display:none}
 .ctx:empty{display:none}
 .note{margin:0;font:400 13px/1.5 var(--f-body);color:var(--muted)}
 .note b{color:var(--soft);font-weight:500}
@@ -754,6 +757,14 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .toolrow .tname{font-size:12px;white-space:nowrap}
 .toolrow .tcost{font-size:9px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .toolrow .tool{position:relative}
+/* short screens with a tower card open: the tools go to one line each (icon and name) so the card fits under them */
+@media (min-width:721px) and (orientation:landscape) and (max-height:830px){
+  #pane-def.drill .toolrow .tool{flex-direction:row;gap:6px;min-height:36px;padding:3px 2px}
+  #pane-def.drill .toolrow .tcost{display:none}
+  #pane-def.drill .helprow .hbtn{height:30px}
+  #pane-def.drill #def-ctx .srow.c{height:31px}
+  #pane-def.drill #def-ctx .card{gap:5px}
+}
 .tool .bx{position:absolute;top:2px;right:2px;width:16px;height:16px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line-2);background:var(--slate-2);color:var(--paper);font:500 12px/1 var(--f-ui);cursor:pointer;z-index:2}
 .tool .bx:hover{border-color:var(--paper)}
 .hbtn{display:grid;place-items:center;padding:0;border-radius:var(--r2);border:1px solid color-mix(in srgb,var(--side) 45%,transparent);background:transparent;color:var(--side);cursor:pointer}
@@ -1108,7 +1119,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v22.1</p>
+        <p class="tagline">Two Player Tower Defence · v22.2</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1144,6 +1155,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 
       <section id="info-tower">
         <h2>Towers</h2>
+        <p>Tap a tower to open its card under your tools: Wall, Remove and the rest stay a click away, no Done needed.</p>
         <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee. Each slider shows a short value and what one more step costs; hold or hover it for the detail.</p>
         <div class="callout"><p><code>40 × range × damage × accuracy × splash × frost × poison × chain + fee</code></p></div>
         <ul>
@@ -1238,7 +1250,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v22.1</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v22.2</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -5547,12 +5559,15 @@ function renderDef() {
   const ln = $('#d-line'), lt = toolLine(); if (ln.innerHTML !== lt) ln.innerHTML = lt;
   let key = '';
   if (S.sel && S.sel.k === 'tower' && S.grid[S.sel.cell] && S.grid[S.sel.cell].t === 'tower') key = 'tower:' + S.sel.cell + ':' + (S.grid[S.sel.cell].off > 0);
+  const opened = ctxKey.def !== key && !!key;
   if (ctxKey.def !== key) {
     ctxKey.def = key;
     el.defCtx.innerHTML = key ? towerEditorHTML(S.sel.cell) : '';
     el.defCtx.scrollTop = 0;
   }
   el.paneDef.classList.toggle('drill', !!key);
+  // a card that opens below the fold is scrolled into view, as little as it takes (a phone's bottom sheet needs none)
+  if (opened && getComputedStyle(el.defCtx).position !== 'fixed') el.defCtx.scrollIntoView({ block: 'nearest' });
   el.paneDef.classList.toggle('shaping', S.tool === 'shape');
   if (key) updateTowerEditor(S.sel.cell);
   $('#def-test').hidden = !canTest();

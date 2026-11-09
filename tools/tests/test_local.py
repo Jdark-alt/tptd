@@ -1404,6 +1404,48 @@ with sync_playwright() as p:
     check(not errors, f'v22.1: no errors {errors[:3]}')
     ctx.close()
 
+    # ---------- v22.2: the defender's tower card opens under the tools, which stay in reach (no Done to pick Wall or Remove)
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    page.click('#def-body [data-act=maze]'); page.wait_for_function('() => !window.siegeline.mazing'); page.wait_for_timeout(50)
+    page.click('.tool[data-tool=tower]')
+    tcells = page.evaluate("""() => { const S = window.siegeline.state, p = S.path, out = [];
+      for (let k = 4; k < p.length - 3 && out.length < 4; k += 6) for (const d of [16, -16, 1, -1]) { const j = p[k] + d; if (j >= 0 && j < 176 && !S.grid[j] && !p.includes(j) && j !== 80 && j !== 95) { out.push(j); break; } }
+      return out; }""")
+    for j in tcells: click_cell(page, j % COLS, j // COLS); page.keyboard.press('Escape')
+    page.click('#def-lock'); hand(page)
+    page.click('.step.plus[data-i="0"]'); page.click('#atk-lock'); hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    page.click('#sum-next'); hand(page); page.wait_for_timeout(80)
+    fit = """() => { const sc = document.querySelector('#pane-def .scroll'), r = e => e.getBoundingClientRect(), s = r(sc), tr = r(document.querySelector('#def-body .toolrow')), hr = r(document.querySelector('#def-body .helprow')), cf = r(document.querySelector('#def-ctx [data-act=close]'));
+      const inside = q => q.top >= s.top - 1 && q.bottom <= s.bottom + 1;
+      return [sc.scrollHeight - sc.clientHeight, inside(tr), inside(hr), inside(cf), tr.bottom <= r(document.querySelector('#def-ctx')).top]; }"""
+    for (w, h) in ((1366, 860), (1440, 900), (1280, 800)):
+        page.set_viewport_size({'width': w, 'height': h}); page.wait_for_timeout(200)
+        page.keyboard.press('Escape'); click_cell(page, tcells[0] % COLS, tcells[0] // COLS); page.wait_for_timeout(150)
+        m = page.evaluate(fit)
+        check(S(page, 'S.sel && S.sel.k') == 'tower' and m == [0, True, True, True, True], f'v22.2 at {w}×{h}: the tower card opens under the tools; the tools, the helpers and the card’s Done all in view, nothing to scroll ({m})')
+    page.screenshot(path=f'{OUT}/v222_card.png')
+    # one click on a tool, no Done: Wall picks the tool (the card stays until you build), a wall on the board closes the card
+    page.click('.tool[data-tool=wall]'); page.wait_for_timeout(60)
+    check(S(page, 'S.tool') == 'wall' and S(page, 'S.sel && S.sel.k') == 'tower', 'v22.2: with the card open, one click on Wall picks the Wall tool')
+    free = page.evaluate("() => { const S = window.siegeline.state; for (let i = 0; i < 176; i++) if (!S.grid[i] && i !== 80 && i !== 95 && !S.path.includes(i) && S.terrain[i] === 0) return i; return -1; }")
+    n0 = S(page, 'S.grid.filter(g => g && g.t === "wall").length')
+    click_cell(page, free % COLS, free // COLS); page.wait_for_timeout(80)
+    check(S(page, 'S.grid.filter(g => g && g.t === "wall").length') == n0 + 1 and not S(page, 'S.sel'), 'v22.2: and the next click on the board builds a wall, closing the card')
+    click_cell(page, tcells[1] % COLS, tcells[1] // COLS); page.wait_for_timeout(80)
+    page.click('.tool[data-tool=remove]'); page.wait_for_timeout(60)
+    check(S(page, 'S.tool') == 'remove' and not S(page, 'S.sel') and page.inner_text('#def-ctx').strip() == '', 'v22.2: with the card open, one click on Remove picks Remove and closes the card')
+    page.click('.tool[data-tool=tower]'); click_cell(page, tcells[1] % COLS, tcells[1] // COLS); page.wait_for_timeout(60)
+    page.click('#def-body [data-act=tune]'); page.wait_for_timeout(80)
+    check(not errors and page.is_visible('#def-ctx .card'), f'v22.2: the helpers work with the card open too, and no errors {errors[:3]}')
+    # on a phone the card is still the bottom sheet over the board
+    page.set_viewport_size({'width': 390, 'height': 844}); page.wait_for_timeout(250)
+    check(page.evaluate("() => getComputedStyle(document.querySelector('#def-ctx')).position") == 'fixed', 'v22.2 on a phone: the card is still a bottom sheet')
+    ctx.close()
+
     # ---------- v22 Part A: a bridge landing re-routes on the towers firing then (internals, a fixed layout)
     # Column 8 is walled but for row 1, so the route goes round over row 1. Six towers in row 8 (range 4) fire on row 5,
     # the straight line a bridge at (8,5) would open: with every tower counted it's dearer than the detour, so nobody
