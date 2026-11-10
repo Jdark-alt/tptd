@@ -78,7 +78,7 @@ def build_maze(page, strong=False):
 def play_out(page, side, label, ready):
     """Plays rounds until the match ends: ready() does the player's turn. Checks the computer's side each round."""
     rounds, coins_ok, worth_ok, rules_ok, most, notes, sent, landed = 0, True, True, True, 0, 0, 0, 0
-    charges, first_last, fees, fee_rounds = 0, [], 0, 0
+    charges, first_last, fees, fee_rounds, credit_ok = 0, [], 0, 0, True
     for _ in range(8):
         rounds += 1
         before = S(page, AWORTH if side == 'def' else DWORTH)
@@ -91,6 +91,8 @@ def play_out(page, side, label, ready):
         rules_ok &= S(page, CHARGES_OK) and S(page, '[...S.bridges].every(i => !S.grid[i])') and S(page, TERRAIN_OK) and S(page, 'S.grid.every(g => !(g && g.t === "tower" && g.cfg.chain && g.cfg.splash > 0))')
         if S(page, 'S.round') in (1, 8): first_last.append(n)
         run_wave(page)
+        # v23: the move fees the computer defender paid this round are the player's when the wave ends
+        if side != 'def' and not page.is_visible('#ov-end'): credit_ok &= S(page, 'S.last.aMove') == f and S(page, 'S.mvFee') == 0
         sent += S(page, 'S.wave.sappers'); landed += S(page, 'S.wave.sapOk')
         notes += bool(S(page, 'SOLO.note'))
         if page.is_visible('#ov-end'): break
@@ -99,6 +101,7 @@ def play_out(page, side, label, ready):
     check(coins_ok, f'{label}: no side overspends and the route stays open')
     check(rules_ok and not any(first_last), f'{label}: sabotage only on what was seen, within the caps, none in round 1 or 8, nothing built on a bridge or rough ground, rock in place, no tower with both Chain and Splash')
     check(notes == rounds, f'{label}: the computer explains every wave ({notes}/{rounds})')
+    if side != 'def': check(credit_ok, f'{label}: v23: the computer defender’s move fees ({fees} coins) go to the player when each wave ends')
     if side != 'def': check(S(page, 'S.totals.moveTries || 0') >= fee_rounds, f'{label}: v22 Part C test 8: the computer defender pays move fees through its reduced refunds ({fees} coins in {fee_rounds} rounds, {S(page, "S.totals.moveTries || 0")} relocations)')
     if sent: print(f'      {label}: {landed} of {sent} sappers landed')
     check(page.is_visible('#ov-end') and text(page, '#end-title') in ('You win', 'The computer wins'), f'{label}: match ends with a solo result ({text(page, "#end-title")}, {rounds} rounds)')
@@ -352,7 +355,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#ov-hand', state='visible', timeout=60000)
     check(S(page, 'S.next') == 'wave' and 'time ran out' not in page.inner_text('#hand-sub').lower(), 'solo: the wave card follows once the computer is done')
     cdp.send('Emulation.setCPUThrottlingRate', {'rate': 1})
-    page.evaluate('() => { window.siegeline.rules.planSecs = 180; window.siegeline.rules.planSecsFirst = 300; }')
+    page.evaluate('() => { window.siegeline.rules.planSecs = 300; window.siegeline.rules.planSecsFirst = 300; }')
     check(not errors, f'no errors on desktop {errors[:3]}')
     ctx.close()
 

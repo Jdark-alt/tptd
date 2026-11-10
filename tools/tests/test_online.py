@@ -189,6 +189,10 @@ try:
             stale = f"S.charges.set({idx(13, 4)},{{kind:'tower',t:0,cost:1}}); S.aFree-=1;"
             v13 = ev(B, f"window.siegeline.towerCost(S.seenGrid[{idx(13, 4)}].cfg)"); want = int((15 + 0.2 * v13) * 1.25 + 0.5)
             defend_round(A, lock=False); attack_round(B, [12, 3, 6], lock=False, extra=(f"S.charges.set({off},{{kind:'bridge',waves:0,cost:70}}); S.aFree-=70;" if off >= 0 else '') + stale)
+            # v23: a bridge landed last wave, so this round every move is free on the defender's device; the fee checks
+            # below need a paid move, so the test clears that (it lives only on the defender's device, nothing travels)
+            check('v23: after a bridge landed, the defender moves towers free this round', ev(A, 'S.freeMv && S.freeMv.all') is True and ev(A, f'window.siegeline.state.grid[{idx(9, 6)}] && 1') == 1, ev(A, 'S.freeMv'))
+            A.evaluate('()=>{window.siegeline.state.freeMv=null;}')
             # v22 Part C: the defender drags a tower the attacker saw (the splash tower) onto a wall: it pays the move fee
             fee_want = int(0.1 * ev(A, f"window.siegeline.towerCost(S.grid[{idx(9, 6)}].cfg)") + 0.5); d_before = ev(A, 'S.dFree')
             (x0, y0), (x1, y1) = [A.evaluate(f'()=>window.siegeline.cellToClient({i})') for i in (idx(9, 6), idx(7, 5))]
@@ -201,6 +205,10 @@ try:
             check('simultaneous lock-in starts the wave on both', True)
             check('v22 Part C test 7: both devices have the same coins and relocation count after the fee', ev(A, '[S.dFree, S.totals.moveTries]') == ev(B, '[S.dFree, S.totals.moveTries]') == [d_before - fee_want, 1],
                   f"{ev(A, '[S.dFree, S.totals.moveTries]')} / {ev(B, '[S.dFree, S.totals.moveTries]')}")
+            # v23: the fee goes to the attacker when the wave ends; both devices read it from the defender's plan
+            check('v23: both devices carry the move fee into the wave, to be credited to the attacker', ev(A, '[S.wave.mf, S.mvFee]') == ev(B, '[S.wave.mf, S.mvFee]') == [fee_want, fee_want],
+                  f"{ev(A, '[S.wave.mf, S.mvFee]')} / {ev(B, '[S.wave.mf, S.mvFee]')}")
+            a_left = ev(B, 'S.aFree')
             check(f'a knock-out is priced by the rules on both devices (the second knock-out: {want})', ev(A, "S.wave.chargeCoins") == want and ev(B, "S.wave.chargeCoins") == want, f'{ev(A, "S.wave.chargeCoins")} / {ev(B, "S.wave.chargeCoins")}')
             # the charges each device started the wave with (the live list empties as they go off, sooner on the 10x device)
             pre = "S.preWave.charges.map(c => c[0])"
@@ -212,6 +220,10 @@ try:
             B.wait_for_timeout(300)
             same(A, B, 'attacker adopts the defender result after a desync')
             check('sync toast shown', 'Synced' in B.inner_text('#toast'), B.inner_text('#toast'))
+            L3 = ev(B, '[S.last.aGain, S.last.aMove, S.last.aInt, S.aFree]')
+            check('v23: the attacker’s coins match on both devices, the move fee credited (“Defender moved towers”)',
+                  ev(A, '[S.last.aMove, S.aFree]') == [fee_want, L3[3]] and L3[1] == fee_want and L3[3] == a_left + L3[0] + L3[1] + L3[2] and ev(B, 'S.mvFee') == 0
+                  and f'+{fee_want}' in B.inner_text('#sum-extra') and 'moved towers' in B.inner_text('#sum-extra').lower(), f"{ev(A, '[S.last.aMove, S.aFree]')} / {L3} from {a_left}")
             A.click('#sum-next'); B.click('#sum-next')
 
             # ---------- round 4: keep falls mid-wave ----------
@@ -330,6 +342,21 @@ try:
             C.click('#sum-next'); D.click('#sum-next')
             wait(C, "S.phase==='defend' && S.round===2"); wait(D, "S.phase==='attack' && S.round===2")
             check('planning clock: a fresh clock next round', C.is_visible('#t-clock') and ev(C, '[S.rounds,S.round]') == [6, 2] and ev(D, '[S.rounds,S.round]') == [6, 2])
+            for pg in (C, D): pg.close()
+            # ---------- v23: untimed rounds, the defender's pick: neither device runs a clock ----------
+            C = ctx.new_page(); D = ctx.new_page()
+            for pg in (C, D): errors_hook(pg, errs); pg.goto('http://127.0.0.1:8765/room.html')
+            C.wait_for_timeout(300); no_terrain(C, D)
+            for pg in (C, D): pg.evaluate('()=>{window.siegeline.rules.planSecs=4; window.siegeline.rules.planSecsFirst=4;}')
+            C.click('#info-go'); C.wait_for_selector('#ov-mode:not([hidden])'); C.click('#mode-clock [data-timed="0"]')
+            C.click('.rolepick button[data-role=def]'); C.fill('#mode-code', 'NOTM'); C.click('#mode-online')
+            join(D, 'atk', 'NOTM')
+            wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
+            D.wait_for_timeout(5000)  # longer than the 4 s a timed round would have had here
+            check("v23: untimed rounds (the defender's pick): no clock on either device, nobody locked in by time",
+                  ev(C, '[N.tm, S.phase, N.lk]') == [0, 'defend', 0] and ev(D, '[N.tm, S.phase, N.lk]') == [0, 'attack', 0] and C.is_hidden('#clockbox') and D.is_hidden('#clockbox'),
+                  f"{ev(C, '[N.tm, S.phase, N.lk]')} / {ev(D, '[N.tm, S.phase, N.lk]')}")
+            check('v23: the attacker is told the defender picked untimed rounds', 'untimed' in D.inner_text('#toast').lower(), D.inner_text('#toast'))
             for pg in (C, D): pg.close()
             # ---------- a build with another protocol version (main) never joins this one ----------
             if OLD:

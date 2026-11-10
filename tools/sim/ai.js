@@ -60,7 +60,7 @@
   function defend(S, opt, seed) {
     if (opt.game) {
       const r = I.brainPlan('def', opt.game, seed), p = r.plan;
-      S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; if (p.mt != null) S.totals.moveTries = p.mt; I.recompute();
+      S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; if (p.mt != null) S.totals.moveTries = p.mt; S.mvFee = p.mf || 0; I.recompute(); // v23: the fees go to the attacker
       if ([...S.bridges].some(i => S.grid[i])) throw new Error('game defender built on a bridge');
       if (p.g.w.concat(p.g.f, p.g.t.map(a => a[0])).some(i => S.terrain[i])) throw new Error('game defender built on rough ground or rock');
       if (!S.path) throw new Error('game defender blocked the path');
@@ -242,7 +242,9 @@
       const army = attack(S, aOpt, seed * 104729 + S.round);
       I.startWave(seed * 101 + S.round);
       window.siegeline.advance(900);
-      const W = S.wave, saps = { sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed };
+      const W = S.wave, saps = { sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed, mf: W.mf || 0, dLeft: W.dLeft || 0, aLeft: W.aLeft || 0 };
+      // v23: what the wave paid besides the pot (S.last has it once the wave ended without the keep falling)
+      if (S.last && S.last.dTot != null && !(S.over && S.winner === 'attacker')) Object.assign(saps, { aMove: S.last.aMove, dKill: S.last.dKill, dInt: S.last.dInt, aInt: S.last.aInt, dGain: S.last.dGain, aGain: S.last.aGain });
       // the towers of this wave's defense and their effects, for "how often did towers take Frost, Chain, Splash"
       const TW = S.grid.filter(g => g && g.t === 'tower'); saps.fx = { towers: TW.length, slow: TW.filter(g => g.cfg.slow).length, chain: TW.filter(g => g.cfg.chain).length, splash: TW.filter(g => g.cfg.splash > 0).length, poison: TW.filter(g => g.cfg.poison).length };
       if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: W.x, Y: Math.round(W.y), keep: 0, bridges: W.bridges, jammed: W.jammed, ...saps, response }); return { winner: 'attacker', round: S.round, keep: 0, log, starter }; }
@@ -256,18 +258,74 @@
     }
   };
 
+  // What a defense for runWave costs under the rules, without playing a wave (scan.py --fit uses it). v23.
+  window.defenseCost = (towers, rules = {}, cols = 4, layout = null) => {
+    resetUS();
+    const { US, ...plain } = rules;
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
+    const walls = new Set(layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: cols }, (_, k) => colCells(k)).flat());
+    let cost = walls.size * I.RULES.wall, fee = 0;
+    towers.forEach((cfg, k) => {
+      const [c, r] = (layout ? layout.slots : SLOTS)[k];
+      if (walls.has(at(c, r))) cost -= I.RULES.wall;
+      cost += I.towerCost({ ...I.defaultTower(), ...cfg }) + fee; fee += I.RULES.towerFee;
+    });
+    return cost;
+  };
+  // A sim strategy's army (ARMIES above, shares of the budget) as runWave's [[design, count, start, end], ...]. v23.
+  window.armyOf = (key, budget, rules = {}) => {
+    resetUS();
+    const { US, ...plain } = rules;
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
+    const spec = ARMIES[key], ds = spec.map(([p], k) => makeDesign(p, k));
+    let left = budget;
+    const out = spec.map(([p, share, s, e], k) => { const n = Math.floor(budget * share / I.unitCost(ds[k])); left -= n * I.unitCost(ds[k]); return [typeof p === 'string' ? (DESIGNS[p] ? { ...DESIGNS[p] } : p) : p, n, s, e]; });
+    const last = out.length - 1;
+    if (spec.length > 1) out[last][1] += Math.floor(left / I.unitCost(ds[last]));
+    return out;
+  };
+  window.ARMY_KEYS = Object.keys(ARMIES);
+  // An army made by the game itself against a fixed defense, then played against it (v23, scan.py --bots): 'auto' is the
+  // Army step's Auto-army (from the three starting designs, as a new attacker has them), 'easy' | 'normal' | 'hard' the
+  // computer attacker. Round 2 of 8 for Auto-army, round 1 for the computer (no sabotage either way: none is planned).
+  window.botArmyVs = (kind, towers, budget, rules = {}, layout = null, seed = 7) => {
+    resetUS();
+    const { US, ...plain } = rules;
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
+    I.S = I.newState(); const S = I.S;
+    const walls = layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: 4 }, (_, k) => colCells(k)).flat();
+    for (const i of walls) S.grid[i] = { t: 'wall', fresh: false };
+    towers.forEach((cfg, k) => { const [c, r] = (layout ? layout.slots : SLOTS)[k]; S.grid[at(c, r)] = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee: 10 * k, off: 0, fresh: false, n: k + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; });
+    S.seenGrid = S.grid.map(g => (g ? (g.t === 'tower' ? { ...g, cfg: { ...g.cfg } } : { ...g }) : null));
+    S.seenVer++; S.seenRound = 1; S.aFree = budget; S.towerSeq = towers.length; I.recompute();
+    if (kind === 'auto') {
+      S.round = 2; S.phase = 'attack';
+      const gen = I.armyThink(); let r; while (!(r = gen.next()).done) { /* to the end */ }
+      if (r.value.best) S.designs = r.value.best.ds.map(d => ({ ...d, tl: { ...d.tl, pos: null } }));
+    } else {
+      S.round = 1;
+      const p = I.brainPlan('atk', kind, seed).plan;
+      S.designs = I.decodeArmy(p.a); S.charges = new Map();
+    }
+    const army = S.designs.filter(d => d.count).map(d => [d.name, d.hp, d.speed, d.armor, d.regen, d.resist, d.count]);
+    S.keep = 1e9; I.startWave(seed); window.siegeline.advance(900);
+    return { breach: Math.round(S.last.breach * 100), leaks: S.last.leaks, sent: S.designs.reduce((n, d) => n + d.count, 0), army, X: S.last.X };
+  };
+
   // One wave on a fixed defense, for quick what-ifs. towers: list of tower cfg patches placed in the maze slots;
   // army: [[stats or preset, count, start, end], ...]. Returns breach and costs.
-  window.runWave = (towers, army, rules = {}, cols = 4, seed = 7) => {
+  // layout (optional): { walls: [[c, r], ...], slots: [[c, r], ...] } replaces the 4-column maze and its slots.
+  window.runWave = (towers, army, rules = {}, cols = 4, seed = 7, layout = null) => {
     resetUS();
     const { US, ...plain } = rules;
     Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
     if (US) for (const [k, v] of Object.entries(US)) { if (v.steps) I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); }
     I.S = I.newState(); const S = I.S;
     let cost = 0, fee = 0;
-    for (let k = 0; k < cols; k++) for (const i of colCells(k)) { S.grid[i] = { t: 'wall', fresh: false }; cost += I.RULES.wall; }
+    const walls = layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: cols }, (_, k) => colCells(k)).flat();
+    for (const i of walls) { S.grid[i] = { t: 'wall', fresh: false }; cost += I.RULES.wall; }
     towers.forEach((cfg, k) => {
-      const [c, r] = SLOTS[k], i = at(c, r);
+      const [c, r] = (layout ? layout.slots : SLOTS)[k], i = at(c, r);
       if (S.grid[i]) cost -= I.RULES.wall;
       const g = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee, off: 0, fresh: false, n: k + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
       S.grid[i] = g; cost += I.towerCost(g.cfg) + fee; fee += I.RULES.towerFee;
@@ -277,6 +335,7 @@
     S.designs = army.map(([p, n, s, e], k) => { const d = makeDesign(p, k); d.count = n; d.tl = { s, e, pos: null }; return d; });
     const X = S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0);
     S.keep = 1e9; I.startWave(seed); window.siegeline.advance(900);
-    return { defenseCost: cost, armyCost: X, unitCosts: S.designs.map(d => I.unitCost(d)), breach: Math.round(S.last.breach * 100), keepDamage: Math.round(S.last.Y), route: I.pathLen(S.path) };
+    return { defenseCost: cost, armyCost: X, unitCosts: S.designs.map(d => I.unitCost(d)), breach: Math.round(S.last.breach * 100), keepDamage: Math.round(S.last.Y), route: I.pathLen(S.path),
+      sent: S.designs.reduce((n, d) => n + d.count, 0), leaks: S.last.leaks, towerCosts: towers.map(c => I.towerCost({ ...I.defaultTower(), ...c })) };
   };
 })();

@@ -675,12 +675,15 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .matchrow{grid-column:1/-1;display:flex;align-items:center;gap:12px;min-width:0}
 .matchrow .mlbl,.matchrow .mkeep{flex:none;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .matchrow .mkeep b{color:var(--keep);font-weight:600;letter-spacing:.06em}
+#mode-clockv b{color:var(--paper)}
 .pick.waves{flex:1;max-width:340px;grid-template-columns:repeat(5,minmax(0,1fr))}
+.pick.clock{flex:1;max-width:340px}
+.matchrow .mlbl{min-width:52px}
 .rolepick button,.pick button{min-height:40px;border:0;background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--muted)}
 .rolepick button+button,.pick button+button{border-left:1px solid var(--line-2)}
 .rolepick button[data-role=def][aria-pressed=true],.pick button[data-side=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink)}
 .rolepick button[data-role=atk][aria-pressed=true],.pick button[data-side=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink)}
-.pick button[data-level][aria-pressed=true],.pick button[data-rounds][aria-pressed=true]{background:var(--paper);color:var(--ink)}
+.pick button[data-level][aria-pressed=true],.pick button[data-rounds][aria-pressed=true],.pick button[data-timed][aria-pressed=true]{background:var(--paper);color:var(--ink)}
 .codebox{display:flex;gap:6px;align-items:center}
 .codebox label{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap;margin-right:4px}
 .codebox input{flex:1;width:0;min-width:0;height:44px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--ink);color:var(--paper);font:900 24px/1 var(--f-display);letter-spacing:.35em;text-transform:uppercase;text-align:center;padding:0 8px;user-select:text;-webkit-user-select:text}
@@ -899,6 +902,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .mvp .ico{width:18px;height:18px} .mvp b{color:var(--paper);font:600 13.5px/1 var(--f-body)}
 .mvp .mtx{color:var(--muted)}
 .sum-sap{margin:0;font:500 11.5px/1.3 var(--f-ui);color:var(--soft);letter-spacing:.04em}
+.sum-extra{margin:0;display:flex;flex-direction:column;gap:2px;font:500 11px/1.35 var(--f-ui);color:var(--soft);letter-spacing:.03em}
+.sum-extra .d{color:var(--cool)}.sum-extra .a{color:var(--warm)}
 .det-tog{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;color:var(--soft);font:500 10.5px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 .det-tog::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:translateY(-2px) rotate(45deg)}
 .det-tog[aria-expanded=true]::after{transform:translateY(1px) rotate(-135deg)}
@@ -1119,7 +1124,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v22.2</p>
+        <p class="tagline">Two Player Tower Defence · v23</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1135,9 +1140,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
           <li><strong>Defender, in secret.</strong> Every match starts with a free <strong>starter maze</strong> on the board: ordinary walls you can keep, change or sell for 5 each. Walls bend the route, towers shoot it. Tap a tower to tune it. From round 2, <strong>Test</strong> plays last wave’s army against your build. <strong>Lock in.</strong></li>
           <li><strong>Attacker, in secret.</strong> Army: pick units. Sabotage, from round 2: walls to bridge and towers to knock out, each carried by a sapper. Wave: time units and sappers, and <strong>Test</strong> it against the defense you saw (in round 1, the starter maze). <strong>Lock in</strong> from any step.</li>
           <li><strong>The wave.</strong> Everything is revealed and plays out; the pot meter in the bar shows how the pot would split if the wave ended now. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
-          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span></li>
+          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, on up to <span data-rule="interestCap">150</span>. The attacker gets the defender’s move fees, and the defender part of the price of every sapper it shoots down.</li>
         </ol>
-        <p>Play on one device and take turns, online on two, or against the computer; pick how many waves the match lasts at the start (online the defender’s pick counts). Each side has <span data-rule="planSecsFirst:min">5</span> minutes to plan the first round and <span data-rule="planSecs:min">3</span> for every round after; when the clock runs out, the plan goes as it stands.</p>
+        <p>Play on one device and take turns, online on two, or against the computer; pick how many waves the match lasts at the start (online the defender’s pick counts). With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; pick <strong>Untimed</strong> on the start screen to plan without a clock (online, the defender’s choice counts).</p>
       </section>
 
       <section id="info-build">
@@ -1146,7 +1151,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <p><strong>Shortcuts.</strong> W, T, R and S pick the tools; with Shapes picked, R turns the piece and F flips it. Delete or Backspace removes the selected tower (Undo brings it back) or deletes the open design. Escape is Done. Ctrl+Z (⌘Z) undoes. On the Wave step the space bar plays the forecast and Ctrl+Z undoes its last change. None of them work while you type in a field.</p>
         <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">60</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built. <strong>Auto-tune</strong> spends your free coins on upgrades to the towers you’ve placed. <strong>Undo</strong> takes back your last change this round, coins and tuning included, until the wave starts; the starter maze is where a round begins, so Undo never takes it away.</p>
         <p><strong>Remove &amp; Inspect:</strong> hover a wall (on touch, hold it) and a red line shows where units would go if it were bridged. A click or tap takes a wall or tower back.</p>
-        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning for your first relocation in the match, 5 points more for each one after, at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, and putting a tower back on its seen cell this round (its fee comes back). The tower card shows the next one (“Next move: 15%”), and the drag label its price.</p>
+        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning for your first relocation in the match, 5 points more for each one after, at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 15%”), and the drag label its price. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends.</p>
         <p><strong>Copy tuning</strong> on a tower’s card: new towers you place get that tuning (priced as usual) until you clear it with × on the Tower tool.</p>
         <p><strong>Hints</strong> (the switch beside the title): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire.</p>
         <p><strong>On the board.</strong> Bright walls are new this round: the attacker hasn’t seen them and can’t bridge them. Dotted ground is rough: units cross it, nothing can be built on it. Hatched slabs are rock: a free wall. An orange bridge stays open for good: wall off an end, or cover it with towers. Small dots on a tower are its effects: frost, poison, chain.</p>
@@ -1157,10 +1162,10 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <h2>Towers</h2>
         <p>Tap a tower to open its card under your tools: Wall, Remove and the rest stay a click away, no Done needed.</p>
         <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee. Each slider shows a short value and what one more step costs; hold or hover it for the detail.</p>
-        <div class="callout"><p><code>40 × range × damage × accuracy × splash × frost × poison × chain + fee</code></p></div>
+        <div class="callout"><p><code>40 × (range ÷ 2.5) × (damage ÷ 18)^<span data-rule="dpsPow">1.4</span> × accuracy × splash × frost × poison × chain + fee</code></p><p>The default tower (2.5 cells, 18 a second) is ×1 on both, so it still costs 40. A 1.5-cell tower is ×0.6; 75 damage a second is ×7.4.</p></div>
         <ul>
-          <li><strong>Range</strong>: priced by its square: a bigger circle covers much more of a winding maze.</li>
-          <li><strong>Damage</strong>: total damage per second; fire rate decides how it’s split into shots.</li>
+          <li><strong>Range</strong>: priced in proportion to its reach: 5 cells costs twice what 2.5 does, 1.5 cells 0.6 of it. A short-range tower is cheaper, but not by much more than its reach.</li>
+          <li><strong>Damage</strong>: total damage per second; fire rate decides how it’s split into shots. Each step costs more than the last, so piling damage on one tower costs more than spreading it over several.</li>
           <li><strong>Accuracy.</strong> Every tower starts at 80%. The slider raises it to 87, 94 or 100% (×1.15, ×1.35, ×1.6), and fire rate shifts each shot: heavy shots hit more often, rapid fire less.</li>
           <li><strong>Fire rate</strong>: free; its slider runs from slow, heavy shots on the left to rapid fire on the right. Heavy shots hit more often and punch through armor; rapid fire keeps frost and poison going.</li>
           <li><strong>Splash</strong>: hits everything near the impact; a miss still hits the units around its target. Beats bunched waves and swarms.</li>
@@ -1179,7 +1184,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <ul>
           <li><strong>Health</strong>: price grows in line with it. <strong>Speed</strong>: fast units spend less time in range, so price grows with it too.</li>
           <li><strong>Armor</strong>: every hit loses 3, 6 or 10, but at least 20% still lands. Beats rapid fire, weak to heavy shots; chain jumps ignore it.</li>
-          <li><strong>Regeneration</strong>: heals between towers, from 3 seconds after the last direct hit, and only so much per wave. Beats poison; steady fire keeps it from healing.</li>
+          <li><strong>Regeneration</strong>: heals 1, 2 or 3% of its health a second from the moment it’s hurt, even under fire, up to <span data-rule="regenCap">10</span>% a wave per 1%. Beats poison and chip damage; heavy, focused fire kills it before it heals much.</li>
           <li><strong>Resists</strong> (×1.3 each; take as many as you like, the prices multiply): Splash takes 60% less splash damage; Poison 60% less poison; Frost is slowed 60% less and is never brittle; <strong>Shock</strong> takes 60% less chain damage. None clears them.</li>
         </ul>
       </section>
@@ -1203,8 +1208,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
               <tr><td class="d">Chain</td><td class="a">Small, thin waves; the Shock resist</td><td class="d">Splash, single target</td></tr>
               <tr><td class="d">Frost</td><td class="a">The Frost resist</td><td class="d">More towers in the frosted stretch</td></tr>
               <tr><td class="d">Inaccurate towers</td><td class="a">Swarms and bunched waves (misses waste shots)</td><td class="d">Accuracy upgrades, splash</td></tr>
-              <tr><td class="d">Poison</td><td class="a">Regeneration</td><td class="d">Steady direct fire</td></tr>
+              <tr><td class="d">Poison</td><td class="a">Regeneration</td><td class="d">Heavy, focused fire</td></tr>
               <tr><td class="d">One huge tower</td><td class="a">A knock-out sapper</td><td class="d">Spreading damage, or fire on the sapper’s way in</td></tr>
+              <tr><td class="d">A cheap tower at the front</td><td class="a">Sappers’ armor, units walking ahead of them</td><td class="d">Heavy shots; moving the target (the move fee goes to the attacker)</td></tr>
               <tr><td class="d">A long maze</td><td class="a">A bridge through a wall</td><td class="d">A route that skips its sapper’s tile, or a wall across its far end</td></tr>
             </tbody>
           </table>
@@ -1219,7 +1225,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 
       <section id="info-sabotage">
         <h2>Sabotage</h2>
-        <p>Each target gets a <strong>sapper</strong> that marches with the army. It walks the route like any unit, towers shoot it like any unit, and it only does its job if it gets there: shot down, its coins are lost. It does nothing at the keep. Time each sapper on the wave plan; units walking ahead of it draw the fire.</p>
+        <p>Each target gets a <strong>sapper</strong> that marches with the army. It walks the route like any unit, towers shoot it like any unit, and it only does its job if it gets there. It does nothing at the keep. Time each sapper on the wave plan; units walking ahead of it draw the fire.</p>
+        <p><strong>Sappers</strong> have <span id="info-saphp">112</span> HP and light armor: every hit loses <span id="info-saparm">3</span> (at least 20% still lands), so a weak tower at the front can’t pick them off cheaply. <strong>Shot down</strong>, its coins are lost and <span data-rule="sapKillShare%">50</span>% of its price goes to the defender when the wave ends. <strong>If its target has moved</strong> (the tower to another cell, or the route off the bridge’s tile), it misses and its coins are spent: nobody gets them, since the defender already paid you the move fee.</p>
         <p><strong>Bridge.</strong> Goes on a wall you’ve seen beside the route you saw, or beside one of your bridges. Its sapper lays it on reaching the marked tile beside the wall: the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. If the route no longer passes that tile, or a tower stands where the wall was, it misses. When it lands everyone, sappers included, takes the cheapest route counting only the towers firing then, so a tower you’ve already knocked out doesn’t keep units off it; if the route over it is still under more fire, units won’t take it, and the Sabotage step warns you. From <span data-rule="bridgeBase">25</span> coins, at most <span data-rule="bridgesPerWave">1</span> a wave.</p>
         <p><strong>Knock-out.</strong> Goes on a tower you’ve seen; tap it for its card, its price and the knock-out cap. Its sapper stops it shooting for the rest of the wave the moment it walks into the tower’s range; units keep their route (only a bridge landing changes it). It hits the spot: a tower moved away is safe. It costs <span data-rule="towerOffBase">15</span> plus <span data-rule="towerOffShare%">20</span>% of the tower’s slider price (its tuning, not its build fee), and the towers you target in one wave can add up to <span data-rule="towerCapShare%">50</span>% of the slider prices of all the towers you saw; one tower always fits.</p>
         <p>Each bridge costs <span data-rule="bridgeRise%">25</span>% of its base more for every bridge you sent in earlier waves, and each knock-out <span data-rule="towerOffRise%">25</span>% more for every earlier knock-out, landed or not. Targets in the same wave don’t raise each other’s price.</p>
@@ -1233,16 +1240,19 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             <thead><tr><th>Rule</th><th>Value</th><th>Note</th></tr></thead>
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal; the defender also gets the starter maze, free</td></tr>
+              <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>% up to <span data-rule="interestCap">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends</td></tr>
               <tr><td>Pot per round</td><td class="n"><span id="info-pot"></span></td><td><span id="info-pot-note"></span></td></tr>
               <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
               <tr><td>Waves</td><td class="n"><span data-rule="roundChoices:range">4–12</span></td><td>Picked at the start, <span data-rule="rounds">8</span> by default. The defender wins by surviving them</td></tr>
-              <tr><td>Planning</td><td class="n"><span data-rule="planSecsFirst:min">5</span> / <span data-rule="planSecs:min">3</span> min</td><td>Each side: the first round, then every round after; then the plan goes as it stands</td></tr>
+              <tr><td>Planning</td><td class="n"><span data-rule="planSecs:min">5</span> min</td><td>Each side, every round, then the plan goes as it stands; or untimed, picked at the start</td></tr>
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
-              <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Fee rises by 10 per tower; moving one is free</td></tr>
+              <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Range priced in proportion, damage <code>^<span data-rule="dpsPow">1.4</span></code>; fee rises by 10 per tower</td></tr>
+              <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw; +5 points a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave</td></tr>
               <tr><td class="d">Accuracy</td><td class="n">80% → 100%</td><td>Slider ×1.15 / ×1.35 / ×1.6; fire rate shifts each shot, <span id="acc-span"></span></td></tr>
               <tr><td class="d">Frost</td><td class="n">×1.35</td><td>Slows <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s; slowed units take <span data-rule="brittle%">20</span>% more</td></tr>
               <tr><td class="d">Chain</td><td class="n">×1.5</td><td><span data-rule="chainJumps">3</span> jumps of <span data-rule="chainReach">2.5</span> cells, 70 / 50 / 35%, through armor; not with Splash</td></tr>
               <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Traits multiply; surcharge above 60; +25% per point of toughness above 2.5</td></tr>
+              <tr><td class="a">Sapper</td><td class="n"><span id="info-saphp2">112</span> HP · armor <span id="info-saparm2">3</span></td><td>Shot down: <span data-rule="sapKillShare%">50</span>% of its price to the defender. Missed (target moved): its coins are spent</td></tr>
               <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">25</span> × (1 + <span data-rule="bridgeRise%">25</span>% × b)</td><td>b: your bridges in earlier waves. At most <span data-rule="bridgesPerWave">1</span> a wave, touching the route or a bridge</td></tr>
               <tr><td class="a">Knock-out</td><td class="n">(<span data-rule="towerOffBase">15</span> + <span data-rule="towerOffShare%">20</span>% × C) × (1 + <span data-rule="towerOffRise%">25</span>% × t)</td><td>C: the tower’s slider price; t: your earlier knock-outs. For the rest of the wave; targets up to <span data-rule="towerCapShare%">50</span>% of the C seen</td></tr>
               <tr><td>Rough ground</td><td class="n">~<span data-rule="roughShare%">5</span>%</td><td>Walkable, unbuildable</td></tr>
@@ -1250,7 +1260,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v22.2</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v23</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1290,6 +1300,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head"><div><h1 class="logo" id="mode-title"><i class="mark"></i>TPTD</h1><p class="tagline">Two Player Tower Defence</p></div></header>
     <div class="modes">
       <div class="matchrow"><span class="mlbl">Waves</span><div class="pick waves" id="mode-waves" role="group" aria-label="Waves in the match"></div><span class="mkeep" id="mode-keep"></span></div>
+      <div class="matchrow"><span class="mlbl">Rounds</span><div class="pick clock" id="mode-clock" role="group" aria-label="Planning time per round"><button data-timed="1" aria-pressed="true">Timed</button><button data-timed="0" aria-pressed="false">Untimed</button></div><span class="mkeep" id="mode-clockv"></span></div>
       <div class="modecol">
         <div class="mode">
           <h3><span class="idx">01</span>This device</h3>
@@ -1306,7 +1317,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       </div>
       <div class="mode">
         <h3><span class="idx">03</span>Online</h3>
-        <p>Each on your own device. Pick a side and share the code; your opponent picks the other side and enters it. The defender’s number of waves is used.</p>
+        <p>Each on your own device. Pick a side and share the code; your opponent picks the other side and enters it. The defender’s number of waves and clock choice are used.</p>
         <div class="rolepick" role="group" aria-label="Your side"><button data-role="def" aria-pressed="false">Defender</button><button data-role="atk" aria-pressed="false">Attacker</button></div>
         <div class="codebox"><label for="mode-code">Code</label><input id="mode-code" maxlength="6" autocomplete="off" spellcheck="false"><button class="mini" id="mode-new">New</button></div>
         <button class="ready neutral" id="mode-online" disabled>Connect</button>
@@ -1356,14 +1367,19 @@ const RULES = {
   // armor-and-regen check found slow stacked designs getting more than half through every defense without it, so the
   // spec's fallback ships: both, with toughK 0.25 (see CLAUDE.md, "Measured on v22").
   toughK: 0.25, toughT0: 2.5, bigUnit: 60,
-  regenDelay: 3, regenCap: 10, // regen waits this many seconds after a direct hit; heals at most cap% of max health per 1%/s, per wave
+  // regen heals from regenDelay seconds after the last direct hit (v23: 0, from the moment a unit is hurt, even under fire,
+  // at the user's request; v6-v22.2 waited 3 s), and at most cap% of max health per 1%/s, per wave. Healing from the
+  // first hit with v22.2's cap of 10 put four more regen designs over 50% through the best defense; at 8 the worst are no
+  // stronger than they were (see CLAUDE.md, "Measured on v23")
+  regenDelay: 0, regenCap: 8,
   // a match lasts `rounds` waves unless the players pick another length from roundChoices at the start; the keep gets
   // keepPerRound points for every wave, plus keepShort for every wave short of keepShortOf (600 for 4 waves, 800 for 6,
   // 1,000 for 8, 1,500 for 12): short matches lean to the attacker otherwise (see CLAUDE.md, "Measured on v19, main")
   rounds: 8, roundChoices: [4, 6, 8, 10, 12], keepPerRound: 125, keepShort: 25, keepShortOf: 8, startDef: 300, startAtk: 300,
   // each side's planning time per round (0: no limit, the first round too); when it runs out the plan goes as it stands.
-  // The first round, with a whole defense and army to plan from scratch, gets planSecsFirst.
-  planSecs: 180, planSecsFirst: 300,
+  // The first round, with a whole defense and army to plan from scratch, gets planSecsFirst. v23: 5:00 every round (it
+  // was 3:00 after the first), and the players can pick untimed rounds on the mode screen instead (pickTimed).
+  planSecs: 300, planSecsFirst: 300,
   // the pot after wave r of R grows from pot (wave 1) to pot × (1 + potGrowth) (the second-to-last wave and the last),
   // and the swing between the shares with it: the defender's share runs from 0.5 − w at no breach to 0.5 + w at
   // breachCap or more, w going from swingStart to swingEnd (potGrowth 0 and both swings 0.2 give v20's flat 200 at 30-70%)
@@ -1380,7 +1396,11 @@ const RULES = {
   // as seen (C, no build fee), plus towerOffRise of that for every knock-out attempt in earlier waves. Attempts count
   // landed or not; targets in the same wave don't raise each other's price. Towers targeted in one wave are worth at
   // most towerCapShare of the slider prices of the towers seen, though one tower can always be targeted.
-  sapper: { hp: 2, speed: 4 }, // 112 HP at 1.6 cells/s: in the sims they land 44-65% of the time, the spec's healthy band
+  // 112 HP at 1.6 cells/s, and since v23 armor 1 (blocks 3 a hit), so a cheap, weak tower at the front can't screen them
+  sapper: { hp: 2, speed: 4, armor: 1 },
+  // A sapper shot down on its way (v23) pays the defender this share of what its sabotage cost; one that missed (its target
+  // moved, its tile left the route) or landed pays no one. Settled when the wave ends.
+  sapKillShare: 0.5,
   bridgeBase: 25, bridgeRise: 0.25, bridgesPerWave: 1, towerOffBase: 15, towerOffShare: 0.2, towerOffRise: 0.25, towerCapShare: 0.5,
   // terrain, new each match: shares of the board that are rough ground (units cross it, nothing can be built on
   // it) and rock (blocks like a wall that can't be removed, built on or bridged)
@@ -1388,7 +1408,19 @@ const RULES = {
   // Moving a tower the attacker saw costs a fee (v22): moveFeeBase of its slider price for the defender's first
   // relocation in the match, moveFeeRise more for each one after, at most moveFeeMax. Removing a seen tower refunds its
   // value minus the same fee, so a drag and a delete-and-rebuild cost the same.
-  moveFeeBase: 0.1, moveFeeRise: 0.05, moveFeeMax: 0.4,
+  // Since v23 the fees the defender paid in a round (net of fees it got back) go to the attacker when the wave ends
+  // (moveFeeToAtk; false: v22, they go to no one).
+  moveFeeBase: 0.1, moveFeeRise: 0.05, moveFeeMax: 0.4, moveFeeToAtk: true,
+  // The round after a sabotage landed the defender has to rework its layout, so moving is free then (v23, at the user's
+  // request): every tower if a bridge went down in the last wave, otherwise the towers that were knocked out in it.
+  freeAfterSabotage: true,
+  // Interest (v23): when a wave ends each side earns floor(interestRate × min(free, interestCap)), free being the coins
+  // it had left when the wave started (interestRate 0: none, as before v23).
+  interestRate: 0.15, interestCap: 150,
+  // Tower prices (v23): range is priced by (range ÷ 2.5)^rangePow and damage by (damage ÷ 18)^dpsPow, so the defaults
+  // (2.5 cells, 18 a second) stay ×1. v13-v22.2 were 2 and 1.15: low range discounted the whole tower by its square, and
+  // stacking damage on one tower cost about as much as spreading it.
+  rangePow: 1, dpsPow: 1.4,
   danger: 5, // extra route cost (in tenths of a step) for each tower that can hit a cell (knocked out or not)
   // Frost: a hit slows the unit by frostSlow for frostSecs (a frost-resistant unit 60% less, and never brittle). A unit
   // already slowed when a hit lands is brittle: the damage that lands is multiplied by 1 + brittle (direct hits, splash
@@ -1438,11 +1470,11 @@ let QUIET = false; // true while the computer test-runs a wave out of sight (see
 /* ---------- the tower: one type, tuned with sliders (stored as step indexes) ---------- */
 const TS = {
   range: { name: 'Range', steps: [1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5], val: v => `${v} cells`,
-    mult: i => Math.pow(TS.range.steps[i] / 2.5, 2),
-    hint: 'Priced by its square: a bigger circle covers much more of a winding maze.' },
+    mult: i => Math.pow(TS.range.steps[i] / 2.5, RULES.rangePow),
+    hint: 'Priced in proportion to its reach: double the range, double the price.' },
   dps: { name: 'Damage', steps: [9, 13, 18, 24, 30, 38, 48, 60, 75], val: v => `${v} per second`,
-    mult: i => Math.pow(TS.dps.steps[i] / 18, 1.15),
-    hint: 'Total damage per second. Fire rate decides how it is split into shots.' },
+    mult: i => Math.pow(TS.dps.steps[i] / 18, RULES.dpsPow),
+    hint: 'Total damage per second. Each step costs more than the last, so damage spread over several towers is cheaper than piled on one.' },
   accuracy: { name: 'Accuracy', steps: [80, 87, 94, 100], m: [1, 1.15, 1.35, 1.6],
     val: (v, c) => `${v}% · ${shotAcc(c)}% per shot at this fire rate`, mult: i => TS.accuracy.m[i || 0],
     hint: 'The chance each shot hits; fire rate shifts it. A miss does nothing, though a splash miss still hits the units around its target.' },
@@ -1494,7 +1526,7 @@ const US = {
   armor: { name: 'Armor', steps: [0, 3, 6, 10], m: [1, 1.35, 1.7, 2.1], val: v => (v ? `Blocks ${v} per hit` : 'None'),
     mult: i => US.armor.m[i], hint: 'Every hit loses this much, but at least 20% still lands. Beats rapid fire, weak to heavy shots.' },
   regen: { name: 'Regeneration', short: 'Regen', steps: [0, 1, 2, 3], m: [1, 1.2, 1.4, 1.65], val: v => (v ? `${v}%/s · up to ${v * RULES.regenCap}% a wave` : 'None'),
-    mult: i => US.regen.m[i], hint: 'Heals between towers: starts 3 seconds after the last direct hit, and only so much per wave. Beats poison; steady fire keeps it from healing.' },
+    mult: i => US.regen.m[i], hint: 'Heals from the moment it’s hurt, even under fire, but only so much per wave. Beats poison and chip damage; heavy, focused fire kills it before it heals much.' },
 };
 const UKEYS = ['hp', 'speed', 'armor', 'regen'];
 const RESIST = {
@@ -1627,6 +1659,9 @@ const SOLO = { on: false, side: 'def', level: 'easy', plan: null, pending: '', n
 // The match length picked on the mode screen (0: RULES.rounds). Online both devices use the defender's (NET.n).
 let pickRounds = 0;
 const chosenRounds = () => pickRounds || RULES.rounds;
+// Timed or untimed rounds (v23), picked on the mode screen; online the defender's pick counts (NET.tm, 1 or 0).
+let pickTimed = true;
+const timedMatch = () => (NET.on ? NET.tm !== 0 : pickTimed);
 const validRounds = n => RULES.roundChoices.includes(n);
 // While a replay runs, S is a scratch copy of the match and the real state waits in replay.live.
 let replay = null;
@@ -1635,7 +1670,9 @@ const real = () => (replay ? replay.live : S);
 // misses: tower shots that missed
 // yBy, wBy, nBy: per design of the army sent, the keep damage it did, and the distance its units walked (and how many),
 // for the summary's MVP group
-const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, bridges: 0, bridgeRefund: 0, missed: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0, sappers: 0, sapOk: 0, sapLost: 0, sapMissed: 0, misses: 0, yBy: [], wBy: [], nBy: [] });
+// v23: mf the defender's net move fees this round, sapKillCost what the sappers shot down had cost, dLeft and aLeft each
+// side's free coins when the wave started (interest); all settled in endRound (waveIncome)
+const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, bridges: 0, bridgeRefund: 0, missed: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0, sappers: 0, sapOk: 0, sapLost: 0, sapMissed: 0, misses: 0, mf: 0, sapKillCost: 0, dLeft: 0, aLeft: 0, yBy: [], wBy: [], nBy: [] });
 const tally = (u, carried) => { const W = S.wave, i = u.di; W.wBy[i] = (W.wBy[i] || 0) + u.walked; W.nBy[i] = (W.nBy[i] || 0) + 1; if (carried) W.yBy[i] = (W.yBy[i] || 0) + carried; };
 // The keep for a match of n waves.
 const keepFor = n => RULES.keepPerRound * n + RULES.keepShort * Math.max(0, RULES.keepShortOf - n);
@@ -1657,7 +1694,10 @@ function newState(rounds = RULES.rounds) {
     // sapOk the ones that landed
     // dPot, aPot: the coins each side has taken from the pots
     // moveTries: the defender's paid relocations of seen towers this match (they price the next move fee, v22)
-    wave: blankWave(), totals: { kills: 0, leaks: 0, bridges: 0, charges: 0, bridgeTries: 0, koTries: 0, moveTries: 0, sapOk: 0, through: 0, jammed: 0, dPot: 0, aPot: 0 },
+    // aMove, dKill, dInt, aInt: the move fees paid to the attacker, sappers shot down paid to the defender, interest (v23)
+    wave: blankWave(), totals: { kills: 0, leaks: 0, bridges: 0, charges: 0, bridgeTries: 0, koTries: 0, moveTries: 0, sapOk: 0, through: 0, jammed: 0, dPot: 0, aPot: 0, aMove: 0, dKill: 0, dInt: 0, aInt: 0 },
+    mvFee: 0, // the move fees the defender paid this round, net of the ones it got back (v23: the attacker's when the wave ends)
+    freeMv: null, // v23: { all, n } after a wave where sabotage landed: all moves free (a bridge), or those towers' (knock-outs)
     starter: 0, // walls in the free starter maze (buildStarter)
     path: null, routeSkip: null, pathFlash: 0, over: false, overT: 0, winner: null, confirmEmpty: false, last: null, preWave: null, lastWave: null,
   };
@@ -1690,6 +1730,10 @@ function sellTower(G, i) {
 const moveRate = (n = S.totals.moveTries || 0) => Math.min(RULES.moveFeeMax, RULES.moveFeeBase + RULES.moveFeeRise * n);
 const moveFeeOf = (cfg, n) => Math.round(moveRate(n) * towerCost(cfg));
 const seenHome = (g, cell) => { const h = S.seenGrid[cell]; return S.round > 1 && !!(g && g.t === 'tower' && h && h.t === 'tower' && h.n === g.n); };
+// v23: no fee the round after a sabotage landed: on any tower after a bridge went down, else on the towers knocked out
+const feeFree = (g, F = S.freeMv) => !!(RULES.freeAfterSabotage && F && g && (F.all || (F.n || []).includes(g.n)));
+const paysFee = (g, cell) => seenHome(g, cell) && !feeFree(g);
+const freeWhy = g => (!feeFree(g) ? '' : S.freeMv.all ? 'Moves free this round: a bridge went down' : 'Moves free this round: knocked out last wave');
 // What a move from `from` to `to` (a swap if something stands there) costs: each tower that leaves its seen cell pays,
 // one that comes back to it gets its fee back. coins (negative: a refund), the new count n, and the towers involved.
 function movePlan(from, to) {
@@ -1697,14 +1741,14 @@ function movePlan(from, to) {
   let n = S.totals.moveTries || 0;
   const step = (t, a, b) => {
     if (!t || t.t !== 'tower') return;
-    if (seenHome(t, a)) out.push({ t, fee: moveFeeOf(t.cfg, n++) });
+    if (paysFee(t, a)) out.push({ t, fee: moveFeeOf(t.cfg, n++) });
     else if (seenHome(t, b) && t.mfee > 0) { n--; out.push({ t, fee: -t.mfee }); }
   };
   step(g, from, to); step(h, to, from);
   return { list: out, coins: out.reduce((v, x) => v + x.fee, 0), n };
 }
 // The fee removing the tower on cell takes off its refund (0 unless it stands on its seen cell).
-const removeFee = cell => (seenHome(S.grid[cell], cell) ? moveFeeOf(S.grid[cell].cfg, S.totals.moveTries || 0) : 0);
+const removeFee = cell => (paysFee(S.grid[cell], cell) ? moveFeeOf(S.grid[cell].cfg, S.totals.moveTries || 0) : 0);
 const refundOf = cell => sellValue(S.grid, cell) - removeFee(cell);
 // The computer defender sells and rebuilds rather than dragging (v22): every seen tower whose cell has no tower in its
 // new build G was relocated or removed, and pays the fee (in cell order, the rate rising with each).
@@ -1712,7 +1756,7 @@ function relocFees(K, G) {
   let n = K.moveTries || 0, coins = 0, moved = 0;
   if (K.round > 1) K.grid.forEach((g, i) => {
     const h = K.seenGrid[i];
-    if (!g || g.t !== 'tower' || g.off > 0 || !(h && h.t === 'tower' && h.n === g.n) || (G[i] && G[i].t === 'tower')) return;
+    if (!g || g.t !== 'tower' || g.off > 0 || !(h && h.t === 'tower' && h.n === g.n) || (G[i] && G[i].t === 'tower') || feeFree(g, K.freeMv)) return;
     coins += moveFeeOf(g.cfg, n++); moved++;
   });
   return { coins, moved, mt: n };
@@ -2085,7 +2129,7 @@ function removeAt(cell) {
   if (g.t === 'rock') { toast('Rock can’t be removed. It’s part of the map.', 'bad'); return; }
   if (g.t === 'tower' && g.off > 0) { toast('This tower is offline. It can’t be removed until it comes back.', 'bad'); return; }
   const fee = g.t === 'tower' ? removeFee(cell) : 0; // a tower the attacker saw here: its refund loses the move fee
-  if (fee) S.totals.moveTries = (S.totals.moveTries || 0) + 1;
+  if (fee) { S.totals.moveTries = (S.totals.moveTries || 0) + 1; S.mvFee = (S.mvFee || 0) + fee; }
   const val = g.t === 'wall' ? RULES.wall : sellTower(S.grid, cell) - fee;
   S.dFree += val;
   S.grid[cell] = null;
@@ -2120,7 +2164,7 @@ function moveTower(from, to) {
   if (!v.ok) { if (!v.quiet) explain(v, to); return false; }
   const g = S.grid[from], h = S.grid[to], mp = movePlan(from, to);
   for (const x of mp.list) x.t.mfee = x.fee > 0 ? x.fee : 0;
-  S.dFree -= mp.coins; S.totals.moveTries = mp.n;
+  S.dFree -= mp.coins; S.totals.moveTries = mp.n; S.mvFee = (S.mvFee || 0) + mp.coins;
   if (mp.coins) floatText(...center(to), mp.coins > 0 ? '−' + mp.coins : '+' + -mp.coins, mp.coins > 0 ? '#ffd27a' : '#4fd6ee', 13);
   S.grid[to] = g; g.fresh = !seenAs(to, 'tower');
   S.grid[from] = h; if (h) h.fresh = !seenAs(from, h.t);
@@ -2173,7 +2217,7 @@ function exclusive(cfg, patch = {}) {
    while a plan is locked in or a test run or replay is open, and once the wave starts it's gone. */
 const undo = { S: null, round: 0, list: [], open: null };
 const UNDO_MAX = 100;
-const buildSig = () => JSON.stringify([S.dFree, S.towerSeq, S.totals.moveTries || 0, S.grid.map(g => (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? (g.fresh ? 2 : 1) : [g.n, g.fee, g.fresh ? 1 : 0, g.mfee || 0, g.cfg]))]);
+const buildSig = () => JSON.stringify([S.dFree, S.towerSeq, S.totals.moveTries || 0, S.mvFee || 0, S.grid.map(g => (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? (g.fresh ? 2 : 1) : [g.n, g.fee, g.fresh ? 1 : 0, g.mfee || 0, g.cfg]))]);
 const undoHere = () => !!S && S.phase === 'defend' && !replay && !planLocked();
 function undoList() {
   if (undo.S !== S || undo.round !== S.round) Object.assign(undo, { S, round: S.round, list: [] });
@@ -2185,7 +2229,7 @@ const undoTop = () => { const l = undoHere() ? undoList() : []; return l[l.lengt
 function undoBegin(what = {}) {
   if (undo.open) { if (drag && drag.undo) return false; undoEnd(); } // a press cut short (a lock-in, a phase change)
   if (!undoHere()) return false;
-  undo.open = { what, S, round: S.round, sig: buildSig(), grid: S.grid.map(cloneCell), dFree: S.dFree, towerSeq: S.towerSeq, mt: S.totals.moveTries || 0 };
+  undo.open = { what, S, round: S.round, sig: buildSig(), grid: S.grid.map(cloneCell), dFree: S.dFree, towerSeq: S.towerSeq, mt: S.totals.moveTries || 0, mf: S.mvFee || 0 };
   return true;
 }
 function undoEnd() {
@@ -2193,7 +2237,7 @@ function undoEnd() {
   if (!o || o.S !== S || o.round !== S.round || !undoHere() || buildSig() === o.sig) return null;
   const list = undoList(), top = list[list.length - 1];
   if (o.what.merge && top && top.merge === o.what.merge) return top;
-  const e = { grid: o.grid, dFree: o.dFree, towerSeq: o.towerSeq, mt: o.mt, label: o.what.label || changeLabel(o.grid), merge: o.what.merge || '', help: o.what.help || null };
+  const e = { grid: o.grid, dFree: o.dFree, towerSeq: o.towerSeq, mt: o.mt, mf: o.mf, label: o.what.label || changeLabel(o.grid), merge: o.what.merge || '', help: o.what.help || null };
   list.push(e);
   if (list.length > UNDO_MAX) list.shift();
   hideUndoPop();
@@ -2225,7 +2269,7 @@ function undoLast() {
   const e = undoList().pop();
   if (!e) { toast('Nothing to undo this round.', 'def'); return false; }
   e.grid.forEach((g, i) => { S.grid[i] = cloneCell(g); });
-  S.dFree = e.dFree; S.towerSeq = e.towerSeq; S.totals.moveTries = e.mt;
+  S.dFree = e.dFree; S.towerSeq = e.towerSeq; S.totals.moveTries = e.mt; S.mvFee = e.mf || 0;
   if (S.sel && S.sel.k === 'tower' && !(S.grid[S.sel.cell] && S.grid[S.sel.cell].t === 'tower')) S.sel = null;
   pending = -1; drag = null; undo.open = null;
   S.gridVer++; recompute(); hideUndoPop();
@@ -2882,7 +2926,7 @@ function chainFrom(u0, raw, g) {
   }
 }
 function onKill(u) {
-  if (u.sap) { if (u.sap.state === 'go') { u.sap.state = 'lost'; S.wave.sapLost++; floatText(u.x + u.ox, u.y + u.oy - 0.3, 'SAPPER DOWN', '#ffd27a', 11); } }
+  if (u.sap) { if (u.sap.state === 'go') { u.sap.state = 'lost'; S.wave.sapLost++; S.wave.sapKillCost += u.sap.cost || 0; floatText(u.x + u.ox, u.y + u.oy - 0.3, 'SAPPER DOWN', '#ffd27a', 11); } }
   else { S.wave.kills++; S.totals.kills++; tally(u, 0); }
   const x = u.x + u.ox, y = u.y + u.oy;
   for (let k = 0; k < 6 + Math.round(u.r * 30); k++) {
@@ -2974,7 +3018,7 @@ function updateShots(dt) {
    is gone, the sabotage has failed: the sapper walks on and does nothing at the keep. Shot down, it's lost with its
    coins. Towers shoot sappers like any other unit. */
 const sapperDesign = kind => ({ name: kind === 'bridge' ? 'Bridge sapper' : 'Tower sapper', color: kind === 'bridge' ? '#ff8a3d' : '#a98bff',
-  hp: RULES.sapper.hp, speed: RULES.sapper.speed, armor: 0, regen: 0, resist: 'none', count: 1, sap: kind, tl: { s: 0, e: 0, pos: null } });
+  hp: RULES.sapper.hp, speed: RULES.sapper.speed, armor: RULES.sapper.armor || 0, regen: 0, resist: 'none', count: 1, sap: kind, tl: { s: 0, e: 0, pos: null } });
 function makeSapper(sk, ox, oy) {
   const sp = S.sapList[sk], u = makeUnit(-1, ox, oy, sapperDesign(sp.kind));
   u.sap = sp; u.value = 0; u.shape = 'sapper';
@@ -3189,7 +3233,7 @@ function attackerReady() {
    device times only its own player, so nothing about it travels and no wave can depend on it. */
 const clock = { end: 0, on: false, out: false };
 // The first round, with everything to plan from scratch, gets RULES.planSecsFirst; planSecs 0 switches both off.
-const planSecsFor = round => (RULES.planSecs > 0 ? (round === 1 ? RULES.planSecsFirst : RULES.planSecs) : 0);
+const planSecsFor = round => (RULES.planSecs > 0 && timedMatch() ? (round === 1 ? RULES.planSecsFirst : RULES.planSecs) : 0); // untimed: no clock (v23)
 function startClock() { const sec = planSecsFor(real().round); Object.assign(clock, { end: performance.now() + sec * 1000, on: sec > 0, out: false }); tickClock(); }
 const planLocked = () => (online() ? NET.lk === real().round : SOLO.on && SOLO.locked);
 // fire: false only redraws the pill (after a phase change or a lock); time-up fires from the timer alone
@@ -3241,25 +3285,38 @@ function prepWave(seed) {
   S.totals.bridgeTries = (S.totals.bridgeTries || 0) + plannedBridges().length;
   S.totals.koTries = (S.totals.koTries || 0) + towerChargeCells().length;
   // one sapper per planned sabotage, in plan order: its target, its tile (bridges), when it leaves, and how it went
-  S.sapList = [...S.charges].map(([cell, c]) => ({ cell, kind: c.kind, at: c.kind === 'bridge' && c.at != null ? c.at : -1, t: clamp(+c.t || 0, 0, 1), state: 'wait' }));
+  S.sapList = [...S.charges].map(([cell, c]) => ({ cell, kind: c.kind, at: c.kind === 'bridge' && c.at != null ? c.at : -1, t: clamp(+c.t || 0, 0, 1), state: 'wait', cost: c.cost || 0 }));
+  S.wave.mf = S.mvFee || 0; S.wave.dLeft = S.dFree; S.wave.aLeft = S.aFree; // settled when the wave ends (v23)
   S.spawnList = buildSpawns(S.sentArmy, S.sapList); S.spawnIdx = 0;
   S.waveT = 0; S.endDelay = 0; S.units = []; S.shots = []; S.routeSkip = null;
   S.spawnStart = 0.35;
   for (const g of S.grid) if (g && g.t === 'tower') { g.cd = 0.2; g.kick = 0; g.dealt = 0; }
 }
+/* What a wave pays besides the pot (v23), settled when it ends so nothing moves while either side plans (Undo and moving a
+   tower back stay exact): the move fees the defender paid this round go to the attacker; a sapper shot down pays the
+   defender sapKillShare of its sabotage's cost (one that missed or landed pays no one); and each side earns interest on
+   the coins it had free when the wave started, interestRate of them up to interestCap. */
+const interestOn = free => Math.floor(RULES.interestRate * Math.min(Math.max(0, free || 0), RULES.interestCap) + 1e-9);
+const waveIncome = W => ({ aMove: RULES.moveFeeToAtk ? Math.max(0, W.mf || 0) : 0, dKill: Math.floor(RULES.sapKillShare * (W.sapKillCost || 0) + 1e-9), dInt: interestOn(W.dLeft), aInt: interestOn(W.aLeft) });
 function endRound() {
   if (QUIET) { S.trialDone = true; return; } // a hidden test wave (checked first: one can run while a replay is open)
   if (replay && replay.test) { endTest(); return; }
   if (replay) { replay.done = true; refreshUI(); return; }
-  const X = S.wave.x, Y = S.wave.y, sp = splitFor(X, Y), { d: dGain, a: aGain } = potGains(sp), mvp = mvpOf();
-  S.dFree += dGain; S.aFree += aGain;
+  const X = S.wave.x, Y = S.wave.y, sp = splitFor(X, Y), { d: dGain, a: aGain } = potGains(sp), mvp = mvpOf(), ex = waveIncome(S.wave);
+  const dTot = dGain + ex.dKill + ex.dInt, aTot = aGain + ex.aMove + ex.aInt;
+  S.dFree += dTot; S.aFree += aTot;
   S.totals.dPot = (S.totals.dPot || 0) + dGain; S.totals.aPot = (S.totals.aPot || 0) + aGain;
+  for (const k of ['aMove', 'dKill', 'dInt', 'aInt']) S.totals[k] = (S.totals[k] || 0) + ex[k];
+  S.mvFee = 0;
+  // v23: a sabotage that landed makes the next round's moves free (a bridge: all of them; a knock-out: that tower's)
+  const kos = S.sapList.filter(sp => sp.kind === 'tower' && sp.state === 'done').map(sp => S.grid[sp.cell] && S.grid[sp.cell].n).filter(n => n != null);
+  S.freeMv = S.wave.bridges > 0 || kos.length ? { all: S.wave.bridges > 0, n: kos } : null;
   for (const g of S.grid) if (g) { g.fresh = false; g.mfee = 0; if (g.t === 'tower' && g.off > 0) g.off--; }
   S.routeSkip = null; S.gridVer++; recompute();
   S.seenGrid = cloneGrid(S.grid); S.seenVer++; S.seenRound = S.round;
   S.seenArmy = S.sentArmy;
   S.charges = new Map(); S.chargeVer++; // the sappers have done what they could; their coins are spent
-  S.last = { X, Y, breach: sp.breach, share: sp.share, dGain, aGain, pot: sp.pot, lo: sp.lo, hi: sp.hi, ...S.wave, mvp };
+  S.last = { X, Y, breach: sp.breach, share: sp.share, dGain, aGain, pot: sp.pot, lo: sp.lo, hi: sp.hi, ...S.wave, ...ex, dTot, aTot, mvp };
   if (S.round >= S.rounds) { S.winner = 'defender'; S.over = true; }
   if (online()) netAfterWave();
   liveWave(); // the wave pane's numbers end where the wave did
@@ -3403,7 +3460,7 @@ function showHandoff(side, kicker, title, sub, cta, go) {
   $('#hand-sub').textContent = sub;
   $('#hand-cta').textContent = cta;
   // a planning handoff after a wave carries last wave's three numbers in one line
-  const L = S.last, nums = side !== 'both' && L && S.round > 1 ? `Keep −${fmtNum(L.Y)} · Defender +${L.dGain} · Attacker +${L.aGain}` : '';
+  const L = S.last, nums = side !== 'both' && L && S.round > 1 ? `Keep −${fmtNum(L.Y)} · Defender +${L.dTot ?? L.dGain} · Attacker +${L.aTot ?? L.aGain}` : '';
   const hn = $('#hand-nums'); hn.textContent = nums; hn.hidden = !nums;
   handGo = go; handShownAt = performance.now();
   show(el.ovHand);
@@ -3446,6 +3503,16 @@ function mvpHTML(M) {
   if (M.group) out += `<div class="mvp" id="mvp-group"><span class="mlbl">MVP group</span><span class="ico">${unitSVG(M.group.design)}</span><b>${esc(M.group.name)} ×${M.group.count}</b><span class="mtx">${M.group.share ? `${Math.round(M.group.share * 100)}% of keep damage` : `got furthest · ${fmtNum(M.group.walk)} cells on average`}</span></div>`;
   return out;
 }
+// v23: what the wave paid besides the pot, one short line under the three numbers (the ledger under Details has it all)
+function extraHTML(L) {
+  const d = [], a = [];
+  if (L.dKill) d.push(`sappers shot down +${L.dKill}`);
+  if (L.dInt) d.push(`interest +${L.dInt}`);
+  if (L.aMove) a.push(`defender moved towers +${L.aMove}`);
+  if (L.aInt) a.push(`interest +${L.aInt}`);
+  const part = (who, l) => (l.length ? `<span class="${who === 'Defender' ? 'd' : 'a'}">${who}: pot +${who === 'Defender' ? L.dGain : L.aGain} · ${l.join(' · ')}</span>` : '');
+  return d.length || a.length ? `<p class="sum-extra" id="sum-extra">${part('Defender', d)}${part('Attacker', a)}</p>` : '';
+}
 const detailsHTML = inner => `<button class="det-tog" data-act="details" aria-expanded="false">Details</button><div class="det" hidden>${inner}</div>`;
 function showSummary() {
   const L = S.last;
@@ -3453,20 +3520,25 @@ function showSummary() {
   $('#sum-body').innerHTML = `
     <p class="sum-kicker">Round ${S.round} of ${S.rounds} complete</p>
     <h2 class="sum-title" id="sum-title">${title}</h2>
-    ${bigNums('−' + fmtNum(L.Y), L.dGain, L.aGain)}
+    ${bigNums('−' + fmtNum(L.Y), L.dTot ?? L.dGain, L.aTot ?? L.aGain)}
     ${mvpHTML(L.mvp)}
     ${L.sappers ? `<p class="sum-sap">Sappers landed ${L.sapOk} / ${L.sappers}${L.sapLost ? ` · ${L.sapLost} shot down` : ''}</p>` : ''}
+    ${extraHTML(L)}
     ${detailsHTML(`${splitViz(L)}
     <div class="bx"><div class="bx-row keep"><span>The keep took ${fmtNum(L.Y)} damage</span><b>${Math.ceil(S.keep)} / ${S.keepMax}</b></div></div>
     ${SOLO.on && SOLO.note ? `<div class="bx ainote"><h3>The computer’s thinking</h3><p>${SOLO.note}</p></div>` : ''}
     <div class="ledger">
-      <div class="led d"><h3>Defender</h3><span class="big">+${L.dGain}</span>
+      <div class="led d"><h3>Defender</h3><span class="big">+${L.dTot ?? L.dGain}</span>
         <ul><li><span>Pot share ${Math.round(L.share * 100)}%</span><span>+${L.dGain}</span></li>
+        ${L.sapLost ? `<li id="led-dkill"><span>Sappers shot down (${L.sapLost})</span><span>+${L.dKill || 0}</span></li>` : ''}
+        ${RULES.interestRate > 0 ? `<li id="led-dint"><span>Interest on ${L.dLeft || 0} left</span><span>+${L.dInt || 0}</span></li>` : ''}
         <li><span>Bridged walls refunded (${L.bridges})</span><span>${L.bridgeRefund ? '+' + L.bridgeRefund : '0'}</span></li>
         <li><span>Towers knocked out</span><span>${L.jammed}</span></li>
         <li><span>Worth now</span><span>${defWorth()}</span></li></ul></div>
-      <div class="led a"><h3>Attacker</h3><span class="big">+${L.aGain}</span>
+      <div class="led a"><h3>Attacker</h3><span class="big">+${L.aTot ?? L.aGain}</span>
         <ul><li><span>Pot share ${100 - Math.round(L.share * 100)}%</span><span>+${L.aGain}</span></li>
+        ${L.aMove ? `<li id="led-amove"><span>Defender moved towers</span><span>+${L.aMove}</span></li>` : ''}
+        ${RULES.interestRate > 0 ? `<li id="led-aint"><span>Interest on ${L.aLeft || 0} left</span><span>+${L.aInt || 0}</span></li>` : ''}
         <li><span>Sabotage (${L.charges})</span><span>${L.chargeCoins ? '−' + L.chargeCoins : '0'}</span></li>
         <li><span>Units through / killed</span><span>${L.leaks} / ${L.kills}</span></li>
         <li><span>Worth now</span><span>${atkWorth()}</span></li></ul></div>
@@ -3486,8 +3558,8 @@ function showEnd() {
     ${detailsHTML(`${d ? `<p class="fml">The keep held with ${Math.ceil(S.keep)} of ${S.keepMax} points left. The numbers above are the match’s totals: keep damage and pot coins.</p>` : '<p class="fml">The numbers above are the match’s totals: keep damage and pot coins.</p>'}
     ${S.last && d ? splitViz(S.last) : ''}
     <div class="ledger">
-      <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li><li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
-      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li>${t.bridgeTries + t.koTries ? `<li><span>Sappers landed</span><span>${t.sapOk} / ${t.bridgeTries + t.koTries}</span></li>` : ''}<li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
+      <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li>${t.dKill ? `<li><span>Sappers shot down</span><span>+${t.dKill}</span></li>` : ''}${t.dInt ? `<li><span>Interest</span><span>+${t.dInt}</span></li>` : ''}<li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
+      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li>${t.bridgeTries + t.koTries ? `<li><span>Sappers landed</span><span>${t.sapOk} / ${t.bridgeTries + t.koTries}</span></li>` : ''}${t.aMove ? `<li><span>Defender moved towers</span><span>+${t.aMove}</span></li>` : ''}${t.aInt ? `<li><span>Interest</span><span>+${t.aInt}</span></li>` : ''}<li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
     </div>`)}
     ${online() ? '<p class="fml">Either player can start the next match for both.</p>' : ''}`;
   $('#end-swap').hidden = !online();
@@ -3525,10 +3597,10 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 13; // 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 14; // 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
-  on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, // n: waves in the match
+  on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23
   lk: 0, go: 0, at: 0, myPlan: null, revealed: null, res: null, adopted: 0,
   peer: null, link: null, linkUp: false, kind: '', busy: false,
 };
@@ -3620,7 +3692,7 @@ function decodeCharges(list) {
 const decodeBridges = list => new Set(Array.isArray(list) ? list.map(v => int(v, -1, N - 1, -1)).filter(i => i >= 0 && i !== ENTRY && i !== EXIT) : []);
 // Nothing stands on a bridge, whatever a plan says.
 const clearBridges = G => { for (const i of S.bridges) G[i] = null; return G; };
-const makeDefPlan = () => ({ r: S.round, ep: NET.ep, ms: S.mapSeed, n: S.rounds, dFree: S.dFree, ts: S.towerSeq, mt: S.totals.moveTries || 0, g: encodeGrid(S.grid) });
+const makeDefPlan = () => ({ r: S.round, ep: NET.ep, ms: S.mapSeed, n: S.rounds, dFree: S.dFree, ts: S.towerSeq, mt: S.totals.moveTries || 0, mf: S.mvFee || 0, g: encodeGrid(S.grid) });
 const encodeCharges = M => [...M].map(([i, c]) => [i, c.kind === 'tower' ? 1 : 2, Math.round(clamp(+c.t || 0, 0, 1) * 1295), c.cost]);
 const makeAtkPlan = withPos => ({ r: S.round, ep: NET.ep, aFree: S.aFree, a: encodeArmy(S.designs, withPos), c: encodeCharges(S.charges) });
 function makeResult() {
@@ -3628,7 +3700,7 @@ function makeResult() {
   return { r: S.round, ep: NET.ep, keep: S.keep, dFree: S.dFree, aFree: S.aFree, g: encodeGrid(S.grid), br: [...S.bridges].sort((a, b) => a - b), L, T: { ...S.totals }, over: S.over ? 1 : 0, win: S.winner || '' };
 }
 function netState() {
-  return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, n: NET.n, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
+  return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, n: NET.n, tm: NET.tm, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
 }
 const bytes = o => new TextEncoder().encode(JSON.stringify(o)).length;
 function publish() { if (NET.link && NET.on) NET.link.send(netState()); }
@@ -3686,6 +3758,7 @@ function beginOnlineWave(peerPlan) {
   // Both devices load both plans from the same encoded data, so the wave is identical.
   S.grid = clearBridges(decodeGrid(dp.g)); S.dFree = int(dp.dFree, 0, 1e6); S.towerSeq = int(dp.ts, 0, 9999);
   S.totals.moveTries = int(dp.mt, 0, 9999, S.totals.moveTries || 0); // the move fees the defender paid price its next ones (v22)
+  S.mvFee = int(dp.mf, 0, 1e6, 0); // and go to the attacker when the wave ends (v23): both devices read them from this plan
   S.gridVer++; recompute();
   S.designs = decodeArmy(ap.a); S.aFree = int(ap.aFree, 0, 1e6);
   S.charges = decodeCharges(ap.c); S.chargeVer++;
@@ -3734,13 +3807,15 @@ function startOnlineMatch(note) {
   for (const o of [ovMode, ovWait, el.ovEnd, el.ovSum, el.ovHand]) hide(o);
   const P = NET.peer;
   if (NET.role === 'atk' && P && P.role === 'def' && validRounds(P.n)) NET.n = P.n; // the match lasts as long as the defender picked
+  if (NET.role === 'atk' && P && P.role === 'def' && (P.tm === 0 || P.tm === 1)) NET.tm = P.tm; // and is timed (or not) as it picked (v23)
   newMatch(seedFor('map', NET.code, NET.ep), NET.n); // both devices derive the same map from the match code and epoch
   Object.assign(NET, { st: 'play', lk: 0, go: 0, at: 0, myPlan: null, revealed: null, res: null, adopted: 0 });
   document.body.dataset.role = NET.role;
   setPhase(myPhase());
   publish(); updateNetUI();
   startClock();
-  const len = NET.role === 'atk' && NET.n !== chosenRounds() ? ` The defender picked ${NET.n} waves.` : '';
+  const len = (NET.role === 'atk' && NET.n !== chosenRounds() ? ` The defender picked ${NET.n} waves.` : '')
+    + (NET.role === 'atk' && (NET.tm !== 0) !== pickTimed ? ` The defender picked ${NET.tm !== 0 ? 'timed' : 'untimed'} rounds.` : '');
   toast((note || `Match on. You are the ${roleName(NET.role)}.`) + len, NET.role);
 }
 // The attacker plays the defender's match length: it's set as the match starts, and this catches a pick that changed
@@ -3754,6 +3829,13 @@ function adoptRounds(n) {
   s.keep = fresh ? s.keepMax : Math.min(s.keep, s.keepMax);
   publish(); refreshUI();
   toast(`The defender picked ${n} waves.`, '');
+}
+// v23: and the defender's clock choice, if it reached this device late
+function adoptTimed(tm) {
+  if (!(tm === 0 || tm === 1) || tm === NET.tm) return;
+  NET.tm = tm;
+  if (!tm) { clock.on = false; tickClock(false); } else if (!clock.on && !clock.out && !planLocked()) startClock();
+  toast(`The defender picked ${tm ? 'timed' : 'untimed'} rounds.`, '');
 }
 function rematchOnline(swap) {
   NET.ep = Math.max(NET.ep, NET.peer ? NET.peer.ep | 0 : 0) + 1;
@@ -3781,7 +3863,7 @@ function onPeerState(P) {
       return;
     }
   }
-  if (P && NET.role === 'atk' && P.role === 'def' && P.st === 'play' && P.ep === NET.ep) adoptRounds(P.n);
+  if (P && NET.role === 'atk' && P.role === 'def' && P.st === 'play' && P.ep === NET.ep) { adoptRounds(P.n); adoptTimed(P.tm); }
   netCheck();
   if (P && NET.role === 'atk' && P.res && S.doneRound) adoptResult(P.res);
   if (!!(prev && S && prev.ep === NET.ep && (prev.lk === S.round || prev.go === S.round)) !== peerReadyNow()) refreshUI();
@@ -4021,7 +4103,7 @@ function linkLost(code) {
 async function connect() {
   const code = codeIn.value.trim().toUpperCase();
   if (!NET.role || !/^[A-Z0-9]{3,6}$/.test(code)) return;
-  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.linkUp = false; SOLO.on = false; NET.n = chosenRounds();
+  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.linkUp = false; SOLO.on = false; NET.n = chosenRounds(); NET.tm = pickTimed ? 1 : 0;
   codeIn.disabled = true; $('#mode-new').disabled = true; $('#mode-local').disabled = true; $('#mode-solo').disabled = true;
   modeBtn.textContent = 'Cancel'; modeBtn.disabled = false;
   setModeStatus('Connecting', '', true);
@@ -4101,7 +4183,7 @@ const THINK_MS = 3000; // in the game it stops looking for better plans after th
 const copyDesign = d => ({ ...d, tl: { ...d.tl, pos: null } });
 function soloKnows(side) {
   const K = { side, round: S.round, rounds: S.rounds, keep: S.keep, aWorth: atkWorth(), seenGrid: S.seenGrid.map(cloneCell), seenArmy: S.seenArmy ? S.seenArmy.map(copyDesign) : null,
-    bridges: [...S.bridges], terrain: S.terrain.slice(), mapKey: terrainKey(S.terrain), bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0, moveTries: S.totals.moveTries || 0, deadline: Infinity }; // bridges, terrain and sappers sent are public
+    bridges: [...S.bridges], terrain: S.terrain.slice(), mapKey: terrainKey(S.terrain), bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0, moveTries: S.totals.moveTries || 0, freeMv: S.freeMv, deadline: Infinity }; // bridges, terrain and sappers sent are public (and so which towers move free, v23)
   if (side === 'atk') { K.designs = S.designs.map(copyDesign); K.aFree = S.aFree; }
   else { K.grid = S.grid.map(cloneCell); K.dFree = S.dFree; K.towerSeq = S.towerSeq; }
   return K;
@@ -5150,7 +5232,7 @@ function soloBeginWave() {
     S.charges = decodeCharges(p.c); S.chargeVer++;
   } else {
     S.grid = clearBridges(decodeGrid(p.g)); S.dFree = int(p.dFree, 0, 1e6); S.towerSeq = int(p.ts, 0, 9999);
-    S.totals.moveTries = int(p.mt, 0, 9999, S.totals.moveTries || 0); SOLO.fees = int(p.mf, 0, 1e6, 0); // the move fees it paid (v22)
+    S.totals.moveTries = int(p.mt, 0, 9999, S.totals.moveTries || 0); SOLO.fees = S.mvFee = int(p.mf, 0, 1e6, 0); // the move fees it paid (v22), the attacker's when the wave ends (v23)
     S.gridVer++; recompute(); drawTerrain();
   }
   const n = armyCount(S.designs), c = sabotageWords();
@@ -5198,7 +5280,15 @@ function syncRoundsUI() {
   const n = chosenRounds();
   for (const b of document.querySelectorAll('#mode-waves button')) b.setAttribute('aria-pressed', String(+b.dataset.rounds === n));
   $('#mode-keep').innerHTML = `Keep <b>${fmtK(keepFor(n))}</b>`;
+  // v23: timed rounds (each side gets RULES.planSecs to plan each round) or untimed (no clock, nobody's rushed)
+  for (const b of document.querySelectorAll('#mode-clock button')) b.setAttribute('aria-pressed', String((b.dataset.timed === '1') === pickTimed));
+  const m = fmtNum(RULES.planSecs / 60);
+  $('#mode-clockv').innerHTML = pickTimed ? `<b>${m}:00</b> a round` : 'No clock';
 }
+for (const b of document.querySelectorAll('#mode-clock button')) b.addEventListener('click', () => {
+  pickTimed = b.dataset.timed === '1'; syncRoundsUI();
+  if (NET.on && NET.st === 'lobby') { NET.tm = pickTimed ? 1 : 0; publish(); }
+});
 $('#mode-waves').innerHTML = RULES.roundChoices.map(n => `<button data-rounds="${n}" aria-pressed="false">${n}</button>`).join('');
 for (const b of document.querySelectorAll('#mode-waves button')) b.addEventListener('click', () => {
   pickRounds = +b.dataset.rounds; syncRoundsUI();
@@ -5630,8 +5720,8 @@ function updateTowerEditor(cell) {
   putText(root.querySelector('#te-stat'), towerStat(cell, c));
   // v22: what moving or removing it costs, for a tower the attacker saw here
   const mv = root.querySelector('#te-move');
-  putText(mv, mf ? `Next move: ${Math.round(moveRate() * 100)}% · ${mf} coins` : S.round > 1 ? (g.mfee > 0 ? `Moved · put it back for +${g.mfee}` : 'New this round · moves free') : '');
-  mv.dataset.tip = mf ? `The attacker saw this tower here. Moving or removing it costs ${Math.round(moveRate() * 100)}% of its tuning (${mf} coins); each relocation this match adds 5 points, up to ${Math.round(RULES.moveFeeMax * 100)}%. Moving it back this round refunds the fee.` : '';
+  putText(mv, mf ? `Next move: ${Math.round(moveRate() * 100)}% · ${mf} coins` : S.round > 1 ? (g.mfee > 0 ? `Moved · put it back for +${g.mfee}` : freeWhy(g) || 'New this round · moves free') : '');
+  mv.dataset.tip = mf ? `The attacker saw this tower here. Moving or removing it costs ${Math.round(moveRate() * 100)}% of its tuning (${mf} coins); each relocation this match adds 5 points, up to ${Math.round(RULES.moveFeeMax * 100)}%. Moving it back this round refunds the fee. Fees paid go to the attacker when the wave ends.` : '';
 }
 // A tower as the attacker saw it, or in a wave: a card with its numbers (dealt: the damage it has dealt this wave).
 function towerCardHTML(g, opts) {
@@ -6607,8 +6697,8 @@ function renderSabotage() {
   for (const b of document.querySelectorAll('[data-sabo]')) {
     b.setAttribute('aria-pressed', saboMode === b.dataset.sabo);
     b.classList.toggle('off', b.dataset.sabo === 'bridge' ? !bridgeOk : !towerOk);
-    b.dataset.tip = b.dataset.sabo === 'bridge' ? `A sapper opens a wall you saw for the rest of the match, if it reaches the marked tile beside it. ${perWaveText()}`
-      : 'A sapper stops a tower you saw for the rest of the wave, the moment it walks into its range.';
+    b.dataset.tip = b.dataset.sabo === 'bridge' ? `A sapper opens a wall you saw for the rest of the match, if it reaches the marked tile beside it. ${perWaveText()} ${sapperLine()}`
+      : `A sapper stops a tower you saw for the rest of the wave, the moment it walks into its range. If the tower has moved, the knock-out misses and its coins are spent. ${sapperLine()}`;
   }
   const note = $('#a-chg-note');
   note.innerHTML = !cs.ok ? (S.round <= 1 || S.round >= S.rounds ? 'No sabotage this wave.' : cs.reason)
@@ -6617,6 +6707,11 @@ function renderSabotage() {
     : 'Tap a marked wall or tower on the map. Optional.';
   $('#a-charges').innerHTML = chargeRows();
 }
+// What a sapper is and what losing one costs (v23): its armor, and the defender's cut when one is shot down.
+const sapperLine = () => {
+  const a = US.armor.steps[RULES.sapper.armor || 0], k = Math.round(RULES.sapKillShare * 100);
+  return `Sappers have ${US.hp.steps[RULES.sapper.hp]} HP${a ? ` and armor that blocks ${a} a hit` : ''}.${k ? ` Shot down, ${k === 50 ? 'half' : k + '%'} of its price goes to the defender.` : ' Shot down, its coins are lost.'}`;
+};
 // The knock-out cap as a labelled bar: the targets picked (their slider prices), and the tower tapped but not yet
 // planted as a lighter extension, red if it would pass the cap. One tower always fits. It shows in the tapped tower's card.
 function capState() {
@@ -7904,7 +7999,7 @@ function coreSnapshot(phase) {
     grid: S.grid.map(g => (g ? (g.t === 'tower' ? tw(g) : { t: g.t, fresh: g.fresh }) : null)),
     seenGrid: S.seenGrid.map(g => (g ? (g.t === 'tower' ? tw(g) : { t: g.t }) : null)), seenRound: S.seenRound,
     designs: S.designs.map(d => ({ ...d, tl: { ...d.tl, pos: d.tl.pos ? d.tl.pos.slice() : null } })), seenArmy: S.seenArmy ? S.seenArmy.map(d => ({ ...d })) : null,
-    charges: [...S.charges].map(([cell, c]) => [cell, { ...c }]), bridges: [...S.bridges], totals: { ...S.totals },
+    charges: [...S.charges].map(([cell, c]) => [cell, { ...c }]), bridges: [...S.bridges], totals: { ...S.totals }, mvFee: S.mvFee || 0, freeMv: S.freeMv ? { all: !!S.freeMv.all, n: (S.freeMv.n || []).slice() } : null,
   };
 }
 function snapshotData() {
@@ -7921,7 +8016,7 @@ function snapshotData() {
 // A fresh state from a snapshot. Everything is copied, so one snapshot can be replayed again and again.
 function stateFrom(d) {
   const R = newState(validRounds(d.rounds) ? d.rounds : RULES.rounds);
-  Object.assign(R, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, starter: d.starter || 0, towerSeq: d.towerSeq || 0, bridges: new Set(d.bridges || []), totals: { ...R.totals, ...d.totals } });
+  Object.assign(R, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, starter: d.starter || 0, towerSeq: d.towerSeq || 0, bridges: new Set(d.bridges || []), totals: { ...R.totals, ...d.totals }, mvFee: d.mvFee || 0, freeMv: d.freeMv || null });
   R.mapSeed = d.mapSeed >>> 0; R.terrain = Uint8Array.from(d.terrain || []); if (R.terrain.length !== N) R.terrain = new Uint8Array(N);
   const tw = g => ({ t: 'tower', cfg: { ...defaultTower(), ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n, cd: 0, ang: Math.PI, kick: 0, dealt: 0 });
   const unit = ({ dodge, ...x }) => x; // a design saved before v19 may still carry dodge: it's ignored
@@ -7946,9 +8041,10 @@ function restore(d) {
 
 function start(data) {
   for (const n of document.querySelectorAll('[data-rule]')) { // info text follows the rules: "key", "key%", "key:min", "key:range"
-    const [k, f] = n.dataset.rule.split(':'), pct = k.endsWith('%'), v = RULES[pct ? k.slice(0, -1) : k];
+    const [k, f] = n.dataset.rule.split(':'), pct = k.endsWith('%'), v = (pct ? k.slice(0, -1) : k).split('.').reduce((o, x) => (o == null ? o : o[x]), RULES);
     n.textContent = pct ? Math.round(v * 100) : f === 'min' ? fmtNum(v / 60) : f === 'range' ? `${Math.min(...v)}–${Math.max(...v)}` : v;
   }
+  for (const k of ['', '2']) { $('#info-saphp' + k).textContent = US.hp.steps[RULES.sapper.hp]; $('#info-saparm' + k).textContent = US.armor.steps[RULES.sapper.armor || 0]; }
   const off = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v); // the fire rate's accuracy offsets, from the rules too
   $('table.acc thead tr').innerHTML = '<th>Shots per second</th>' + TS.rate.steps.map(v => `<th>${v}</th>`).join('');
   $('table.acc tbody tr').innerHTML = '<td>Accuracy</td>' + RULES.rateAcc.map(v => `<td class="n">${off(v)}</td>`).join('');
@@ -7974,7 +8070,7 @@ try { window.claude?.hot?.snapshot?.(() => ({ siege: snapshotData() })); } catch
 // Small handle for collaborators poking at the prototype from the console.
 let streamIds = 0;
 window.siegeline = {
-  get state() { return S; }, get net() { return NET; }, get solo() { return SOLO; }, trial, rules: RULES, towerCost, towerValue, unitCost, splitFor, tlPositions,
+  get state() { return S; }, get net() { return NET; }, get solo() { return SOLO; }, trial, rules: RULES, TS, US, towerCost, towerValue, unitCost, splitFor, tlPositions,
   cellToClient(i) { const [x, y] = center(i), [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   unitToClient(u) { const [sx, sy] = w2s(u.x + u.ox, u.y + u.oy), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   get speed() { return waveSpeed; },
