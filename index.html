@@ -808,15 +808,33 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 #btn-watch:hover{color:var(--paper);border-color:var(--muted)}
 #btn-watch b:empty{display:none}
 /* a spectator's panel (v26) */
-#pane-spec .pane-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#pane-spec{gap:10px}
+.spec-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.spec-live{display:inline-flex;align-items:center;gap:8px;font:600 11px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--paper)}
+.spec-live i{width:8px;height:8px;border-radius:50%;background:#e05a5a;animation:spec-rec 2s ease-in-out infinite}
+@keyframes spec-rec{50%{opacity:.35}}
 .spec-code{font:500 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-.spec-row{--k:var(--cool);display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:12px 12px 12px 14px;margin-bottom:8px;border:1px solid var(--line);border-left:2px solid var(--k);border-radius:var(--r2);background:var(--slate)}
-.spec-row.a{--k:var(--warm)}
-.spec-row b{font:600 14px/1.2 var(--f-body);color:var(--paper)}
-.spec-row .st{font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
-.spec-row .st.ok{color:#a8e6b0} .spec-row .st.bad{color:#ffb4b4}
-.spec-row .cn{font:500 11px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
-#pane-spec .note{margin:10px 2px 0}
+.spec-sides{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.spec-side{--k:var(--cool);min-width:0;display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-top:2px solid var(--k);border-radius:var(--r2);background:var(--slate)}
+.spec-side.a{--k:var(--warm)}
+.spec-side .sn{font:600 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--k)}
+.spec-side .st{display:flex;align-items:center;gap:7px;font:600 15px/1.1 var(--f-body);color:var(--paper);white-space:nowrap}
+.spec-side .st i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.spec-side .st.ok i{background:#a8e6b0} .spec-side .st.bad{color:#ffb4b4} .spec-side .st.bad i{background:#ff5a5a}
+.spec-side .st.plan i{background:var(--k);animation:spec-rec 1.2s ease-in-out infinite}
+.spec-side .cn{font:500 10.5px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
+.spec-last{display:flex;align-items:center;gap:10px;padding:9px 10px 9px 12px;border:1px solid var(--line);border-radius:var(--r2);font:500 12px/1.3 var(--f-body);color:var(--soft)}
+.spec-last span{flex:1;min-width:0}
+.spec-last b{color:var(--paper);font-weight:600}
+.spec-last .mini{height:30px;flex:none}
+#pane-spec .spec-note{margin:0;font:400 12px/1.4 var(--f-body);color:var(--muted)}
+.spec-acts{display:flex;gap:8px;margin-top:auto}
+.spec-acts .back,.spec-acts .ready{min-height:46px;flex:none;padding:0 14px}
+.spec-acts .ready{flex:1;display:flex;align-items:center;justify-content:center;gap:8px}
+.spec-acts svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.spec-acts .sq{width:46px;padding:0;display:grid;place-items:center}
+.spec-acts .sq svg{width:17px;height:17px}
+@media (prefers-reduced-motion:reduce){.spec-live i,.spec-side .st.plan i{animation:none}}
 .rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
 .pick.lv{grid-template-columns:repeat(3,minmax(0,1fr))}
 .rolepick button,.pick button{min-height:42px;border:0;background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--soft);transition:background .12s,color .12s}
@@ -1144,6 +1162,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .lobby{gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
   .lb-room{padding:16px 14px 14px} .lb-code{font-size:54px}
   .lb-links{display:grid;grid-template-columns:1fr 1fr;width:100%} .lbtn{justify-content:center;padding:0 8px;letter-spacing:.08em}
+  #pane-spec{gap:8px} .spec-side{padding:8px 10px;gap:5px} .spec-side .st{font-size:14px} .spec-acts .back,.spec-acts .ready{min-height:44px}
+  .spec-last{padding:7px 8px 7px 10px;font-size:11.5px} #pane-spec .spec-note{display:none}
   .lb-seats{gap:8px} .seat{min-height:122px;padding:14px 12px 12px} .seat .swho{font-size:21px}
   .lb-watch{padding:10px 12px}
   #btn-watch{order:9;min-height:0;min-width:0;padding:0 10px}
@@ -1270,9 +1290,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       </section>
 
       <section class="pane" id="pane-spec" hidden>
-        <div class="pane-head"><h2 class="pane-title">Watching</h2><span class="spec-code" id="spec-code"></span></div>
-        <div class="scroll"><div class="browse" id="spec-body"></div></div>
-        <div class="navrow"><button class="back" id="spec-leave">Leave</button><button class="ready neutral" id="spec-link">Copy watch link</button></div>
+        <div class="spec-top"><span class="spec-live"><i aria-hidden="true"></i>Watching</span><span class="spec-code" id="spec-code"></span></div>
+        <div id="spec-body"></div>
+        <div class="spec-acts"><button class="back" id="spec-leave">Leave</button><button class="back sq" id="spec-full" hidden aria-label="Full screen" data-tip="Full screen"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button><button class="ready neutral" id="spec-link" data-tip="Share a link anyone can open to watch"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10V2M5 4.5L8 1.5l3 3M3 8v5.5h10V8"/></svg><span>Share</span></button></div>
       </section>
 
       <section class="pane" id="pane-wave" hidden>
@@ -3579,9 +3599,12 @@ function mvpOf() {
   return { tower: t, group: d };
 }
 function nextRound() {
+  if (online() && NET.role === 'spec' && SPEC.reopen) { SPEC.reopen = false; hide(el.ovSum); return; } // a summary reopened from the spectator's bar: just close it
   hide(el.ovSum);
   S.round++; S.wave = blankWave();
-  if (online() && NET.role === 'spec') { setPhase('watch'); specCheck(); return; }
+  if (online() && NET.role === 'spec') {
+    clearInterval(SPEC.tick); setPhase('watch'); specCheck(); return;
+  }
   if (online()) { setPhase(myPhase()); startClock(); updateNetUI(); netCheck(); return; }
   startRound();
 }
@@ -3787,6 +3810,8 @@ function showSummary() {
   $('#sum-next').textContent = online() && NET.role === 'spec' ? `Watch round ${S.round + 1}` : `Start round ${S.round + 1}`;
   $('#sum-replay').hidden = !S.lastWave;
   show(el.ovSum);
+  $('#sum-next').className = online() && NET.role === 'spec' ? 'ready neutral' : 'ready def'; // a spectator has no side
+  if (online() && NET.role === 'spec') { SPEC.reopen = false; specSummary(); }
   setTimeout(() => $('#sum-next').focus({ preventScroll: true }), 30);
 }
 function showEnd() {
@@ -4453,6 +4478,8 @@ function openRoom(code) {
   connect(code);
 }
 function leaveRoom() {
+  wakeOff(); clearInterval(SPEC.tick); SPEC.reopen = false; SPEC.sum = null;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   disconnect();
   NET.host = false; NET.role = null;
   for (const o of [ovLobby, ovWait, el.ovEnd, el.ovSum, el.ovHand]) hide(o);
@@ -4600,12 +4627,13 @@ function specStart(ep, P) {
   if (validRounds(P.n)) NET.n = P.n;
   if (P.tm === 0 || P.tm === 1) NET.tm = P.tm;
   if (P.sb === 0 || P.sb === 1) NET.sb = P.sb;
-  Object.assign(SPEC, { dp: {}, ap: {}, res: null, fresh: true });
+  Object.assign(SPEC, { dp: {}, ap: {}, res: null, fresh: true, sum: null, reopen: false });
   newMatch(seedFor('map', NET.code, ep), NET.n);
   document.body.dataset.role = 'spec';
   setPhase('watch');
   publish(); watchUI();
-  toast(`Watching room ${NET.code}. The plans show once both sides lock in.`, '');
+  syncFull(); wakeOn();
+  toast(`Watching room ${NET.code}`, '');
 }
 // Between waves: play the next wave once both plans are in; if its result is in but its plans never reached this device
 // (it came late), take the result and go on.
@@ -4617,7 +4645,8 @@ function specCheck() {
   if (res && res.r >= r) specJump(res); // a wave whose plans never reached this device: take its result and go on
 }
 function specWave(dp, ap) {
-  hide(el.ovSum); hide(el.ovEnd);
+  hide(el.ovSum); hide(el.ovEnd); SPEC.reopen = false;
+  if (document.hidden) document.title = `▶ Wave ${S.round} · TPTD`;
   loadPlans(dp, ap);
   drawTerrain();
   startWave(seedFor(NET.code, NET.ep, S.round));
@@ -4643,20 +4672,73 @@ function specJump(res) {
 // The spectator's panel between waves: both sides' state (public: what the attacker sees between waves, the coins), the
 // round, and who's watching.
 const specKey = { v: '' };
+// The spectator's bar (v26): both sides' state (public: what the attacker sees between waves, and the coins), the last
+// wave in one line with its summary a tap away, and who's watching. Compact, so on a phone the board keeps the room.
 function renderSpec() {
   const r = S.round;
-  const row = (side, P) => {
+  const side = (k, P) => {
     const rd = P ? P.rd | 0 : 0, ready = P && rd > 0 && (P.lk === rd || P.go === rd);
-    const [t, c] = !P ? ['Offline', 'bad'] : !NET.linkUp ? ['…', ''] : rd > r ? [`On round ${rd}`, ''] : ready ? ['Locked in', 'ok'] : ['Planning', ''];
-    return `<div class="spec-row ${side === 'def' ? 'd' : 'a'}"><b>${roleName(side)}</b><span class="st ${c}">${t}</span><span class="cn">${side === 'def' ? S.dFree : S.aFree} coins</span></div>`;
+    const [t, c] = !P ? ['Offline', 'bad'] : !NET.linkUp ? ['Reconnecting', ''] : rd > r ? [`On round ${rd}`, ''] : ready ? ['Locked in', 'ok'] : ['Planning', 'plan'];
+    return `<div class="spec-side ${k === 'def' ? 'd' : 'a'}"><span class="sn">${roleName(k)}</span><span class="st ${c}"><i></i>${t}</span><span class="cn">${fmtK(k === 'def' ? S.dFree : S.aFree)} coins</span></div>`;
   };
-  const n = watchers();
-  const html = `${row('def', SPEC.D)}${row('atk', SPEC.A)}
-    <p class="note">Round ${r} of ${S.rounds}. The wave plays here once both sides lock in; their plans stay hidden until then.</p>
-    <p class="note spec-n">${n === 1 ? 'You’re the only one watching.' : `${n} watching.`}</p>`;
+  const n = watchers(), L = SPEC.sum && SPEC.sum.L;
+  const last = L ? `<div class="spec-last" id="spec-last"><span>Wave ${SPEC.sum.round}: <b>keep −${fmtNum(L.Y || 0)}</b> · ${L.X ? Math.round((L.Y || 0) / L.X * 100) : 0}% through</span><button class="mini" data-spec="sum">Summary</button></div>` : '';
+  const html = `<div class="spec-sides">${side('def', SPEC.D)}${side('atk', SPEC.A)}</div>${last}
+    <p class="spec-note">Round ${r} of ${S.rounds} · the wave plays when both lock in · ${n === 1 ? 'you’re the only one watching' : `${n} watching`}</p>`;
   if (specKey.v !== html) { specKey.v = html; $('#spec-body').innerHTML = html; }
   setText($('#spec-code'), 'spc', `Room ${NET.code}`);
 }
+// After each wave a spectator's summary closes by itself (SPEC_AUTO seconds) and the next wave plays when it's ready, so
+// watching needs no taps; a touch on the summary keeps it open. The last one stays a tap away on the bar.
+const SPEC_AUTO = 6;
+function specSummary() {
+  SPEC.sum = { round: S.round, L: { ...S.last }, html: $('#sum-body').innerHTML };
+  clearInterval(SPEC.tick);
+  let n = SPEC_AUTO;
+  const btn = $('#sum-next'), label = () => { btn.textContent = `Watch round ${S.round + 1} · ${n}`; };
+  label();
+  SPEC.tick = setInterval(() => {
+    if (el.ovSum.hidden || S.phase !== 'summary' || replay) { clearInterval(SPEC.tick); return; }
+    if (--n <= 0) { clearInterval(SPEC.tick); nextRound(); } else label();
+  }, 1000);
+}
+function specHold() { // a touch on the summary: it stays until closed
+  if (!SPEC.tick) return;
+  clearInterval(SPEC.tick); SPEC.tick = 0;
+  if (!SPEC.reopen) $('#sum-next').textContent = `Watch round ${S.round + 1}`;
+}
+function specReopen() {
+  if (!SPEC.sum) return;
+  $('#sum-body').innerHTML = SPEC.sum.html;
+  $('#sum-next').textContent = 'Back to the match';
+  $('#sum-replay').hidden = !S.lastWave;
+  SPEC.reopen = true;
+  show(el.ovSum);
+}
+// Watching on a phone: the screen stays on (the players can plan for minutes), and a wave that starts while the page
+// is in the background says so in its tab.
+const wake = { lock: null, title: document.title };
+async function wakeOn() {
+  try {
+    if (wake.lock || !navigator.wakeLock || document.hidden || NET.st !== 'watch') return;
+    wake.lock = await navigator.wakeLock.request('screen');
+    wake.lock.addEventListener('release', () => { wake.lock = null; });
+  } catch (_) { wake.lock = null; } // refused (low battery, an old browser): the screen sleeps as usual
+}
+function wakeOff() { try { if (wake.lock) wake.lock.release(); } catch (_) { /* gone */ } wake.lock = null; document.title = wake.title; }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  document.title = wake.title;
+  if (NET.on && NET.st === 'watch') wakeOn();
+});
+// Full screen, where the browser allows it (not an iPhone's Safari, which only does it for video)
+const fullOK = () => !!(document.documentElement.requestFullscreen && document.fullscreenEnabled);
+function syncFull() {
+  const b = $('#spec-full'), on = !!document.fullscreenElement, t = on ? 'Leave full screen' : 'Full screen';
+  b.hidden = !fullOK(); b.setAttribute('aria-label', t); b.dataset.tip = t;
+  b.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="${on ? 'M6 2v4H2M10 2v4h4M14 10h-4v4M2 10h4v4' : 'M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4'}"/></svg>`;
+}
+document.addEventListener('fullscreenchange', () => { syncFull(); layout(); });
 
 /* =====================================================================
    Versus computer. The computer plays the other side knowing only what
@@ -5869,6 +5951,9 @@ restartBtn.addEventListener('click', () => {
 $('#btn-watch').addEventListener('click', () => shareLink(watchLink(), 'Watch link'));
 $('#spec-link').addEventListener('click', e => shareLink(watchLink(), 'Watch link', e.currentTarget));
 $('#spec-leave').addEventListener('click', leaveRoom);
+$('#spec-body').addEventListener('click', e => { if (e.target.closest('[data-spec=sum]')) specReopen(); });
+$('#spec-full').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}); });
+el.ovSum.addEventListener('pointerdown', e => { if (online() && NET.role === 'spec' && !e.target.closest('#sum-next')) specHold(); });
 $('#end-swap').addEventListener('click', () => { hide(el.ovEnd); rematchOnline(true); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && NET.on) publish(); });
 
