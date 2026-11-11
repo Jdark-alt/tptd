@@ -384,7 +384,10 @@ with sync_playwright() as p:
     check(bx and bx['x'] >= 0 and bx['x'] + bx['width'] <= 390 and bx['y'] + bx['height'] <= 844, f'phone: Play the computer button visible {bx}')
     lv = page.locator('.pick button[data-level=hard]').bounding_box()
     check(lv and lv['x'] + lv['width'] <= 390, f'phone: all three difficulty buttons fit {lv}')
-    check(not page.evaluate('() => document.documentElement.scrollWidth > innerWidth || document.querySelector("#ov-mode .modes").scrollWidth > document.querySelector("#ov-mode .modes").clientWidth'), 'phone: mode screen has no horizontal overflow')
+    check(not page.evaluate('() => document.documentElement.scrollWidth > innerWidth || document.querySelector("#ov-mode").scrollWidth > innerWidth'), 'phone: mode screen has no horizontal overflow')
+    cards = page.evaluate('() => [...document.querySelectorAll("#mode-cards .mcard")].map(c => c.getBoundingClientRect().width)')
+    check(page.evaluate('() => document.querySelector("#mode-cards").classList.contains("scrolls")') and page.is_visible('#mode-dots') and all(w <= 390 - 32 for w in cards),
+          f'v25: phone: the three ways to play side-scroll, a card at a time, with dots ({[round(w) for w in cards]})')
     page.screenshot(path=f'{OUT}/m0_mode.png')
     page.tap('.pick button[data-side=atk]'); page.tap('.pick button[data-level=normal]'); page.tap('#mode-solo'); page.wait_for_timeout(300)
     check(S(page, 'S.phase') == 'attack', 'phone: attacker vs computer starts')

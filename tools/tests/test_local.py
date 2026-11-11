@@ -1535,10 +1535,12 @@ with sync_playwright() as p:
     check(pre == [20, 35, 6, 16], f'v22 Part B test 2: the four presets cost what they did (Runner 20, Brute 35, Swarm 6, Ghost 16: {pre})')
     ctx.close()
 
-    # ---------- v22 Part C: moving or removing a tower the attacker saw costs a fee
+    # ---------- v22 Part C: moving or removing a tower the attacker saw costs a fee (on v22-v24's rise, 5 points a
+    # relocation; v25's half point is checked after)
     ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.evaluate('() => { window.siegeline.rules.moveFeeRise = 0.05; }')
     page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
     for r in range(0, 10): click_cell(page, 7, r)
     page.click('.tool[data-tool=tower]')
@@ -1607,6 +1609,21 @@ with sync_playwright() as p:
     details(page)
     led = page.inner_text('#led-amove') if page.is_visible('#led-amove') else ''
     check('defender moved towers +18' in ex.lower() and 'Defender moved towers' in led and '+18' in led, f'v23: the summary shows it on its own line for the attacker ({ex} | {led})')
+    # v25: the rate rises half a point a relocation, whichever tower, on the tower's tuning as it is now
+    page.click('#sum-next'); hand(page)
+    page.evaluate('() => { window.siegeline.rules.moveFeeRise = 0.005; }')
+    seen = page.evaluate('() => { const S = window.siegeline.state; return S.grid.map((g, i) => (g && g.t === "tower" && S.seenGrid[i] && S.seenGrid[i].t === "tower" && S.seenGrid[i].n === g.n ? i : -1)).filter(i => i >= 0); }')
+    cell = seen[0]; c0, r0 = cell % 16, cell // 16
+    card = []
+    for n in (0, 1, 2, 20, 100):
+        page.evaluate(f'() => {{ window.siegeline.state.totals.moveTries = {n}; window.siegeline.state.freeMv = null; window.siegeline.refresh(); }}')
+        click_cell(page, c0, r0); card.append(page.inner_text('#te-move').split(' · ')[0]); page.keyboard.press('Escape')
+    check(card == ['Next move: 10%', 'Next move: 10.5%', 'Next move: 11%', 'Next move: 20%', 'Next move: 40%'], f'v25: the fee rises half a point a relocation, capped at 40% ({card})')
+    page.evaluate(f'() => {{ const S = window.siegeline.state; S.totals.moveTries = 1; S.grid[{cell}].cfg.dps = 5; S.dFree = 2000; window.siegeline.refresh(); }}')
+    tc = page.evaluate(f'() => window.siegeline.towerCost(window.siegeline.state.grid[{cell}].cfg)')
+    dest = next(cr for cr in ((1, 1), (1, 9), (14, 1), (14, 9), (2, 1), (2, 9)) if not S(page, f'!!S.grid[{idx(*cr)}]'))
+    f0 = S(page, 'S.dFree'); drag_cells((c0, r0), dest)
+    check(S(page, 'S.dFree') == f0 - round(0.105 * tc) and S(page, 'S.totals.moveTries') == 2, f'v25: the second relocation pays 10.5% of the tower’s tuning as it is now ({tc} → {round(0.105 * tc)}; {f0} → {S(page, "S.dFree")})')
     check(not errors, f'Part C: no errors {errors[:3]}')
     ctx.close()
 
@@ -2358,6 +2375,49 @@ with sync_playwright() as p:
     check('send a sapper' not in card and S(page, 'S.charges.size') == 0, f'v24: round 2 with sabotage off: a seen tower offers no sapper ({card[:80]})')
     check(not errors, f'v24: no errors {errors[:3]}')
     ctx.close()
+
+    # ---------- v25: the short How to play and the start screen
+    for vw, vh in ((1366, 860), (1280, 720), (390, 844)):
+        phone = vw < 600
+        ctx = b.new_context(viewport={'width': vw, 'height': vh}, **({'device_scale_factor': 2, 'is_mobile': True, 'has_touch': True} if phone else {}))
+        page = ctx.new_page(); errors = []
+        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.goto('file://' + HARNESS); page.wait_for_timeout(400)
+        tap = page.tap if phone else page.click
+        shown = page.evaluate('() => [...document.querySelectorAll("#info-body > section")].filter(x => x.offsetParent).map(x => x.id)')
+        body = page.evaluate('() => { const b = document.querySelector("#info-body"); return [b.scrollHeight, b.clientHeight]; }')
+        words = len(page.inner_text('#info-play').split())
+        check(shown == ['info-play'] and words < 120, f'v25 {vw}: the opening shows only a short How to play ({shown}, {words} words)')
+        check(body[0] <= body[1] + 2, f'v25 {vw}: How to play fits without scrolling ({body})')
+        tap('#info-more'); page.wait_for_timeout(150)
+        check(page.is_visible('#info-round') and page.is_visible('#info-build'), f'v25 {vw}: All the rules opens the rest of the sheet')
+        tap('#info-go'); page.wait_for_timeout(250)
+        check(page.is_visible('#ov-mode') and page.is_hidden('#ov-info'), f'v25 {vw}: Start playing leads to the start screen')
+        names = page.evaluate('() => [...document.querySelectorAll("#mode-cards .mcard")].map(c => c.querySelector("h2").textContent + " / " + c.querySelector(".msub").textContent)')
+        check(names == ['Single player / Versus computer', 'Multiplayer / On this device', 'Online / Against friends'], f'v25 {vw}: the three ways to play, in order ({names})')
+        lbls = page.evaluate('() => [...document.querySelectorAll(".st-set .mlbl")].map(x => x.textContent)')
+        check(lbls == ['Waves', 'Clock', 'Sabotage'], f'v25 {vw}: the settings above them ({lbls})')
+        over = page.evaluate('() => document.documentElement.scrollWidth > innerWidth || document.querySelector("#ov-mode").scrollWidth > innerWidth')
+        scrolls = page.evaluate('() => document.querySelector("#mode-cards").classList.contains("scrolls")')
+        check(not over, f'v25 {vw}: no sideways page scroll')
+        if phone:
+            check(scrolls and page.is_visible('#mode-dots'), 'v25 phone: the cards side-scroll with a dot each')
+            page.tap('#mode-dots button:nth-child(3)'); page.wait_for_timeout(700)
+            r = page.evaluate('() => document.querySelector("#mode-online").getBoundingClientRect().toJSON()')
+            check(r['left'] >= 0 and r['right'] <= vw and page.get_attribute('#mode-dots button:nth-child(3)', 'aria-selected') == 'true', f'v25 phone: the third dot brings Online into view ({r["left"]:.0f}–{r["right"]:.0f})')
+        else:
+            boxes = page.evaluate('() => ["#mode-solo", "#mode-local", "#mode-online"].map(id => document.querySelector(id).getBoundingClientRect().toJSON())')
+            check(not scrolls and page.is_hidden('#mode-dots') and all(x['right'] <= vw and x['bottom'] <= vh for x in boxes), f'v25 {vw}: all three side by side, every Play button in view')
+        check(page.is_hidden('#mode-fine'), f'v25 {vw}: the Claude-only fine print stays hidden here')
+        tap('#mode-help'); page.wait_for_timeout(200)
+        check(page.is_visible('#ov-info') and page.inner_text('#info-go').lower() == 'back' and page.evaluate('() => document.querySelector("#ov-info").classList.contains("intro")'), f'v25 {vw}: How to play from the start screen, with Back')
+        tap('#info-go'); page.wait_for_timeout(200)
+        check(page.is_visible('#ov-mode'), f'v25 {vw}: Back returns to the start screen')
+        if not phone:
+            page.click('#mode-local'); hand(page); page.click('#btn-info'); page.wait_for_timeout(150)
+            check(not page.evaluate('() => document.querySelector("#ov-info").classList.contains("intro")') and page.is_visible('#info-build'), 'v25: “?” in a match opens the whole sheet, at the screen’s section')
+        check(not errors, f'v25 {vw}: no errors {errors[:3]}')
+        ctx.close()
 
     # the clock's last 30 seconds: it grows and turns red, and the last 10 count down over the board too
     ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []

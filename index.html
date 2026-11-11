@@ -594,6 +594,18 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .sheet-body strong{color:var(--paper);font-weight:600}
 .sheet-body code{font:500 12.5px/1.5 var(--f-ui);color:var(--paper)}
 .howto{padding-top:22px!important}
+.howto .steps{list-style:none;padding:0;margin:0 0 14px;gap:0}
+.howto .steps li{display:flex;align-items:flex-start;gap:16px;padding:12px 0;max-width:none}
+.howto .steps li+li{border-top:1px solid var(--line)}
+.howto .steps i{flex:none;width:34px;font:900 30px/.9 var(--f-display);font-style:normal;color:var(--paper)}
+.howto .steps li div{font:400 15px/1.5 var(--f-body);color:var(--soft)}
+.howto .win{margin:2px 0 0;padding:12px 14px;border:1px solid var(--line);border-left:2px solid var(--keep);border-radius:var(--r2);font:500 14px/1.45 var(--f-body);color:var(--paper)}
+.info-more{display:none;margin-top:14px;height:36px;padding:0 14px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;color:var(--soft);font:500 10.5px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.info-more::after{content:" ↓"}
+.info-more:hover{color:var(--paper);border-color:var(--muted)}
+#ov-info.intro .sheet{max-width:640px}
+#ov-info.intro .sheet-body > section:not(#info-play){display:none}
+#ov-info.intro .info-more{display:inline-block}
 .key{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:0 0 16px}
 .key div{border-radius:var(--r2);padding:12px;font:400 13px/1.45 var(--f-body);color:var(--soft);border:1px solid var(--line);border-top:2px solid var(--k)}
 .key .kd{--k:var(--cool)} .key .ka{--k:var(--warm)} .key .kk{--k:var(--keep)}
@@ -659,27 +671,96 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .sum-foot .ready{flex:1}
 .end-title.d{color:var(--cool)} .end-title.a{color:var(--warm)}
 
-/* mode picker + online */
-.sheet .modes{overflow-y:auto}
-.modes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px;padding:20px 24px 24px;align-items:start}
-.mode{display:flex;flex-direction:column;gap:12px;background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:16px}
-.mode h3{margin:0;display:flex;align-items:baseline;gap:10px;font:600 16px/1.1 var(--f-body);letter-spacing:-.01em}
-.mode h3 .idx{font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;color:var(--muted)}
-.mode p{margin:0;font:400 13px/1.5 var(--f-body);color:var(--muted)}
-.mode p.fine{font-size:11.5px}
-.mode .ready{flex:none;min-height:46px}
-.mode .ready:disabled{opacity:.35;cursor:not-allowed}
-.modecol{display:flex;flex-direction:column;gap:10px;min-width:0}
+/* ---------- The start screen (v25): a window onto a board at play, the match settings, the three ways to play ---------- */
+#ov-mode{padding:0;display:block;overflow-y:auto;overscroll-behavior:contain;background:var(--ink);-webkit-backdrop-filter:none;backdrop-filter:none}
+.start{width:100%;max-width:1180px;min-height:100%;margin:0 auto;display:flex;flex-direction:column;justify-content:center;gap:12px;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
+.st-hero{position:relative;flex:none;height:clamp(168px,30vh,250px);display:flex;align-items:flex-end;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#0a0d11}
+.st-hero::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,var(--ink) 0,rgba(7,9,12,.9) 26%,rgba(7,9,12,.35) 52%,rgba(7,9,12,0) 72%),linear-gradient(0deg,rgba(7,9,12,.7) 0,rgba(7,9,12,0) 45%)}
+.st-scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.st-brand{position:relative;z-index:2;padding:0 0 24px 28px}
+.st-brand .logo{font-size:clamp(60px,9vw,112px);gap:.16em;line-height:.82}
+.st-brand .logo .mark{width:.42em;height:.42em}
+.st-brand .tagline{margin-top:14px;color:var(--soft);letter-spacing:.26em}
+.st-help{position:absolute;z-index:2;top:14px;right:14px;height:34px;display:inline-flex;align-items:center;gap:8px;padding:0 13px 0 6px;border-radius:999px;
+  border:1px solid rgba(232,236,239,.22);background:rgba(7,9,12,.66);color:var(--paper);font:500 10.5px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);transition:border-color .15s,background .15s}
+.st-help span{width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--paper);color:var(--ink);font:700 12px/1 var(--f-ui);letter-spacing:0}
+.st-help:hover{border-color:rgba(232,236,239,.5);background:rgba(12,16,21,.85)}
+/* the scene, in the board's own drawing (see drawWalls, drawTowerShape, drawUnits) */
+.st-scene .rt,.mart .rt{fill:none;stroke:rgba(255,138,61,.1);stroke-width:12;stroke-linejoin:round}
+.st-scene .rt2{fill:none;stroke:rgba(255,138,61,.55);stroke-width:1.2;stroke-dasharray:3 7;stroke-linejoin:round;animation:st-flow 1.6s linear infinite}
+@keyframes st-flow{to{stroke-dashoffset:-10}}
+.st-scene .wl,.mart .wl{fill:#1f3242}
+.st-scene .rf{fill:url(#st-stip)} .st-scene .rk{fill:#151b22;stroke:rgba(150,172,190,.3);stroke-width:1}
+.st-scene .rk{fill:url(#st-hatch)}
+.tw .rg{fill:rgba(79,214,238,.035);stroke:rgba(79,214,238,.22);stroke-width:1;stroke-dasharray:2 4}
+.tw .tb,.mart .tb{fill:#0b151c;stroke:rgba(79,214,238,.6);stroke-width:1.1}
+.tw .tt{fill:#4fd6ee} .tw .tc,.mart .tc{fill:#0f2630;stroke:#4fd6ee;stroke-width:1.5} .tw .td{fill:#4fd6ee}
+.trc{stroke:#bff3ff;stroke-width:1.6;stroke-linecap:round;opacity:0}
+.un .ud{fill:none;stroke:rgba(0,0,0,.45);stroke-width:1.2}
+.un .sp{fill:#0b0f14;stroke-width:1.6} .un .spi{fill:none;stroke-width:1.4;stroke-linecap:round}
+.kp .kpb{fill:rgba(232,200,115,.14);stroke:var(--keep);stroke-width:1.4} .kp .kpd{fill:var(--keep)} .kp .kpr{fill:none;stroke:var(--keep);stroke-width:1}
+/* the match settings */
+.st-set{flex:none;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr) minmax(0,1fr);border:1px solid var(--line);border-radius:10px;background:var(--slate)}
+.sset{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px 12px;padding:14px 16px 16px;min-width:0}
+.sset+.sset{border-left:1px solid var(--line)}
+.sset .mlbl{font:500 10.5px/1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--paper)}
+.sset .mkeep{justify-self:end;font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sset .mkeep b{color:var(--paper);font-weight:600;letter-spacing:.06em}
+#mode-keep b{color:var(--keep)}
+.sset .pick{grid-column:1/-1}
+.pick.waves{grid-template-columns:repeat(5,minmax(0,1fr))}
+/* the three ways to play: side by side, side-scrolling where they don't fit */
+.st-cards{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 28px) / 3);gap:14px;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;scroll-padding-inline:2px;scrollbar-width:none;padding:2px;margin:-2px;overscroll-behavior-x:contain}
+.st-cards::-webkit-scrollbar{display:none}
+.mcard{scroll-snap-align:start;position:relative;min-width:0;display:flex;flex-direction:column;gap:12px;padding:0 18px 18px;background:var(--slate);
+  border:1px solid var(--line-2);border-radius:10px;overflow:hidden;transition:border-color .18s,transform .18s,box-shadow .18s}
+.mcard::before{content:"";position:absolute;z-index:1;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--cool) 50%,var(--warm) 50%)}
+@media (hover:hover){.mcard:hover{border-color:#3a4553;transform:translateY(-2px);box-shadow:0 18px 40px -22px #000}}
+.mcard:focus-within{border-color:#3a4553}
+.mart{display:block;flex:none;width:calc(100% + 36px);height:132px;margin:0 -18px 2px;border-bottom:1px solid var(--line);
+  background:#0a0d11 radial-gradient(circle,rgba(150,172,190,.22) 0 1px,transparent 1.3px) -10px -10px/20px 20px}
+.mhead h2{margin:0;font:650 27px/1 var(--f-body);letter-spacing:-.025em;color:var(--paper)}
+.mhead .msub{margin:9px 0 0;font:500 10.5px/1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.mnote{margin:0;font:400 13px/1.5 var(--f-body);color:var(--soft)}
+.mturns{margin:2px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0;counter-reset:t}
+.mturns li{position:relative;display:flex;align-items:center;gap:12px;padding:9px 0;font:500 13px/1.2 var(--f-body);color:var(--paper);counter-increment:t}
+.mturns li+li{border-top:1px solid var(--line)}
+.mturns li::before{content:counter(t);flex:none;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;font:600 10.5px/1 var(--f-ui);border:1px solid var(--k);color:var(--k)}
+.mturns .d{--k:var(--cool)} .mturns .a{--k:var(--warm)} .mturns .w{--k:var(--soft)}
+.mcard .ready{flex:none;margin-top:auto;min-height:52px;display:flex;align-items:center;justify-content:center;gap:10px}
+.mcard .ready .go{font:500 16px/1 var(--f-body);letter-spacing:0;transition:transform .18s}
+@media (hover:hover){.mcard .ready:not(:disabled):hover .go{transform:translateX(4px)}}
+.mcard .ready:disabled{opacity:.35;cursor:not-allowed}
+#mode-restart{margin-top:0}
+.mcard .fine{font-size:11.5px}
+/* card art */
+.mart .chip rect:first-child{fill:#1a0d05;stroke:var(--warm);stroke-width:1.4} .mart .chip .pins{stroke:var(--warm-2);stroke-width:2;stroke-linecap:round}
+.mart .chip .core{fill:var(--warm)} .mart .chip .eye{stroke:var(--warm-ink);stroke-width:2.4;stroke-linecap:round}
+.mart .dev{fill:#0b0f14;stroke:#3a4553;stroke-width:1.6} .mart .dev.def{stroke:var(--cool)} .mart .dev.atk{stroke:var(--warm)}
+.mart .cam{fill:#3a4553}
+.mart .half.def,.mart .scr.def{fill:rgba(79,214,238,.13)} .mart .half.atk,.mart .scr.atk{fill:rgba(255,138,61,.13)}
+.mart .seam{stroke:rgba(232,236,239,.25);stroke-width:1;stroke-dasharray:2 3}
+.mart .rg{fill:none;stroke:rgba(79,214,238,.3);stroke-width:1;stroke-dasharray:2 3}
+.mart .swap,.mart .swaph{fill:none;stroke:var(--cool);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.mart .swap{stroke-dasharray:4 5;animation:st-flow2 1.2s linear infinite} @keyframes st-flow2{to{stroke-dashoffset:-9}}
+.mart .swap.atk,.mart .swaph.atk{stroke:var(--warm)}
+.mart .link{fill:none;stroke:rgba(232,236,239,.35);stroke-width:1.4;stroke-dasharray:3 5}
+.mart .wave{fill:none;stroke-width:1.6;stroke-linecap:round} .mart .wave.def{stroke:var(--cool)} .mart .wave.atk{stroke:var(--warm)}
+/* where the cards side-scroll: a dot per card */
+.st-dots{display:none;justify-content:center;gap:8px;margin-top:-2px}
+.st-cards.scrolls + .st-dots{display:flex}
+.st-dots button{width:26px;height:20px;padding:0;border:0;background:transparent;cursor:pointer;display:grid;place-items:center}
+.st-dots button::after{content:"";width:6px;height:6px;border-radius:3px;background:var(--line-2);transition:width .2s,background .2s}
+.st-dots button[aria-selected=true]::after{width:18px;background:var(--paper)}
+@media (prefers-reduced-motion:reduce){.st-scene .rt2,.mart .swap{animation:none} .mcard,.mcard .ready .go{transition:none}}
 .rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
 .pick.lv{grid-template-columns:repeat(3,minmax(0,1fr))}
-.matchrow{grid-column:1/-1;display:flex;align-items:center;gap:12px;min-width:0}
-.matchrow .mlbl,.matchrow .mkeep{flex:none;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-.matchrow .mkeep b{color:var(--keep);font-weight:600;letter-spacing:.06em}
-#mode-clockv b,#mode-sabov b{color:var(--paper)}
-.pick.waves{flex:1;max-width:340px;grid-template-columns:repeat(5,minmax(0,1fr))}
-.pick.clock{flex:1;max-width:340px}
-.matchrow .mlbl{min-width:74px}
-.rolepick button,.pick button{min-height:40px;border:0;background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--muted)}
+.rolepick button,.pick button{min-height:42px;border:0;background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--soft);transition:background .12s,color .12s}
+@media (hover:hover){.rolepick button:hover:not([aria-pressed=true]),.pick button:hover:not([aria-pressed=true]){background:rgba(232,236,239,.05);color:var(--paper)}}
 .rolepick button+button,.pick button+button{border-left:1px solid var(--line-2)}
 .rolepick button[data-role=def][aria-pressed=true],.pick button[data-side=def][aria-pressed=true]{background:var(--cool);color:var(--cool-ink)}
 .rolepick button[data-role=atk][aria-pressed=true],.pick button[data-side=atk][aria-pressed=true]{background:var(--warm);color:var(--warm-ink)}
@@ -687,8 +768,10 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .codebox{display:flex;gap:6px;align-items:center}
 .codebox label{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap;margin-right:4px}
 .codebox input{flex:1;width:0;min-width:0;height:44px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--ink);color:var(--paper);font:900 24px/1 var(--f-display);letter-spacing:.35em;text-transform:uppercase;text-align:center;padding:0 8px;user-select:text;-webkit-user-select:text}
+.codebox input:focus{border-color:var(--muted);outline:none}
 .codebox .mini{height:44px}
-.netstatus{font:500 11.5px/1.45 var(--f-ui);color:var(--muted);min-height:17px}
+.netstatus{font:500 11.5px/1.45 var(--f-ui);color:var(--muted)}
+.netstatus:empty{display:none}
 .netstatus.bad{color:#ffb4b4} .netstatus.ok{color:#a8e6b0}
 .netpill{flex:none;font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;padding:5px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
 .netpill.ok{border-color:rgba(168,230,176,.45);color:#a8e6b0} .netpill.bad{border-color:rgba(255,90,90,.45);color:#ffb4b4}
@@ -965,6 +1048,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .card{gap:6px}
   .ctx .srow,.ctx .segrow,.ctx .countrow,.ctx .fxrow,.ctx .fxchip{background:var(--slate-2)}
 }
+@media (max-width:980px){.st-cards{grid-auto-columns:minmax(290px,44%)} .st-set{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .st-set .sset:first-child{grid-column:1/-1} .st-set .sset:nth-child(2){border-left:0} .st-set .sset+.sset{border-top:1px solid var(--line)}}
+@media (max-height:780px){#ov-info.intro .sheet-head{padding:16px 24px 14px} #ov-info.intro .logo{font-size:38px} #ov-info.intro .tagline{margin-top:8px} .howto .steps li{padding:9px 0} .howto .key{margin-bottom:10px}}
+@media (max-height:780px) and (min-width:561px){.st-hero{height:150px} .st-brand .logo{font-size:clamp(56px,7vw,84px)} .mart{height:100px} .mturns li{padding:7px 0}}
 @media (max-width:560px){
   /* the HUD bar wraps: round, keep and the clock (or the wave's numbers) on top, coins and the pot below */
   .hud-row{flex-wrap:wrap;row-gap:6px}
@@ -979,7 +1065,22 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .wavebox{gap:10px;padding:0 9px} .wavebox b{font-size:17px}
   .hbox .lbl{font-size:9.5px;letter-spacing:.12em}
   .sb b{font-size:25px} .sb{padding:10px}
-  .modes{grid-template-columns:minmax(0,1fr);padding:14px 16px 16px}
+  .start{gap:12px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px))}
+  .st-hero{height:150px}
+  .st-brand{padding:0 0 16px 18px} .st-brand .logo{font-size:60px} .st-brand .tagline{margin-top:11px;font-size:9.5px;letter-spacing:.2em}
+  .st-help{top:10px;right:10px;height:30px;font-size:9.5px;padding:0 11px 0 4px}
+  .st-hero::before{background:linear-gradient(90deg,var(--ink) 0,rgba(7,9,12,.86) 40%,rgba(7,9,12,.2) 78%,rgba(7,9,12,0) 100%),linear-gradient(0deg,rgba(7,9,12,.75) 0,rgba(7,9,12,0) 50%)}
+  .st-set{grid-template-columns:minmax(0,1fr)}
+  .sset{grid-template-columns:88px minmax(0,1fr);grid-template-rows:auto auto;padding:10px 12px;gap:6px 10px;align-content:center}
+  .sset .mlbl{grid-row:1;grid-column:1;align-self:end}
+  .sset .mkeep{grid-row:2;grid-column:1;justify-self:start;align-self:start;white-space:normal;line-height:1.35;font-size:9.5px;letter-spacing:.1em}
+  .sset .pick{grid-row:1/3;grid-column:2}
+  .sset .pick button{min-height:40px}
+  .sset+.sset{border-left:0;border-top:1px solid var(--line)}
+  .pick.waves button{letter-spacing:.04em}
+  .st-cards{grid-auto-columns:86%;gap:10px}
+  .mart{height:96px}
+  .mhead h2{font-size:25px}
   .netpill{font-size:9.5px;padding:4px 6px;letter-spacing:.08em}
   .netpill .lg{display:none} .netpill .sm{display:inline}
   .brand{display:none}
@@ -990,7 +1091,11 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .keepbox .kico{display:none}
   .knum{font-size:20px} .knum small{display:none}
   #btn-info{width:44px}
-  .key{grid-template-columns:1fr}
+  .key{grid-template-columns:1fr;gap:5px}
+  .key div{padding:9px 12px;border-top:1px solid var(--line);border-left:2px solid var(--k)}
+  .key b{display:inline;margin:0 8px 0 0}
+  .howto .steps li{padding:10px 0;gap:12px} .howto .steps i{width:26px;font-size:26px} .howto .steps li div{font-size:14px}
+  .howto .win{font-size:13.5px}
   .ledger{grid-template-columns:1fr}
   .sum-title{font-size:27px}
   /* online end screen: three buttons don't fit one row, so Replay takes its own */
@@ -1003,6 +1108,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 /* short landscape (phones on their side) */
 @media (orientation:landscape) and (max-height:520px){
   #app{gap:6px;padding-block:6px}
+  .st-hero{height:118px} .st-brand .logo{font-size:52px} .mart{height:92px}
   .brand{font-size:22px}
   .hud-row{min-height:40px}
   .roundchip .val{font-size:18px}
@@ -1124,7 +1230,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v24</p>
+        <p class="tagline">Two Player Tower Defence · v25</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1132,17 +1238,28 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       <section class="howto" id="info-play">
         <h2>How to play</h2>
         <div class="key">
-          <div class="kd"><b>Defender</b>Walls and one tunable tower. Hold the keep through every wave.</div>
-          <div class="ka"><b>Attacker</b>Design an army, send sappers, time the wave. Break the keep.</div>
-          <div class="kk"><b>Keep</b><span data-rule="keepPerRound">125</span> points a wave, plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Whatever gets through comes off it.</div>
+          <div class="kd"><b>Defender</b>Build walls and towers. Hold the keep.</div>
+          <div class="ka"><b>Attacker</b>Build an army. Break the keep.</div>
+          <div class="kk"><b>Keep</b><span id="info-keepn">1,000 points</span>. Whatever gets through comes off it.</div>
         </div>
-        <ol>
-          <li><strong>Defender, in secret.</strong> Every match starts with a free <strong>starter maze</strong> on the board: ordinary walls you can keep, change or sell for 5 each. Walls bend the route, towers shoot it. Tap a tower to tune it. From round 2, <strong>Test</strong> plays last wave’s army against your build. <strong>Lock in.</strong></li>
-          <li><strong>Attacker, in secret.</strong> Army: pick units. Sabotage, from round 2: walls to bridge and towers to knock out, each carried by a sapper. Wave: time units and sappers, and <strong>Test</strong> it against the defense you saw (in round 1, the starter maze). <strong>Lock in</strong> from any step.</li>
-          <li><strong>The wave.</strong> Everything is revealed and plays out; the pot meter in the bar shows how the pot would split if the wave ended now. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
-          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, on up to <span data-rule="interestCap">150</span>. The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
+        <ol class="steps">
+          <li><i>1</i><div><strong>Plan in secret.</strong> The defender builds a maze with towers along it. The attacker picks units and when they set off.</div></li>
+          <li><i>2</i><div><strong>Watch the wave.</strong> Both plans are revealed and the army marches on the keep.</div></li>
+          <li><i>3</i><div><strong>Collect coins.</strong> Each wave pays both sides. Whoever did worse gets more, then you plan the next wave.</div></li>
         </ol>
-        <p>Play on one device and take turns, online on two, or against the computer; pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed, at the start (online the defender’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; pick <strong>Untimed</strong> on the start screen to plan without a clock (online, the defender’s choice counts).</p>
+        <p class="win">The attacker wins by breaking the keep. The defender wins by holding it to the last wave.</p>
+        <button class="info-more" id="info-more">All the rules</button>
+      </section>
+
+      <section id="info-round">
+        <h2>A round</h2>
+        <ol>
+          <li><strong>Defender, in secret.</strong> Every match starts with a free <strong>starter maze</strong>: ordinary walls you can keep, change or sell for 5 each. Walls bend the route, towers shoot it. Tap a tower to tune it. From round 2, <strong>Test</strong> plays last wave’s army against your build. <strong>Lock in.</strong></li>
+          <li><strong>Attacker, in secret.</strong> Army: pick units. Sabotage, from round 2: walls to bridge and towers to knock out, each carried by a sapper. Wave: time units and sappers, with a forecast of the wave against the defense you saw. <strong>Lock in</strong> from any step.</li>
+          <li><strong>The wave.</strong> Everything is revealed and plays out; the pot meter in the bar shows how the pot would split if the wave ended now. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
+          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, counting up to <span data-rule="interestCap">150</span>, so at most <span id="info-intmax">22</span> a wave. The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
+        </ol>
+        <p>Pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed on the start screen (online the defender’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
       </section>
 
       <section id="info-build">
@@ -1151,7 +1268,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <p><strong>Shortcuts.</strong> W, T, R and S pick the tools; with Shapes picked, R turns the piece and F flips it. Delete or Backspace removes the selected tower (Undo brings it back) or deletes the open design. Escape is Done. Ctrl+Z (⌘Z) undoes. On the Wave step the space bar plays the forecast and Ctrl+Z undoes its last change. None of them work while you type in a field.</p>
         <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">60</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built. <strong>Auto-tune</strong> spends your free coins on upgrades to the towers you’ve placed. <strong>Undo</strong> takes back your last change this round, coins and tuning included, until the wave starts; the starter maze is where a round begins, so Undo never takes it away.</p>
         <p><strong>Remove &amp; Inspect:</strong> hover a wall (on touch, hold it) and a red line shows where units would go if it were bridged. A click or tap takes a wall or tower back.</p>
-        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning for your first relocation in the match, 5 points more for each one after, at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 15%”), and the drag label its price. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends.</p>
+        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning as it is now for your first relocation in the match, <span data-rule="moveFeeRise:pt">0.5</span> points more for each one after, whichever tower it is (10%, 10.5%, 11%…), at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 10.5%”), and the drag label its price. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends.</p>
         <p><strong>Copy tuning</strong> on a tower’s card: new towers you place get that tuning (priced as usual) until you clear it with × on the Tower tool.</p>
         <p><strong>Hints</strong> (the switch beside the title): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire.</p>
         <p><strong>On the board.</strong> Bright walls are new this round: the attacker hasn’t seen them and can’t bridge them. Dotted ground is rough: units cross it, nothing can be built on it. Hatched slabs are rock: a free wall. An orange bridge stays open for good: wall off an end, or cover it with towers. Small dots on a tower are its effects: frost, poison, chain.</p>
@@ -1241,14 +1358,14 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal; the defender also gets the starter maze, free</td></tr>
               <tr><td>Sabotage</td><td class="n">On / Off</td><td>Picked at the start (online the defender’s pick). Off: no bridges or knock-outs, units <span id="info-nosab3">tougher</span> at the same price</td></tr>
-              <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>% up to <span data-rule="interestCap">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends</td></tr>
+              <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>% up to <span data-rule="interestCap">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends. Coins past the cap earn nothing, so at most <span id="info-intmax2">22</span> a wave</td></tr>
               <tr><td>Pot per round</td><td class="n"><span id="info-pot"></span></td><td><span id="info-pot-note"></span></td></tr>
               <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
               <tr><td>Waves</td><td class="n"><span data-rule="roundChoices:range">4–12</span></td><td>Picked at the start, <span data-rule="rounds">8</span> by default. The defender wins by surviving them</td></tr>
               <tr><td>Planning</td><td class="n"><span data-rule="planSecs:min">5</span> min</td><td>Each side, every round, then the plan goes as it stands; or untimed, picked at the start</td></tr>
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Range priced in proportion, damage <code>^<span data-rule="dpsPow">1.4</span></code>; fee rises by 10 per tower</td></tr>
-              <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw; +5 points a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave</td></tr>
+              <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw, on its tuning now; +<span data-rule="moveFeeRise:pt">0.5</span> points a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave</td></tr>
               <tr><td class="d">Accuracy</td><td class="n">80% → 100%</td><td>Slider ×1.15 / ×1.35 / ×1.6; fire rate shifts each shot, <span id="acc-span"></span></td></tr>
               <tr><td class="d">Frost</td><td class="n">×1.35</td><td>Slows <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s; slowed units take <span data-rule="brittle%">20</span>% more</td></tr>
               <tr><td class="d">Chain</td><td class="n">×1.5</td><td><span data-rule="chainJumps">3</span> jumps of <span data-rule="chainReach">2.5</span> cells, 70 / 50 / 35%, through armor; not with Splash</td></tr>
@@ -1261,7 +1378,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v24</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v25</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1295,39 +1412,47 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   </div>
 </div>
 
-<!-- How to play: this device or online -->
+<!-- The start screen (v25): the match settings, then the three ways to play, side by side (side-scrolling on narrow screens) -->
 <div class="overlay" id="ov-mode" hidden role="dialog" aria-modal="true" aria-labelledby="mode-title">
-  <div class="sheet">
-    <header class="sheet-head"><div><h1 class="logo" id="mode-title"><i class="mark"></i>TPTD</h1><p class="tagline">Two Player Tower Defence</p></div></header>
-    <div class="modes">
-      <div class="matchrow"><span class="mlbl">Waves</span><div class="pick waves" id="mode-waves" role="group" aria-label="Waves in the match"></div><span class="mkeep" id="mode-keep"></span></div>
-      <div class="matchrow"><span class="mlbl">Sabotage</span><div class="pick clock" id="mode-sabo" role="group" aria-label="Sabotage in the match"><button data-sabo="1" aria-pressed="true">On</button><button data-sabo="0" aria-pressed="false">Off</button></div><span class="mkeep" id="mode-sabov"></span></div>
-      <div class="matchrow"><span class="mlbl">Rounds</span><div class="pick clock" id="mode-clock" role="group" aria-label="Planning time per round"><button data-timed="1" aria-pressed="true">Timed</button><button data-timed="0" aria-pressed="false">Untimed</button></div><span class="mkeep" id="mode-clockv"></span></div>
-      <div class="modecol">
-        <div class="mode">
-          <h3><span class="idx">01</span>This device</h3>
-          <p>Pass and play on one screen. Look away while the other side plans.</p>
-          <button class="ready neutral" id="mode-local">Play here</button>
-        </div>
-        <div class="mode">
-          <h3><span class="idx">02</span>Versus computer</h3>
-          <p>Either side, three levels. It only sees what a human in its seat would.</p>
-          <div class="pick" role="group" aria-label="Your side against the computer"><button data-side="def" aria-pressed="true">Defender</button><button data-side="atk" aria-pressed="false">Attacker</button></div>
-          <div class="pick lv" role="group" aria-label="Difficulty"><button data-level="easy" aria-pressed="true">Easy</button><button data-level="normal" aria-pressed="false">Normal</button><button data-level="hard" aria-pressed="false">Hard</button></div>
-          <button class="ready neutral" id="mode-solo">Play the computer</button>
-        </div>
-      </div>
-      <div class="mode">
-        <h3><span class="idx">03</span>Online</h3>
-        <p>Each on your own device. Pick a side and share the code; your opponent picks the other side and enters it. The defender’s number of waves and clock choice are used.</p>
+  <div class="start">
+    <header class="st-hero">
+      <svg class="st-scene" viewBox="0 0 1200 240" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false"><defs><pattern id="st-dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="0" cy="0" r="1" fill="rgba(150,172,190,.24)"/></pattern><pattern id="st-stip" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r=".8" fill="rgba(190,170,140,.35)"/></pattern><pattern id="st-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.4" height="5" fill="rgba(150,172,190,.28)"/></pattern><path id="st-route" d="M-30 130 L110 130 L110 30 L230 30 L230 210 L350 210 L350 30 L470 30 L470 210 L590 210 L590 30 L710 30 L710 210 L830 210 L830 30 L950 30 L950 210 L1070 210 L1070 130 L1150 130"/></defs><rect x="-2400" y="-400" width="6000" height="1040" fill="url(#st-dots)"/><g><rect class="rf" x="320" y="100" width="20" height="20"/><rect class="rf" x="320" y="120" width="20" height="20"/><rect class="rf" x="680" y="140" width="20" height="20"/><rect class="rf" x="680" y="160" width="20" height="20"/><rect class="rf" x="940" y="100" width="20" height="20"/></g><g><rect class="rk" x="41" y="201" width="18" height="18" rx="2"/><rect class="rk" x="61" y="201" width="18" height="18" rx="2"/><rect class="rk" x="1121" y="21" width="18" height="18" rx="2"/><rect class="rk" x="1141" y="21" width="18" height="18" rx="2"/></g><path class="rt" d="M-30 130 L110 130 L110 30 L230 30 L230 210 L350 210 L350 30 L470 30 L470 210 L590 210 L590 30 L710 30 L710 210 L830 210 L830 30 L950 30 L950 210 L1070 210 L1070 130 L1150 130"/><path class="rt2" d="M-30 130 L110 130 L110 30 L230 30 L230 210 L350 210 L350 30 L470 30 L470 210 L590 210 L590 30 L710 30 L710 210 L830 210 L830 30 L950 30 L950 210 L1070 210 L1070 130 L1150 130"/><g class="wl"><rect x="162" y="62" width="16" height="16" rx="1.5"/><rect x="167" y="77" width="6" height="6"/><rect x="162" y="82" width="16" height="16" rx="1.5"/><rect x="167" y="97" width="6" height="6"/><rect x="162" y="102" width="16" height="16" rx="1.5"/><rect x="167" y="117" width="6" height="6"/><rect x="162" y="122" width="16" height="16" rx="1.5"/><rect x="167" y="137" width="6" height="6"/><rect x="162" y="142" width="16" height="16" rx="1.5"/><rect x="167" y="157" width="6" height="6"/><rect x="162" y="162" width="16" height="16" rx="1.5"/><rect x="167" y="177" width="6" height="6"/><rect x="162" y="182" width="16" height="16" rx="1.5"/><rect x="167" y="197" width="6" height="6"/><rect x="162" y="202" width="16" height="16" rx="1.5"/><rect x="167" y="217" width="6" height="6"/><rect x="162" y="222" width="16" height="16" rx="1.5"/><rect x="282" y="2" width="16" height="16" rx="1.5"/><rect x="287" y="17" width="6" height="6"/><rect x="282" y="22" width="16" height="16" rx="1.5"/><rect x="287" y="37" width="6" height="6"/><rect x="282" y="42" width="16" height="16" rx="1.5"/><rect x="287" y="57" width="6" height="6"/><rect x="282" y="62" width="16" height="16" rx="1.5"/><rect x="287" y="77" width="6" height="6"/><rect x="282" y="82" width="16" height="16" rx="1.5"/><rect x="287" y="97" width="6" height="6"/><rect x="282" y="102" width="16" height="16" rx="1.5"/><rect x="287" y="117" width="6" height="6"/><rect x="282" y="122" width="16" height="16" rx="1.5"/><rect x="287" y="137" width="6" height="6"/><rect x="282" y="142" width="16" height="16" rx="1.5"/><rect x="287" y="157" width="6" height="6"/><rect x="282" y="162" width="16" height="16" rx="1.5"/><rect x="402" y="62" width="16" height="16" rx="1.5"/><rect x="407" y="77" width="6" height="6"/><rect x="402" y="82" width="16" height="16" rx="1.5"/><rect x="407" y="97" width="6" height="6"/><rect x="402" y="102" width="16" height="16" rx="1.5"/><rect x="407" y="117" width="6" height="6"/><rect x="402" y="122" width="16" height="16" rx="1.5"/><rect x="407" y="137" width="6" height="6"/><rect x="402" y="142" width="16" height="16" rx="1.5"/><rect x="407" y="157" width="6" height="6"/><rect x="402" y="162" width="16" height="16" rx="1.5"/><rect x="407" y="177" width="6" height="6"/><rect x="402" y="182" width="16" height="16" rx="1.5"/><rect x="407" y="197" width="6" height="6"/><rect x="402" y="202" width="16" height="16" rx="1.5"/><rect x="407" y="217" width="6" height="6"/><rect x="402" y="222" width="16" height="16" rx="1.5"/><rect x="522" y="2" width="16" height="16" rx="1.5"/><rect x="527" y="17" width="6" height="6"/><rect x="522" y="22" width="16" height="16" rx="1.5"/><rect x="527" y="37" width="6" height="6"/><rect x="522" y="42" width="16" height="16" rx="1.5"/><rect x="527" y="57" width="6" height="6"/><rect x="522" y="62" width="16" height="16" rx="1.5"/><rect x="527" y="77" width="6" height="6"/><rect x="522" y="82" width="16" height="16" rx="1.5"/><rect x="527" y="97" width="6" height="6"/><rect x="522" y="102" width="16" height="16" rx="1.5"/><rect x="527" y="117" width="6" height="6"/><rect x="522" y="122" width="16" height="16" rx="1.5"/><rect x="527" y="137" width="6" height="6"/><rect x="522" y="142" width="16" height="16" rx="1.5"/><rect x="527" y="157" width="6" height="6"/><rect x="522" y="162" width="16" height="16" rx="1.5"/><rect x="642" y="62" width="16" height="16" rx="1.5"/><rect x="647" y="77" width="6" height="6"/><rect x="642" y="82" width="16" height="16" rx="1.5"/><rect x="647" y="97" width="6" height="6"/><rect x="642" y="102" width="16" height="16" rx="1.5"/><rect x="647" y="117" width="6" height="6"/><rect x="642" y="122" width="16" height="16" rx="1.5"/><rect x="647" y="137" width="6" height="6"/><rect x="642" y="142" width="16" height="16" rx="1.5"/><rect x="647" y="157" width="6" height="6"/><rect x="642" y="162" width="16" height="16" rx="1.5"/><rect x="647" y="177" width="6" height="6"/><rect x="642" y="182" width="16" height="16" rx="1.5"/><rect x="647" y="197" width="6" height="6"/><rect x="642" y="202" width="16" height="16" rx="1.5"/><rect x="647" y="217" width="6" height="6"/><rect x="642" y="222" width="16" height="16" rx="1.5"/><rect x="762" y="2" width="16" height="16" rx="1.5"/><rect x="767" y="17" width="6" height="6"/><rect x="762" y="22" width="16" height="16" rx="1.5"/><rect x="767" y="37" width="6" height="6"/><rect x="762" y="42" width="16" height="16" rx="1.5"/><rect x="767" y="57" width="6" height="6"/><rect x="762" y="62" width="16" height="16" rx="1.5"/><rect x="767" y="77" width="6" height="6"/><rect x="762" y="82" width="16" height="16" rx="1.5"/><rect x="767" y="97" width="6" height="6"/><rect x="762" y="102" width="16" height="16" rx="1.5"/><rect x="767" y="117" width="6" height="6"/><rect x="762" y="122" width="16" height="16" rx="1.5"/><rect x="767" y="137" width="6" height="6"/><rect x="762" y="142" width="16" height="16" rx="1.5"/><rect x="767" y="157" width="6" height="6"/><rect x="762" y="162" width="16" height="16" rx="1.5"/><rect x="882" y="62" width="16" height="16" rx="1.5"/><rect x="887" y="77" width="6" height="6"/><rect x="882" y="82" width="16" height="16" rx="1.5"/><rect x="887" y="97" width="6" height="6"/><rect x="882" y="102" width="16" height="16" rx="1.5"/><rect x="887" y="117" width="6" height="6"/><rect x="882" y="122" width="16" height="16" rx="1.5"/><rect x="887" y="137" width="6" height="6"/><rect x="882" y="142" width="16" height="16" rx="1.5"/><rect x="887" y="157" width="6" height="6"/><rect x="882" y="162" width="16" height="16" rx="1.5"/><rect x="887" y="177" width="6" height="6"/><rect x="882" y="182" width="16" height="16" rx="1.5"/><rect x="887" y="197" width="6" height="6"/><rect x="882" y="202" width="16" height="16" rx="1.5"/><rect x="887" y="217" width="6" height="6"/><rect x="882" y="222" width="16" height="16" rx="1.5"/><rect x="1002" y="2" width="16" height="16" rx="1.5"/><rect x="1007" y="17" width="6" height="6"/><rect x="1002" y="22" width="16" height="16" rx="1.5"/><rect x="1007" y="37" width="6" height="6"/><rect x="1002" y="42" width="16" height="16" rx="1.5"/><rect x="1007" y="57" width="6" height="6"/><rect x="1002" y="62" width="16" height="16" rx="1.5"/><rect x="1007" y="77" width="6" height="6"/><rect x="1002" y="82" width="16" height="16" rx="1.5"/><rect x="1007" y="97" width="6" height="6"/><rect x="1002" y="102" width="16" height="16" rx="1.5"/><rect x="1007" y="117" width="6" height="6"/><rect x="1002" y="122" width="16" height="16" rx="1.5"/><rect x="1007" y="137" width="6" height="6"/><rect x="1002" y="142" width="16" height="16" rx="1.5"/><rect x="1007" y="157" width="6" height="6"/><rect x="1002" y="162" width="16" height="16" rx="1.5"/></g><g class="tw"><circle class="rg" cx="170" cy="70" r="56"/><rect class="tb" x="161.5" y="61.5" width="17" height="17"/><g transform="translate(170 70)"><g><animateTransform attributeName="transform" type="rotate" values="-135;-65;-135" dur="4s" repeatCount="indefinite" begin="-0.0s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="290" cy="170" r="56"/><rect class="tb" x="281.5" y="161.5" width="17" height="17"/><g transform="translate(290 170)"><g><animateTransform attributeName="transform" type="rotate" values="65;135;65" dur="5s" repeatCount="indefinite" begin="-0.7s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="410" cy="130" r="56"/><rect class="tb" x="401.5" y="121.5" width="17" height="17"/><g transform="translate(410 130)"><g><animateTransform attributeName="transform" type="rotate" values="-110;-10;-110" dur="6s" repeatCount="indefinite" begin="-1.4s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="530" cy="170" r="56"/><rect class="tb" x="521.5" y="161.5" width="17" height="17"/><g transform="translate(530 170)"><g><animateTransform attributeName="transform" type="rotate" values="50;130;50" dur="4s" repeatCount="indefinite" begin="-2.1s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="650" cy="70" r="56"/><rect class="tb" x="641.5" y="61.5" width="17" height="17"/><g transform="translate(650 70)"><g><animateTransform attributeName="transform" type="rotate" values="-130;-50;-130" dur="5s" repeatCount="indefinite" begin="-2.8s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="770" cy="110" r="56"/><rect class="tb" x="761.5" y="101.5" width="17" height="17"/><g transform="translate(770 110)"><g><animateTransform attributeName="transform" type="rotate" values="85;175;85" dur="6s" repeatCount="indefinite" begin="-3.5s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="890" cy="70" r="56"/><rect class="tb" x="881.5" y="61.5" width="17" height="17"/><g transform="translate(890 70)"><g><animateTransform attributeName="transform" type="rotate" values="-145;-75;-145" dur="4s" repeatCount="indefinite" begin="-4.2s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="1010" cy="170" r="56"/><rect class="tb" x="1001.5" y="161.5" width="17" height="17"/><g transform="translate(1010 170)"><g><animateTransform attributeName="transform" type="rotate" values="40;120;40" dur="5s" repeatCount="indefinite" begin="-4.9s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><line class="trc" x1="170" y1="70" x2="120" y2="32"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.78;.82;1" dur="1.3s" begin="0.2s" repeatCount="indefinite"/></line><line class="trc" x1="410" y1="130" x2="470" y2="150"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.78;.82;1" dur="1.7s" begin="0.9s" repeatCount="indefinite"/></line><line class="trc" x1="650" y1="70" x2="600" y2="40"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.78;.82;1" dur="1.1s" begin="0.4s" repeatCount="indefinite"/></line><line class="trc" x1="770" y1="110" x2="830" y2="160"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.78;.82;1" dur="1.5s" begin="1.2s" repeatCount="indefinite"/></line><line class="trc" x1="1010" y1="170" x2="1068" y2="190"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.78;.82;1" dur="1.9s" begin="0.6s" repeatCount="indefinite"/></line><line class="trc" x1="290" y1="170" x2="345" y2="205"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.78;.82;1" dur="1.4s" begin="1.0s" repeatCount="indefinite"/></line><g class="kp" transform="translate(1166 130)"><rect class="kpr" x="-17" y="-17" width="34" height="34" rx="2"><animate attributeName="opacity" values=".7;0" dur="2.4s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="scale" values="1;1.7" dur="2.4s" repeatCount="indefinite"/></rect><rect class="kpb" x="-12" y="-12" width="24" height="24" rx="2"/><path class="kpd" d="M0 -6 L6 0 L0 6 L-6 0Z"/></g><g class="un"><circle r="5" fill="#ffb547"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-0.00s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="7.2" fill="#e5472b"/><circle r="7.2" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-3.41s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ff7b36"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-6.82s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ff6fa8"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-10.23s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ffb547"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-13.65s"><mpath href="#st-route"/></animateMotion></g><g class="un"><path class="sp" d="M0 -7 L7 0 L0 7 L-7 0Z" stroke="#ff7b36"/><path class="spi" d="M-3 -1.5 H3 M-3 1.5 H3" stroke="#ff7b36"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-17.06s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ff7b36"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-20.47s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ff6fa8"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-23.88s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ffb547"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-27.29s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="7.2" fill="#e5472b"/><circle r="7.2" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-30.70s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ff7b36"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-34.11s"><mpath href="#st-route"/></animateMotion></g><g class="un"><circle r="5" fill="#ff6fa8"/><circle r="5" class="ud"/><animateMotion dur="40.9s" repeatCount="indefinite" begin="-37.53s"><mpath href="#st-route"/></animateMotion></g></svg>
+      <div class="st-brand"><h1 class="logo" id="mode-title"><i class="mark"></i>TPTD</h1><p class="tagline">Two Player Tower Defence</p></div>
+      <button class="st-help" id="mode-help"><span aria-hidden="true">?</span>How to play</button>
+    </header>
+    <section class="st-set" aria-label="Match settings">
+      <div class="sset"><span class="mlbl">Waves</span><span class="mkeep" id="mode-keep"></span><div class="pick waves" id="mode-waves" role="group" aria-label="Waves in the match"></div></div>
+      <div class="sset"><span class="mlbl">Clock</span><span class="mkeep" id="mode-clockv"></span><div class="pick clock" id="mode-clock" role="group" aria-label="Planning time per round"><button data-timed="1" aria-pressed="true">Timed</button><button data-timed="0" aria-pressed="false">Untimed</button></div></div>
+      <div class="sset"><span class="mlbl">Sabotage</span><span class="mkeep" id="mode-sabov"></span><div class="pick clock" id="mode-sabo" role="group" aria-label="Sabotage in the match"><button data-sabo="1" aria-pressed="true">On</button><button data-sabo="0" aria-pressed="false">Off</button></div></div>
+    </section>
+    <div class="st-cards modes" id="mode-cards">
+      <article class="mcard" aria-labelledby="mc-solo">
+        <svg class="mart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false"><g transform="translate(180 65) scale(.9) translate(-150 -70)"><path class="rt" d="M100 70 H700"/><g class="chip"><rect x="48" y="44" width="44" height="52" rx="6"/><g class="pins"><path d="M58 44 v-7 M58 96 v7"/><path d="M70 44 v-7 M70 96 v7"/><path d="M82 44 v-7 M82 96 v7"/><path d="M48 58 h-7 M92 58 h7"/><path d="M48 70 h-7 M92 70 h7"/><path d="M48 82 h-7 M92 82 h7"/></g><rect class="core" x="60" y="60" width="20" height="20" rx="2"><animate attributeName="opacity" values=".35;1;.35" dur="2.2s" repeatCount="indefinite"/></rect><path class="eye" d="M64 67 h4 M72 67 h4"/></g><g class="wl"><rect x="212" y="26" width="16" height="16" rx="1.5"/><rect x="232" y="26" width="16" height="16" rx="1.5"/><rect x="227" y="31" width="6" height="6"/><rect x="212" y="98" width="16" height="16" rx="1.5"/><rect x="192" y="98" width="16" height="16" rx="1.5"/><rect x="207" y="103" width="6" height="6"/></g><g class="tw"><circle class="rg" cx="200" cy="34" r="52"/><rect class="tb" x="191.5" y="25.5" width="17" height="17"/><g transform="translate(200 34)"><g><animateTransform attributeName="transform" type="rotate" values="40;100;40" dur="5s" repeatCount="indefinite" begin="-0.7s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><g class="tw"><circle class="rg" cx="240" cy="106" r="52"/><rect class="tb" x="231.5" y="97.5" width="17" height="17"/><g transform="translate(240 106)"><g><animateTransform attributeName="transform" type="rotate" values="-110;-50;-110" dur="6s" repeatCount="indefinite" begin="-1.4s"/><rect class="tt" x="1" y="-1.6" width="9.5" height="3.2"/><circle class="tc" r="3.6"/><circle class="td" r="1"/></g></g></g><line class="trc" x1="200" y1="34" x2="214" y2="66"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.7;.76;1" dur="1.1s" repeatCount="indefinite"/></line><line class="trc" x1="240" y1="106" x2="252" y2="74"><animate attributeName="opacity" values="0;0;1;0" keyTimes="0;.7;.76;1" dur="1.4s" begin=".5s" repeatCount="indefinite"/></line><g class="un"><circle r="7" fill="#ffb547"/><circle r="7" class="ud"/><animateMotion dur="8s" repeatCount="indefinite" begin="-0.00s" path="M100 70 H700"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.04;.5;.62" dur="8s" repeatCount="indefinite" begin="-0.00s"/></g><g class="un"><circle r="5.5" fill="#e5472b"/><circle r="5.5" class="ud"/><animateMotion dur="8s" repeatCount="indefinite" begin="-1.60s" path="M100 70 H700"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.04;.5;.62" dur="8s" repeatCount="indefinite" begin="-1.60s"/></g><g class="un"><circle r="5.5" fill="#ff7b36"/><circle r="5.5" class="ud"/><animateMotion dur="8s" repeatCount="indefinite" begin="-3.20s" path="M100 70 H700"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.04;.5;.62" dur="8s" repeatCount="indefinite" begin="-3.20s"/></g><g class="un"><circle r="7" fill="#ff6fa8"/><circle r="7" class="ud"/><animateMotion dur="8s" repeatCount="indefinite" begin="-4.80s" path="M100 70 H700"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.04;.5;.62" dur="8s" repeatCount="indefinite" begin="-4.80s"/></g><g class="un"><circle r="5.5" fill="#ffb547"/><circle r="5.5" class="ud"/><animateMotion dur="8s" repeatCount="indefinite" begin="-6.40s" path="M100 70 H700"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.04;.5;.62" dur="8s" repeatCount="indefinite" begin="-6.40s"/></g></g></svg>
+        <div class="mhead"><h2 id="mc-solo">Single player</h2><p class="msub">Versus computer</p></div>
+        <div class="pick" role="group" aria-label="Your side against the computer"><button data-side="def" aria-pressed="true">Defender</button><button data-side="atk" aria-pressed="false">Attacker</button></div>
+        <div class="pick lv" role="group" aria-label="Difficulty"><button data-level="easy" aria-pressed="true">Easy</button><button data-level="normal" aria-pressed="false">Normal</button><button data-level="hard" aria-pressed="false">Hard</button></div>
+        <button class="ready neutral" id="mode-solo">Play<span class="go" aria-hidden="true">→</span></button>
+      </article>
+      <article class="mcard" aria-labelledby="mc-local">
+        <svg class="mart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false"><g transform="translate(180 65) scale(.9) translate(-150 -70)"><rect class="dev" x="84" y="30" width="132" height="84" rx="10"/><clipPath id="mc-scr"><rect x="94" y="38" width="112" height="68" rx="3"/></clipPath><g clip-path="url(#mc-scr)"><rect class="half def" x="94" y="38" width="56" height="68"><animate attributeName="opacity" values="1;1;.35;.35;1" keyTimes="0;.42;.5;.92;1" dur="5s" repeatCount="indefinite"/></rect><rect class="half atk" x="150" y="38" width="56" height="68"><animate attributeName="opacity" values=".35;.35;1;1;.35" keyTimes="0;.42;.5;.92;1" dur="5s" repeatCount="indefinite"/></rect><path class="seam" d="M150 38 V106"/><rect class="tb" x="114" y="64" width="14" height="14"/><circle class="tc" cx="121" cy="71" r="3"/><circle cx="168" cy="62" r="3.4" fill="#ffb547"/><circle cx="180" cy="72" r="3.4" fill="#e5472b"/><circle cx="172" cy="84" r="3.4" fill="#ff7b36"/><circle cx="190" cy="60" r="3.4" fill="#ff6fa8"/></g><circle class="cam" cx="150" cy="34" r="1.3"/><path class="swap" d="M70 66 C 70 22, 120 12, 150 14"/><path class="swaph" d="M146 9 L152 14 L146 19"/><path class="swap atk" d="M230 78 C 230 122, 180 132, 150 130"/><path class="swaph atk" d="M154 125 L148 130 L154 135"/></g></svg>
+        <div class="mhead"><h2 id="mc-local">Multiplayer</h2><p class="msub">On this device</p></div>
+        <ol class="mturns"><li class="d">Defender plans</li><li class="a">Attacker plans</li><li class="w">The wave plays out</li></ol>
+        <p class="mnote">Pass the device between turns. No peeking.</p>
+        <button class="ready neutral" id="mode-local">Play<span class="go" aria-hidden="true">→</span></button>
+      </article>
+      <article class="mcard" aria-labelledby="mc-online">
+        <svg class="mart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false"><g transform="translate(180 65) scale(.9) translate(-150 -70)"><rect class="dev def" x="52" y="40" width="50" height="86" rx="9"/><rect class="scr def" x="58" y="50" width="38" height="64" rx="3"/><rect class="tb" x="70.0" y="75.0" width="14" height="14"/><circle class="tc" cx="77.0" cy="82.0" r="3"/><circle class="rg" cx="77.0" cy="82.0" r="14"/><rect class="dev atk" x="198" y="40" width="50" height="86" rx="9"/><rect class="scr atk" x="204" y="50" width="38" height="64" rx="3"/><circle cx="214.0" cy="86.0" r="3.4" fill="#ffb547"/><circle cx="223.0" cy="77.0" r="3.4" fill="#e5472b"/><circle cx="232.0" cy="85.0" r="3.4" fill="#ff7b36"/><circle cx="221.0" cy="92.0" r="3.4" fill="#ff6fa8"/><path class="link" d="M100 44 C 120 6, 180 6, 200 44"/><circle class="pkt" r="3.4"><animateMotion dur="2.6s" repeatCount="indefinite" path="M100 44 C 120 6, 180 6, 200 44" keyPoints="0;1;0" keyTimes="0;.5;1" calcMode="linear"/><animate attributeName="fill" values="#4fd6ee;#4fd6ee;#ff8a3d;#ff8a3d;#4fd6ee" keyTimes="0;.45;.5;.95;1" dur="2.6s" repeatCount="indefinite"/></circle><path class="wave def" d="M70 30 q7 -7 14 0 M66 24 q11 -11 22 0"><animate attributeName="opacity" values=".2;1;.2" dur="1.3s" repeatCount="indefinite"/></path><path class="wave atk" d="M216 30 q7 -7 14 0 M212 24 q11 -11 22 0"><animate attributeName="opacity" values=".2;1;.2" dur="1.3s" begin=".65s" repeatCount="indefinite"/></path></g></svg>
+        <div class="mhead"><h2 id="mc-online">Online</h2><p class="msub">Against friends</p></div>
         <div class="rolepick" role="group" aria-label="Your side"><button data-role="def" aria-pressed="false">Defender</button><button data-role="atk" aria-pressed="false">Attacker</button></div>
         <div class="codebox"><label for="mode-code">Code</label><input id="mode-code" maxlength="6" autocomplete="off" spellcheck="false"><button class="mini" id="mode-new">New</button></div>
-        <button class="ready neutral" id="mode-online" disabled>Connect</button>
+        <p class="mnote">Share the code. The defender’s settings count.</p>
         <div class="netstatus" id="mode-status" role="status"></div>
+        <button class="ready neutral" id="mode-online" disabled>Connect<span class="go" aria-hidden="true">→</span></button>
         <button class="ready neutral" id="mode-restart" hidden>Start a new match</button>
-        <p class="fine">Inside Claude, both players must be signed in and the artifact shared directly; a public link can’t connect.</p>
-      </div>
+        <p class="fine" id="mode-fine" hidden>Inside Claude, both players must be signed in and the artifact shared directly; a public link can’t connect.</p>
+      </article>
     </div>
+    <div class="st-dots" id="mode-dots" role="tablist" aria-label="Ways to play"><button role="tab" aria-label="Single player"></button><button role="tab" aria-label="Multiplayer"></button><button role="tab" aria-label="Online"></button></div>
   </div>
 </div>
 
@@ -1416,8 +1541,9 @@ const RULES = {
   // relocation in the match, moveFeeRise more for each one after, at most moveFeeMax. Removing a seen tower refunds its
   // value minus the same fee, so a drag and a delete-and-rebuild cost the same.
   // Since v23 the fees the defender paid in a round (net of fees it got back) go to the attacker when the wave ends
-  // (moveFeeToAtk; false: v22, they go to no one).
-  moveFeeBase: 0.1, moveFeeRise: 0.05, moveFeeMax: 0.4, moveFeeToAtk: true,
+  // (moveFeeToAtk; false: v22, they go to no one). Since v25 the rate rises half a point a relocation (10%, 10.5%, 11%…,
+  // the user's schedule; v22-v24 rose 5 points, 10% to 40% in six moves): moveFeeRise 0.05 plays v24 exactly.
+  moveFeeBase: 0.1, moveFeeRise: 0.005, moveFeeMax: 0.4, moveFeeToAtk: true,
   // The round after a sabotage landed the defender has to rework its layout, so moving is free then (v23, at the user's
   // request): every tower if a bridge went down in the last wave, otherwise the towers that were knocked out in it.
   freeAfterSabotage: true,
@@ -1744,6 +1870,7 @@ function sellTower(G, i) {
    free (nothing seen yet). Undo puts the coins and the count back exactly. */
 const moveRate = (n = S.totals.moveTries || 0) => Math.min(RULES.moveFeeMax, RULES.moveFeeBase + RULES.moveFeeRise * n);
 const moveFeeOf = (cfg, n) => Math.round(moveRate(n) * towerCost(cfg));
+const ratePct = v => String(Math.round(v * 1000) / 10); // a fee rate as the player reads it: "10.5"
 const seenHome = (g, cell) => { const h = S.seenGrid[cell]; return S.round > 1 && !!(g && g.t === 'tower' && h && h.t === 'tower' && h.n === g.n); };
 // v23: no fee the round after a sabotage landed: on any tower after a bridge went down, else on the towers knocked out
 const feeFree = (g, F = S.freeMv) => !!(RULES.freeAfterSabotage && F && g && (F.all || (F.n || []).includes(g.n)));
@@ -3549,14 +3676,14 @@ function showSummary() {
       <div class="led d"><h3>Defender</h3><span class="big">+${L.dTot ?? L.dGain}</span>
         <ul><li><span>Pot share ${Math.round(L.share * 100)}%</span><span>+${L.dGain}</span></li>
         ${L.sapLost ? `<li id="led-dkill"><span>Sappers shot down (${L.sapLost})</span><span>+${L.dKill || 0}</span></li>` : ''}
-        ${RULES.interestRate > 0 ? `<li id="led-dint"><span>Interest on ${L.dLeft || 0} left</span><span>+${L.dInt || 0}</span></li>` : ''}
+        ${RULES.interestRate > 0 ? `<li id="led-dint"><span>Interest on ${L.dLeft || 0} left${(L.dLeft || 0) > RULES.interestCap ? ` (counts up to ${RULES.interestCap})` : ''}</span><span>+${L.dInt || 0}</span></li>` : ''}
         <li><span>Bridged walls refunded (${L.bridges})</span><span>${L.bridgeRefund ? '+' + L.bridgeRefund : '0'}</span></li>
         <li><span>Towers knocked out</span><span>${L.jammed}</span></li>
         <li><span>Worth now</span><span>${defWorth()}</span></li></ul></div>
       <div class="led a"><h3>Attacker</h3><span class="big">+${L.aTot ?? L.aGain}</span>
         <ul><li><span>Pot share ${100 - Math.round(L.share * 100)}%</span><span>+${L.aGain}</span></li>
         ${L.aMove ? `<li id="led-amove"><span>Defender moved towers</span><span>+${L.aMove}</span></li>` : ''}
-        ${RULES.interestRate > 0 ? `<li id="led-aint"><span>Interest on ${L.aLeft || 0} left</span><span>+${L.aInt || 0}</span></li>` : ''}
+        ${RULES.interestRate > 0 ? `<li id="led-aint"><span>Interest on ${L.aLeft || 0} left${(L.aLeft || 0) > RULES.interestCap ? ` (counts up to ${RULES.interestCap})` : ''}</span><span>+${L.aInt || 0}</span></li>` : ''}
         <li><span>Sabotage (${L.charges})</span><span>${L.chargeCoins ? '−' + L.chargeCoins : '0'}</span></li>
         <li><span>Units through / killed</span><span>${L.leaks} / ${L.kills}</span></li>
         <li><span>Worth now</span><span>${atkWorth()}</span></li></ul></div>
@@ -3592,9 +3719,10 @@ for (const id of ['#sum-body', '#end-body']) $(id).addEventListener('click', e =
   det.hidden = !open; b.setAttribute('aria-expanded', open);
 });
 let infoFirst = false;
-function openInfo(first, section = '') {
+function openInfo(first, section = '', back = 'Back to the game') {
   infoFirst = !!first;
-  $('#info-go').textContent = first ? 'Start playing' : 'Back to the game';
+  $('#info-go').textContent = first ? 'Start playing' : back;
+  el.ovInfo.classList.toggle('intro', !!first || section === 'info-play'); // v25: the opening How to play is short; the rest is a tap away
   show(el.ovInfo);
   const at = section && $('#' + section), body = $('#info-body');
   body.scrollTop = at ? at.offsetTop - body.offsetTop - 8 : 0;
@@ -3615,7 +3743,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 15; // 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 16; // 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
@@ -4181,7 +4309,7 @@ function disconnect() {
   Object.assign(NET, { on: false, link: null, linkUp: false, peer: null, st: 'lobby' });
   restartBtn.hidden = true;
   codeIn.disabled = false; $('#mode-new').disabled = false; $('#mode-local').disabled = false; $('#mode-solo').disabled = false;
-  modeBtn.textContent = 'Connect';
+  modeBtn.innerHTML = 'Connect<span class="go" aria-hidden="true">→</span>';
   syncModeUI();
 }
 
@@ -5297,6 +5425,29 @@ function showMode() {
   syncModeUI(); syncRoundsUI();
   show(ovMode);
 }
+// v25: the start screen's How to play, its card dots (where the cards side-scroll), and its art, paused while hidden
+$('#mode-help').addEventListener('click', () => openInfo(false, 'info-play', 'Back'));
+$('#mode-fine').hidden = !(window.claude && typeof window.claude.use === 'function'); // the room's fine print, inside Claude only
+{
+  const row = $('#mode-cards'), cards = [...row.children], dots = [...document.querySelectorAll('#mode-dots button')];
+  const at = () => { const w = cards[1].offsetLeft - cards[0].offsetLeft; return w > 0 ? clamp(Math.round(row.scrollLeft / w), 0, cards.length - 1) : 0; };
+  const syncDots = () => { const k = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4 ? cards.length - 1 : at(); dots.forEach((d, i) => d.setAttribute('aria-selected', String(i === k))); };
+  const fit = () => { row.classList.toggle('scrolls', row.scrollWidth > row.clientWidth + 2); syncDots(); };
+  row.addEventListener('scroll', syncDots, { passive: true });
+  dots.forEach((d, i) => d.addEventListener('click', () => row.scrollTo({ left: cards[i].offsetLeft - cards[0].offsetLeft, behavior: 'smooth' })));
+  // the board in the hero: cropped to its right end where the hero is tall enough, else whole, at the right
+  const hero = $('.st-hero'), scene = $('.st-scene'), vb = scene.viewBox.baseVal;
+  const frame = () => { const r = hero.getBoundingClientRect(), wide = r.height > 0 && r.width / r.height > vb.width / vb.height; scene.setAttribute('preserveAspectRatio', wide ? 'xMaxYMid meet' : 'xMaxYMid slice'); };
+  if (window.ResizeObserver) { new ResizeObserver(fit).observe(row); new ResizeObserver(frame).observe(hero); } else addEventListener('resize', () => { fit(); frame(); });
+  const arts = [...ovMode.querySelectorAll('svg.st-scene, svg.mart')], still = matchMedia('(prefers-reduced-motion: reduce)');
+  const play = () => {
+    const on = !ovMode.hidden && !still.matches;
+    for (const a of arts) try { if (on) a.unpauseAnimations(); else { a.pauseAnimations(); if (still.matches) a.setCurrentTime(6); } } catch (_) { /* no SMIL */ }
+    if (!ovMode.hidden) fit();
+  };
+  new MutationObserver(play).observe(ovMode, { attributes: true, attributeFilter: ['hidden'] });
+  still.addEventListener?.('change', play); play();
+}
 $('#mode-local').addEventListener('click', () => { hide(ovMode); NET.on = false; SOLO.on = false; document.body.dataset.role = ''; newMatch(); startRound(); });
 function syncSoloUI() {
   for (const b of document.querySelectorAll('.pick button[data-side], .pick button[data-level]')) b.setAttribute('aria-pressed', String(b.dataset.side ? b.dataset.side === SOLO.side : b.dataset.level === SOLO.level));
@@ -5761,8 +5912,8 @@ function updateTowerEditor(cell) {
   putText(root.querySelector('#te-stat'), towerStat(cell, c));
   // v22: what moving or removing it costs, for a tower the attacker saw here
   const mv = root.querySelector('#te-move');
-  putText(mv, mf ? `Next move: ${Math.round(moveRate() * 100)}% · ${mf} coins` : S.round > 1 ? (g.mfee > 0 ? `Moved · put it back for +${g.mfee}` : freeWhy(g) || 'New this round · moves free') : '');
-  mv.dataset.tip = mf ? `The attacker saw this tower here. Moving or removing it costs ${Math.round(moveRate() * 100)}% of its tuning (${mf} coins); each relocation this match adds 5 points, up to ${Math.round(RULES.moveFeeMax * 100)}%. Moving it back this round refunds the fee. Fees paid go to the attacker when the wave ends.` : '';
+  putText(mv, mf ? `Next move: ${ratePct(moveRate())}% · ${mf} coins` : S.round > 1 ? (g.mfee > 0 ? `Moved · put it back for +${g.mfee}` : freeWhy(g) || 'New this round · moves free') : '');
+  mv.dataset.tip = mf ? `The attacker saw this tower here. Moving or removing it costs ${ratePct(moveRate())}% of its tuning as it is now (${mf} coins); each relocation this match, of any tower, adds ${ratePct(RULES.moveFeeRise)} points, up to ${ratePct(RULES.moveFeeMax)}%. Moving it back this round refunds the fee. Fees paid go to the attacker when the wave ends.` : '';
 }
 // A tower as the attacker saw it, or in a wave: a card with its numbers (dealt: the damage it has dealt this wave).
 function towerCardHTML(g, opts) {
@@ -7953,6 +8104,7 @@ function infoSection() {
 $('#btn-info').addEventListener('click', () => openInfo(false, infoSection()));
 $('#info-x').addEventListener('click', closeInfo);
 $('#info-go').addEventListener('click', closeInfo);
+$('#info-more').addEventListener('click', () => { el.ovInfo.classList.remove('intro'); const b = $('#info-body'), at = $('#info-round'); b.scrollTop = at.offsetTop - b.offsetTop - 8; });
 el.ovInfo.addEventListener('click', e => { if (e.target === el.ovInfo) closeInfo(); });
 el.ovHand.addEventListener('click', handContinue);
 $('#sum-next').addEventListener('click', nextRound);
@@ -8083,8 +8235,9 @@ function restore(d) {
 function start(data) {
   for (const n of document.querySelectorAll('[data-rule]')) { // info text follows the rules: "key", "key%", "key:min", "key:range"
     const [k, f] = n.dataset.rule.split(':'), pct = k.endsWith('%'), v = (pct ? k.slice(0, -1) : k).split('.').reduce((o, x) => (o == null ? o : o[x]), RULES);
-    n.textContent = pct ? Math.round(v * 100) : f === 'min' ? fmtNum(v / 60) : f === 'range' ? `${Math.min(...v)}–${Math.max(...v)}` : v;
+    n.textContent = pct ? Math.round(v * 100) : f === 'pt' ? ratePct(v) : f === 'min' ? fmtNum(v / 60) : f === 'range' ? `${Math.min(...v)}–${Math.max(...v)}` : v;
   }
+  $('#info-keepn').textContent = `${fmtK(keepFor(RULES.rounds))} points in ${[8, 11].includes(RULES.rounds) ? 'an' : 'a'} ${RULES.rounds}-wave match`; $('#info-intmax').textContent = $('#info-intmax2').textContent = interestOn(RULES.interestCap);
   { const up = Math.round((RULES.noSabHp - 1) * 100); for (const [id, t] of [['#info-nosab', up > 0 ? `${up}% more health` : 'no extra health'], ['#info-nosab2', up > 0 ? `${up}% more health` : 'no extra health'], ['#info-nosab3', up > 0 ? `+${up}% health` : 'as usual']]) $(id).textContent = t; }
   for (const k of ['', '2']) { $('#info-saphp' + k).textContent = US.hp.steps[RULES.sapper.hp]; $('#info-saparm' + k).textContent = US.armor.steps[RULES.sapper.armor || 0]; }
   const off = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v); // the fire rate's accuracy offsets, from the rules too
