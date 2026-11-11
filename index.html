@@ -1323,7 +1323,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v27</p>
+        <p class="tagline">Two Player Tower Defence · v28</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1352,7 +1352,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
           <li><strong>The wave.</strong> Everything is revealed and plays out; the pot meter in the bar shows how the pot would split if the wave ended now. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
           <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, at most <span data-rule="interestMax">150</span> a wave (reached with <span id="info-intmax">1,000</span> saved). The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
         </ol>
-        <p>Pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed on the start screen (online, the host’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
+        <p>Pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed on the start screen (online, the host’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price, and moving towers costs nothing. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
         <p><strong>Online.</strong> One player hosts a room and shares its code (or the invite link); a friend joins and sits in the free seat, and the host starts the match. The host’s settings are the match’s. Anyone with the <strong>watch link</strong> can watch, before or during a match: up to 8 watchers. They see what the attacker sees between waves, and each wave once both sides have locked in, never a plan before. The eye in the top bar shows how many are watching and copies the link.</p>
       </section>
 
@@ -1362,7 +1362,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <p><strong>Shortcuts.</strong> W, T, R and S pick the tools; with Shapes picked, R turns the piece and F flips it. Delete or Backspace removes the selected tower (Undo brings it back) or deletes the open design. Escape is Done. Ctrl+Z (⌘Z) undoes. On the Wave step the space bar plays the forecast and Ctrl+Z undoes its last change. None of them work while you type in a field.</p>
         <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">60</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built. <strong>Auto-tune</strong> spends your free coins on upgrades to the towers you’ve placed. <strong>Undo</strong> takes back your last change this round, coins and tuning included, until the wave starts; the starter maze is where a round begins, so Undo never takes it away.</p>
         <p><strong>Remove &amp; Inspect:</strong> hover a wall (on touch, hold it) and a red line shows where units would go if it were bridged. A click or tap takes a wall or tower back.</p>
-        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning as it is now for your first relocation in the match, then <span data-rule="moveFeeRise:pt">1</span>% more for each one after, whichever tower it is (10%, 11%, 12%…), at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 11%”), and the drag label its price. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends.</p>
+        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning as it is now for your first relocation in the match, then <span data-rule="moveFeeRise:pt">1</span>% more for each one after, whichever tower it is (10%, 11%, 12%…), at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 11%”), and the drag label its price. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends. With sabotage off there is no move fee: towers move free all match.</p>
         <p><strong>Copy tuning</strong> on a tower’s card: new towers you place get that tuning (priced as usual) until you clear it with × on the Tower tool.</p>
         <p><strong>Hints</strong> (the switch beside the title): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire.</p>
         <p><strong>On the board.</strong> Bright walls are new this round: the attacker hasn’t seen them and can’t bridge them. Dotted ground is rough: units cross it, nothing can be built on it. Hatched slabs are rock: a free wall. An orange bridge stays open for good: wall off an end, or cover it with towers. Small dots on a tower are its effects: frost, poison, chain.</p>
@@ -1441,7 +1441,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <p><strong>Bridge.</strong> Goes on a wall you’ve seen beside the route you saw, or beside one of your bridges. Its sapper lays it on reaching the marked tile beside the wall: the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. If the route no longer passes that tile, or a tower stands where the wall was, it misses. When it lands everyone, sappers included, takes the cheapest route counting only the towers firing then, so a tower you’ve already knocked out doesn’t keep units off it; if the route over it is still under more fire, units won’t take it, and the Sabotage step warns you. From <span data-rule="bridgeBase">25</span> coins, at most <span data-rule="bridgesPerWave">1</span> a wave.</p>
         <p><strong>Knock-out.</strong> Goes on a tower you’ve seen; tap it for its card, its price and the knock-out cap. Its sapper stops it shooting for the rest of the wave the moment it walks into the tower’s range; units keep their route (only a bridge landing changes it). It hits the spot: a tower moved away is safe. It costs <span data-rule="towerOffBase">15</span> plus <span data-rule="towerOffShare%">20</span>% of the tower’s slider price (its tuning, not its build fee), and the towers you target in one wave can add up to <span data-rule="towerCapShare%">50</span>% of the slider prices of all the towers you saw; one tower always fits.</p>
         <p>Each bridge costs <span data-rule="bridgeRise%">25</span>% of its base more for every bridge you sent in earlier waves, and each knock-out <span data-rule="towerOffRise%">25</span>% more for every earlier knock-out, landed or not. Targets in the same wave don’t raise each other’s price.</p>
-        <p>No sabotage in the first or the final wave. With <strong>Sabotage off</strong> on the start screen there is none at all: the attacker has no Sabotage step, and units get <span id="info-nosab2">more health</span> for the same price.</p>
+        <p>No sabotage in the first or the final wave. With <strong>Sabotage off</strong> on the start screen there is none at all: the attacker has no Sabotage step, and units get <span id="info-nosab2">more health</span> for the same price. There’s no move fee either: the defender moves towers free all match.</p>
       </section>
 
       <section>
@@ -1451,7 +1451,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             <thead><tr><th>Rule</th><th>Value</th><th>Note</th></tr></thead>
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal; the defender also gets the starter maze, free</td></tr>
-              <tr><td>Sabotage</td><td class="n">On / Off</td><td>Picked at the start (online, the host’s pick). Off: no bridges or knock-outs, units <span id="info-nosab3">tougher</span> at the same price</td></tr>
+              <tr><td>Sabotage</td><td class="n">On / Off</td><td>Picked at the start (online, the host’s pick). Off: no bridges or knock-outs, units <span id="info-nosab3">tougher</span> at the same price, no move fee</td></tr>
               <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>%, at most <span data-rule="interestMax">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends. It pays at most <span data-rule="interestMax">150</span> a wave, reached with <span id="info-intmax2">1,000</span> saved</td></tr>
               <tr><td>Pot per round</td><td class="n"><span id="info-pot"></span></td><td><span id="info-pot-note"></span></td></tr>
               <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
@@ -1459,7 +1459,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
               <tr><td>Planning</td><td class="n"><span data-rule="planSecs:min">5</span> min</td><td>Each side, every round, then the plan goes as it stands; or untimed, picked at the start</td></tr>
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
               <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Range priced in proportion, damage <code>^<span data-rule="dpsPow">1.4</span></code>; fee rises by 10 per tower</td></tr>
-              <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw, on its tuning now; +<span data-rule="moveFeeRise:pt">1</span>% a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave</td></tr>
+              <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw, on its tuning now; +<span data-rule="moveFeeRise:pt">1</span>% a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave; none with sabotage off</td></tr>
               <tr><td class="d">Accuracy</td><td class="n">80% → 100%</td><td>Slider ×1.15 / ×1.35 / ×1.6; fire rate shifts each shot, <span id="acc-span"></span></td></tr>
               <tr><td class="d">Frost</td><td class="n">×1.35</td><td>Slows <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s; slowed units take <span data-rule="brittle%">20</span>% more</td></tr>
               <tr><td class="d">Chain</td><td class="n">×1.5</td><td><span data-rule="chainJumps">3</span> jumps of <span data-rule="chainReach">2.5</span> cells, 70 / 50 / 35%, through armor; not with Splash</td></tr>
@@ -1472,7 +1472,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v27</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v28</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1644,7 +1644,8 @@ const RULES = {
   // attacker then has nothing to crack a strong defense with, every unit has noSabHp times its health (same price). The sims:
   // +10% brings the attackers' wins against the computer's Hard defender level with the game with sabotage, +15% leans a
   // little to the attacker, for the stronger, more focused defenses people build (see CLAUDE.md, "Measured on v24").
-  noSabHp: 1.15,
+  // v28: +20% (the user: "bump it to 20"; v24-v27 1.15).
+  noSabHp: 1.2,
   bridgeBase: 25, bridgeRise: 0.25, bridgesPerWave: 1, towerOffBase: 15, towerOffShare: 0.2, towerOffRise: 0.25, towerCapShare: 0.5,
   // terrain, new each match: shares of the board that are rough ground (units cross it, nothing can be built on
   // it) and rock (blocks like a wall that can't be removed, built on or bridged)
@@ -1657,6 +1658,9 @@ const RULES = {
   // at most 40% after 30; the user: "should grow by 1% per attempt"); v25-v26 rose half a point (moveFeeRise 0.005),
   // v22-v24 five points (0.05, 10% to 40% in six moves).
   moveFeeBase: 0.1, moveFeeRise: 0.01, moveFeeMax: 0.4, moveFeeToAtk: true,
+  // With sabotage off there is no move fee at all (v28, the user: "get rid of tower moving fee in no sabotage mode"):
+  // the fee priced dodging a sapper, and there are none then. true: v24-v27, the fee with sabotage off too.
+  noSabMoveFee: false,
   // The round after a sabotage landed the defender has to rework its layout, so moving is free then (v23, at the user's
   // request): every tower if a bridge went down in the last wave, otherwise the towers that were knocked out in it.
   freeAfterSabotage: true,
@@ -1981,16 +1985,19 @@ function sellTower(G, i) {
 /* The move fee (v22). A tower is on its seen cell when the attacker saw this same tower (its number) standing there; a
    tower placed this round has a new number, so it moves and sells free. Every drag of a seen tower off its seen cell is
    one relocation, every removal of one another, a swap of two seen towers two; each costs round(rate × its slider
-   price), the rate 10% for the defender's first relocation in the match and 5 points more for each one after, at most
-   40%. Moving one back onto its seen cell in the same round refunds its fee and takes the relocation back. Round 1 is
-   free (nothing seen yet). Undo puts the coins and the count back exactly. */
+   price), the rate 10% for the defender's first relocation in the match and a point more for each one after (since v27;
+   moveFeeRise), at most 40%. Moving one back onto its seen cell in the same round refunds its fee and takes the
+   relocation back. Round 1 is free (nothing seen yet), and since v28 so is every round with sabotage off (feeOn).
+   Undo puts the coins and the count back exactly. */
 const moveRate = (n = S.totals.moveTries || 0) => Math.min(RULES.moveFeeMax, RULES.moveFeeBase + RULES.moveFeeRise * n);
 const moveFeeOf = (cfg, n) => Math.round(moveRate(n) * towerCost(cfg));
 const ratePct = v => String(Math.round(v * 1000) / 10); // a fee rate as the player reads it: "10.5"
 const seenHome = (g, cell) => { const h = S.seenGrid[cell]; return S.round > 1 && !!(g && g.t === 'tower' && h && h.t === 'tower' && h.n === g.n); };
 // v23: no fee the round after a sabotage landed: on any tower after a bridge went down, else on the towers knocked out
 const feeFree = (g, F = S.freeMv) => !!(RULES.freeAfterSabotage && F && g && (F.all || (F.n || []).includes(g.n)));
-const paysFee = (g, cell) => seenHome(g, cell) && !feeFree(g);
+// v28: the fee only exists with sabotage on (or with RULES.noSabMoveFee); sabo is the match's (S.sabo, or the computer's K.sabo)
+const feeOn = (sabo = S.sabo) => sabo !== false || !!RULES.noSabMoveFee;
+const paysFee = (g, cell) => feeOn() && seenHome(g, cell) && !feeFree(g);
 const freeWhy = g => (!feeFree(g) ? '' : S.freeMv.all ? 'Moves free this round: a bridge went down' : 'Moves free this round: knocked out last wave');
 // What a move from `from` to `to` (a swap if something stands there) costs: each tower that leaves its seen cell pays,
 // one that comes back to it gets its fee back. coins (negative: a refund), the new count n, and the towers involved.
@@ -2012,7 +2019,7 @@ const refundOf = cell => sellValue(S.grid, cell) - removeFee(cell);
 // new build G was relocated or removed, and pays the fee (in cell order, the rate rising with each).
 function relocFees(K, G) {
   let n = K.moveTries || 0, coins = 0, moved = 0;
-  if (K.round > 1) K.grid.forEach((g, i) => {
+  if (K.round > 1 && feeOn(K.sabo)) K.grid.forEach((g, i) => {
     const h = K.seenGrid[i];
     if (!g || g.t !== 'tower' || g.off > 0 || !(h && h.t === 'tower' && h.n === g.n) || (G[i] && G[i].t === 'tower') || feeFree(g, K.freeMv)) return;
     coins += moveFeeOf(g.cfg, n++); moved++;
@@ -3876,7 +3883,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 18; // 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 19; // 19: v28 (units +20% health with sabotage off, no move fee then); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
@@ -4576,7 +4583,7 @@ function lobbyRender() {
   const up2 = Math.round((RULES.noSabHp - 1) * 100);
   $('#lobby-set').innerHTML = `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Waves</span><span class="mkeep" id="lobby-keep">Keep <b>${fmtK(keepFor(nW))}</b></span><div class="pick waves">${RULES.roundChoices.map(x => b('n', x, x === nW, x)).join('')}</div></div>`
     + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Clock</span><span class="mkeep">${tm ? `<b>${mmss(RULES.planSecs)}</b> a round` : 'No clock'}</span><div class="pick clock">${b('tm', 1, tm, 'Timed')}${b('tm', 0, !tm, 'Untimed')}</div></div>`
-    + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Sabotage</span><span class="mkeep">${sb ? 'Bridges, knock-outs' : up2 > 0 ? `Unit health <b>+${up2}%</b>` : 'Army only'}</span><div class="pick clock">${b('sb', 1, sb, 'On')}${b('sb', 0, !sb, 'Off')}</div></div>`;
+    + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Sabotage</span><span class="mkeep">${sb ? 'Bridges, knock-outs' : up2 > 0 ? `Health <b>+${up2}%</b>, free moves` : 'Army only, free moves'}</span><div class="pick clock">${b('sb', 1, sb, 'On')}${b('sb', 0, !sb, 'Off')}</div></div>`;
   const start = $('#lobby-start');
   start.hidden = !NET.host || live; start.disabled = !lobbyReady();
   if (NET.on && up && restartBtn.hidden && !modeStatus.classList.contains('bad')) {
@@ -5904,7 +5911,7 @@ function syncRoundsUI() {
   // v24: with sabotage, or without (army against towers; units cost less)
   for (const b of document.querySelectorAll('#mode-sabo button')) b.setAttribute('aria-pressed', String((b.dataset.sabo === '1') === pickSabo));
   const up = Math.round((RULES.noSabHp - 1) * 100);
-  $('#mode-sabov').innerHTML = pickSabo ? 'Bridges, knock-outs' : up > 0 ? `Unit health <b>+${up}%</b>` : 'Army only';
+  $('#mode-sabov').innerHTML = pickSabo ? 'Bridges, knock-outs' : up > 0 ? `Health <b>+${up}%</b>, free moves` : 'Army only, free moves';
 }
 for (const b of document.querySelectorAll('#mode-sabo button')) b.addEventListener('click', () => {
   pickSabo = b.dataset.sabo === '1'; syncRoundsUI();
@@ -6379,7 +6386,7 @@ function updateTowerEditor(cell) {
   putText(root.querySelector('#te-stat'), towerStat(cell, c));
   // v22: what moving or removing it costs, for a tower the attacker saw here
   const mv = root.querySelector('#te-move');
-  putText(mv, mf ? `Next move: ${ratePct(moveRate())}% · ${mf} coins` : S.round > 1 ? (g.mfee > 0 ? `Moved · put it back for +${g.mfee}` : freeWhy(g) || 'New this round · moves free') : '');
+  putText(mv, mf ? `Next move: ${ratePct(moveRate())}% · ${mf} coins` : S.round > 1 && feeOn() ? (g.mfee > 0 ? `Moved · put it back for +${g.mfee}` : freeWhy(g) || 'New this round · moves free') : '');
   mv.dataset.tip = mf ? `The attacker saw this tower here. Moving or removing it costs ${ratePct(moveRate())}% of its tuning as it is now (${mf} coins); each relocation this match, of any tower, adds ${ratePct(RULES.moveFeeRise)}%, up to ${ratePct(RULES.moveFeeMax)}%. Moving it back this round refunds the fee. Fees paid go to the attacker when the wave ends.` : '';
 }
 // A tower as the attacker saw it, or in a wave: a card with its numbers (dealt: the damage it has dealt this wave).

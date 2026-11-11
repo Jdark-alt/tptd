@@ -167,6 +167,14 @@ with sync_playwright() as p:
         charges, most = play_out(page, 'def', 'defend/hard, sabotage off', lambda: page.click('#def-lock'))
         check(charges == 0 and S(page, 'S.sabo') is False, f'v24: with sabotage off the Hard computer attacker sends no sappers ({charges} over the match)')
     page.click('#end-menu') if page.is_visible('#end-menu') else None
+    # v28: with sabotage off the computer defender pays no move fee (and the player-attacker gets none)
+    page.evaluate('() => { document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
+    start(page, 'atk', 'hard', seed=5)
+    for _ in range(10): page.click('.step.plus[data-i="0"]')
+    play_out(page, 'atk', 'attack/hard, sabotage off', lambda: page.click('#atk-lock'))
+    check(S(page, 'S.sabo') is False and S(page, 'S.totals.moveTries || 0') == 0 and S(page, 'S.totals.aMove || 0') == 0,
+          f'v28: with sabotage off the computer defender pays no move fee ({S(page, "S.totals.moveTries || 0")} relocations, {S(page, "S.totals.aMove || 0")} coins to the player)')
+    page.click('#end-menu') if page.is_visible('#end-menu') else None
     page.evaluate('() => { document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
     page.click('#mode-sabo [data-sabo="1"]')
 

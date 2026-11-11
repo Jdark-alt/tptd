@@ -2377,7 +2377,25 @@ with sync_playwright() as p:
     got = S(page, '(S.units.find(u => !u.sap) || {}).max')
     check(abs(got - want) < 1e-9 and (got > hp0 if up > 0 else got == hp0), f'v24: with sabotage off units march with noSabHp of their health ({hp0} → {got})')
     page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
-    page.click('#sum-next'); hand(page); page.click('#def-lock'); hand(page)
+    page.click('#sum-next'); hand(page)
+    # v28: with sabotage off there's no move fee: a tower the attacker saw moves and sells free, and the card says nothing of a fee
+    check(S(page, f'S.round === 2 && S.seenGrid[{idx(9, 5)}].n === S.grid[{idx(9, 5)}].n'), 'v28: round 2, the tower stands where the attacker saw it')
+    page.click('.tool[data-tool=tower]'); click_cell(page, 9, 5); page.wait_for_timeout(80)
+    sv = page.evaluate(f'() => {{ const S = window.siegeline.state, g = S.grid[{idx(9, 5)}]; return window.siegeline.towerCost(g.cfg) + Math.max(...S.grid.filter(h => h && h.t === "tower").map(h => h.fee || 0)); }}')
+    mvt = page.inner_text('#te-move'); ref = int(page.inner_text('#te-refund'))
+    check(mvt == '' and ref == sv, f'v28: with sabotage off a seen tower’s card shows no move fee and its full refund (“{mvt}”, refund {ref} of {sv})')
+    page.evaluate('() => { window.siegeline.rules.noSabMoveFee = true; window.siegeline.refresh(); }'); page.wait_for_timeout(60)
+    check(page.inner_text('#te-move').startswith('Next move: 10%'), f'v28: noSabMoveFee brings v24-v27’s fee back ({page.inner_text("#te-move")})')
+    page.evaluate('() => { window.siegeline.rules.noSabMoveFee = false; window.siegeline.refresh(); }'); page.wait_for_timeout(60)
+    page.keyboard.press('Escape')
+    f0 = S(page, 'S.dFree'); (x0, y0), (x1, y1) = [page.evaluate(f'() => window.siegeline.cellToClient({idx(*c)})') for c in ((9, 5), (9, 7))]
+    drag(page, x0, y0, x1, y1); page.wait_for_timeout(80)
+    moved = S(page, f'!!(S.grid[{idx(9, 7)}] && S.grid[{idx(9, 7)}].t === "tower") && !S.grid[{idx(9, 5)}]')
+    check(moved and S(page, 'S.dFree') == f0 and S(page, 'S.totals.moveTries || 0') == 0 and S(page, 'S.mvFee || 0') == 0,
+          f'v28: with sabotage off a seen tower moves free, and no relocation is counted ({f0} → {S(page, "S.dFree")})')
+    drag(page, x1, y1, x0, y0); page.wait_for_timeout(80)
+    check(S(page, f'S.grid[{idx(9, 5)}] && S.grid[{idx(9, 5)}].t === "tower"') and S(page, 'S.dFree') == f0, 'v28: and back again, free')
+    page.click('#def-lock'); hand(page)
     click_cell(page, 9, 5); page.wait_for_timeout(80)  # a seen tower, tapped on the Army step
     card = page.inner_text('#atk-ctx').lower() if page.is_visible('#atk-ctx') else ''
     check('send a sapper' not in card and S(page, 'S.charges.size') == 0, f'v24: round 2 with sabotage off: a seen tower offers no sapper ({card[:80]})')
