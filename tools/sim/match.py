@@ -53,6 +53,7 @@ def main():
     ap.add_argument('--attackers', default='all', help='comma-separated names (substring match) or "all"')
     ap.add_argument('--defenders', default='counter,basic')
     ap.add_argument('--seeds', type=int, default=2)
+    ap.add_argument('--first', type=int, default=1, help='v24: the first seed (more seeds on top of an earlier run: --first 9 --seeds 12)')
     ap.add_argument('--log', action='store_true', help='print the round-by-round log of the first seed')
     ap.add_argument('--out', default='', help='append every match (with its round-by-round log) to this JSONL file, for compare.py')
     a = ap.parse_args()
@@ -69,10 +70,10 @@ def main():
         for dn in a.defenders.split(','):
             for an, ao in atk.items():
                 opts = {**GAME_RULES_OPTS, **ao, **extra}
-                res = [pg.evaluate('([d,a,s,r]) => runMatch(d,a,s,r)', [DEFENDERS[dn], opts, s + 1, rules]) for s in range(a.seeds)]
+                res = [pg.evaluate('([d,a,s,r]) => runMatch(d,a,s,r)', [DEFENDERS[dn], opts, s + a.first, rules]) for s in range(a.seeds)]
                 if a.out:
                     with open(a.out, 'a') as f:
-                        for s, r in enumerate(res): f.write(json.dumps({'defender': dn, 'attacker': an, 'seed': s + 1, 'rules': rules, **r}) + '\n')
+                        for s, r in enumerate(res): f.write(json.dumps({'defender': dn, 'attacker': an, 'seed': s + a.first, 'rules': rules, **r}) + '\n')
                 w = sum(r['winner'] == 'attacker' for r in res); wins += w; total += len(res)
                 fell = [r['round'] for r in res if r['winner'] == 'attacker']
                 br = [x['breach'] for r in res for x in r['log'] if 'breach' in x]

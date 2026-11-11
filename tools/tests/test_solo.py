@@ -156,6 +156,20 @@ with sync_playwright() as p:
     page.click('#end-menu')
     check(page.is_visible('#ov-mode') and not S(page, 'SOLO.on'), 'Menu returns to the mode screen')
 
+    # ---------- v24: sabotage off: the computer attacker never plans any
+    page.evaluate('() => { document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
+    page.click('#mode-sabo [data-sabo="0"]')
+    start(page, 'def', 'hard', seed=3)
+    build_maze(page, strong=True)
+    page.click('#def-lock'); hand(page); run_wave(page)
+    if not page.is_visible('#ov-end'):
+        page.click('#sum-next')
+        charges, most = play_out(page, 'def', 'defend/hard, sabotage off', lambda: page.click('#def-lock'))
+        check(charges == 0 and S(page, 'S.sabo') is False, f'v24: with sabotage off the Hard computer attacker sends no sappers ({charges} over the match)')
+    page.click('#end-menu') if page.is_visible('#end-menu') else None
+    page.evaluate('() => { document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
+    page.click('#mode-sabo [data-sabo="1"]')
+
     # ---------- player defends a real maze at every level: the computer attacks it, sappers included
     for level in ('easy', 'normal', 'hard'):
         start(page, 'def', level)

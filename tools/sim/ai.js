@@ -6,6 +6,9 @@
 (() => {
   const I = window.siegeline._i, COLS = 16, ROWS = 11, N = COLS * ROWS;
   const at = (c, r) => r * COLS + c;
+  // v24: rules.sabotage === false plays a match with sabotage off (the mode screen's Off); prices follow the mode, so the
+  // live state (and a fresh one) carries it
+  const saboFor = rules => { if (I.S) I.S.sabo = !(rules && rules.sabotage === false); };
   // Lets a run patch slider tables (e.g. { armor: { steps: [0, 2, 4, 7] } }) and restores them before the next run.
   const US0 = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(I.US).map(([k, v]) => [k, { steps: v.steps, m: v.m }]))));
   const resetUS = () => { for (const [k, v] of Object.entries(US0)) { I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); } };
@@ -187,7 +190,7 @@
     // prices rise with the attempts of each kind in earlier waves; this wave's targets don't raise each other's
     const budget = Math.floor(worth * (opt.chargeShare || 0)), tries = { bridgeTries: S.totals.bridgeTries || 0, koTries: S.totals.koTries || 0 }, list = [];
     let spent = 0;
-    if (budget > 0 && S.round > 1 && !(S.round >= S.rounds && opt.noLastCharges)) { // none in the first wave (the starter maze is seen, but sabotage waits for round 2)
+    if (budget > 0 && S.sabo !== false && S.round > 1 && !(S.round >= S.rounds && opt.noLastCharges)) { // none in the first wave (the starter maze is seen, but sabotage waits for round 2)
       const tw = [];
       S.seenGrid.forEach((g, i) => { if (g && g.t === 'tower') tw.push([I.towerCost(g.cfg), i, g]); }); // slider price, as sabotage counts it
       tw.sort((a, b) => b[0] - a[0]);
@@ -229,9 +232,9 @@
   window.runMatch = (dOpt, aOpt, seed, rules = {}) => {
     resetUS();
     const { US, ...plain } = rules;
-    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     if (US) for (const [k, v] of Object.entries(US)) { if (v.steps) I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); }
-    I.S = I.newState(); const S = I.S;
+    I.S = I.newState(); const S = I.S; saboFor(rules);
     I.startMap(Math.imul(seed, 2654435761) >>> 0); // each seed is its own map (none when the shares are 0)
     I.buildStarter(); // and its starter maze, as the game builds it (none with starterPresses 0)
     I.recompute();
@@ -262,7 +265,7 @@
   window.defenseCost = (towers, rules = {}, cols = 4, layout = null) => {
     resetUS();
     const { US, ...plain } = rules;
-    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     const walls = new Set(layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: cols }, (_, k) => colCells(k)).flat());
     let cost = walls.size * I.RULES.wall, fee = 0;
     towers.forEach((cfg, k) => {
@@ -276,7 +279,7 @@
   window.armyOf = (key, budget, rules = {}) => {
     resetUS();
     const { US, ...plain } = rules;
-    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     const spec = ARMIES[key], ds = spec.map(([p], k) => makeDesign(p, k));
     let left = budget;
     const out = spec.map(([p, share, s, e], k) => { const n = Math.floor(budget * share / I.unitCost(ds[k])); left -= n * I.unitCost(ds[k]); return [typeof p === 'string' ? (DESIGNS[p] ? { ...DESIGNS[p] } : p) : p, n, s, e]; });
@@ -291,8 +294,8 @@
   window.botArmyVs = (kind, towers, budget, rules = {}, layout = null, seed = 7) => {
     resetUS();
     const { US, ...plain } = rules;
-    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
-    I.S = I.newState(); const S = I.S;
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
+    I.S = I.newState(); const S = I.S; saboFor(rules);
     const walls = layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: 4 }, (_, k) => colCells(k)).flat();
     for (const i of walls) S.grid[i] = { t: 'wall', fresh: false };
     towers.forEach((cfg, k) => { const [c, r] = (layout ? layout.slots : SLOTS)[k]; S.grid[at(c, r)] = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee: 10 * k, off: 0, fresh: false, n: k + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; });
@@ -318,9 +321,9 @@
   window.runWave = (towers, army, rules = {}, cols = 4, seed = 7, layout = null) => {
     resetUS();
     const { US, ...plain } = rules;
-    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain);
+    Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     if (US) for (const [k, v] of Object.entries(US)) { if (v.steps) I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); }
-    I.S = I.newState(); const S = I.S;
+    I.S = I.newState(); const S = I.S; saboFor(rules);
     let cost = 0, fee = 0;
     const walls = layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: cols }, (_, k) => colCells(k)).flat();
     for (const i of walls) { S.grid[i] = { t: 'wall', fresh: false }; cost += I.RULES.wall; }

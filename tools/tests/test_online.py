@@ -348,7 +348,7 @@ try:
             for pg in (C, D): errors_hook(pg, errs); pg.goto('http://127.0.0.1:8765/room.html')
             C.wait_for_timeout(300); no_terrain(C, D)
             for pg in (C, D): pg.evaluate('()=>{window.siegeline.rules.planSecs=4; window.siegeline.rules.planSecsFirst=4;}')
-            C.click('#info-go'); C.wait_for_selector('#ov-mode:not([hidden])'); C.click('#mode-clock [data-timed="0"]')
+            C.click('#info-go'); C.wait_for_selector('#ov-mode:not([hidden])'); C.click('#mode-clock [data-timed="0"]'); C.click('#mode-sabo [data-sabo="0"]')
             C.click('.rolepick button[data-role=def]'); C.fill('#mode-code', 'NOTM'); C.click('#mode-online')
             join(D, 'atk', 'NOTM')
             wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
@@ -357,6 +357,10 @@ try:
                   ev(C, '[N.tm, S.phase, N.lk]') == [0, 'defend', 0] and ev(D, '[N.tm, S.phase, N.lk]') == [0, 'attack', 0] and C.is_hidden('#clockbox') and D.is_hidden('#clockbox'),
                   f"{ev(C, '[N.tm, S.phase, N.lk]')} / {ev(D, '[N.tm, S.phase, N.lk]')}")
             check('v23: the attacker is told the defender picked untimed rounds', 'untimed' in D.inner_text('#toast').lower(), D.inner_text('#toast'))
+            # v24: the defender picked sabotage off too: both devices play without it and price units alike
+            price = '[S.sabo, window.siegeline.unitCost(S.designs[1])]'
+            check("v24: sabotage off (the defender's pick) on both devices, units priced alike", ev(C, price) == ev(D, price) and ev(C, 'S.sabo') is False and ev(D, 'N.sb') == 0
+                  and 'sabotage off' in D.inner_text('#toast').lower(), f"{ev(C, price)} / {ev(D, price)} · {D.inner_text('#toast')}")
             for pg in (C, D): pg.close()
             # ---------- a build with another protocol version (main) never joins this one ----------
             if OLD:

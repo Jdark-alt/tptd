@@ -2282,8 +2282,8 @@ with sync_playwright() as p:
     plant(T2); plant(T3)
     cost2 = S(page, f'S.charges.get({T2}).cost')
     tip = page.get_attribute('[data-sabo=tower]', 'data-tip') or ''
-    check(S(page, 'S.charges.size') == 2 and 'armor that blocks 3' in tip and 'half of its price goes to the defender' in tip and 'the knock-out misses and its coins are spent' in tip,
-          f'v23: the knock-out card says sappers are armored, a shot-down one pays the defender half, and a moved target means a miss ({tip})')
+    check(S(page, 'S.charges.size') == 2 and 'armor that blocks 3' in tip and 'its whole price goes to the defender' in tip and 'the knock-out misses and its coins are spent' in tip,
+          f'v23: the knock-out card says sappers are armored, a shot-down one pays the defender (its whole price since v24), and a moved target means a miss ({tip})')
     page.evaluate(f'() => {{ const S = window.siegeline.state; S.charges.get({T2}).t = 0; S.charges.get({T3}).t = 0.5; }}')  # the first alone into tower 1's fire
     a2 = S(page, 'S.aFree')
     page.click('#atk-lock')
@@ -2294,8 +2294,8 @@ with sync_playwright() as p:
     page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
     L = S(page, 'S.last'); saps = S(page, 'S.sapList.map(s => s.state)')
     check(arm == 3, f'v23: sappers march with armor 1 (each hit loses 3; {arm})')
-    check(saps == ['lost', 'miss'] and L['sapLost'] == 1 and L['dKill'] == cost2 // 2,
-          f'v23: the sapper shot down pays the defender half its sabotage ({cost2} → +{L["dKill"]}); the one whose tower moved missed and pays no one ({saps})')
+    check(saps == ['lost', 'miss'] and L['sapLost'] == 1 and L['dKill'] == cost2,
+          f'v24: the sapper shot down pays the defender its sabotage’s whole price ({cost2} → +{L["dKill"]}); the one whose tower moved missed and pays no one ({saps})')
     check(L['dInt'] == 15 and L['aInt'] == 22 and L['aLeft'] == a2 and L['dTot'] == L['dGain'] + L['dKill'] + 15 + L['bridgeRefund'] * 0,
           f'v23: interest on what was left when the wave started (defender 100 → +15, attacker {a2} → +22, at most 150 counted)')
     ex = page.inner_text('#sum-extra') if page.is_visible('#sum-extra') else ''
@@ -2322,9 +2322,41 @@ with sync_playwright() as p:
     drag_to((2, 4), (2, 1))
     check(S(page, 'S.dFree') == f0 - fee1 and S(page, 'S.mvFee') == fee1 and S(page, 'S.totals.moveTries') == m0 + 1, f'v23: a tower that wasn’t knocked out still pays its fee ({fee1})')
     info = page.evaluate("() => document.querySelector('#info-sabotage').innerText + document.querySelector('#info-tower').innerText")
-    check('light armor' in info and '50% of its price goes to the defender' in info and 'it misses and its coins are spent' in info and '^1.4' in info and 'in proportion to its reach' in info,
+    check('light armor' in info and '100% of its price goes to the defender' in info and 'it misses and its coins are spent' in info and '^1.4' in info and 'in proportion to its reach' in info,
           'v23: the rules sheet explains sapper armor, the payout, the missed-on-moved rule and the new tower prices')
     check(not errors, f'v23: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v24: sabotage on or off, picked on the mode screen
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go')
+    check(page.get_attribute('#mode-sabo [data-sabo="1"]', 'aria-pressed') == 'true', 'v24: sabotage is on by default')
+    page.click('#mode-sabo [data-sabo="0"]')
+    up = page.evaluate('() => Math.round((window.siegeline.rules.noSabHp - 1) * 100)')
+    check(page.get_attribute('#mode-sabo [data-sabo="0"]', 'aria-pressed') == 'true' and (f'+{up}%' in page.inner_text('#mode-sabov') if up > 0 else True),
+          f'v24: Off can be picked, and the row says what units get then ({page.inner_text("#mode-sabov")})')
+    page.click('#mode-local'); hand(page); hints_off(page)
+    check(S(page, 'S.sabo') is False, 'v24: the match has sabotage off')
+    same = page.evaluate('''() => { const sl = window.siegeline, S = sl.state, d = S.designs[1], off = sl.unitCost(d); S.sabo = true; const on = sl.unitCost(d); S.sabo = false; return on === off; }''')
+    check(same, 'v24: with sabotage off units cost what they always do')
+    page.click('.tool[data-tool=tower]'); click_cell(page, 9, 5); page.keyboard.press('Escape')
+    page.click('#def-lock'); hand(page)
+    tabs = page.evaluate("() => [...document.querySelectorAll('#atk-steps [data-step]')].map(b => b.textContent)")
+    check(tabs == ['1Army', '2Wave'] and 'wave' in page.inner_text('#atk-next').lower(), f'v24: the attacker has two steps, Army and Wave ({tabs}, {page.inner_text("#atk-next")})')
+    page.click('.step.plus[data-i="0"]'); page.click('#atk-next'); page.wait_for_timeout(150)
+    check(S(page, 'S.step') == 2, 'v24: Next goes from Army straight to Wave')
+    hp0 = S(page, 'window.siegeline.US.hp.steps[S.designs[0].hp]'); want = S(page, f'{hp0} * window.siegeline.rules.noSabHp')
+    page.click('#atk-lock'); hand(page); advance_until(page, 'S.units.some(u => !u.sap)', 20)
+    got = S(page, '(S.units.find(u => !u.sap) || {}).max')
+    check(abs(got - want) < 1e-9 and (got > hp0 if up > 0 else got == hp0), f'v24: with sabotage off units march with noSabHp of their health ({hp0} → {got})')
+    page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
+    page.click('#sum-next'); hand(page); page.click('#def-lock'); hand(page)
+    click_cell(page, 9, 5); page.wait_for_timeout(80)  # a seen tower, tapped on the Army step
+    card = page.inner_text('#atk-ctx').lower() if page.is_visible('#atk-ctx') else ''
+    check('send a sapper' not in card and S(page, 'S.charges.size') == 0, f'v24: round 2 with sabotage off: a seen tower offers no sapper ({card[:80]})')
+    check(not errors, f'v24: no errors {errors[:3]}')
     ctx.close()
 
     # the clock's last 30 seconds: it grows and turns red, and the last 10 count down over the board too

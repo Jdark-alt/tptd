@@ -43,7 +43,7 @@ SIM_HOOK = ("window.siegeline = { _i: { startWave, recompute, newState, defaultT
 KNOBS = [
     ('hit = dps / rate', 'hit = dps * (RULES.dmgScale || 1) / rate', 'dmgScale: multiply all tower damage'),
     ('speed: US.speed.steps[d.speed]', 'speed: US.speed.steps[d.speed] * (RULES.spdScale || 1)', 'spdScale: multiply all unit speed'),
-    ('const d = sd || S.sentArmy[di], hp = US.hp.steps[d.hp];', 'const d = sd || S.sentArmy[di], hp = US.hp.steps[d.hp] * (RULES.hpScale || 1);', 'hpScale: multiply all unit health (sappers too)'),
+    ('const d = sd || S.sentArmy[di], hp0 = US.hp.steps[d.hp];', 'const d = sd || S.sentArmy[di], hp0 = US.hp.steps[d.hp] * (RULES.hpScale || 1);', 'hpScale: multiply all unit health (sappers too)'),
     ('d = Math.max(d * 0.2, d - u.armor);', 'd = Math.max(d * (RULES.armorFloor || 0.2), d - u.armor);', 'armorFloor: share of a hit that always gets through armor'),
 ]
 
