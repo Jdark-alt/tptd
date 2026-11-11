@@ -363,7 +363,8 @@ with sync_playwright() as p:
     page.evaluate('() => { window.siegeline.rules.planSecs = 1; window.siegeline.rules.planSecsFirst = 1; document.querySelectorAll(".overlay").forEach(o => o.hidden = true); document.querySelector("#ov-mode").hidden = false; }')
     cdp.send('Emulation.setCPUThrottlingRate', {'rate': 8})
     start(page, 'atk', 'hard')
-    check(page.is_visible('#t-clock') and S(page, '!!SOLO.think'), 'solo: the player has a clock while the computer thinks')
+    st = [page.is_visible('#t-clock'), S(page, '!!SOLO.think'), S(page, 'S.phase'), S(page, 'S.round'), page.inner_text('#t-clock') if page.is_visible('#t-clock') else '']
+    check(st[0] and st[1], f'solo: the player has a clock while the computer thinks ({st})')
     page.wait_for_function('() => window.siegeline.solo.locked || !document.querySelector("#ov-hand").hidden', timeout=10000)
     check(S(page, 'SOLO.locked') and page.is_visible('#ov-wait') and page.is_hidden('#wait-back'), 'solo: time up while the computer thinks locks the plan in; Keep planning is gone')
     page.wait_for_selector('#ov-hand', state='visible', timeout=60000)
