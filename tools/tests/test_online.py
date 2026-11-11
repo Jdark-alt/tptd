@@ -58,7 +58,8 @@ def start(pg, t=15000):
     """The host presses Start once both seats are taken."""
     pg.wait_for_selector('#lobby-start:not([disabled])', timeout=t); pg.click('#lobby-start')
 def join_old(pg, role, code):
-    """A build from before v26 (sides picked on the start screen, then Connect)."""
+    """The build on main: before v26 sides were picked on the start screen, then Connect; since v26 it has the lobby."""
+    if pg.query_selector('#mode-host'): return join(pg, role, code)
     pg.click('#info-go'); pg.wait_for_selector('#ov-mode:not([hidden])')
     pg.click(f'.rolepick button[data-role={role}]'); pg.fill('#mode-code', code); pg.click('#mode-online')
 
