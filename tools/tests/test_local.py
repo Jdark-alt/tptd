@@ -1536,7 +1536,7 @@ with sync_playwright() as p:
     ctx.close()
 
     # ---------- v22 Part C: moving or removing a tower the attacker saw costs a fee (on v22-v24's rise, 5 points a
-    # relocation; v25's half point is checked after)
+    # relocation; v27's one point is checked after)
     ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
@@ -1609,21 +1609,21 @@ with sync_playwright() as p:
     details(page)
     led = page.inner_text('#led-amove') if page.is_visible('#led-amove') else ''
     check('defender moved towers +18' in ex.lower() and 'Defender moved towers' in led and '+18' in led, f'v23: the summary shows it on its own line for the attacker ({ex} | {led})')
-    # v25: the rate rises half a point a relocation, whichever tower, on the tower's tuning as it is now
+    # v27: the rate rises one point a relocation (v25-v26: half a point), whichever tower, on the tower's tuning as it is now
     page.click('#sum-next'); hand(page)
-    page.evaluate('() => { window.siegeline.rules.moveFeeRise = 0.005; }')
+    page.evaluate('() => { window.siegeline.rules.moveFeeRise = 0.01; }')
     seen = page.evaluate('() => { const S = window.siegeline.state; return S.grid.map((g, i) => (g && g.t === "tower" && S.seenGrid[i] && S.seenGrid[i].t === "tower" && S.seenGrid[i].n === g.n ? i : -1)).filter(i => i >= 0); }')
     cell = seen[0]; c0, r0 = cell % 16, cell // 16
     card = []
     for n in (0, 1, 2, 20, 100):
         page.evaluate(f'() => {{ window.siegeline.state.totals.moveTries = {n}; window.siegeline.state.freeMv = null; window.siegeline.refresh(); }}')
         click_cell(page, c0, r0); card.append(page.inner_text('#te-move').split(' · ')[0]); page.keyboard.press('Escape')
-    check(card == ['Next move: 10%', 'Next move: 10.5%', 'Next move: 11%', 'Next move: 20%', 'Next move: 40%'], f'v25: the fee rises half a point a relocation, capped at 40% ({card})')
+    check(card == ['Next move: 10%', 'Next move: 11%', 'Next move: 12%', 'Next move: 30%', 'Next move: 40%'], f'v27: the fee rises a point a relocation, capped at 40% ({card})')
     page.evaluate(f'() => {{ const S = window.siegeline.state; S.totals.moveTries = 1; S.grid[{cell}].cfg.dps = 5; S.dFree = 2000; window.siegeline.refresh(); }}')
     tc = page.evaluate(f'() => window.siegeline.towerCost(window.siegeline.state.grid[{cell}].cfg)')
     dest = next(cr for cr in ((1, 1), (1, 9), (14, 1), (14, 9), (2, 1), (2, 9)) if not S(page, f'!!S.grid[{idx(*cr)}]'))
     f0 = S(page, 'S.dFree'); drag_cells((c0, r0), dest)
-    check(S(page, 'S.dFree') == f0 - round(0.105 * tc) and S(page, 'S.totals.moveTries') == 2, f'v25: the second relocation pays 10.5% of the tower’s tuning as it is now ({tc} → {round(0.105 * tc)}; {f0} → {S(page, "S.dFree")})')
+    check(S(page, 'S.dFree') == f0 - round(0.11 * tc) and S(page, 'S.totals.moveTries') == 2, f'v27: the second relocation pays 11% of the tower’s tuning as it is now ({tc} → {round(0.11 * tc)}; {f0} → {S(page, "S.dFree")})')
     check(not errors, f'Part C: no errors {errors[:3]}')
     ctx.close()
 
@@ -2281,8 +2281,13 @@ with sync_playwright() as p:
     if not page.is_visible('#ov-hand'): page.click('#atk-lock')
     hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
     L1 = S(page, 'S.last')
-    check(L1['dInt'] == min(150, L1['dLeft']) * 15 // 100 and L1['aInt'] == 22 and L1['dTot'] == L1['dGain'] + L1['dInt'],
-          f'v23: interest after wave 1: 15% of what each side left unspent, up to 150 (defender {L1["dLeft"]} → +{L1["dInt"]}, attacker 300 → +22)')
+    check(L1['dInt'] == L1['dLeft'] * 15 // 100 and L1['aLeft'] == 300 and L1['aInt'] == 45 and L1['dTot'] == L1['dGain'] + L1['dInt'],
+          f'v27: interest after wave 1: 15% of everything each side left unspent, no cap (defender {L1["dLeft"]} → +{L1["dInt"]}, attacker {L1["aLeft"]} → +{L1["aInt"]}; v23-v26 stopped at 22)')
+    details(page)
+    led1 = page.inner_text('#led-aint') if page.is_visible('#led-aint') else ''
+    check('Interest on 300 left' in led1 and '+45' in led1 and 'counts up to' not in led1, f'v27: the ledger says what the interest was on, with no cap ({led1})')
+    rs = page.evaluate('() => [document.querySelector("#info-intmax").textContent, document.querySelector("#info-intmax2").textContent]')
+    check(rs == ['150', '150'], f'v27: the rules sheet says 1,000 saved earns 150 ({rs})')
     page.click('#sum-next'); hand(page)
     # round 2: a strong tower by the entry (1), two Basic towers further on (2 and 3); tower 3 has moved since the attacker saw it
     T1, T2, T3, T3now = idx(2, 4), idx(13, 3), idx(9, 2), idx(9, 8)
@@ -2313,8 +2318,8 @@ with sync_playwright() as p:
     check(arm == 3, f'v23: sappers march with armor 1 (each hit loses 3; {arm})')
     check(saps == ['lost', 'miss'] and L['sapLost'] == 1 and L['dKill'] == cost2,
           f'v24: the sapper shot down pays the defender its sabotage’s whole price ({cost2} → +{L["dKill"]}); the one whose tower moved missed and pays no one ({saps})')
-    check(L['dInt'] == 15 and L['aInt'] == 22 and L['aLeft'] == a2 and L['dTot'] == L['dGain'] + L['dKill'] + 15 + L['bridgeRefund'] * 0,
-          f'v23: interest on what was left when the wave started (defender 100 → +15, attacker {a2} → +22, at most 150 counted)')
+    check(L['dInt'] == 15 and L['aInt'] == a2 * 15 // 100 and L['aLeft'] == a2 and L['dTot'] == L['dGain'] + L['dKill'] + 15 + L['bridgeRefund'] * 0,
+          f'v27: interest on what was left when the wave started (defender 100 → +15, attacker {a2} → +{L["aInt"]}, all of it counted)')
     ex = page.inner_text('#sum-extra') if page.is_visible('#sum-extra') else ''
     details(page)
     led = page.inner_text('#led-dkill') if page.is_visible('#led-dkill') else ''
