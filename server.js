@@ -9,7 +9,9 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 10000;
 const PAGE = path.join(__dirname, 'index.html');
-const MAX_PER_ROOM = 6;
+// A room holds its two players (and a joiner or two waiting for a seat) and, since v26, up to 8 spectators. Watchers say
+// so when they join, so they can never take the players' places.
+const MAX_PLAYERS = 4, MAX_WATCHERS = 8;
 
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
@@ -49,13 +51,18 @@ wss.on('connection', ws => {
     if (m.t === 'hb') { send(ws, { t: 'hb' }); return; }
     if (m.t === 'join' && !room && typeof m.room === 'string' && typeof m.id === 'string') {
       const name = m.room.slice(0, 48), who = m.id.slice(0, 32);
+      const watcher = m.w === 1;
       let r = rooms.get(name);
       if (!r) rooms.set(name, r = new Map());
-      if (r.size >= MAX_PER_ROOM && !r.has(who)) { send(ws, { t: 'full' }); ws.close(); return; }
+      if (!r.has(who)) {
+        let w = 0;
+        for (const v of r.values()) if (v.w) w++;
+        if (watcher ? w >= MAX_WATCHERS : r.size - w >= MAX_PLAYERS) { send(ws, { t: 'full', w: watcher ? 1 : 0 }); ws.close(); return; }
+      }
       const old = r.get(who);
       if (old && old.ws !== ws) { try { old.ws.terminate(); } catch (_) { /* already gone */ } }
       room = name; id = who;
-      r.set(id, { ws, state: null });
+      r.set(id, { ws, state: null, w: watcher });
       const others = [];
       for (const [k, v] of r) if (k !== id && v.state) others.push({ id: k, state: v.state });
       send(ws, { t: 'peers', peers: others });

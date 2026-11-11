@@ -2403,10 +2403,10 @@ with sync_playwright() as p:
         if phone:
             check(scrolls and page.is_visible('#mode-dots'), 'v25 phone: the cards side-scroll with a dot each')
             page.tap('#mode-dots button:nth-child(3)'); page.wait_for_timeout(700)
-            r = page.evaluate('() => document.querySelector("#mode-online").getBoundingClientRect().toJSON()')
+            r = page.evaluate('() => document.querySelector("#mode-host").getBoundingClientRect().toJSON()')
             check(r['left'] >= 0 and r['right'] <= vw and page.get_attribute('#mode-dots button:nth-child(3)', 'aria-selected') == 'true', f'v25 phone: the third dot brings Online into view ({r["left"]:.0f}–{r["right"]:.0f})')
         else:
-            boxes = page.evaluate('() => ["#mode-solo", "#mode-local", "#mode-online"].map(id => document.querySelector(id).getBoundingClientRect().toJSON())')
+            boxes = page.evaluate('() => ["#mode-solo", "#mode-local", "#mode-host"].map(id => document.querySelector(id).getBoundingClientRect().toJSON())')
             check(not scrolls and page.is_hidden('#mode-dots') and all(x['right'] <= vw and x['bottom'] <= vh for x in boxes), f'v25 {vw}: all three side by side, every Play button in view')
         check(page.is_hidden('#mode-fine'), f'v25 {vw}: the Claude-only fine print stays hidden here')
         tap('#mode-help'); page.wait_for_timeout(200)

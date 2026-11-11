@@ -757,6 +757,66 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .st-dots button::after{content:"";width:6px;height:6px;border-radius:3px;background:var(--line-2);transition:width .2s,background .2s}
 .st-dots button[aria-selected=true]::after{width:18px;background:var(--paper)}
 @media (prefers-reduced-motion:reduce){.st-scene .rt2,.mart .swap{animation:none} .mcard,.mcard .ready .go{transition:none}}
+/* ---------- The room (v26): a page like the start screen ---------- */
+#ov-lobby{padding:0;display:block;overflow-y:auto;overscroll-behavior:contain;background:var(--ink);-webkit-backdrop-filter:none;backdrop-filter:none}
+.lobby{width:100%;max-width:760px;min-height:100%;margin:0 auto;display:flex;flex-direction:column;justify-content:center;gap:12px;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px))}
+.lb-top{display:flex;align-items:center;gap:10px}
+.lb-top .mini{height:32px}
+.lb-kind{flex:1;text-align:center;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.lb-room{position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px 16px;padding:20px 20px 18px;border:1px solid var(--line);border-radius:10px;background:var(--slate)}
+.lb-room::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--cool) 50%,var(--warm) 50%)}
+.lb-codewrap{display:flex;flex-direction:column;gap:12px}
+.lb-codewrap .mlbl{font:500 10.5px/1 var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.lb-code{font:900 68px/.8 var(--f-display);letter-spacing:.14em;color:var(--paper);user-select:text;-webkit-user-select:text}
+.lb-links{display:flex;gap:8px;flex-wrap:wrap}
+.lbtn{height:36px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;color:var(--soft);font:500 10.5px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:color .15s,border-color .15s}
+.lbtn svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.lbtn:hover{color:var(--paper);border-color:var(--muted)}
+.lbtn.ok{color:#a8e6b0;border-color:rgba(168,230,176,.45)}
+.lb-linkbox{flex-basis:100%;height:34px;border-radius:var(--r);border:1px solid var(--line-2);background:var(--ink);color:var(--soft);font:500 11px/1 var(--f-ui);padding:0 10px;user-select:text;-webkit-user-select:text}
+.lb-seats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seat{--k:var(--cool);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px;min-height:138px;padding:18px 16px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--slate);transition:border-color .2s,background .2s}
+.seat.a{--k:var(--warm)}
+.seat::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--k)}
+.seat.mine{border-color:color-mix(in srgb,var(--k) 55%,transparent);background:color-mix(in srgb,var(--k) 6%,var(--slate))}
+.seat .sside{font:600 10.5px/1 var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--k)}
+.seat .swho{font:650 26px/1.05 var(--f-body);letter-spacing:-.025em;color:var(--paper)}
+.seat.open .swho{font-weight:500;color:var(--muted)}
+.seat .stag{display:flex;gap:6px;flex-wrap:wrap;min-height:18px}
+.seat .stag i{font:500 9.5px/1 var(--f-ui);font-style:normal;letter-spacing:.14em;text-transform:uppercase;padding:4px 7px;border-radius:999px;border:1px solid var(--line-2);color:var(--soft)}
+.seat .stag i.me{border-color:color-mix(in srgb,var(--k) 60%,transparent);color:var(--k)}
+.seat button{margin-top:auto;height:38px;border-radius:var(--r);border:1px solid color-mix(in srgb,var(--k) 55%,transparent);background:transparent;color:var(--k);font:500 10.5px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.seat button:hover{background:color-mix(in srgb,var(--k) 12%,transparent)}
+.lb-watch{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--line);border-radius:10px;background:var(--slate)}
+.lb-watch svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--soft);stroke-width:1.4}
+.lb-watch .wn{flex:1;font:400 13px/1.35 var(--f-body);color:var(--soft)}
+.lb-watch .wn b{color:var(--paper);font-weight:600}
+.lb-watch .mini{height:32px}
+.lb-set .pick button[aria-pressed=true]{background:var(--paper);color:var(--ink)}
+.lb-set .sset.ro .pick button:disabled{cursor:default}
+.lb-set .sset.ro .pick button[aria-pressed=false]{color:var(--muted)}
+.lb-foot{display:flex;gap:10px}
+.lb-foot .ready{min-height:54px;display:flex;align-items:center;justify-content:center;gap:10px}
+.lb-foot .ready:disabled{opacity:.35;cursor:not-allowed}
+.lb-foot .ready .go{font:500 16px/1 var(--f-body);letter-spacing:0}
+#ov-lobby #mode-status{font-size:12px;text-align:center;min-height:17px}
+#ov-lobby #mode-status:empty{display:block}
+/* the HUD's watch button (v26): who's watching, and the link */
+#btn-watch{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:50px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r2);background:var(--slate);color:var(--soft);font:600 12px/1 var(--f-ui);cursor:pointer;transition:color .15s,border-color .15s}
+#btn-watch svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.4}
+#btn-watch:hover{color:var(--paper);border-color:var(--muted)}
+#btn-watch b:empty{display:none}
+/* a spectator's panel (v26) */
+#pane-spec .pane-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.spec-code{font:500 10.5px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.spec-row{--k:var(--cool);display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:12px 12px 12px 14px;margin-bottom:8px;border:1px solid var(--line);border-left:2px solid var(--k);border-radius:var(--r2);background:var(--slate)}
+.spec-row.a{--k:var(--warm)}
+.spec-row b{font:600 14px/1.2 var(--f-body);color:var(--paper)}
+.spec-row .st{font:500 10px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.spec-row .st.ok{color:#a8e6b0} .spec-row .st.bad{color:#ffb4b4}
+.spec-row .cn{font:500 11px/1 var(--f-ui);color:var(--muted);font-variant-numeric:tabular-nums}
+#pane-spec .note{margin:10px 2px 0}
 .rolepick,.pick{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
 .pick.lv{grid-template-columns:repeat(3,minmax(0,1fr))}
 .rolepick button,.pick button{min-height:42px;border:0;background:transparent;font:500 11px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;cursor:pointer;color:var(--soft);transition:background .12s,color .12s}
@@ -1081,6 +1141,12 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .st-cards{grid-auto-columns:86%;gap:10px}
   .mart{height:96px}
   .mhead h2{font-size:25px}
+  .lobby{gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+  .lb-room{padding:16px 14px 14px} .lb-code{font-size:54px}
+  .lb-links{display:grid;grid-template-columns:1fr 1fr;width:100%} .lbtn{justify-content:center;padding:0 8px;letter-spacing:.08em}
+  .lb-seats{gap:8px} .seat{min-height:122px;padding:14px 12px 12px} .seat .swho{font-size:21px}
+  .lb-watch{padding:10px 12px}
+  #btn-watch{order:9;min-height:0;min-width:0;padding:0 10px}
   .netpill{font-size:9.5px;padding:4px 6px;letter-spacing:.08em}
   .netpill .lg{display:none} .netpill .sm{display:inline}
   .brand{display:none}
@@ -1159,6 +1225,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <span class="pmeter" id="pot-meter" hidden><span class="pm-top"><span class="pm-d" id="pm-d">+100</span><span class="lbl ptag2">Pot <b id="pm-pot">200</b></span><span class="pm-a" id="pm-a">+100</span></span><span class="pm-bar"><i class="d" id="pm-sd" style="width:50%"></i><i class="a" id="pm-sa" style="width:50%"></i></span></span>
       </div>
       <span class="netpill" id="netpill" hidden></span>
+      <button id="btn-watch" hidden aria-label="Copy a link to watch this match" data-tip="Copy a link anyone can open to watch this match"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg><b id="watch-n"></b></button>
       <button id="btn-info" aria-label="How to play" data-tip="How to play">?</button>
       <i class="hbreak" aria-hidden="true"></i>
     </div>
@@ -1202,6 +1269,12 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <div class="navrow"><button class="back" id="atk-test" hidden data-tip="Play your wave, sappers included, against the defense as you last saw it. Nothing in the match changes.">Test</button><button class="back" id="atk-lock">Lock in</button><button class="ready atk" id="atk-next">Next</button></div>
       </section>
 
+      <section class="pane" id="pane-spec" hidden>
+        <div class="pane-head"><h2 class="pane-title">Watching</h2><span class="spec-code" id="spec-code"></span></div>
+        <div class="scroll"><div class="browse" id="spec-body"></div></div>
+        <div class="navrow"><button class="back" id="spec-leave">Leave</button><button class="ready neutral" id="spec-link">Copy watch link</button></div>
+      </section>
+
       <section class="pane" id="pane-wave" hidden>
         <div class="pane-head"><h2 class="pane-title" id="wave-title">Wave 1</h2><div class="speed" role="group" aria-label="Wave speed"><button data-speed="1" aria-pressed="true">1×</button><button data-speed="5" aria-pressed="false">5×</button><button data-speed="10" aria-pressed="false">10×</button></div></div>
         <div class="breach">
@@ -1230,7 +1303,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v25</p>
+        <p class="tagline">Two Player Tower Defence · v26</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1259,7 +1332,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
           <li><strong>The wave.</strong> Everything is revealed and plays out; the pot meter in the bar shows how the pot would split if the wave ended now. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
           <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, counting up to <span data-rule="interestCap">150</span>, so at most <span id="info-intmax">22</span> a wave. The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
         </ol>
-        <p>Pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed on the start screen (online the defender’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
+        <p>Pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed on the start screen (online, the host’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
+        <p><strong>Online.</strong> One player hosts a room and shares its code (or the invite link); a friend joins and sits in the free seat, and the host starts the match. The host’s settings are the match’s. Anyone with the <strong>watch link</strong> can watch, before or during a match: up to 8 watchers. They see what the attacker sees between waves, and each wave once both sides have locked in, never a plan before. The eye in the top bar shows how many are watching and copies the link.</p>
       </section>
 
       <section id="info-build">
@@ -1357,7 +1431,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             <thead><tr><th>Rule</th><th>Value</th><th>Note</th></tr></thead>
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal; the defender also gets the starter maze, free</td></tr>
-              <tr><td>Sabotage</td><td class="n">On / Off</td><td>Picked at the start (online the defender’s pick). Off: no bridges or knock-outs, units <span id="info-nosab3">tougher</span> at the same price</td></tr>
+              <tr><td>Sabotage</td><td class="n">On / Off</td><td>Picked at the start (online, the host’s pick). Off: no bridges or knock-outs, units <span id="info-nosab3">tougher</span> at the same price</td></tr>
               <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>% up to <span data-rule="interestCap">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends. Coins past the cap earn nothing, so at most <span id="info-intmax2">22</span> a wave</td></tr>
               <tr><td>Pot per round</td><td class="n"><span id="info-pot"></span></td><td><span id="info-pot-note"></span></td></tr>
               <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
@@ -1378,7 +1452,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v25</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v26</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1443,16 +1517,34 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       <article class="mcard" aria-labelledby="mc-online">
         <svg class="mart" viewBox="0 0 360 130" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false"><g transform="translate(180 65) scale(.9) translate(-150 -70)"><rect class="dev def" x="52" y="40" width="50" height="86" rx="9"/><rect class="scr def" x="58" y="50" width="38" height="64" rx="3"/><rect class="tb" x="70.0" y="75.0" width="14" height="14"/><circle class="tc" cx="77.0" cy="82.0" r="3"/><circle class="rg" cx="77.0" cy="82.0" r="14"/><rect class="dev atk" x="198" y="40" width="50" height="86" rx="9"/><rect class="scr atk" x="204" y="50" width="38" height="64" rx="3"/><circle cx="214.0" cy="86.0" r="3.4" fill="#ffb547"/><circle cx="223.0" cy="77.0" r="3.4" fill="#e5472b"/><circle cx="232.0" cy="85.0" r="3.4" fill="#ff7b36"/><circle cx="221.0" cy="92.0" r="3.4" fill="#ff6fa8"/><path class="link" d="M100 44 C 120 6, 180 6, 200 44"/><circle class="pkt" r="3.4"><animateMotion dur="2.6s" repeatCount="indefinite" path="M100 44 C 120 6, 180 6, 200 44" keyPoints="0;1;0" keyTimes="0;.5;1" calcMode="linear"/><animate attributeName="fill" values="#4fd6ee;#4fd6ee;#ff8a3d;#ff8a3d;#4fd6ee" keyTimes="0;.45;.5;.95;1" dur="2.6s" repeatCount="indefinite"/></circle><path class="wave def" d="M70 30 q7 -7 14 0 M66 24 q11 -11 22 0"><animate attributeName="opacity" values=".2;1;.2" dur="1.3s" repeatCount="indefinite"/></path><path class="wave atk" d="M216 30 q7 -7 14 0 M212 24 q11 -11 22 0"><animate attributeName="opacity" values=".2;1;.2" dur="1.3s" begin=".65s" repeatCount="indefinite"/></path></g></svg>
         <div class="mhead"><h2 id="mc-online">Online</h2><p class="msub">Against friends</p></div>
-        <div class="rolepick" role="group" aria-label="Your side"><button data-role="def" aria-pressed="false">Defender</button><button data-role="atk" aria-pressed="false">Attacker</button></div>
-        <div class="codebox"><label for="mode-code">Code</label><input id="mode-code" maxlength="6" autocomplete="off" spellcheck="false"><button class="mini" id="mode-new">New</button></div>
-        <p class="mnote">Share the code. The defender’s settings count.</p>
-        <div class="netstatus" id="mode-status" role="status"></div>
-        <button class="ready neutral" id="mode-online" disabled>Connect<span class="go" aria-hidden="true">→</span></button>
-        <button class="ready neutral" id="mode-restart" hidden>Start a new match</button>
+        <div class="codebox"><label for="mode-code">Code</label><input id="mode-code" maxlength="6" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-label="Room code"><button class="mini" id="mode-join" disabled>Join</button></div>
+        <p class="mnote">Host a room and share its code. Friends join to play or watch.</p>
+        <div class="netstatus" id="mode-note" role="status"></div>
+        <button class="ready neutral" id="mode-host">Host a room<span class="go" aria-hidden="true">→</span></button>
         <p class="fine" id="mode-fine" hidden>Inside Claude, both players must be signed in and the artifact shared directly; a public link can’t connect.</p>
       </article>
     </div>
     <div class="st-dots" id="mode-dots" role="tablist" aria-label="Ways to play"><button role="tab" aria-label="Single player"></button><button role="tab" aria-label="Multiplayer"></button><button role="tab" aria-label="Online"></button></div>
+  </div>
+</div>
+
+<!-- The room (v26): who sits where, who watches, the host's settings, and Start -->
+<div class="overlay" id="ov-lobby" hidden role="dialog" aria-modal="true" aria-labelledby="lobby-title">
+  <div class="lobby">
+    <header class="lb-top"><button class="mini" id="lobby-leave">← Leave</button><span class="lb-kind" id="lobby-kind"></span><button class="mini" id="lobby-help">How to play</button></header>
+    <section class="lb-room">
+      <div class="lb-codewrap"><span class="mlbl" id="lobby-title">Room</span><b class="lb-code" id="lobby-code">····</b></div>
+      <div class="lb-links">
+        <button class="lbtn" id="lobby-invite"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 9.5l3-3M7 4.5l1.2-1.2a2.5 2.5 0 013.5 3.5L10.5 8M9 11.5l-1.2 1.2a2.5 2.5 0 01-3.5-3.5L5.5 8"/></svg><span>Copy invite link</span></button>
+        <button class="lbtn" id="lobby-watchlink"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg><span>Copy watch link</span></button>
+      </div>
+      <input class="lb-linkbox" id="lobby-linkbox" readonly hidden aria-label="Link to copy">
+    </section>
+    <section class="lb-seats" id="lobby-seats" aria-label="Seats"></section>
+    <section class="lb-watch" id="lobby-watchers" aria-label="Watching"></section>
+    <section class="st-set lb-set" id="lobby-set" aria-label="Match settings"></section>
+    <div class="netstatus" id="mode-status" role="status"></div>
+    <footer class="lb-foot"><button class="ready neutral" id="mode-restart" hidden>Start a new match</button><button class="ready neutral" id="lobby-start" hidden disabled>Start match<span class="go" aria-hidden="true">→</span></button></footer>
   </div>
 </div>
 
@@ -1776,12 +1868,12 @@ const wrap = $('#boardwrap');
 const el = {
   round: $('#v-round'), rounds: $('#v-rounds'), keep: $('#v-keep'), keepMax: $('#v-keepmax'), clock: $('#t-clock'), clockbox: $('#clockbox'), keepbar: $('#v-keepbar'), keepbox: $('#keepbox'),
   panel: $('#panel'),
-  paneDef: $('#pane-def'), paneAtk: $('#pane-atk'), paneWave: $('#pane-wave'),
+  paneDef: $('#pane-def'), paneAtk: $('#pane-atk'), paneWave: $('#pane-wave'), paneSpec: $('#pane-spec'),
   defSteps: $('#def-steps'), defBody: $('#def-body'), defCtx: $('#def-ctx'), defLock: $('#def-lock'),
   atkSteps: $('#atk-steps'), atkBody: $('#atk-body'), atkCtx: $('#atk-ctx'), atkNext: $('#atk-next'), atkLock: $('#atk-lock'),
   waveTitle: $('#wave-title'), waveCtx: $('#wave-ctx'), rpBar: $('#replay-bar'),
   toast: $('#toast'), tip: $('#tip'), undoPop: $('#undo-pop'),
-  ovInfo: $('#ov-info'), ovHand: $('#ov-hand'), ovSum: $('#ov-sum'), ovEnd: $('#ov-end'),
+  ovInfo: $('#ov-info'), ovHand: $('#ov-hand'), ovSum: $('#ov-sum'), ovEnd: $('#ov-end'), ovLobby: $('#ov-lobby'),
 };
 $('#kico').innerHTML = ICON.keep;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1795,10 +1887,10 @@ const SOLO = { on: false, side: 'def', level: 'easy', plan: null, pending: '', n
 // The match length picked on the mode screen (0: RULES.rounds). Online both devices use the defender's (NET.n).
 let pickRounds = 0;
 const chosenRounds = () => pickRounds || RULES.rounds;
-// Timed or untimed rounds (v23), picked on the mode screen; online the defender's pick counts (NET.tm, 1 or 0).
+// Timed or untimed rounds (v23), picked on the mode screen; online the host's pick counts (NET.tm, 1 or 0; the defender's before v26).
 let pickTimed = true;
 const timedMatch = () => (NET.on ? NET.tm !== 0 : pickTimed);
-// Sabotage on or off (v24), picked on the mode screen; online the defender's pick counts (NET.sb, 1 or 0). A match keeps
+// Sabotage on or off (v24), picked on the mode screen; online the host's pick counts (NET.sb, 1 or 0; the defender's before v26). A match keeps
 // it in S.sabo, so replays, tests and the computer's hidden waves build units the same way.
 let pickSabo = true;
 const saboMatch = () => (NET.on ? NET.sb !== 0 : pickSabo);
@@ -3305,6 +3397,7 @@ const PHASE_UI = {
   handoff: { side: 'both', who: 'Coins' },
   summary: { side: 'both', who: 'Coins' },
   over: { side: 'both', who: 'Coins' },
+  watch: { side: 'both', who: 'Watching' }, // a spectator between waves (v26)
 };
 function setPhase(p) {
   S.phase = p; S.step = 0; S.sel = null; pending = -1; drag = null; S.confirmEmpty = false; saboMode = '';
@@ -3321,6 +3414,7 @@ function setPhase(p) {
   el.paneDef.hidden = p !== 'defend';
   el.paneAtk.hidden = p !== 'attack';
   el.paneWave.hidden = p !== 'wave';
+  el.paneSpec.hidden = p !== 'watch';
   if (p !== 'attack') wvMode(false);
   if (p === 'handoff' || p === 'summary' || p === 'over') {
     // Behind the wave card the player's own panel stays up (against the computer that can be the defender's).
@@ -3466,7 +3560,7 @@ function endRound() {
   if (online()) netAfterWave();
   liveWave(); // the wave pane's numbers end where the wave did
   if (S.over) { setPhase('over'); showEnd(); } else { setPhase('summary'); showSummary(); }
-  if (online() && NET.role === 'atk' && NET.peer) adoptResult(NET.peer.res);
+  if (online() && refRes()) adoptResult(refRes());
 }
 // The wave's MVPs: the tower that dealt the most damage (ties: the lower number), and the design that did the most keep
 // damage (nobody through: the one whose units got furthest on average). Display only.
@@ -3487,6 +3581,7 @@ function mvpOf() {
 function nextRound() {
   hide(el.ovSum);
   S.round++; S.wave = blankWave();
+  if (online() && NET.role === 'spec') { setPhase('watch'); specCheck(); return; }
   if (online()) { setPhase(myPhase()); startClock(); updateNetUI(); netCheck(); return; }
   startRound();
 }
@@ -3525,7 +3620,7 @@ function exitReplay() {
   setPhase(phase); S.step = step; S.tool = tool; refreshUI();
   if (phase === 'summary') showSummary(); else if (phase === 'over') showEnd();
   // anything the other device sent while the replay ran
-  if (online()) { netCheck(); if (NET.role === 'atk' && NET.peer) adoptResult(NET.peer.res); }
+  if (online()) { netCheck(); if (refRes()) adoptResult(refRes()); if (NET.role === 'spec') specCheck(); }
 }
 /* ---------- test runs ----------
    The defender plays the army it saw last wave (designs and timeline) against its current build; the attacker plays its
@@ -3638,8 +3733,9 @@ function splitViz(L) {
 // You: your side online and against the computer; in pass-and-play the side whose turn comes next (the defender).
 const youSide = () => (online() ? NET.role : SOLO.on ? SOLO.side : 'def');
 function bigNums(keepTxt, d, a) {
-  const you = youSide(), me = you === 'def' ? d : a, them = you === 'def' ? a : d, mc = you === 'def' ? 'c' : 'w', tc = you === 'def' ? 'w' : 'c';
-  return `<div class="sum-big"><div class="sb k"><span class="lbl">Keep</span><b id="sb-keep">${keepTxt}</b></div><div class="sb ${mc}"><span class="lbl">You</span><b id="sb-you">+${me}</b></div><div class="sb ${tc}"><span class="lbl">Opponent</span><b id="sb-opp">+${them}</b></div></div>`;
+  const spec = online() && NET.role === 'spec', you = spec ? 'def' : youSide(), me = you === 'def' ? d : a, them = you === 'def' ? a : d, mc = you === 'def' ? 'c' : 'w', tc = you === 'def' ? 'w' : 'c';
+  const [l1, l2] = spec ? ['Defender', 'Attacker'] : ['You', 'Opponent']; // a spectator has no side (v26)
+  return `<div class="sum-big"><div class="sb k"><span class="lbl">Keep</span><b id="sb-keep">${keepTxt}</b></div><div class="sb ${mc}"><span class="lbl">${l1}</span><b id="sb-you">+${me}</b></div><div class="sb ${tc}"><span class="lbl">${l2}</span><b id="sb-opp">+${them}</b></div></div>`;
 }
 function mvpHTML(M) {
   if (!M) return '';
@@ -3688,7 +3784,7 @@ function showSummary() {
         <li><span>Units through / killed</span><span>${L.leaks} / ${L.kills}</span></li>
         <li><span>Worth now</span><span>${atkWorth()}</span></li></ul></div>
     </div>`)}`;
-  $('#sum-next').textContent = `Start round ${S.round + 1}`;
+  $('#sum-next').textContent = online() && NET.role === 'spec' ? `Watch round ${S.round + 1}` : `Start round ${S.round + 1}`;
   $('#sum-replay').hidden = !S.lastWave;
   show(el.ovSum);
   setTimeout(() => $('#sum-next').focus({ preventScroll: true }), 30);
@@ -3706,12 +3802,15 @@ function showEnd() {
       <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li>${t.dKill ? `<li><span>Sappers shot down</span><span>+${t.dKill}</span></li>` : ''}${t.dInt ? `<li><span>Interest</span><span>+${t.dInt}</span></li>` : ''}<li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
       <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li>${t.bridgeTries + t.koTries ? `<li><span>Sappers landed</span><span>${t.sapOk} / ${t.bridgeTries + t.koTries}</span></li>` : ''}${t.aMove ? `<li><span>Defender moved towers</span><span>+${t.aMove}</span></li>` : ''}${t.aInt ? `<li><span>Interest</span><span>+${t.aInt}</span></li>` : ''}<li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
     </div>`)}
-    ${online() ? '<p class="fml">Either player can start the next match for both.</p>' : ''}`;
-  $('#end-swap').hidden = !online();
-  $('#end-menu').hidden = !SOLO.on;
+    ${online() ? `<p class="fml">${NET.role === 'spec' ? 'If the players start another match, you’ll watch it here.' : 'Either player can start the next match for both.'}</p>` : ''}`;
+  const spec = online() && NET.role === 'spec';
+  $('#end-swap').hidden = !online() || spec;
+  $('#end-again').hidden = spec;
+  $('#end-menu').hidden = !SOLO.on && !spec;
+  $('#end-menu').textContent = spec ? 'Leave' : 'Menu';
   $('#end-replay').hidden = !S.lastWave;
   show(el.ovEnd);
-  setTimeout(() => $('#end-again').focus({ preventScroll: true }), 30);
+  setTimeout(() => $(spec ? '#end-menu' : '#end-again').focus({ preventScroll: true }), 30);
 }
 for (const id of ['#sum-body', '#end-body']) $(id).addEventListener('click', e => {
   const b = e.target.closest('[data-act=details]'); if (!b) return;
@@ -3743,19 +3842,20 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 16; // 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 17; // 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
   lk: 0, go: 0, at: 0, myPlan: null, revealed: null, res: null, adopted: 0,
   peer: null, link: null, linkUp: false, kind: '', busy: false,
+  host: false, room: [], sat: false, // v26: this device hosts the room; everyone else in it (players and spectators); a joiner sat down once already
 };
 const online = () => NET.on;
 const myPhase = () => (NET.role === 'def' ? 'defend' : 'attack');
 const roleName = r => (r === 'def' ? 'Defender' : 'Attacker');
 const otherRole = r => (r === 'def' ? 'atk' : 'def');
-const ovMode = $('#ov-mode'), ovWait = $('#ov-wait'), restartBtn = $('#mode-restart');
-const modeStatus = $('#mode-status'), modeBtn = $('#mode-online'), codeIn = $('#mode-code'), netpill = $('#netpill');
+const ovMode = $('#ov-mode'), ovWait = $('#ov-wait'), ovLobby = $('#ov-lobby'), restartBtn = $('#mode-restart');
+const modeStatus = $('#mode-status'), codeIn = $('#mode-code'), netpill = $('#netpill');
 const peerReadyNow = () => { const P = NET.peer, s = real(); return !!(P && s && P.ep === NET.ep && (P.lk === s.round || P.go === s.round)); };
 
 /* ---------- plan and result encoding (compact, and validated on the way in) ---------- */
@@ -3846,7 +3946,7 @@ function makeResult() {
   return { r: S.round, ep: NET.ep, keep: S.keep, dFree: S.dFree, aFree: S.aFree, g: encodeGrid(S.grid), br: [...S.bridges].sort((a, b) => a - b), L, T: { ...S.totals }, over: S.over ? 1 : 0, win: S.winner || '' };
 }
 function netState() {
-  return { v: PROTO, id: NET.id, role: NET.role, code: NET.code, ep: NET.ep, st: NET.st, n: NET.n, tm: NET.tm, sb: NET.sb, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
+  return { v: PROTO, id: NET.id, role: NET.role || '', h: NET.host ? 1 : 0, code: NET.code, ep: NET.ep, st: NET.st, n: NET.n, tm: NET.tm, sb: NET.sb, rd: real() ? real().round : 0, lk: NET.lk, go: NET.go, at: NET.at, plan: NET.revealed, res: NET.role === 'def' ? NET.res : null };
 }
 const bytes = o => new TextEncoder().encode(JSON.stringify(o)).length;
 function publish() { if (NET.link && NET.on) NET.link.send(netState()); }
@@ -3859,6 +3959,7 @@ function seedFor(...parts) {
 
 /* ---------- flow ---------- */
 function lockIn() {
+  if (!isSeat(NET.role)) return;
   let plan = NET.role === 'def' ? makeDefPlan() : makeAtkPlan(true);
   if (NET.role === 'atk' && bytes({ ...netState(), plan }) > 3900) {
     plan = makeAtkPlan(false);
@@ -3879,7 +3980,7 @@ function unlock() {
   publish(); refreshUI(); updateNetUI(); tickClock(false);
 }
 function netCheck() {
-  if (!NET.on || NET.st !== 'play' || !S || replay) return; // exitReplay checks again
+  if (!NET.on || NET.st !== 'play' || !isSeat(NET.role) || !S || replay) return; // exitReplay checks again
   const P = NET.peer, r = S.round;
   const live = P && P.ep === NET.ep && P.role !== NET.role && P.st === 'play';
   if (live && S.phase === myPhase() && NET.lk === r && NET.go < r && (P.lk === r || P.go === r)) {
@@ -3892,7 +3993,16 @@ function netCheck() {
   updateNetUI();
 }
 function beginOnlineWave(peerPlan) {
-  const dp = NET.role === 'def' ? NET.myPlan : peerPlan, ap = NET.role === 'atk' ? NET.myPlan : peerPlan;
+  loadPlans(NET.role === 'def' ? NET.myPlan : peerPlan, NET.role === 'atk' ? NET.myPlan : peerPlan);
+  NET.at = S.round; NET.lk = 0;
+  hide(ovWait); hide(el.ovHand);
+  drawTerrain();
+  startWave(seedFor(NET.code, NET.ep, S.round));
+  publish(); updateNetUI();
+}
+// Both players' plans into the match: every device that plays the wave (both players, and since v26 spectators) loads them
+// from the same encoded data, so the wave is identical everywhere.
+function loadPlans(dp, ap) {
   // The map comes from the match code and epoch on both devices; the defender's plan carries its seed too, and
   // that one wins if they ever differ.
   if (dp.ms != null && (dp.ms >>> 0) !== S.mapSeed) {
@@ -3900,8 +4010,8 @@ function beginOnlineWave(peerPlan) {
     if (S.round === 1) { S.grid = withRocks(new Array(N).fill(null)); S.seenGrid = withRocks(new Array(N).fill(null)); buildStarter(); } // the starter maze the attacker saw is that map's
     drawTerrain();
   }
-  if (NET.role === 'atk') adoptRounds(int(dp.n, 0, 99)); // so is the match length (no sabotage in the last wave)
-  if (NET.role === 'atk' && (dp.sb === 0 || dp.sb === 1)) adoptSabo(dp.sb); // and whether there's sabotage at all (v24)
+  if (NET.role !== 'def') adoptRounds(int(dp.n, 0, 99)); // so is the match length (no sabotage in the last wave)
+  if (NET.role !== 'def' && (dp.sb === 0 || dp.sb === 1)) adoptSabo(dp.sb); // and whether there's sabotage at all (v24)
   // Both devices load both plans from the same encoded data, so the wave is identical.
   S.grid = clearBridges(decodeGrid(dp.g)); S.dFree = int(dp.dFree, 0, 1e6); S.towerSeq = int(dp.ts, 0, 9999);
   S.totals.moveTries = int(dp.mt, 0, 9999, S.totals.moveTries || 0); // the move fees the defender paid price its next ones (v22)
@@ -3909,11 +4019,6 @@ function beginOnlineWave(peerPlan) {
   S.gridVer++; recompute();
   S.designs = decodeArmy(ap.a); S.aFree = int(ap.aFree, 0, 1e6);
   S.charges = decodeCharges(ap.c); S.chargeVer++;
-  NET.at = S.round; NET.lk = 0;
-  hide(ovWait); hide(el.ovHand);
-  drawTerrain();
-  startWave(seedFor(NET.code, NET.ep, S.round));
-  publish(); updateNetUI();
 }
 // Called once the wave has played out (or the keep fell), before the summary shows.
 function netAfterWave() {
@@ -3925,7 +4030,7 @@ function finishOver() {
   if (replay) { replay.done = true; refreshUI(); return; }
   if (online()) netAfterWave();
   setPhase('over'); showEnd();
-  if (online() && NET.role === 'atk' && NET.peer) adoptResult(NET.peer.res);
+  if (online() && refRes()) adoptResult(refRes());
 }
 function adoptResult(res) {
   if (replay) return; // exitReplay adopts it afterwards
@@ -3948,23 +4053,24 @@ function adoptResult(res) {
   else if (wasOver) { hide(el.ovEnd); setPhase('summary'); showSummary(); }
   else if (!el.ovSum.hidden) showSummary();
   else refreshUI();
-  toast('Synced to the defender’s result', '');
+  if (NET.role !== 'spec') toast('Synced to the defender’s result', '');
 }
 function startOnlineMatch(note) {
-  for (const o of [ovMode, ovWait, el.ovEnd, el.ovSum, el.ovHand]) hide(o);
+  for (const o of [ovMode, ovLobby, ovWait, el.ovEnd, el.ovSum, el.ovHand]) hide(o);
   const P = NET.peer;
-  if (NET.role === 'atk' && P && P.role === 'def' && validRounds(P.n)) NET.n = P.n; // the match lasts as long as the defender picked
-  if (NET.role === 'atk' && P && P.role === 'def' && (P.tm === 0 || P.tm === 1)) NET.tm = P.tm; // and is timed (or not) as it picked (v23)
-  if (NET.role === 'atk' && P && P.role === 'def' && (P.sb === 0 || P.sb === 1)) NET.sb = P.sb; // with sabotage or without (v24)
+  // v26: the host's settings are the match's (a joiner took them in the lobby); after a rematch the defender's still count
+  if (NET.role === 'atk' && !NET.host && P && P.role === 'def' && validRounds(P.n)) NET.n = P.n; // the match lasts as long as the defender picked
+  if (NET.role === 'atk' && !NET.host && P && P.role === 'def' && (P.tm === 0 || P.tm === 1)) NET.tm = P.tm; // and is timed (or not) as it picked (v23)
+  if (NET.role === 'atk' && !NET.host && P && P.role === 'def' && (P.sb === 0 || P.sb === 1)) NET.sb = P.sb; // with sabotage or without (v24)
   newMatch(seedFor('map', NET.code, NET.ep), NET.n); // both devices derive the same map from the match code and epoch
   Object.assign(NET, { st: 'play', lk: 0, go: 0, at: 0, myPlan: null, revealed: null, res: null, adopted: 0 });
   document.body.dataset.role = NET.role;
   setPhase(myPhase());
-  publish(); updateNetUI();
+  publish(); updateNetUI(); watchUI();
   startClock();
-  const len = (NET.role === 'atk' && NET.n !== chosenRounds() ? ` The defender picked ${NET.n} waves.` : '')
-    + (NET.role === 'atk' && (NET.tm !== 0) !== pickTimed ? ` The defender picked ${NET.tm !== 0 ? 'timed' : 'untimed'} rounds.` : '')
-    + (NET.role === 'atk' && (NET.sb !== 0) !== pickSabo ? ` The defender picked sabotage ${NET.sb !== 0 ? 'on' : 'off'}.` : '');
+  const len = (!NET.host && NET.n !== chosenRounds() ? ` The host picked ${NET.n} waves.` : '')
+    + (!NET.host && (NET.tm !== 0) !== pickTimed ? ` The host picked ${NET.tm !== 0 ? 'timed' : 'untimed'} rounds.` : '')
+    + (!NET.host && (NET.sb !== 0) !== pickSabo ? ` The host picked sabotage ${NET.sb !== 0 ? 'on' : 'off'}.` : '');
   toast((note || `Match on. You are the ${roleName(NET.role)}.`) + len, NET.role);
 }
 // The attacker plays the defender's match length: it's set as the match starts, and this catches a pick that changed
@@ -3977,7 +4083,7 @@ function adoptRounds(n) {
   s.rounds = n; s.keepMax = keepFor(n);
   s.keep = fresh ? s.keepMax : Math.min(s.keep, s.keepMax);
   publish(); refreshUI();
-  toast(`The defender picked ${n} waves.`, '');
+  if (NET.role !== 'spec') toast(`The defender picked ${n} waves.`, '');
 }
 // v23: and the defender's clock choice, if it reached this device late
 function adoptTimed(tm) {
@@ -3994,7 +4100,7 @@ function adoptSabo(sb) {
   s.sabo = !!sb;
   if (!s.sabo) { s.aFree += [...s.charges.values()].reduce((v, c) => v + c.cost, 0); s.charges = new Map(); s.chargeVer++; }
   publish(); refreshUI();
-  toast(`The defender picked sabotage ${sb ? 'on' : 'off'}.`, '');
+  if (NET.role !== 'spec') toast(`The defender picked sabotage ${sb ? 'on' : 'off'}.`, '');
 }
 function rematchOnline(swap) {
   NET.ep = Math.max(NET.ep, NET.peer ? NET.peer.ep | 0 : 0) + 1;
@@ -4008,7 +4114,7 @@ function onPeerState(P) {
   NET.peer = P && typeof P === 'object' && P.v === PROTO && P.code === NET.code && (P.role === 'def' || P.role === 'atk') ? P : null;
   P = NET.peer;
   if (!NET.on) return;
-  if (NET.st === 'lobby') { lobbyCheck(); return; }
+  if (NET.st === 'lobby') { lobbyUpdate(); return; }
   if (P && P.st === 'play') {
     if (P.ep > NET.ep) { // a rematch, or the other player reloaded and started fresh
       NET.ep = P.ep;
@@ -4025,31 +4131,22 @@ function onPeerState(P) {
   if (P && NET.role === 'atk' && P.role === 'def' && P.st === 'play' && P.ep === NET.ep) { adoptRounds(P.n); adoptTimed(P.tm); adoptSabo(P.sb); }
   netCheck();
   if (P && NET.role === 'atk' && P.res && S.doneRound) adoptResult(P.res);
+  watchUI();
   if (!!(prev && S && prev.ep === NET.ep && (prev.lk === S.round || prev.go === S.round)) !== peerReadyNow()) refreshUI();
 }
-function lobbyCheck() {
-  const P = NET.peer;
-  restartBtn.hidden = true;
-  if (NET.st !== 'lobby' || !NET.linkUp) return;
-  if (!P) { setModeStatus(`Connected. Waiting for your opponent to join code ${NET.code}`, '', true); return; }
-  if (P.st === 'lobby') {
-    if (P.role === NET.role) { setModeStatus(`Your opponent also picked ${roleName(NET.role)}. One of you switch sides.`, 'bad'); return; }
-    NET.ep = Math.max(NET.ep, P.ep | 0);
-    startOnlineMatch();
-    return;
-  }
-  if (P.role !== NET.role && P.ep >= NET.ep && P.rd === 1 && !P.lk && !P.go) { NET.ep = P.ep; startOnlineMatch(); return; }
-  // They are mid-match (this device probably reloaded). A match can't be resumed, only restarted.
-  setModeStatus(`Your opponent is already in a match on code ${NET.code} that this device lost track of.`, 'bad');
-  restartBtn.hidden = false;
-}
-
 /* ---------- status display ---------- */
 function setModeStatus(text, cls = '', dots = false) {
   modeStatus.textContent = text;
   modeStatus.className = 'netstatus' + (cls ? ' ' + cls : '') + (dots ? ' dots' : '');
 }
 function updateNetUI() {
+  if (NET.on && NET.st === 'watch') { // a spectator's pill (v26)
+    netpill.hidden = false;
+    netpill.innerHTML = !NET.linkUp ? 'Reconnecting' : `<span class="lg">Watching · </span>${NET.code}`;
+    netpill.className = 'netpill' + (NET.linkUp ? ' ok' : ' bad');
+    netpill.dataset.tip = `You are watching room ${NET.code}.`;
+    return;
+  }
   if (!NET.on || NET.st !== 'play') { netpill.hidden = true; return; }
   const P = NET.peer, here = P && P.st === 'play' && P.ep === NET.ep && NET.linkUp;
   const opp = roleName(otherRole(NET.role)).toLowerCase();
@@ -4085,13 +4182,9 @@ async function roomLink(code) {
     if (e && e.code === 'not_permitted') { r = room; lobby = true; }
     else throw e;
   }
-  const pick = peers => {
-    const c = peers.filter(p => !p.sameTab && p.presence && p.presence.v === PROTO && p.presence.code === NET.code);
-    c.sort((a, b) => ((b.presence.role !== NET.role) - (a.presence.role !== NET.role)) || ((b.presence.ep | 0) - (a.presence.ep | 0)) || (b.updatedAt - a.updatedAt));
-    return c[0] ? c[0].presence : null;
-  };
+  const all = peers => peers.filter(p => !p.sameTab && p.presence).map(p => ({ ...p.presence, _at: +new Date(p.updatedAt) || 0 })); // v26: everyone in the room
   const offs = [
-    r.onPeers(ch => onPeerState(pick(ch.peers)), e => linkLost(e && e.code)),
+    r.onPeers(ch => onRoom(all(ch.peers)), e => linkLost(e && e.code)),
     r.onConnection(up => setLink(up)),
   ];
   return {
@@ -4134,8 +4227,8 @@ async function peerLink(code) {
   const host = peer.id.endsWith('-a');
   const wire = c => {
     c.on('open', () => { if (closed) return; if (conn && conn !== c) conn.close(); conn = c; seen = Date.now(); setLink(true); if (last) c.send(last); });
-    c.on('data', d => { if (c !== conn) return; seen = Date.now(); if (d && d.ping) return; onPeerState(d); });
-    c.on('close', () => { if (c !== conn) return; conn = null; onPeerState(null); if (!host) dial(); });
+    c.on('data', d => { if (c !== conn) return; seen = Date.now(); if (d && d.ping) return; onRoom(d ? [{ ...d, _at: Date.now() }] : []); });
+    c.on('close', () => { if (c !== conn) return; conn = null; onRoom([]); if (!host) dial(); });
     c.on('error', () => {});
   };
   const dial = () => {
@@ -4151,7 +4244,7 @@ async function peerLink(code) {
     if (!conn || !conn.open) return;
     conn.send(last || { ping: 1 });
     const quiet = Date.now() - seen;
-    if (quiet > 7000 && NET.peer) onPeerState(null);
+    if (quiet > 7000 && NET.peer) onRoom([]);
     if (quiet > 16000) { const c = conn; conn = null; c.close(); if (!host) dial(); }
   }, 2000);
   const bye = () => { try { peer.destroy(); } catch (_) { /* gone */ } };
@@ -4192,18 +4285,14 @@ async function relayLink(code) {
   const url = base.replace(/^http/, 'ws') + '/relay', room = roomName(code);
   const peers = new Map(); // id -> { state, at }
   let ws = null, closed = false, last = null, seen = 0, tries = 0, retry = 0;
-  const pick = () => {
-    const c = [...peers.values()].filter(p => p.state && p.state.v === PROTO && p.state.code === NET.code);
-    c.sort((a, b) => ((b.state.role !== NET.role) - (a.state.role !== NET.role)) || ((b.state.ep | 0) - (a.state.ep | 0)) || (b.at - a.at));
-    onPeerState(c[0] ? c[0].state : null);
-  };
+  const pick = () => onRoom([...peers.values()].filter(p => p.state).map(p => ({ ...p.state, _at: p.at }))); // v26: everyone in the room
   const send = m => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };
   const open = () => new Promise(ok => {
     const w = ws = new WebSocket(url);
     let opened = false;
     w.onopen = () => {
       opened = true; tries = 0; seen = Date.now();
-      send({ t: 'join', room, id: NET.id });
+      send({ t: 'join', room, id: NET.id, w: NET.role === 'spec' ? 1 : 0 });
       if (last) send({ t: 'state', state: last });
       setLink(true); ok(true);
     };
@@ -4214,14 +4303,14 @@ async function relayLink(code) {
       if (m.t === 'peers' && Array.isArray(m.peers)) { peers.clear(); for (const p of m.peers) if (p && p.id) peers.set(p.id, { state: p.state, at: Date.now() }); pick(); }
       else if (m.t === 'state' && m.id) { peers.set(m.id, { state: m.state, at: Date.now() }); pick(); }
       else if (m.t === 'left' && m.id) { peers.delete(m.id); pick(); }
-      else if (m.t === 'full') { closed = true; linkLost('full'); }
+      else if (m.t === 'full') { closed = true; linkLost(m.w ? 'watchfull' : 'full'); }
     };
     w.onclose = () => {
       if (w !== ws) return;
       if (!opened) ok(false);
       if (closed) return;
       peers.clear();
-      if (NET.link) { setLink(false); onPeerState(null); }
+      if (NET.link) { setLink(false); onRoom([]); }
       if (NET.st === 'lobby' && NET.link) setModeStatus('Reconnecting to the game server', '', true);
       clearTimeout(retry);
       retry = setTimeout(open, Math.min(5000, 800 * 2 ** tries++));
@@ -4248,24 +4337,23 @@ async function relayLink(code) {
 function setLink(up) {
   NET.linkUp = !!up;
   if (up) publish();
-  if (NET.st === 'lobby') lobbyCheck(); else updateNetUI();
+  if (NET.st === 'lobby') lobbyUpdate(); else updateNetUI();
+  watchUI();
 }
 function linkLost(code) {
   NET.linkUp = false;
   if (NET.st === 'lobby') {
     disconnect();
-    setModeStatus(code === 'full' ? `This code is already in use by other players. Pick another code.` : code === 'not_granted' || code === 'revoked'
+    setModeStatus(code === 'watchfull' ? `Room ${NET.code} already has as many watchers as it can take.` : code === 'full' ? `Room ${NET.code} is full. Its watch link still works.` : code === 'not_granted' || code === 'revoked'
       ? 'This view can’t join a live room. Open the artifact signed in, from a direct share rather than a public link.'
       : 'The connection dropped. Try again.', 'bad');
   } else updateNetUI();
 }
-async function connect() {
-  const code = codeIn.value.trim().toUpperCase();
-  if (!NET.role || !/^[A-Z0-9]{3,6}$/.test(code)) return;
-  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.linkUp = false; SOLO.on = false; NET.n = chosenRounds(); NET.tm = pickTimed ? 1 : 0; NET.sb = pickSabo ? 1 : 0;
-  codeIn.disabled = true; $('#mode-new').disabled = true; $('#mode-local').disabled = true; $('#mode-solo').disabled = true;
-  modeBtn.textContent = 'Cancel'; modeBtn.disabled = false;
-  setModeStatus('Connecting', '', true);
+async function connect(code) {
+  if (!/^[A-Z0-9]{3,6}$/.test(code)) return;
+  NET.busy = true; NET.on = true; NET.code = code; NET.st = 'lobby'; NET.peer = null; NET.room = []; NET.linkUp = false; NET.kind = ''; SOLO.on = false; NET.sat = false;
+  NET.n = chosenRounds(); NET.tm = pickTimed ? 1 : 0; NET.sb = pickSabo ? 1 : 0;
+  setModeStatus('Connecting', '', true); lobbyRender();
   let link = null, why = '';
   try { link = await roomLink(code); } catch (e) { why = 'room'; console.warn('room', e); }
   if (!NET.busy) { if (link) link.close(); return; }
@@ -4281,6 +4369,11 @@ async function connect() {
       return;
     }
     if (!NET.busy) { link.close(); return; }
+  }
+  if (!link && NET.role === 'spec') { // peer to peer links two devices only: watching needs the game server (or a Claude room)
+    disconnect();
+    setModeStatus('Watching needs the game server. Open the game from its Render link and try again.', 'bad');
+    return;
   }
   if (!link) {
     setModeStatus('Connecting peer to peer', '', true);
@@ -4298,7 +4391,7 @@ async function connect() {
   }
   NET.link = link; NET.kind = link.kind;
   publish();
-  lobbyCheck();
+  lobbyUpdate();
   if (link.kind === 'peer to peer') setTimeout(() => {
     if (NET.link === link && NET.st === 'lobby' && !NET.linkUp) setModeStatus('Still connecting. Some networks block direct connections between devices. If this never connects, try another network.', 'bad');
   }, 20000);
@@ -4306,13 +4399,264 @@ async function connect() {
 function disconnect() {
   NET.busy = false;
   if (NET.link) { try { NET.link.close(); } catch (_) { /* already closed */ } }
-  Object.assign(NET, { on: false, link: null, linkUp: false, peer: null, st: 'lobby' });
+  Object.assign(NET, { on: false, link: null, linkUp: false, peer: null, st: 'lobby', room: [] });
   restartBtn.hidden = true;
-  codeIn.disabled = false; $('#mode-new').disabled = false; $('#mode-local').disabled = false; $('#mode-solo').disabled = false;
-  modeBtn.innerHTML = 'Connect<span class="go" aria-hidden="true">→</span>';
-  syncModeUI();
+  watchUI(); lobbyRender();
 }
 
+/* =====================================================================
+   Rooms (v26). The host makes a room and shares its code; whoever joins
+   sits in the free seat or watches. Seats are claimed in the presences
+   everyone publishes: a seat claimed twice goes to the host, else to the
+   lower id. The host's settings are the match's, and the host starts it.
+   Spectators play every wave on their own device from the two plans once
+   both are revealed (the way the players' devices do), so the match stays
+   deterministic and nothing secret ever reaches them: they see what the
+   attacker sees between waves, and the plans only once both are locked.
+   A spectator who arrives late takes the defender's last result (the
+   referee's) and goes on from there.
+   ===================================================================== */
+const isSeat = r => r === 'def' || r === 'atk';
+const SEATS = ['def', 'atk'];
+const pageURL = () => location.href.split('#')[0];
+const inviteLink = () => `${pageURL()}#${NET.code}`;
+const watchLink = () => `${pageURL()}#watch-${NET.code}`;
+const canWatch = () => NET.kind !== 'peer to peer'; // PeerJS links two devices; watchers need the game server or a Claude room
+// The host: of everyone claiming it (one code picked twice, two promoted at once), the lowest id.
+const hostId = () => [...(NET.host ? [NET.id] : []), ...NET.room.filter(p => p.h === 1).map(p => p.id)].sort()[0] || '';
+const roomHost = () => { const id = hostId(); return id && id !== NET.id ? NET.room.find(p => p.id === id) || null : null; };
+const watchers = () => NET.room.filter(p => p.role === 'spec').length + (NET.role === 'spec' ? 1 : 0);
+const refRes = () => (NET.role === 'spec' ? SPEC.res : NET.role === 'atk' && NET.peer ? NET.peer.res : null); // the referee's latest result
+// Everyone else in the room, from any transport: players pick their opponent from it, the lobby and spectators read it all.
+function onRoom(list) {
+  NET.room = (Array.isArray(list) ? list : []).filter(p => p && typeof p === 'object' && p.v === PROTO && p.code === NET.code && p.id !== NET.id);
+  if (!NET.on) return;
+  if (NET.role === 'spec') { NET.peer = null; if (NET.st === 'lobby') lobbyUpdate(); specUpdate(); watchUI(); return; }
+  const c = NET.room.filter(p => isSeat(p.role));
+  c.sort((a, b) => ((b.role !== NET.role) - (a.role !== NET.role)) || ((b.ep | 0) - (a.ep | 0)) || ((b._at || 0) - (a._at || 0)));
+  onPeerState(c[0] || null);
+  watchUI();
+}
+function hostRoom() {
+  const typed = codeIn.value.trim().toUpperCase();
+  NET.host = true; NET.role = 'def';
+  openRoom(/^[A-Z0-9]{3,6}$/.test(typed) ? typed : newCode());
+}
+function joinRoom(code, watch) {
+  NET.host = false; NET.role = watch ? 'spec' : '';
+  openRoom(code);
+}
+function openRoom(code) {
+  hide(ovMode); show(ovLobby);
+  $('#lobby-linkbox').hidden = true;
+  NET.code = code; NET.ep = 1;
+  connect(code);
+}
+function leaveRoom() {
+  disconnect();
+  NET.host = false; NET.role = null;
+  for (const o of [ovLobby, ovWait, el.ovEnd, el.ovSum, el.ovHand]) hide(o);
+  if (S.phase !== 'defend' || S.round > 1) { newMatch(); setPhase('defend'); } // the watched match stays behind
+  document.body.dataset.role = '';
+  showMode();
+}
+// The lobby, on every change in the room.
+function lobbyUpdate() {
+  if (!NET.on || NET.st !== 'lobby') { lobbyRender(); return; }
+  restartBtn.hidden = true;
+  if (!NET.linkUp) { lobbyRender(); return; }
+  const R = NET.room;
+  if (NET.host && hostId() !== NET.id) { NET.host = false; publish(); } // two hosts: the lower id keeps it
+  const H = roomHost();
+  if (!NET.host && H) { // the host's settings are the match's
+    const was = [NET.n, NET.tm, NET.sb];
+    if (validRounds(H.n)) NET.n = H.n;
+    if (H.tm === 0 || H.tm === 1) NET.tm = H.tm;
+    if (H.sb === 0 || H.sb === 1) NET.sb = H.sb;
+    if (String(was) !== String([NET.n, NET.tm, NET.sb])) publish();
+  }
+  const play = R.filter(p => isSeat(p.role) && p.st === 'play');
+  if (play.length) { lobbyRunning(play); return; }
+  // the host left before the start: the seated player with the lowest id hosts now
+  if (!NET.host && !H && isSeat(NET.role) && R.length && !R.some(p => isSeat(p.role) && p.id < NET.id)) { NET.host = true; publish(); }
+  // a seat claimed twice: the host keeps it, else the lower id; the other moves to the free seat, or stands
+  if (isSeat(NET.role)) {
+    const rival = R.find(p => p.role === NET.role);
+    if (rival && (rival.id === hostId() || (!NET.host && rival.id < NET.id))) {
+      const other = otherRole(NET.role);
+      NET.role = R.some(p => p.role === other) ? '' : other;
+      publish();
+    }
+  }
+  // a player who joins sits in the free seat (once: someone who stood up to watch stays standing)
+  if (NET.role === '' && !NET.sat && roomHost()) {
+    const open = SEATS.find(r => !R.some(p => p.role === r));
+    if (open) { NET.role = open; NET.sat = true; publish(); }
+  }
+  lobbyRender();
+}
+// A match is already running in the room this device is in the lobby of.
+function lobbyRunning(play) {
+  const H = play.find(p => p.h === 1);
+  // the host just pressed Start: the player in the other seat starts too
+  if (isSeat(NET.role) && H && H.role !== NET.role && play.length === 1 && (H.rd | 0) <= 1 && !(H.go > 0)) {
+    NET.ep = Math.max(NET.ep, H.ep | 0);
+    startOnlineMatch();
+    return;
+  }
+  if (NET.role === 'spec') { lobbyRender(); return; } // specUpdate takes it from here
+  if (play.length >= 2) { // someone else's match: watch it
+    if (canWatch()) { NET.role = 'spec'; publish(); toast('The match had started, so you’re watching it.', ''); specUpdate(); return; }
+    setModeStatus(`A match is already running in room ${NET.code}.`, 'bad'); lobbyRender(); return;
+  }
+  // one player left in a match that lost the other (this device, reloaded?): it can't be resumed, only restarted, or watched
+  setModeStatus(`A match is running in room ${NET.code} that this device lost track of. Start a new match, or watch it.`, 'bad');
+  restartBtn.hidden = false;
+  lobbyRender();
+}
+const lobbyReady = () => NET.host && isSeat(NET.role) && NET.linkUp && NET.room.some(p => p.role === otherRole(NET.role) && p.st === 'lobby');
+// The lobby's page: the room code and its links, the two seats, who's watching, the host's settings, Start.
+function lobbyRender() {
+  if (ovLobby.hidden) return;
+  const R = NET.room, me = NET.role, up = NET.on && NET.linkUp, live = R.some(p => isSeat(p.role) && p.st === 'play');
+  $('#lobby-code').textContent = NET.code || '····';
+  $('#lobby-kind').textContent = !NET.on ? '' : !up ? 'Connecting' : NET.host ? 'You host this room' : me === 'spec' ? 'You’re watching' : 'Joined';
+  $('#lobby-watchlink').hidden = !canWatch();
+  const seat = r => {
+    const mine = me === r, p = mine ? null : R.find(q => q.role === r);
+    const who = mine ? 'You' : p ? (p.id === hostId() ? 'Host' : 'Friend') : 'Open seat';
+    let act = '';
+    if (up && !mine && !live && me !== null) act = !p ? `<button data-seat="${r}">${isSeat(me) ? 'Switch here' : 'Sit here'}</button>` : NET.host ? `<button data-seat="${r}">Swap seats</button>` : '';
+    const tags = (mine ? '<i class="me">You</i>' : '') + ((mine && NET.host) || (p && p.id === hostId()) ? '<i>Host</i>' : '') + (p && p.st === 'play' ? '<i>Playing</i>' : '');
+    return `<div class="seat ${r === 'def' ? 'd' : 'a'}${mine ? ' mine' : ''}${!mine && !p ? ' open' : ''}" data-s="${r}"><span class="sside">${roleName(r)}</span><b class="swho">${who}</b><span class="stag">${tags}</span>${act}</div>`;
+  };
+  $('#lobby-seats').innerHTML = seat('def') + seat('atk');
+  const n = watchers(), wbtn = !up || !canWatch() || me === 'spec' || (NET.host && !live) ? '' : `<button class="mini" data-lb="watch">${live ? 'Watch it' : 'Watch instead'}</button>`;
+  $('#lobby-watchers').innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8s2.4-4.5 6.5-4.5S14.5 8 14.5 8 12.1 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>`
+    + `<span class="wn">${!canWatch() ? 'Watching needs the game server.' : n ? `<b>${n}</b> watching${me === 'spec' ? ', you included' : ''}` : 'Nobody watching yet. Anyone with the watch link can.'}</span>${wbtn}`;
+  // the host's settings (read only for everyone else)
+  const ro = !NET.host, nW = ro ? NET.n : chosenRounds(), tm = ro ? NET.tm !== 0 : pickTimed, sb = ro ? NET.sb !== 0 : pickSabo, dis = ro ? ' disabled' : '';
+  const b = (k, v, on, txt) => `<button data-lset="${k}" data-v="${v}" aria-pressed="${on}"${dis}>${txt}</button>`;
+  const up2 = Math.round((RULES.noSabHp - 1) * 100);
+  $('#lobby-set').innerHTML = `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Waves</span><span class="mkeep" id="lobby-keep">Keep <b>${fmtK(keepFor(nW))}</b></span><div class="pick waves">${RULES.roundChoices.map(x => b('n', x, x === nW, x)).join('')}</div></div>`
+    + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Clock</span><span class="mkeep">${tm ? `<b>${mmss(RULES.planSecs)}</b> a round` : 'No clock'}</span><div class="pick clock">${b('tm', 1, tm, 'Timed')}${b('tm', 0, !tm, 'Untimed')}</div></div>`
+    + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Sabotage</span><span class="mkeep">${sb ? 'Bridges, knock-outs' : up2 > 0 ? `Unit health <b>+${up2}%</b>` : 'Army only'}</span><div class="pick clock">${b('sb', 1, sb, 'On')}${b('sb', 0, !sb, 'Off')}</div></div>`;
+  const start = $('#lobby-start');
+  start.hidden = !NET.host || live; start.disabled = !lobbyReady();
+  if (NET.on && up && restartBtn.hidden && !modeStatus.classList.contains('bad')) {
+    const other = isSeat(me) && R.some(p => p.role === otherRole(me));
+    setModeStatus(live ? (me === 'spec' ? 'The match is on.' : '')
+      : NET.host ? (other ? 'Both seats are taken. Start when you’re ready.' : `Share the code or the invite link. Waiting for someone to join.`)
+      : !roomHost() ? `Nobody is in room ${NET.code} yet. Check the code with whoever is hosting.`
+      : me === 'spec' ? 'You’ll watch once the host starts the match.'
+      : isSeat(me) ? 'Waiting for the host to start.'
+      : 'Both seats are taken. Watch, or wait for a seat to open.');
+  }
+}
+async function shareLink(url, what, btn) {
+  const done = ok => {
+    if (btn) { const t = btn.querySelector('span'); btn.classList.toggle('ok', ok); if (t) { const was = t.dataset.t || (t.dataset.t = t.textContent); t.textContent = ok ? 'Copied' : was; setTimeout(() => { btn.classList.remove('ok'); t.textContent = was; }, 1600); } }
+  };
+  try { if (navigator.share && matchMedia('(pointer: coarse)').matches) { await navigator.share({ title: 'TPTD', url }); done(true); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(url); done(true); if (!btn) toast(`${what} copied.`, ''); return; } catch (_) { /* no clipboard here (a file page, an old browser) */ }
+  if (btn) { const box = $('#lobby-linkbox'); box.value = url; box.hidden = false; box.select(); }
+  else toast(`${what}: ${url}`, '');
+}
+// The HUD's watch button: how many are watching, and the link to share (both players and the spectators have it).
+function watchUI() {
+  const b = $('#btn-watch'), on = NET.on && (NET.st === 'play' || NET.st === 'watch') && canWatch();
+  b.hidden = !on;
+  if (!on) return;
+  const n = watchers();
+  $('#watch-n').textContent = n ? String(n) : '';
+  b.dataset.tip = `${n ? `${n} watching. ` : ''}Copy a link anyone can open to watch this match.`;
+}
+
+/* ---------- spectators (v26) ---------- */
+const SPEC = { dp: {}, ap: {}, res: null, D: null, A: null, fresh: false }; // revealed plans by round, the referee's latest result, the two players; fresh: just arrived (catch up to live first)
+function specPlayers() {
+  const P = NET.room.filter(p => isSeat(p.role) && p.st === 'play');
+  const ep = P.reduce((m, p) => Math.max(m, p.ep | 0), 0), at = P.filter(p => (p.ep | 0) === ep);
+  return { ep, D: at.find(p => p.role === 'def') || null, A: at.find(p => p.role === 'atk') || null };
+}
+function specUpdate() {
+  if (!NET.on || NET.role !== 'spec') return;
+  const { ep, D, A } = specPlayers();
+  if (NET.st === 'watch') { SPEC.D = ep === NET.ep ? D : SPEC.D && ep < NET.ep ? SPEC.D : null; SPEC.A = ep === NET.ep ? A : SPEC.A && ep < NET.ep ? SPEC.A : null; }
+  if (!D && !A) { if (NET.st === 'watch') refreshUI(); else lobbyRender(); return; } // nobody playing: the lobby, or both away
+  if (NET.st !== 'watch' || ep > NET.ep) specStart(ep, D || A);
+  if (ep !== NET.ep) return;
+  SPEC.D = D; SPEC.A = A;
+  for (const [P, store] of [[D, SPEC.dp], [A, SPEC.ap]]) if (P && P.plan && P.plan.ep === NET.ep && P.go === P.plan.r) store[P.plan.r] = P.plan; // every plan once it's revealed
+  if (D && D.res && D.res.ep === NET.ep) SPEC.res = D.res;
+  if (SPEC.res && S.doneRound && !replay) adoptResult(SPEC.res); // the referee's result for a wave played here (only if it differs)
+  specCheck();
+  if (S.phase === 'watch') refreshUI();
+}
+// A match to watch: the same map and settings as the players', from its start (a late arrival catches up in specCheck).
+function specStart(ep, P) {
+  for (const o of [ovMode, ovLobby, ovWait, el.ovEnd, el.ovSum, el.ovHand]) hide(o);
+  NET.ep = ep; NET.st = 'watch';
+  if (validRounds(P.n)) NET.n = P.n;
+  if (P.tm === 0 || P.tm === 1) NET.tm = P.tm;
+  if (P.sb === 0 || P.sb === 1) NET.sb = P.sb;
+  Object.assign(SPEC, { dp: {}, ap: {}, res: null, fresh: true });
+  newMatch(seedFor('map', NET.code, ep), NET.n);
+  document.body.dataset.role = 'spec';
+  setPhase('watch');
+  publish(); watchUI();
+  toast(`Watching room ${NET.code}. The plans show once both sides lock in.`, '');
+}
+// Between waves: play the next wave once both plans are in; if its result is in but its plans never reached this device
+// (it came late), take the result and go on.
+function specCheck() {
+  if (!NET.on || NET.role !== 'spec' || NET.st !== 'watch' || replay || S.phase !== 'watch') return;
+  const r = S.round, dp = SPEC.dp[r], ap = SPEC.ap[r], res = SPEC.res;
+  if (SPEC.fresh && res && res.r >= r) { specJump(res); return; } // just arrived: start from the latest result (live), not an old wave
+  if (dp && ap) { SPEC.fresh = false; specWave(dp, ap); return; }
+  if (res && res.r >= r) specJump(res); // a wave whose plans never reached this device: take its result and go on
+}
+function specWave(dp, ap) {
+  hide(el.ovSum); hide(el.ovEnd);
+  loadPlans(dp, ap);
+  drawTerrain();
+  startWave(seedFor(NET.code, NET.ep, S.round));
+  updateNetUI();
+}
+// The state the referee's result describes (the end of round res.r), and on to the next round.
+function specJump(res) {
+  S.doneRound = res.r; NET.adopted = res.r;
+  S.keep = clamp(+res.keep || 0, 0, S.keepMax); S.dFree = int(res.dFree, 0, 1e6); S.aFree = S.aFreeAtEnd = int(res.aFree, 0, 1e6);
+  S.bridges = decodeBridges(res.br); S.grid = clearBridges(decodeGrid(res.g)); for (const g of S.grid) if (g) g.fresh = false;
+  S.gridVer++; recompute(); S.seenGrid = cloneGrid(S.grid); S.seenVer++; S.seenRound = res.r;
+  if (res.L && typeof res.L === 'object') S.last = { ...res.L };
+  if (res.T && typeof res.T === 'object') S.totals = { ...S.totals, ...res.T };
+  S.over = !!res.over; S.winner = S.over ? (res.win === 'attacker' ? 'attacker' : 'defender') : null;
+  drawTerrain();
+  S.round = res.r;
+  if (S.over) { setPhase('over'); showEnd(); return; }
+  S.round = res.r + 1; S.wave = blankWave();
+  SPEC.fresh = false;
+  setPhase('watch');
+  specCheck();
+}
+// The spectator's panel between waves: both sides' state (public: what the attacker sees between waves, the coins), the
+// round, and who's watching.
+const specKey = { v: '' };
+function renderSpec() {
+  const r = S.round;
+  const row = (side, P) => {
+    const rd = P ? P.rd | 0 : 0, ready = P && rd > 0 && (P.lk === rd || P.go === rd);
+    const [t, c] = !P ? ['Offline', 'bad'] : !NET.linkUp ? ['…', ''] : rd > r ? [`On round ${rd}`, ''] : ready ? ['Locked in', 'ok'] : ['Planning', ''];
+    return `<div class="spec-row ${side === 'def' ? 'd' : 'a'}"><b>${roleName(side)}</b><span class="st ${c}">${t}</span><span class="cn">${side === 'def' ? S.dFree : S.aFree} coins</span></div>`;
+  };
+  const n = watchers();
+  const html = `${row('def', SPEC.D)}${row('atk', SPEC.A)}
+    <p class="note">Round ${r} of ${S.rounds}. The wave plays here once both sides lock in; their plans stay hidden until then.</p>
+    <p class="note spec-n">${n === 1 ? 'You’re the only one watching.' : `${n} watching.`}</p>`;
+  if (specKey.v !== html) { specKey.v = html; $('#spec-body').innerHTML = html; }
+  setText($('#spec-code'), 'spc', `Room ${NET.code}`);
+}
 
 /* =====================================================================
    Versus computer. The computer plays the other side knowing only what
@@ -5414,13 +5758,12 @@ function brainPlan(side, level, seed) {
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newCode = () => Array.from({ length: 4 }, () => CODE_CHARS[Math.random() * CODE_CHARS.length | 0]).join('');
 function syncModeUI() {
-  for (const b of document.querySelectorAll('.rolepick button')) b.setAttribute('aria-pressed', String(b.dataset.role === NET.role));
-  if (!NET.on) modeBtn.disabled = !NET.role || !/^[A-Z0-9]{3,6}$/.test(codeIn.value.trim().toUpperCase());
+  $('#mode-join').disabled = !/^[A-Z0-9]{3,6}$/.test(codeIn.value.trim().toUpperCase());
 }
 function showMode() {
-  if (!codeIn.value) {
+  if (!codeIn.value) { // a code in the address (an invite link) fills the Join box
     const h = (location.hash || '').replace('#', '').toUpperCase();
-    codeIn.value = /^[A-Z0-9]{3,6}$/.test(h) ? h : newCode();
+    if (/^[A-Z0-9]{3,6}$/.test(h)) codeIn.value = h;
   }
   syncModeUI(); syncRoundsUI();
   show(ovMode);
@@ -5456,16 +5799,17 @@ for (const b of document.querySelectorAll('.pick button[data-side], .pick button
   if (b.dataset.side) SOLO.side = b.dataset.side; else SOLO.level = b.dataset.level;
   syncSoloUI();
 });
-// How many waves the next match lasts, for all three modes (online, the defender's pick counts); the keep follows.
+// How many waves the next match lasts, for all three modes (online, the host's pick counts); the keep follows.
 const fmtK = n => n.toLocaleString('en-US');
+const mmss = sec => `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`; // 300 → "5:00"
 function syncRoundsUI() {
   const n = chosenRounds();
   for (const b of document.querySelectorAll('#mode-waves button')) b.setAttribute('aria-pressed', String(+b.dataset.rounds === n));
   $('#mode-keep').innerHTML = `Keep <b>${fmtK(keepFor(n))}</b>`;
   // v23: timed rounds (each side gets RULES.planSecs to plan each round) or untimed (no clock, nobody's rushed)
   for (const b of document.querySelectorAll('#mode-clock button')) b.setAttribute('aria-pressed', String((b.dataset.timed === '1') === pickTimed));
-  const m = fmtNum(RULES.planSecs / 60);
-  $('#mode-clockv').innerHTML = pickTimed ? `<b>${m}:00</b> a round` : 'No clock';
+  const m = mmss(RULES.planSecs);
+  $('#mode-clockv').innerHTML = pickTimed ? `<b>${m}</b> a round` : 'No clock';
   // v24: with sabotage, or without (army against towers; units cost less)
   for (const b of document.querySelectorAll('#mode-sabo button')) b.setAttribute('aria-pressed', String((b.dataset.sabo === '1') === pickSabo));
   const up = Math.round((RULES.noSabHp - 1) * 100);
@@ -5485,17 +5829,46 @@ for (const b of document.querySelectorAll('#mode-waves button')) b.addEventListe
   if (NET.on && NET.st === 'lobby') { NET.n = chosenRounds(); publish(); }
 });
 $('#mode-solo').addEventListener('click', () => { hide(ovMode); NET.on = false; SOLO.on = true; document.body.dataset.role = ''; newMatch(); startRound(); });
-$('#end-menu').addEventListener('click', () => { hide(el.ovEnd); SOLO.on = false; showMode(); });
-for (const b of document.querySelectorAll('.rolepick button')) b.addEventListener('click', () => {
-  NET.role = b.dataset.role; syncModeUI();
-  if (NET.on && NET.st === 'lobby') { publish(); lobbyCheck(); }
-});
+$('#end-menu').addEventListener('click', () => { if (online()) { leaveRoom(); return; } hide(el.ovEnd); SOLO.on = false; showMode(); });
 codeIn.addEventListener('input', () => { codeIn.value = codeIn.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); syncModeUI(); });
-codeIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !modeBtn.disabled) modeBtn.click(); });
-$('#mode-new').addEventListener('click', () => { codeIn.value = newCode(); syncModeUI(); });
-modeBtn.addEventListener('click', () => { if (NET.on) { disconnect(); setModeStatus(''); } else connect(); });
+codeIn.addEventListener('keydown', e => { if (e.key === 'Enter' && !$('#mode-join').disabled) $('#mode-join').click(); });
+// v26: host a room (with the code typed, if any), or join one
+$('#mode-host').addEventListener('click', hostRoom);
+$('#mode-join').addEventListener('click', () => joinRoom(codeIn.value.trim().toUpperCase(), false));
+$('#lobby-leave').addEventListener('click', leaveRoom);
+$('#lobby-help').addEventListener('click', () => openInfo(false, 'info-play', 'Back'));
+$('#lobby-invite').addEventListener('click', e => shareLink(inviteLink(), 'Invite link', e.currentTarget));
+$('#lobby-watchlink').addEventListener('click', e => shareLink(watchLink(), 'Watch link', e.currentTarget));
+$('#lobby-seats').addEventListener('click', e => {
+  const b = e.target.closest('[data-seat]'); if (!b || !NET.on || NET.st !== 'lobby') return;
+  NET.role = b.dataset.seat; NET.sat = true; publish(); lobbyUpdate();
+});
+$('#lobby-watchers').addEventListener('click', e => {
+  if (!e.target.closest('[data-lb=watch]') || !NET.on || NET.host) return;
+  NET.role = 'spec'; publish();
+  if (NET.room.some(p => isSeat(p.role) && p.st === 'play')) specUpdate(); else lobbyUpdate();
+});
+$('#lobby-set').addEventListener('click', e => { // the host's settings
+  const b = e.target.closest('[data-lset]'); if (!b || !NET.host || NET.st !== 'lobby') return;
+  const v = +b.dataset.v;
+  if (b.dataset.lset === 'n') pickRounds = v; else if (b.dataset.lset === 'tm') pickTimed = v === 1; else pickSabo = v === 1;
+  NET.n = chosenRounds(); NET.tm = pickTimed ? 1 : 0; NET.sb = pickSabo ? 1 : 0;
+  syncRoundsUI(); publish(); lobbyRender();
+});
+$('#lobby-start').addEventListener('click', () => {
+  if (!lobbyReady()) return;
+  NET.ep = NET.room.reduce((m, p) => Math.max(m, p.ep | 0), NET.ep) + (NET.room.some(p => p.st === 'play' || p.st === 'watch') ? 1 : 0);
+  startOnlineMatch();
+});
 $('#wait-back').addEventListener('click', unlock);
-restartBtn.addEventListener('click', () => { NET.ep = Math.max(NET.ep, NET.peer ? NET.peer.ep | 0 : 0) + 1; startOnlineMatch(`New match started. You are the ${roleName(NET.role)}.`); });
+restartBtn.addEventListener('click', () => {
+  if (!isSeat(NET.role) && NET.peer) NET.role = otherRole(NET.peer.role); // the seat the match is missing
+  if (!isSeat(NET.role)) return;
+  NET.ep = Math.max(NET.ep, NET.peer ? NET.peer.ep | 0 : 0) + 1; startOnlineMatch(`New match started. You are the ${roleName(NET.role)}.`);
+});
+$('#btn-watch').addEventListener('click', () => shareLink(watchLink(), 'Watch link'));
+$('#spec-link').addEventListener('click', e => shareLink(watchLink(), 'Watch link', e.currentTarget));
+$('#spec-leave').addEventListener('click', leaveRoom);
 $('#end-swap').addEventListener('click', () => { hide(el.ovEnd); rematchOnline(true); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && NET.on) publish(); });
 
@@ -7082,6 +7455,7 @@ function refreshUI() {
   if (S.phase === 'defend') renderDef();
   else if (S.phase === 'attack') renderAtk();
   else if (S.phase === 'wave') renderWave();
+  else if (S.phase === 'watch') renderSpec();
   if (online()) updateNetUI();
 }
 const hudCache = {};
@@ -8256,7 +8630,9 @@ function start(data) {
   new ResizeObserver(() => layout()).observe(wrap);
   let restored = false;
   if (data && data.siege) { try { restore(data.siege); restored = true; } catch (_) { newMatch(); } }
-  if (!restored) { setPhase('defend'); openInfo(true); }
+  const link = /^#(WATCH-)?([A-Z0-9]{3,6})$/.exec((location.hash || '').toUpperCase()); // v26: #ABCD joins room ABCD, #watch-ABCD watches it
+  if (!restored && link) { setPhase('defend'); joinRoom(link[2], !!link[1]); }
+  else if (!restored) { setPhase('defend'); openInfo(true); }
   requestAnimationFrame(t => { last = t; frame(t); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout());
 }
@@ -8270,7 +8646,7 @@ window.siegeline = {
   unitToClient(u) { const [sx, sy] = w2s(u.x + u.ox, u.y + u.oy), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   get speed() { return waveSpeed; },
   advance(sec) { const n = Math.round(sec * 60); for (let k = 0; k < n && waveRunning(); k++) waveStep(1 / 60); },
-  get replaying() { return !!replay; },
+  get replaying() { return !!replay; }, spec: SPEC, // v26: a spectator's revealed plans and the referee's result
   get testing() { return testing(); }, get testResult() { return testResult; }, // a test run, and its result card's numbers
   get hot() { return hotTiles(); }, get hints() { return hintsOn; }, // the hint's wall set (null until it's worked out)
   underFire: () => underFire(S.path, S.grid), avgSpeed, shapeSel, canBridgeAt: i => bridgeSpot(i), // where the attacker may lay a bridge

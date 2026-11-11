@@ -17,7 +17,7 @@
       else if (m.t === 'p') { peers.set(m.peer, Object.freeze(JSON.parse(JSON.stringify(m.presence)))); fire(); }
       else if (m.t === 'bye') { peers.delete(m.peer); fire(); }
     };
-    addEventListener('pagehide', () => bc.postMessage({ t: 'bye', peer: me }));
+    addEventListener('pagehide', () => { if (!left) bc.postMessage({ t: 'bye', peer: me }); });
     post({ t: 'hello', peer: me });
     return {
       name,
