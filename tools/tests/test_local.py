@@ -2277,17 +2277,20 @@ with sync_playwright() as p:
     check(new[0] == 40 and old[0] == 40 and new[1] == 425 and old[1] == 178, f'v23: a default tower still costs 40; the playtest’s tower {old[1]} → {new[1]} (the spec: about 178 → 425)')
     check(new[2] == 76 and new[3] == 64, f'v23: a Cannon is still 76 (range and damage at the default); a Sniper (4 cells) 102 → {new[3]}')
     page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
-    page.click('#def-lock'); hand(page); page.click('#atk-lock')
+    page.click('#def-lock'); hand(page)
+    page.evaluate('() => { window.siegeline.state.aFree = 1200; window.siegeline.refresh(); }')  # the attacker saved 1,200
+    page.click('#atk-lock')
     if not page.is_visible('#ov-hand'): page.click('#atk-lock')
     hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
     L1 = S(page, 'S.last')
-    check(L1['dInt'] == L1['dLeft'] * 15 // 100 and L1['aLeft'] == 300 and L1['aInt'] == 45 and L1['dTot'] == L1['dGain'] + L1['dInt'],
-          f'v27: interest after wave 1: 15% of everything each side left unspent, no cap (defender {L1["dLeft"]} → +{L1["dInt"]}, attacker {L1["aLeft"]} → +{L1["aInt"]}; v23-v26 stopped at 22)')
+    check(300 <= L1['dLeft'] < 1000 and L1['dInt'] == L1['dLeft'] * 15 // 100 and L1['aLeft'] == 1200 and L1['aInt'] == 150 and L1['dTot'] == L1['dGain'] + L1['dInt'],
+          f'v27: interest after wave 1: 15% of what each side left unspent, at most 150 paid (defender {L1["dLeft"]} → +{L1["dInt"]}, attacker 1,200 → +{L1["aInt"]}, not 180; v23-v26 counted up to 150 coins and paid 22)')
     details(page)
-    led1 = page.inner_text('#led-aint') if page.is_visible('#led-aint') else ''
-    check('Interest on 300 left' in led1 and '+45' in led1 and 'counts up to' not in led1, f'v27: the ledger says what the interest was on, with no cap ({led1})')
-    rs = page.evaluate('() => [document.querySelector("#info-intmax").textContent, document.querySelector("#info-intmax2").textContent]')
-    check(rs == ['150', '150'], f'v27: the rules sheet says 1,000 saved earns 150 ({rs})')
+    led1, led1d = [page.inner_text(i) if page.is_visible(i) else '' for i in ('#led-aint', '#led-dint')]
+    check('Interest on 1200 left (at most 150 a wave)' in led1 and '+150' in led1 and 'at most' not in led1d and 'counts up to' not in led1 + led1d,
+          f'v27: the ledger says when the 150 held the interest back, and only then ({led1} | {led1d})')
+    rs = page.evaluate('() => [document.querySelector("#info-intmax").textContent, document.querySelector("#info-intmax2").textContent, document.querySelector("#info-round").innerText]')
+    check(rs[:2] == ['1,000', '1,000'] and 'at most 150 a wave (reached with 1,000 saved)' in rs[2], f'v27: the rules sheet says interest pays at most 150 a wave, reached with 1,000 saved ({rs[:2]})')
     page.click('#sum-next'); hand(page)
     # round 2: a strong tower by the entry (1), two Basic towers further on (2 and 3); tower 3 has moved since the attacker saw it
     T1, T2, T3, T3now = idx(2, 4), idx(13, 3), idx(9, 2), idx(9, 8)
@@ -2318,8 +2321,8 @@ with sync_playwright() as p:
     check(arm == 3, f'v23: sappers march with armor 1 (each hit loses 3; {arm})')
     check(saps == ['lost', 'miss'] and L['sapLost'] == 1 and L['dKill'] == cost2,
           f'v24: the sapper shot down pays the defender its sabotage’s whole price ({cost2} → +{L["dKill"]}); the one whose tower moved missed and pays no one ({saps})')
-    check(L['dInt'] == 15 and L['aInt'] == a2 * 15 // 100 and L['aLeft'] == a2 and L['dTot'] == L['dGain'] + L['dKill'] + 15 + L['bridgeRefund'] * 0,
-          f'v27: interest on what was left when the wave started (defender 100 → +15, attacker {a2} → +{L["aInt"]}, all of it counted)')
+    check(L['dInt'] == 15 and L['aInt'] == min(150, a2 * 15 // 100) and L['aLeft'] == a2 and L['dTot'] == L['dGain'] + L['dKill'] + 15 + L['bridgeRefund'] * 0,
+          f'v27: interest on what was left when the wave started (defender 100 → +15, attacker {a2} → +{L["aInt"]}, at most 150)')
     ex = page.inner_text('#sum-extra') if page.is_visible('#sum-extra') else ''
     details(page)
     led = page.inner_text('#led-dkill') if page.is_visible('#led-dkill') else ''

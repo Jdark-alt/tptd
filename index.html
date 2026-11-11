@@ -1350,7 +1350,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
           <li><strong>Defender, in secret.</strong> Every match starts with a free <strong>starter maze</strong>: ordinary walls you can keep, change or sell for 5 each. Walls bend the route, towers shoot it. Tap a tower to tune it. From round 2, <strong>Test</strong> plays last wave’s army against your build. <strong>Lock in.</strong></li>
           <li><strong>Attacker, in secret.</strong> Army: pick units. Sabotage, from round 2: walls to bridge and towers to knock out, each carried by a sapper. Wave: time units and sappers, with a forecast of the wave against the defense you saw. <strong>Lock in</strong> from any step.</li>
           <li><strong>The wave.</strong> Everything is revealed and plays out; the pot meter in the bar shows how the pot would split if the wave ended now. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
-          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, however many (1,000 saved earns <span id="info-intmax">150</span>). The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
+          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, at most <span data-rule="interestMax">150</span> a wave (reached with <span id="info-intmax">1,000</span> saved). The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
         </ol>
         <p>Pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed on the start screen (online, the host’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
         <p><strong>Online.</strong> One player hosts a room and shares its code (or the invite link); a friend joins and sits in the free seat, and the host starts the match. The host’s settings are the match’s. Anyone with the <strong>watch link</strong> can watch, before or during a match: up to 8 watchers. They see what the attacker sees between waves, and each wave once both sides have locked in, never a plan before. The eye in the top bar shows how many are watching and copies the link.</p>
@@ -1452,7 +1452,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal; the defender also gets the starter maze, free</td></tr>
               <tr><td>Sabotage</td><td class="n">On / Off</td><td>Picked at the start (online, the host’s pick). Off: no bridges or knock-outs, units <span id="info-nosab3">tougher</span> at the same price</td></tr>
-              <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>%</td><td>Each side, every wave: of all the coins it left unspent when the wave started, paid when it ends (1,000 saved earns <span id="info-intmax2">150</span>)</td></tr>
+              <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>%, at most <span data-rule="interestMax">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends. It pays at most <span data-rule="interestMax">150</span> a wave, reached with <span id="info-intmax2">1,000</span> saved</td></tr>
               <tr><td>Pot per round</td><td class="n"><span id="info-pot"></span></td><td><span id="info-pot-note"></span></td></tr>
               <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
               <tr><td>Waves</td><td class="n"><span data-rule="roundChoices:range">4–12</span></td><td>Picked at the start, <span data-rule="rounds">8</span> by default. The defender wins by surviving them</td></tr>
@@ -1660,11 +1660,12 @@ const RULES = {
   // The round after a sabotage landed the defender has to rework its layout, so moving is free then (v23, at the user's
   // request): every tower if a bridge went down in the last wave, otherwise the towers that were knocked out in it.
   freeAfterSabotage: true,
-  // Interest (v23): when a wave ends each side earns floor(interestRate × min(free, interestCap)), free being the coins
-  // it had left when the wave started (interestRate 0: none, as before v23). Since v27 there's no cap (the user: "interest
-  // payment is still maxed out at 22"), so 1,000 saved earns 150: interestCap 0 means no cap (a number, not Infinity,
-  // so the rules survive a JSON copy); interestCap 150 plays v23-v26 (at most 22 a wave).
-  interestRate: 0.15, interestCap: 0,
+  // Interest (v23): when a wave ends each side earns floor(interestRate × min(free, interestCap)), at most interestMax,
+  // free being the coins it had left when the wave started (interestRate 0: none, as before v23). Since v27 the 150 caps
+  // what it pays, not the coins it counts (the user: "the 150 should be the cap on the interest amount"), so 1,000 saved
+  // earns the most, 150 a wave; v23-v26 counted at most 150 coins (interestCap 150, interestMax 0: at most 22 a wave).
+  // 0 means no cap for either (a number, not Infinity, so the rules survive a JSON copy).
+  interestRate: 0.15, interestCap: 0, interestMax: 150,
   // Tower prices (v23): range is priced by (range ÷ 2.5)^rangePow and damage by (damage ÷ 18)^dpsPow, so the defaults
   // (2.5 cells, 18 a second) stay ×1. v13-v22.2 were 2 and 1.15: low range discounted the whole tower by its square, and
   // stacking damage on one tower cost about as much as spreading it.
@@ -3558,8 +3559,12 @@ function prepWave(seed) {
    tower back stay exact): the move fees the defender paid this round go to the attacker; a sapper shot down pays the
    defender sapKillShare of its sabotage's cost (one that missed or landed pays no one); and each side earns interest on
    the coins it had free when the wave started, interestRate of them up to interestCap (0: all of them, since v27). */
-const intCapped = left => RULES.interestCap > 0 && (left || 0) > RULES.interestCap;
-const interestOn = free => Math.floor(RULES.interestRate * Math.min(Math.max(0, free || 0), RULES.interestCap > 0 ? RULES.interestCap : Infinity) + 1e-9);
+const interestRaw = free => Math.floor(RULES.interestRate * Math.min(Math.max(0, free || 0), RULES.interestCap > 0 ? RULES.interestCap : Infinity) + 1e-9);
+const interestOn = free => (RULES.interestMax > 0 ? Math.min(RULES.interestMax, interestRaw(free)) : interestRaw(free));
+// the ledger's note when a cap held the interest back: the coins counted (v23-v26) or what it pays (v27)
+const intNote = left => (RULES.interestCap > 0 && (left || 0) > RULES.interestCap ? ` (counts up to ${RULES.interestCap})` : RULES.interestMax > 0 && interestRaw(left) > RULES.interestMax ? ` (at most ${RULES.interestMax} a wave)` : '');
+// the coins that earn the most interest a wave (1,000 at 15% and 150), for the rules sheet
+const intFull = () => (RULES.interestMax > 0 && RULES.interestRate > 0 ? Math.ceil(RULES.interestMax / RULES.interestRate - 1e-9) : 0);
 const waveIncome = W => ({ aMove: RULES.moveFeeToAtk ? Math.max(0, W.mf || 0) : 0, dKill: Math.floor(RULES.sapKillShare * (W.sapKillCost || 0) + 1e-9), dInt: interestOn(W.dLeft), aInt: interestOn(W.aLeft) });
 function endRound() {
   if (QUIET) { S.trialDone = true; return; } // a hidden test wave (checked first: one can run while a replay is open)
@@ -3799,14 +3804,14 @@ function showSummary() {
       <div class="led d"><h3>Defender</h3><span class="big">+${L.dTot ?? L.dGain}</span>
         <ul><li><span>Pot share ${Math.round(L.share * 100)}%</span><span>+${L.dGain}</span></li>
         ${L.sapLost ? `<li id="led-dkill"><span>Sappers shot down (${L.sapLost})</span><span>+${L.dKill || 0}</span></li>` : ''}
-        ${RULES.interestRate > 0 ? `<li id="led-dint"><span>Interest on ${L.dLeft || 0} left${intCapped(L.dLeft) ? ` (counts up to ${RULES.interestCap})` : ''}</span><span>+${L.dInt || 0}</span></li>` : ''}
+        ${RULES.interestRate > 0 ? `<li id="led-dint"><span>Interest on ${L.dLeft || 0} left${intNote(L.dLeft)}</span><span>+${L.dInt || 0}</span></li>` : ''}
         <li><span>Bridged walls refunded (${L.bridges})</span><span>${L.bridgeRefund ? '+' + L.bridgeRefund : '0'}</span></li>
         <li><span>Towers knocked out</span><span>${L.jammed}</span></li>
         <li><span>Worth now</span><span>${defWorth()}</span></li></ul></div>
       <div class="led a"><h3>Attacker</h3><span class="big">+${L.aTot ?? L.aGain}</span>
         <ul><li><span>Pot share ${100 - Math.round(L.share * 100)}%</span><span>+${L.aGain}</span></li>
         ${L.aMove ? `<li id="led-amove"><span>Defender moved towers</span><span>+${L.aMove}</span></li>` : ''}
-        ${RULES.interestRate > 0 ? `<li id="led-aint"><span>Interest on ${L.aLeft || 0} left${intCapped(L.aLeft) ? ` (counts up to ${RULES.interestCap})` : ''}</span><span>+${L.aInt || 0}</span></li>` : ''}
+        ${RULES.interestRate > 0 ? `<li id="led-aint"><span>Interest on ${L.aLeft || 0} left${intNote(L.aLeft)}</span><span>+${L.aInt || 0}</span></li>` : ''}
         <li><span>Sabotage (${L.charges})</span><span>${L.chargeCoins ? '−' + L.chargeCoins : '0'}</span></li>
         <li><span>Units through / killed</span><span>${L.leaks} / ${L.kills}</span></li>
         <li><span>Worth now</span><span>${atkWorth()}</span></li></ul></div>
@@ -3871,7 +3876,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 18; // 18: v27 (interest on every coin left, no cap; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 18; // 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
@@ -8700,7 +8705,7 @@ function start(data) {
     const [k, f] = n.dataset.rule.split(':'), pct = k.endsWith('%'), v = (pct ? k.slice(0, -1) : k).split('.').reduce((o, x) => (o == null ? o : o[x]), RULES);
     n.textContent = pct ? Math.round(v * 100) : f === 'pt' ? ratePct(v) : f === 'min' ? fmtNum(v / 60) : f === 'range' ? `${Math.min(...v)}–${Math.max(...v)}` : v;
   }
-  $('#info-keepn').textContent = `${fmtK(keepFor(RULES.rounds))} points in ${[8, 11].includes(RULES.rounds) ? 'an' : 'a'} ${RULES.rounds}-wave match`; $('#info-intmax').textContent = $('#info-intmax2').textContent = interestOn(1000);
+  $('#info-keepn').textContent = `${fmtK(keepFor(RULES.rounds))} points in ${[8, 11].includes(RULES.rounds) ? 'an' : 'a'} ${RULES.rounds}-wave match`; $('#info-intmax').textContent = $('#info-intmax2').textContent = fmtK(intFull());
   { const up = Math.round((RULES.noSabHp - 1) * 100); for (const [id, t] of [['#info-nosab', up > 0 ? `${up}% more health` : 'no extra health'], ['#info-nosab2', up > 0 ? `${up}% more health` : 'no extra health'], ['#info-nosab3', up > 0 ? `+${up}% health` : 'as usual']]) $(id).textContent = t; }
   for (const k of ['', '2']) { $('#info-saphp' + k).textContent = US.hp.steps[RULES.sapper.hp]; $('#info-saparm' + k).textContent = US.armor.steps[RULES.sapper.armor || 0]; }
   const off = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v); // the fire rate's accuracy offsets, from the rules too
