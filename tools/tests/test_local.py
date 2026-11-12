@@ -122,9 +122,9 @@ with sync_playwright() as p:
     page.evaluate('() => { window.siegeline.state.dFree = 5; window.siegeline.refresh(); }')
     check('poor' in page.get_attribute('#te-dps-n', 'class') and 'poor' in page.get_attribute('#def-ctx [data-fx=poison]', 'class'), 'step price turns red when unaffordable (the effect chip too)')
     page.evaluate(f'() => {{ window.siegeline.state.dFree = {fr}; window.siegeline.refresh(); }}')
-    set_slider(page, '#te-splash', 3)
+    page.click('#def-ctx [data-fx=splash]'); set_slider(page, '#te-splash', 3)
     check(page.inner_text('#te-splash-n') == 'Max', 'top of a slider shows Max')
-    set_slider(page, '#te-splash', 0)
+    page.click('#def-ctx [data-fx=splash]')
     set_slider(page, '#te-range', 5); r_only = int(page.inner_text('#te-price'))
     set_slider(page, '#te-range', 2); set_slider(page, '#te-dps', 5); d_only = int(page.inner_text('#te-price'))
     set_slider(page, '#te-range', 5); both = int(page.inner_text('#te-price'))
@@ -1979,6 +1979,9 @@ with sync_playwright() as p:
       L = line([1, 3]); S.units = L; I.chainFrom(L[0], 100, ch); out.twice = loss(L);
       L = line([1, 3], [0, 2]); S.units = L; I.chainFrom(L[0], 100, ch); out.armor = loss(L);
       L = line([1, 3], [0, 3]); S.units = L; I.chainFrom(L[0], 100, ch); out.shock = loss(L);
+      L = line([1, 3, 5, 7, 9]); S.units = L; I.chainFrom(L[0], 100, T({ chain: 1 })); out.j1 = loss(L); // v31: as many jumps as it has
+      L = line([1, 3, 5, 7, 9]); S.units = L; I.chainFrom(L[0], 100, T({ chain: 2 })); out.j2 = loss(L);
+      L = line([1, 3, 5, 7, 9]); S.units = L; I.chainFrom(L[0], 100, T({ chain: 3 })); out.j3 = loss(L);
       return out; }''')
     check(fx['first'] == 10 and fx['slow'] == [0.5, 2.5] and abs(fx['next'] - 12) < 1e-9, f'frost: a hit slows by 50% for 2.5 s and isn’t amplified itself; the next hit, from any tower, lands 1.2× ({fx["first"]}, {fx["slow"]}, {fx["next"]})')
     check(abs(fx['resist'][0] - 0.2) < 1e-9 and abs(fx['resist'][1] - 10) < 1e-9, f'frost: a frost-resistant unit is slowed 20% and never brittle ({fx["resist"]})')
@@ -1986,28 +1989,49 @@ with sync_playwright() as p:
     check(fx['jumps'] == [0, 70, 50, 35, 0], f'chain: 3 jumps at 70%, 50% and 35%, each from the unit struck before it ({fx["jumps"]})')
     check(fx['reach'] == [0, 70, 0] and fx['twice'] == [0, 70], f'chain: it stops past 2.5 cells, and never strikes a unit twice ({fx["reach"]}, {fx["twice"]})')
     check(fx['armor'] == [0, 70] and fx['shock'] == [0, 28], f'chain: armor is ignored (an armored unit takes the full 70); Shock takes 60% less ({fx["armor"]}, {fx["shock"]})')
+    check(fx['j1'] == [0, 70, 0, 0, 0] and fx['j2'] == [0, 70, 50, 0, 0] and fx['j3'] == fx['jumps'], f'v31: Chain 1 and 2 jump once and twice; 3 (and the old “on”) three times ({fx["j1"]}, {fx["j2"]}, {fx["j3"]})')
     # Chain and Splash don't combine, in the card; one Undo restores both
     page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
     page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
     page.click('.tool[data-tool=tower]'); click_cell(page, 6, 5)
     check(page.get_attribute('#def-ctx [data-fx=slow]', 'data-tip').startswith('Slows each unit it hits by 50% for 2.5 s. Slowed units take 20% more damage from every tower.')
-          and page.get_attribute('#def-ctx [data-fx=chain]', 'data-tip').startswith('Each hit jumps up to 3 times, 2.5 cells from unit to unit, ignoring armor (70%, 50%, 35% damage). Can’t be combined with Splash.'),
+          and page.get_attribute('#def-ctx [data-fx=chain]', 'data-tip').startswith('Each hit jumps to the nearest unit within 2.5 cells, then on from that one, ignoring armor: 70%, 50%, 35% of the hit. Can’t be combined with Splash. Opens at 3 jumps; fewer cost less (×1.20 / ×1.35 / ×1.50 for 1 / 2 / 3).'),
           'the Frost and Chain chips say what they do now')
-    set_slider(page, '#te-splash', 1)
+    # v31: Splash and Chain are chips that open a slider while checked; Splash opens at its bottom step, Chain at 3 jumps
+    vis = lambda sel: page.evaluate(f"() => {{ const e = document.querySelector('{sel}'); return !!e && e.offsetParent !== null; }}")
+    chips = lambda: [page.get_attribute(f'#def-ctx [data-fx={k}]', 'aria-pressed') for k in ('splash', 'chain', 'slow', 'poison')]
+    check(chips() == ['false'] * 4 and not vis('#te-splash') and not vis('#te-chain') and all(vis(f'#te-{k}') for k in ('range', 'dps', 'accuracy', 'rate')),
+          f'v31: four chips (Splash, Chain, Frost, Poison), all off; four sliders, and no Splash or Chain slider until checked ({chips()})')
+    p0 = int(page.inner_text('#te-price')); page.click('#def-ctx [data-fx=chain]'); cfg = S(page, f'S.grid[{idx(6, 5)}].cfg')
+    check(cfg['chain'] == 3 and vis('#te-chain') and page.inner_text('#te-chain-v') == '3 jumps' and int(page.inner_text('#te-price')) == round(p0 * 1.5),
+          f'v31: checking Chain opens its slider at 3 jumps, ×1.5 (today’s Chain: {p0} → {page.inner_text("#te-price")})')
+    prices = []
+    for j in (1, 2, 3): set_slider(page, '#te-chain', j); prices.append(int(page.inner_text('#te-price')))
+    check(prices == [round(p0 * 1.2), round(p0 * 1.35), round(p0 * 1.5)] and S(page, f'S.grid[{idx(6, 5)}].cfg.chain') == 3,
+          f'v31: the Chain slider is 1, 2 or 3 jumps at ×1.2 / ×1.35 / ×1.5 ({prices})')
+    set_slider(page, '#te-chain', 0)
+    check(S(page, f'S.grid[{idx(6, 5)}].cfg.chain') == 1, 'v31: the Chain slider stops at 1 jump (the chip is what turns it off)')
+    page.click('#def-ctx [data-fx=chain]')
+    check(S(page, f'S.grid[{idx(6, 5)}].cfg.chain') == 0 and not vis('#te-chain') and int(page.inner_text('#te-price')) == p0, 'v31: unchecking Chain sets it to 0 and hides its slider')
+    page.click('#def-ctx [data-fx=splash]')
+    check(S(page, f'S.grid[{idx(6, 5)}].cfg.splash') == 1 and vis('#te-splash') and int(page.inner_text('#te-price')) == round(p0 * 1.5), 'v31: checking Splash opens its slider at its bottom step (0.5 cells, ×1.5)')
+    set_slider(page, '#te-splash', 0)
+    check(S(page, f'S.grid[{idx(6, 5)}].cfg.splash') == 1, 'v31: the Splash slider stops at its bottom step')
     page.click('#def-ctx [data-act=close]'); page.click('.tool[data-tool=wall]'); click_cell(page, 2, 2)  # another change, so the next tuning is an entry of its own
     click_cell(page, 6, 5); d0 = page.evaluate('() => window.siegeline.undoDepth()')
     page.click('#def-ctx [data-fx=chain]')
     cfg = S(page, f'S.grid[{idx(6, 5)}].cfg')
-    check(cfg['chain'] and cfg['splash'] == 0 and toast(page) == 'Chain and Splash don’t combine: Splash set to Off.' and page.inner_text('#te-splash-v') == 'Off', f'turning Chain on sets Splash to Off, with the toast ({toast(page)})')
+    check(cfg['chain'] == 3 and cfg['splash'] == 0 and toast(page) == 'Chain and Splash don’t combine: Splash switched off.' and not vis('#te-splash') and page.get_attribute('#def-ctx [data-fx=splash]', 'aria-pressed') == 'false',
+          f'checking Chain unchecks Splash and hides its slider, with the toast ({toast(page)})')
     page.keyboard.press('Control+z')
     cfg = S(page, f'S.grid[{idx(6, 5)}].cfg')
     check(not cfg['chain'] and cfg['splash'] == 1 and page.evaluate('() => window.siegeline.undoDepth()') == d0, 'one Undo restores both')
     page.click('#def-ctx [data-act=close]'); click_cell(page, 6, 5)
-    page.click('#def-ctx [data-fx=chain]'); set_slider(page, '#te-splash', 2)
+    page.click('#def-ctx [data-fx=chain]'); page.click('#def-ctx [data-fx=splash]')
     cfg = S(page, f'S.grid[{idx(6, 5)}].cfg')
-    check(not cfg['chain'] and cfg['splash'] == 2 and toast(page) == 'Chain and Splash don’t combine: Chain switched off.', f'moving Splash above Off switches Chain off ({toast(page)})')
+    check(not cfg['chain'] and cfg['splash'] == 1 and toast(page) == 'Chain and Splash don’t combine: Chain switched off.' and not vis('#te-chain'), f'checking Splash unchecks Chain ({toast(page)})')
     page.click('#def-ctx [data-act=close]')
-    page.evaluate(f'() => {{ const S = window.siegeline.state; S.grid[{idx(6, 5)}].cfg.splash = 0; S.grid[{idx(6, 5)}].cfg.chain = true; S.dFree = 5000; }}')
+    page.evaluate(f'() => {{ const S = window.siegeline.state; S.grid[{idx(6, 5)}].cfg.splash = 0; S.grid[{idx(6, 5)}].cfg.chain = 3; S.dFree = 5000; }}')
     page.click('.tool[data-tool=tower]'); click_cell(page, 9, 5); page.click('#def-ctx [data-act=close]'); click_cell(page, 3, 5); page.click('#def-ctx [data-act=close]')
     page.evaluate(f'() => {{ window.siegeline.state.grid[{idx(9, 5)}].cfg.splash = 1; }}')
     page.click('#def-body [data-act=tune]')
@@ -2103,7 +2127,7 @@ with sync_playwright() as p:
     page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
     page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
     inview = lambda sels, W, H: all((lambda bb: bb and bb['x'] >= 0 and bb['y'] >= 0 and bb['x'] + bb['width'] <= W and bb['y'] + bb['height'] <= H)(page.locator(s_).bounding_box()) for s_ in sels)
-    CARD = ['#def-ctx .pre[data-pre=Basic]', '#def-ctx .pre[data-pre=Frost]'] + [f'#te-{k}' for k in ('range', 'dps', 'accuracy', 'rate', 'splash')] + [f'#def-ctx [data-fx={k}]' for k in ('slow', 'poison', 'chain')] + ['#def-ctx [data-act=remove]', '#def-ctx [data-act=copy]', '#def-ctx [data-act=close]', '#te-stat']
+    CARD = ['#def-ctx .pre[data-pre=Basic]', '#def-ctx .pre[data-pre=Frost]'] + [f'#te-{k}' for k in ('range', 'dps', 'accuracy', 'rate')] + [f'#def-ctx [data-fx={k}]' for k in ('splash', 'chain', 'slow', 'poison')] + ['#def-ctx [data-act=remove]', '#def-ctx [data-act=copy]', '#def-ctx [data-act=close]', '#te-stat']
     noscroll = lambda sel: page.evaluate(f"() => {{ const e = document.querySelector('{sel}'); return e.scrollHeight <= e.clientHeight + 1; }}")
     for r in range(0, 10): click_cell(page, 7, r)
     page.click('.tool[data-tool=tower]'); click_cell(page, 6, 5)

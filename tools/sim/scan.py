@@ -27,15 +27,15 @@ DEFENSES = {  # six towers each in a 4-column maze; all land near 750 coins
     'mixed': [{'dps': 4, 'rate': 5}, {'dps': 2, 'rate': 4, 'splash': 2}, {'dps': 4, 'rate': 5}, {'dps': 2, 'rate': 4, 'splash': 2},
               {'range': 3, 'dps': 1, 'rate': 3, 'slow': True}, {'dps': 2, 'rate': 5, 'poison': True}],
     # v21: chain towers (with --defenses), the defense the Shock resist answers
-    'chain': [{'dps': 3, 'chain': True}, {'dps': 2, 'chain': True}] * 3,
+    'chain': [{'dps': 3, 'chain': 3}, {'dps': 2, 'chain': 3}] * 3,
     # v22: the doctrine mix, 2 splash+frost, 2 chain and 2 heavy (the v22 spec's scan used it as one of its six)
-    'doctrine': [{'dps': 2, 'rate': 4, 'splash': 2, 'slow': True}, {'dps': 2, 'chain': True}, {'dps': 3, 'rate': 5}] * 2,
+    'doctrine': [{'dps': 2, 'rate': 4, 'splash': 2, 'slow': True}, {'dps': 2, 'chain': 3}, {'dps': 3, 'rate': 5}] * 2,
     # v23: long range, 5 cells (range step 7), slow heavy shots; the question is whether linear range makes it the best
     'sniper': [{'range': 7, 'dps': 2, 'rate': 5}] * 6,
     # v23: the playtest build. Three towers at range 1.5 (step 0), 75 damage a second (step 8), 100% accuracy (step 3,
     # at 1 shot a second), one with chain, one with splash (0.9 cells, the Cannon's), one with poison, set into the
     # tips of a tight serpentine (TIGHT) so the route wraps round each: 7 of a tower's 8 neighbours are route.
-    'concentrated': {'towers': [{'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'chain': True},
+    'concentrated': {'towers': [{'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'chain': 3},
                                 {'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'splash': 2},
                                 {'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'poison': True}], 'layout': 'tight'},
 }

@@ -16,8 +16,8 @@ OUT = os.path.join(BUILD, 'shots', 'art'); os.makedirs(OUT, exist_ok=True)
 PAGE = write_build('art.html', game_html())
 TOWERS = '''[
  [2,2, {}], [2,4, {rate:0}], [2,6, {rate:5, range:6}], [2,8, {rate:4, splash:2}],
- [5,2, {slow:true}], [5,4, {rate:0, poison:true}], [5,6, {rate:5, range:7, chain:true, accuracy:3}], [5,8, {rate:4, splash:3, slow:true}],
- [8,2, {dps:8, chain:true}], [8,4, {rate:1, slow:true, poison:true}], [8,6, {rate:4, range:3, dps:6, accuracy:2}], [8,8, {rate:4, splash:1, poison:true}],
+ [5,2, {slow:true}], [5,4, {rate:0, poison:true}], [5,6, {rate:5, range:7, chain:3, accuracy:3}], [5,8, {rate:4, splash:3, slow:true}],
+ [8,2, {dps:8, chain:3}], [8,4, {rate:1, slow:true, poison:true}], [8,6, {rate:4, range:3, dps:6, accuracy:2}], [8,8, {rate:4, splash:1, poison:true}],
 ]'''
 ARMY = '''(per) => { const sl = window.siegeline, S = sl.state; S.aFree = 999999; const C = ['#ffb547', '#e5472b', '#ff7b36', '#ff6fa8'];
   S.designs = [
@@ -32,7 +32,7 @@ def match(pg, per):
     pg.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0.05; R.rockShare = 0.05; R.planSecs = 0; R.starterPresses = 0; }')
     pg.click('#info-go'); pg.click('#mode-local'); pg.wait_for_timeout(500); pg.click('#ov-hand'); pg.wait_for_timeout(100)
     pg.evaluate('''() => { const sl = window.siegeline, S = sl.state; S.dFree = 99999; const T = ''' + TOWERS + ''';
-      let n = 0; for (const [c, r, o] of T) { const i = r * 16 + c; S.terrain[i] = 0; S.grid[i] = { t: 'tower', cfg: { range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: false, ...o }, n: ++n, fee: 0, fresh: true, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; }
+      let n = 0; for (const [c, r, o] of T) { const i = r * 16 + c; S.terrain[i] = 0; S.grid[i] = { t: 'tower', cfg: { range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: 0, ...o }, n: ++n, fee: 0, fresh: true, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; }
       for (const r of [0,1,3,5,7,9,10]) { const i = r * 16 + 11; if (!S.grid[i] && !S.terrain[i]) S.grid[i] = { t: 'wall', fresh: true }; }
       S.towerSeq = n; S.gridVer++; sl.refresh(); }''')
     pg.wait_for_timeout(700)

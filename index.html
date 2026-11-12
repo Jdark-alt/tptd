@@ -322,7 +322,7 @@ img.art{-webkit-user-drag:none;user-select:none;pointer-events:none}
 .fxrow .rname{font-size:13.5px}
 .fxcost{display:flex;gap:5px;align-items:center}
 .fxrow .smult{margin-left:0}
-.fx-slow{--fx:var(--frost)} .fx-poison{--fx:var(--poison)} .fx-chain{--fx:var(--chain)}
+.fx-slow{--fx:var(--frost)} .fx-poison{--fx:var(--poison)} .fx-chain{--fx:var(--chain)} .fx-splash{--fx:#ffd27a}
 .segrow{display:flex;flex-direction:column;gap:7px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:9px 11px}
 .seg{display:flex;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden}
 .seg button{flex:1;border:0;background:transparent;padding:9px 4px;font:500 12px/1.2 var(--f-ui);cursor:pointer;color:var(--muted);min-width:0}
@@ -1024,10 +1024,15 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 @keyframes slpop{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--side) 70%,transparent)}100%{box-shadow:0 0 0 12px transparent,0 0 14px -6px var(--side)}}
 @media (prefers-reduced-motion:reduce){.srow.c.maxed input[type=range]::-webkit-slider-runnable-track,.srow.c.maxed input[type=range]::-webkit-slider-thumb,.srow.c.pop{animation:none}}
 .snext.free{color:#cfe9a9;border:0;letter-spacing:.12em;text-transform:uppercase;padding-inline:0}
-.fxchips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-.fxchip{display:flex;align-items:center;gap:6px;height:32px;padding:0 9px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;font:600 12px/1 var(--f-body);color:var(--soft);min-width:0}
+.fxchips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.fxchip{display:flex;align-items:center;gap:7px;height:34px;padding:0 8px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;font:600 12px/1 var(--f-body);color:var(--soft);min-width:0}
 .fxchip .box{width:11px;height:11px;flex:none;border-radius:2px;border:1px solid var(--muted)}
-.fxchip .fxm{margin-left:auto;font:500 10px/1 var(--f-ui);color:var(--muted)}
+.fxchip .fxt{display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left}
+.fxchip .fxn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxchip .fxm{font:500 10px/1 var(--f-ui);color:var(--muted)}
+.sliders.chipsl{margin-top:5px}
+.sliders.chipsl:not(:has(.srow:not([hidden]))){display:none}
+.srow[hidden]{display:none!important}
 .fxchip[aria-pressed=true]{border-color:var(--fx);background:color-mix(in srgb,var(--fx) 8%,transparent);color:var(--paper)}
 .fxchip[aria-pressed=true] .box{background:var(--fx);border-color:var(--fx)}
 .fxchip.poor .fxm{color:var(--bad)}
@@ -1345,7 +1350,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v30</p>
+        <p class="tagline">Two Player Tower Defence · v31</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1395,16 +1400,16 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <h2>Towers</h2>
         <p>Tap a tower to open its card under your tools: Wall, Remove and the rest stay a click away, no Done needed.</p>
         <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee. Each slider shows a short value and what one more step costs; hold or hover it for the detail.</p>
-        <div class="callout"><p><code>40 × (range ÷ 2.5) × (damage ÷ 18)^<span data-rule="dpsPow">1.4</span> × accuracy × splash × frost × poison × chain + fee</code></p><p>The default tower (2.5 cells, 18 a second) is ×1 on both, so it still costs 40. A 1.5-cell tower is ×0.6; 75 damage a second is ×7.4.</p></div>
+        <div class="callout"><p><code>40 × (range ÷ 2.5) × (damage ÷ 18)^<span data-rule="dpsPow">1.4</span> × accuracy × splash × frost × poison × chain + fee</code></p><p>The default tower (2.5 cells, 18 a second) is ×1 on both, so it still costs 40. A 1.5-cell tower is ×0.6; 75 damage a second is ×7.4. Splash is priced by its blast (×1.5 / ×1.9 / ×2.4) and Chain by its jumps (×1.2 / ×1.35 / ×1.5).</p></div>
         <ul>
           <li><strong>Range</strong>: priced in proportion to its reach: 5 cells costs twice what 2.5 does, 1.5 cells 0.6 of it. A short-range tower is cheaper, but not by much more than its reach.</li>
           <li><strong>Damage</strong>: total damage per second; fire rate decides how it’s split into shots. Each step costs more than the last, so piling damage on one tower costs more than spreading it over several.</li>
           <li><strong>Accuracy.</strong> Every tower starts at 80%. The slider raises it to 87, 94 or 100% (×1.15, ×1.35, ×1.6), and fire rate shifts each shot: heavy shots hit more often, rapid fire less.</li>
           <li><strong>Fire rate</strong>: free; its slider runs from slow, heavy shots on the left to rapid fire on the right. Heavy shots hit more often and punch through armor; rapid fire keeps frost and poison going.</li>
-          <li><strong>Splash</strong>: hits everything near the impact; a miss still hits the units around its target. Beats bunched waves and swarms.</li>
+          <li><strong>Splash</strong> (a chip; ×1.5 / ×1.9 / ×2.4 for a 0.5, 0.9 or 1.3-cell blast): hits everything near the impact; a miss still hits the units around its target. Beats bunched waves and swarms. Checking it opens the smallest blast; its slider makes it bigger.</li>
           <li><strong>Frost</strong> (×1.35): slows each unit it hits by <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s. A slowed unit is <strong>brittle</strong>: every tower’s hits on it land <span data-rule="brittle%">20</span>% harder (not the hit that slows it, and not poison ticks).</li>
           <li><strong>Poison</strong> (×1.45): adds 60% more damage over 3 s, ignoring armor.</li>
-          <li><strong>Chain</strong> (×1.5): each hit jumps up to <span data-rule="chainJumps">3</span> times, <span data-rule="chainReach">2.5</span> cells from unit to unit, for 70%, 50% and 35% of the hit, ignoring armor; never the same unit twice. Chain and Splash don’t combine: turning one on switches the other off.</li>
+          <li><strong>Chain</strong> (a chip; ×1.2 / ×1.35 / ×1.5 for 1, 2 or 3 jumps): each hit jumps up to <span data-rule="chainJumps">3</span> times, <span data-rule="chainReach">2.5</span> cells from unit to unit, for 70%, 50% and 35% of the hit, ignoring armor; never the same unit twice. Checking it gives all three jumps; its slider takes fewer for less. Chain and Splash don’t combine: checking one unchecks the other.</li>
         </ul>
         <div class="tablewrap"><table class="acc"><thead><tr><th>Shots per second</th></tr></thead><tbody><tr><td>Accuracy</td></tr></tbody></table></div>
         <p><strong>Each shot rolls once.</strong> A hit works as always: armor, splash, effects. A miss does nothing and applies no effects, but a splash miss still blasts the units around its target, just not the target. Chain only jumps from a hit, and its jumps always land.</p>
@@ -1488,7 +1493,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
               <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw, on its tuning now; +<span data-rule="moveFeeRise:pt">1</span>% a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave; none with sabotage off</td></tr>
               <tr><td class="d">Accuracy</td><td class="n">80% → 100%</td><td>Slider ×1.15 / ×1.35 / ×1.6; fire rate shifts each shot, <span id="acc-span"></span></td></tr>
               <tr><td class="d">Frost</td><td class="n">×1.35</td><td>Slows <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s; slowed units take <span data-rule="brittle%">20</span>% more</td></tr>
-              <tr><td class="d">Chain</td><td class="n">×1.5</td><td><span data-rule="chainJumps">3</span> jumps of <span data-rule="chainReach">2.5</span> cells, 70 / 50 / 35%, through armor; not with Splash</td></tr>
+              <tr><td class="d">Chain</td><td class="n">×1.2 / ×1.35 / ×1.5</td><td>1, 2 or <span data-rule="chainJumps">3</span> jumps of <span data-rule="chainReach">2.5</span> cells, 70 / 50 / 35%, through armor; not with Splash</td></tr>
               <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Traits multiply; surcharge above 60; +25% per point of toughness above 2.5</td></tr>
               <tr><td class="a">Sapper</td><td class="n"><span id="info-saphp2">112</span> HP · armor <span id="info-saparm2">3</span></td><td>Shot down: <span data-rule="sapKillShare%">50</span>% of its price to the defender. Missed (target moved): its coins are spent</td></tr>
               <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">25</span> × (1 + <span data-rule="bridgeRise%">25</span>% × b)</td><td>b: your bridges in earlier waves. At most <span data-rule="bridgesPerWave">1</span> a wave, touching the route or a bridge</td></tr>
@@ -1498,7 +1503,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v30</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v31</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1764,17 +1769,33 @@ const TS = {
   splash: { name: 'Splash', steps: [0, 0.5, 0.9, 1.3], m: [1, 1.5, 1.9, 2.4],
     val: v => (v ? `${v}-cell blast` : 'Off · single target'), mult: i => TS.splash.m[i],
     hint: 'Hits everything near the impact; a miss still hits the units around its target. Beats bunched waves and swarms.' },
+  // v31: Chain is a jump count, 0 (off) to 3, priced per step like Splash (3 jumps is v21-v30's Chain at ×1.5)
+  chain: { name: 'Chain', steps: [0, 1, 2, 3], m: [1, 1.2, 1.35, 1.5],
+    val: v => (v ? `${v} jump${v > 1 ? 's' : ''} from each hit` : 'Off · no jumps'), mult: i => TS.chain.m[chainOf({ chain: i })],
+    get hint() { return `Each hit jumps to the nearest unit within ${fmtNum(RULES.chainReach)} cells, then on from that one, ignoring armor: ${RULES.chainFall.slice(0, RULES.chainJumps).map(f => Math.round(f * 100) + '%').join(', ')} of the hit. Can’t be combined with Splash.`; } },
 };
-const TKEYS = ['range', 'dps', 'accuracy', 'rate', 'splash'];
+// The numbers a tower is tuned with (v31: Chain's jump count joins them); the card's four always-open sliders.
+const TKEYS = ['range', 'dps', 'accuracy', 'rate', 'splash', 'chain'];
+const CORE_TKEYS = ['range', 'dps', 'accuracy', 'rate'];
+// A tower's Chain jumps, 0 to 3. Anything that hands in a config from before v31 says chain: true (3) or false (0).
+const chainOf = c => (c.chain === true ? 3 : c.chain > 0 ? clamp(Math.round(c.chain), 0, 3) : 0);
 // One shot's chance to hit, in %: the Accuracy slider plus the fire rate's offset (heavy shots more, rapid fire less).
 const shotAcc = c => clamp(TS.accuracy.steps[c.accuracy || 0] + RULES.rateAcc[c.rate], 0, 100);
 const TFX = {
   slow: { name: 'Frost', mult: 1.35, color: '#bff3ff', hint: () => `Slows each unit it hits by ${Math.round(RULES.frostSlow * 100)}% for ${fmtNum(RULES.frostSecs)} s. Slowed units take ${Math.round(RULES.brittle * 100)}% more damage from every tower.` },
   poison: { name: 'Poison', mult: 1.45, color: '#8fe388', hint: () => 'Adds 60% more damage over 3 s, ignoring armor.' },
-  chain: { name: 'Chain', mult: 1.5, color: '#a98bff', hint: () => `Each hit jumps up to ${RULES.chainJumps} times, ${fmtNum(RULES.chainReach)} cells from unit to unit, ignoring armor (${RULES.chainFall.slice(0, RULES.chainJumps).map(f => Math.round(f * 100) + '%').join(', ')} damage). Can’t be combined with Splash.` },
 };
-const FXK = ['slow', 'poison', 'chain'];
-const defaultTower = () => ({ range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: false });
+// Frost and Poison are on or off (v31: Chain moved to TS as a jump count).
+const FXK = ['slow', 'poison'];
+// The tower card's chips (v31): Splash and Chain open a slider while checked (Splash at its bottom step, Chain at its
+// top, so a check gives the tower the game always gave); Frost and Poison are plain checkboxes.
+const TCHIPS = {
+  splash: { name: 'Splash', color: '#ffd27a', on: 1, hint: () => `${TS.splash.hint} Opens at a ${TS.splash.steps[1]}-cell blast; the slider makes it bigger. Can’t be combined with Chain.` },
+  chain: { name: 'Chain', color: '#a98bff', on: 3, hint: () => `${TS.chain.hint} Opens at ${TS.chain.steps.length - 1} jumps; fewer cost less (×${TS.chain.m.slice(1).map(m => m.toFixed(2)).join(' / ×')} for 1 / 2 / 3).` },
+  slow: TFX.slow, poison: TFX.poison,
+};
+const TCHIP_KEYS = ['splash', 'chain', 'slow', 'poison'];
+const defaultTower = () => ({ range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: 0 });
 const TPRESETS = {
   Basic: {},
   Cannon: { rate: 4, splash: 2 },
@@ -1790,11 +1811,12 @@ function towerParts(c) {
     { label: 'splash', m: TS.splash.mult(c.splash) },
   ];
   for (const k of FXK) if (c[k]) p.push({ label: TFX[k].name.toLowerCase(), m: TFX[k].mult });
+  const ch = chainOf(c); if (ch) p.push({ label: ch === 3 ? 'chain' : `chain ${ch}`, m: TS.chain.m[ch] }); // last, as v30's ×1.5 was
   return p;
 }
 const towerCost = c => Math.round(RULES.towerBase * towerParts(c).reduce((a, x) => a * x.m, 1));
 const towerValue = g => towerCost(g.cfg) + (g.fee || 0);
-const sameCfg = (a, b) => TKEYS.every(k => a[k] === b[k]) && FXK.every(k => !!a[k] === !!b[k]);
+const sameCfg = (a, b) => TKEYS.every(k => (k === 'chain' ? chainOf(a) === chainOf(b) : a[k] === b[k])) && FXK.every(k => !!a[k] === !!b[k]);
 
 /* ---------- units: designs tuned with sliders ---------- */
 const US = {
@@ -2485,9 +2507,9 @@ function setTowerCfg(cell, patch) {
 // Chain and Splash don't combine: whichever the patch just turned on stays, the other goes (both at once: Splash
 // stays). Fixes cfg in place; returns the toast's line, or ''.
 function exclusive(cfg, patch = {}) {
-  if (!(cfg.chain && cfg.splash > 0)) return '';
-  if (patch.chain && !(patch.splash > 0)) { cfg.splash = 0; return 'Chain and Splash don’t combine: Splash set to Off.'; }
-  cfg.chain = false; return 'Chain and Splash don’t combine: Chain switched off.';
+  if (!(chainOf(cfg) && cfg.splash > 0)) return '';
+  if (chainOf(patch) && !(patch.splash > 0)) { cfg.splash = 0; return 'Chain and Splash don’t combine: Splash switched off.'; }
+  cfg.chain = 0; return 'Chain and Splash don’t combine: Chain switched off.';
 }
 /* ---------- undo ----------
    The defender's changes this round, newest last, each kept as the build before it: every cell with its tuning, fee,
@@ -2578,17 +2600,19 @@ const lastHelp = () => { const e = undoTop(); return e && e.help; };
    removes anything, lowers a slider, or touches fire rate (free, and the player's call against armor). One Undo puts
    every tower's settings and the coins back. */
 // What an effect adds to a tower's score: 25% each, frost a little more for brittle, chain in proportion to the hit
-// its jumps carry (v20's two half-damage jumps were the 25%).
-const fxBonus = k => (k === 'slow' ? 0.25 + 0.75 * RULES.brittle : k === 'chain' ? 0.25 * RULES.chainFall.slice(0, RULES.chainJumps).reduce((a, f) => a + f, 0) : 0.25);
+// its jumps carry (v20's two half-damage jumps were the 25%; v31: only the jumps the tower has).
+const fxBonus = (k, cfg) => (k === 'slow' ? 0.25 + 0.75 * RULES.brittle : k === 'chain' ? 0.25 * RULES.chainFall.slice(0, Math.min(RULES.chainJumps, chainOf(cfg))).reduce((a, f) => a + f, 0) : 0.25);
 function tuneScore(i, cfg, onRoute) {
   let n = 0; coverCells(i, cfg, j => { if (onRoute.has(j)) n++; });
-  return TS.dps.steps[cfg.dps] * shotAcc(cfg) / 100 * n * (1 + TS.splash.steps[cfg.splash]) * (1 + FXK.reduce((a, k) => a + (cfg[k] ? fxBonus(k) : 0), 0));
+  return TS.dps.steps[cfg.dps] * shotAcc(cfg) / 100 * n * (1 + TS.splash.steps[cfg.splash]) * (1 + FXK.reduce((a, k) => a + (cfg[k] ? fxBonus(k) : 0), 0) + (chainOf(cfg) ? fxBonus('chain', cfg) : 0));
 }
-// One notch up on one setting. Chain and Splash don't combine, so on a tower with one the other isn't on offer.
+// One notch up on one setting (Chain a jump at a time). Chain and Splash don't combine, so on a tower with one the
+// other isn't on offer.
 function tuneSteps(cfg) {
   const out = [];
-  for (const k of ['range', 'dps', 'accuracy', 'splash']) if (cfg[k] < TS[k].steps.length - 1 && !(k === 'splash' && cfg.chain)) out.push({ ...cfg, [k]: cfg[k] + 1 });
-  for (const k of FXK) if (!cfg[k] && !(k === 'chain' && cfg.splash > 0)) out.push({ ...cfg, [k]: true });
+  for (const k of ['range', 'dps', 'accuracy', 'splash']) if (cfg[k] < TS[k].steps.length - 1 && !(k === 'splash' && chainOf(cfg))) out.push({ ...cfg, [k]: cfg[k] + 1 });
+  if (chainOf(cfg) < TS.chain.steps.length - 1 && !(cfg.splash > 0)) out.push({ ...cfg, chain: chainOf(cfg) + 1 });
+  for (const k of FXK) if (!cfg[k]) out.push({ ...cfg, [k]: true });
   return out;
 }
 function autoTune() {
@@ -3192,7 +3216,7 @@ function missBeside(fx0, fy0, bx, by) {
 function chainFrom(u0, raw, g) {
   const x0 = u0.x + u0.ox, y0 = u0.y + u0.oy, R = RULES.chainReach, struck = [u0], F = RULES.chainFall;
   let px = x0, py = y0;
-  for (let j = 0; j < RULES.chainJumps; j++) {
+  for (let j = 0, J = Math.min(RULES.chainJumps, chainOf(g.cfg)); j < J; j++) { // v31: as many jumps as the tower has
     const cx = RULES.chainHop ? px : x0, cy = RULES.chainHop ? py : y0;
     let best = null, bd = Infinity;
     for (const u of S.units) {
@@ -3899,7 +3923,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 19; // 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 20; // 20: v31 (Chain is a jump count, 0-3, sent as a number in the grid); 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
@@ -3925,7 +3949,7 @@ function encodeGrid(G) {
     if (g.t === 'wall') (g.fresh ? f : w).push(i);
     else {
       const c = g.cfg;
-      t.push([i, g.n | 0, g.fee | 0, g.off | 0, g.fresh ? 1 : 0, c.range, c.dps, c.rate, c.splash, (c.slow ? 1 : 0) | (c.poison ? 2 : 0) | (c.chain ? 4 : 0), c.accuracy | 0]);
+      t.push([i, g.n | 0, g.fee | 0, g.off | 0, g.fresh ? 1 : 0, c.range, c.dps, c.rate, c.splash, (c.slow ? 1 : 0) | (c.poison ? 2 : 0), c.accuracy | 0, chainOf(c)]); // v31: chain's jump count last
     }
   });
   return { w, f, t };
@@ -3937,10 +3961,10 @@ function decodeGrid(o) {
   if (Array.isArray(o.t)) for (const a of o.t) {
     if (!Array.isArray(a)) continue;
     const i = cell(a[0]); if (i < 0) continue;
-    const fl = int(a[9], 0, 7), ac = Number.isInteger(a[10]) && a[10] >= 0 && a[10] < TS.accuracy.steps.length ? a[10] : 0; // accuracy: missing or invalid is 80%
+    const fl = int(a[9], 0, 3), ac = Number.isInteger(a[10]) && a[10] >= 0 && a[10] < TS.accuracy.steps.length ? a[10] : 0; // accuracy: missing or invalid is 80%
     G[i] = {
       t: 'tower', n: int(a[1], 0, 999), fee: int(a[2], 0, 9999), off: int(a[3], 0, 9), fresh: !!a[4],
-      cfg: { range: int(a[5], 0, TS.range.steps.length - 1), dps: int(a[6], 0, TS.dps.steps.length - 1), accuracy: ac, rate: int(a[7], 0, TS.rate.steps.length - 1), splash: int(a[8], 0, TS.splash.steps.length - 1), slow: !!(fl & 1), poison: !!(fl & 2), chain: !!(fl & 4) },
+      cfg: { range: int(a[5], 0, TS.range.steps.length - 1), dps: int(a[6], 0, TS.dps.steps.length - 1), accuracy: ac, rate: int(a[7], 0, TS.rate.steps.length - 1), splash: int(a[8], 0, TS.splash.steps.length - 1), slow: !!(fl & 1), poison: !!(fl & 2), chain: int(a[11], 0, TS.chain.steps.length - 1, 0) },
       cd: 0, ang: Math.PI, kick: 0, dealt: 0,
     };
     exclusive(G[i].cfg); // a tower that arrives with both keeps Splash, on both devices
@@ -4841,7 +4865,7 @@ function retuneAgainst(G, ds) {
     const c = cloneCell(g);
     if (!c || c.t !== 'tower' || c.off > 0) return c;
     const i = k++;
-    if (A.cheap > 0.45) { if (i % 2 === 0) Object.assign(c.cfg, { splash: 2, rate: 4, chain: false }); } // splash, so no chain
+    if (A.cheap > 0.45) { if (i % 2 === 0) Object.assign(c.cfg, { splash: 2, rate: 4, chain: 0 }); } // splash, so no chain
     else if (A.armor > 0.3 || A.big > 0.3) c.cfg.rate = 5;
     else if (A.regen > 0.3) c.cfg.rate = 1;
     return c;
@@ -5132,7 +5156,7 @@ const AI_MIXES = { // tower k's tuning
   splash3: k => (k % 3 === 1 ? { rate: 4, splash: 2 } : {}),
   frost: k => (k === 0 ? { range: 1, dps: 1, rate: 2, slow: true } : {}),
   poison: k => (k % 2 === 1 ? { poison: true } : {}),
-  chain: k => (k % 2 === 1 ? { chain: true } : {}), // jumps along a spread-out line, through armor; never with splash
+  chain: k => (k % 2 === 1 ? { chain: 3 } : {}), // jumps along a spread-out line, through armor; never with splash
   steady: () => ({ range: 3, rate: 1 }), // long-range rapid fire
 };
 const AI_SPEND = { tall: { upgradeAfter: 4 }, wide: { upgradeAfter: 8 } }; // towers placed before upgrades compete
@@ -5719,9 +5743,9 @@ const THREAT = {
 const TAG_ORDER = Object.keys(THREAT);
 const towerHit = c => TS.dps.steps[c.dps] / TS.rate.steps[c.rate];
 function towerTags(c) {
-  const t = new Set(), single = !(c.splash > 0) && !c.chain;
+  const t = new Set(), single = !(c.splash > 0) && !chainOf(c);
   if (c.splash > 0) t.add('Splash');
-  if (c.chain) t.add('Chain');
+  if (chainOf(c)) t.add('Chain');
   if (single) t.add(towerHit(c) >= 25 ? 'Heavy' : 'Basic');
   if (c.slow) t.add('Frost');
   if (c.poison) t.add('Poison');
@@ -6046,7 +6070,8 @@ function buildPanels() {
     const inp = e.target.closest('input[type=range]'); if (!inp || !S.sel || S.sel.k !== 'tower' || !S.grid[S.sel.cell]) return;
     const cell = S.sel.cell, key = inp.dataset.key, v = slIdx(inp), g = S.grid[cell];
     if (v !== g.cfg[key] && !undoable(tuneWhat(cell), () => setTowerCfg(cell, { [key]: v }))) slHeld = null;
-    slSync(inp, TS[key], S.grid[cell] ? S.grid[cell].cfg[key] : v);
+    const c2 = S.grid[cell] && S.grid[cell].cfg;
+    slSync(inp, cardSl(key), c2 ? Math.max(cardSl(key).lo || 0, key === 'chain' ? chainOf(c2) : c2[key]) : v);
   });
   el.defCtx.addEventListener('click', e => {
     const t = e.target.closest('button'); if (!t) return;
@@ -6055,7 +6080,10 @@ function buildPanels() {
     const cell = S.sel.cell, g = S.grid[cell]; if (!g) return;
     if (t.dataset.act === 'remove') { cardRemove(cell); return; }
     if (t.dataset.act === 'copy') { brush = { S, cfg: { ...g.cfg }, n: g.n }; S.tool = 'tower'; S.sel = null; toast(`New towers get Tower ${g.n}’s tuning. Clear it with × on the Tower tool.`, 'def'); refreshUI(); return; }
-    if (t.dataset.fx) { undoable(tuneWhat(cell), () => setTowerCfg(cell, { [t.dataset.fx]: !g.cfg[t.dataset.fx] })); return; }
+    if (t.dataset.fx) { // Splash opens at its bottom step and Chain at its top; unchecking either sets it to 0
+      const k = t.dataset.fx, on = chipOn(g.cfg, k) > 0, v = k === 'splash' || k === 'chain' ? (on ? 0 : TCHIPS[k].on) : !on;
+      undoable(tuneWhat(cell), () => setTowerCfg(cell, { [k]: v })); return;
+    }
     if (t.dataset.pre) undoable(tuneWhat(cell), () => setTowerCfg(cell, presetTower(t.dataset.pre)));
   });
   $('#undo-btn').addEventListener('click', undoLast);
@@ -6148,20 +6176,21 @@ function cardRemove(cell) { const msg = undoable({}, () => removeTower(cell)); i
 // A slider's position for a step index: the fire rate's runs from slow (left) to fast (right), the others as stored.
 const slUi = (def, idx) => (def.flip ? def.steps.length - 1 - idx : idx);
 // The step index a slider is at: it moves smoothly under the pointer and snaps to the nearest step on release.
-const slIdx = inp => { const n = +inp.max, v = clamp(Math.round(+inp.value), 0, n); return inp.dataset.flip ? n - v : v; };
+const slIdx = inp => { const n = +inp.max, v = clamp(Math.round(+inp.value), +inp.min || 0, n); return inp.dataset.flip ? n - v : v; };
 let slHeld = null; // the slider being dragged: not snapped or rewritten until it's let go
+// def.lo: the lowest step the slider offers (v31: Splash's and Chain's start at 1, since their chip turns them off)
 function sliderHTML(prefix, key, def, idx) {
-  const n = def.steps.length - 1, ui = slUi(def, idx);
-  return `<div class="srow c${ui === n ? ' maxed' : ''}" id="${prefix}-${key}-row" style="--p:${ui / n}"><label class="sname" for="${prefix}-${key}">${def.short || def.name}</label>
-    <span class="strack"><input type="range" id="${prefix}-${key}" min="0" max="${n}" step="0.01" value="${ui}" data-key="${key}"${def.flip ? ' data-flip="1"' : ''}><span class="sticks" aria-hidden="true">${'<i></i>'.repeat(n + 1)}</span></span>
+  const n = def.steps.length - 1, lo = def.lo || 0, ui = slUi(def, idx);
+  return `<div class="srow c${ui === n ? ' maxed' : ''}" id="${prefix}-${key}-row" style="--p:${(ui - lo) / (n - lo)}"><label class="sname" for="${prefix}-${key}">${def.short || def.name}</label>
+    <span class="strack"><input type="range" id="${prefix}-${key}" min="${lo}" max="${n}" step="0.01" value="${ui}" data-key="${key}"${def.flip ? ' data-flip="1"' : ''}><span class="sticks" aria-hidden="true">${'<i></i>'.repeat(n - lo + 1)}</span></span>
     <span class="sval" id="${prefix}-${key}-v"></span><span class="snext" id="${prefix}-${key}-n"></span></div>`;
 }
 // Put a slider on its step (unless it's being dragged), fill its track to there, and glow when it's at the top.
 function slSync(inp, def, idx) {
-  const n = def.steps.length - 1, ui = slUi(def, idx), row = inp.closest('.srow');
+  const n = def.steps.length - 1, lo = def.lo || 0, ui = slUi(def, idx), row = inp.closest('.srow');
   if (slHeld !== inp && Math.abs(+inp.value - ui) > 1e-6) inp.value = ui;
   if (!row) return;
-  const p = String((slHeld === inp ? clamp(+inp.value, 0, n) : ui) / n);
+  const p = String(((slHeld === inp ? clamp(+inp.value, lo, n) : ui) - lo) / (n - lo));
   if (row.style.getPropertyValue('--p') !== p) row.style.setProperty('--p', p);
   const top = ui === n;
   if (top !== row.classList.contains('maxed')) {
@@ -6169,7 +6198,7 @@ function slSync(inp, def, idx) {
     if (top) { row.classList.remove('pop'); void row.offsetWidth; row.classList.add('pop'); }
   }
   const ticks = row.querySelectorAll('.sticks i');
-  ticks.forEach((t, k) => { const on = k <= ui; if (t.classList.contains('on') !== on) t.classList.toggle('on', on); });
+  ticks.forEach((t, k) => { const on = k + lo <= ui; if (t.classList.contains('on') !== on) t.classList.toggle('on', on); });
 }
 // next: what one more step costs, as { text, poor }, or null at the top of the slider; tip: the row's detail.
 function setSlider(root, prefix, key, def, idx, valText, next, tip) {
@@ -6198,6 +6227,7 @@ const toughLine = () => `Tough units cost more: above a toughness of ${fmtNum(RU
 function towerStatsLine(cfg) {
   const bits = [`range ${TS.range.steps[cfg.range]}`, `${TS.dps.steps[cfg.dps]} dmg/s`, rateText(TS.rate.steps[cfg.rate])];
   if (cfg.splash) bits.push(`${TS.splash.steps[cfg.splash]} splash`);
+  if (chainOf(cfg)) bits.push(`chain ${chainOf(cfg)}`);
   for (const k of FXK) if (cfg[k]) bits.push(TFX[k].name.toLowerCase());
   return bits.join(' · ');
 }
@@ -6209,7 +6239,7 @@ function designStatsLine(d) {
   return bits.join(' · ');
 }
 // a tower's effects as small dots in their colours (the strip, the summary, beside the board's icons)
-const fxDots = cfg => FXK.filter(k => cfg[k]).map(k => `<i class="fxd" style="background:${TFX[k].color}" title="${TFX[k].name}"></i>`).join('');
+const fxDots = cfg => [...FXK.filter(k => cfg[k]).map(k => TFX[k]), ...(chainOf(cfg) ? [TCHIPS.chain] : [])].map(f => `<i class="fxd" style="background:${f.color}" title="${f.name}"></i>`).join('');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 /* ---------- defender ---------- */
@@ -6352,8 +6382,13 @@ function renderDef() {
 // The tower card: header, presets, five compact sliders, the three effects, one stat line, and the footer.
 const towerShort = (k, c) => {
   const v = TS[k].steps[c[k]];
-  return k === 'range' ? `${v} cells` : k === 'dps' ? `${v}/s` : k === 'accuracy' ? `${v}%` : k === 'rate' ? `${v}/s · ${fmtNum(TS.dps.steps[c.dps] / v)}/hit` : v ? `${v} cells` : 'Off';
+  return k === 'range' ? `${v} cells` : k === 'dps' ? `${v}/s` : k === 'accuracy' ? `${v}%` : k === 'rate' ? `${v}/s · ${fmtNum(TS.dps.steps[c.dps] / v)}/hit` : k === 'chain' ? (v ? `${v} jump${v > 1 ? 's' : ''}` : 'Off') : v ? `${v} cells` : 'Off';
 };
+// The sliders under the Splash and Chain chips (v31): only while checked, from step 1 (the chip is what turns it off).
+const chipSlDefs = {};
+const chipSl = k => chipSlDefs[k] || (chipSlDefs[k] = Object.create(TS[k], { lo: { value: 1 }, short: { value: k === 'splash' ? 'Blast' : 'Jumps' } }));
+const cardSl = k => (k === 'splash' || k === 'chain' ? chipSl(k) : TS[k]);
+const chipOn = (c, k) => (k === 'chain' ? chainOf(c) : k === 'splash' ? c.splash : c[k] ? 1 : 0);
 function towerEditorHTML(cell) {
   const g = S.grid[cell], c = g.cfg;
   const head = `<div class="card-head"><img class="art thead" id="te-icon" src="${towerIconURL(c, g.off > 0)}" alt="" aria-hidden="true" draggable="false"><span class="ed-title">Tower ${g.n}</span><span class="ed-kind" id="te-kind">${towerName(c)}</span>${fxDots(c)}<span class="ed-price" id="te-pbox"><b id="te-price">${towerValue(g)}</b><small>refund +<span id="te-refund">${refundOf(cell)}</span></small></span></div>`;
@@ -6363,8 +6398,9 @@ function towerEditorHTML(cell) {
     <div class="card-foot"><span></span><button class="ed-done" data-act="close">Done</button></div></div>`;
   return `<div class="card" id="te-card">${head}
     <div class="presets">${Object.keys(TPRESETS).map(k => `<button class="pre" data-pre="${k}" aria-pressed="false">${k}<small>${towerCost(presetTower(k))}</small></button>`).join('')}</div>
-    <div class="sliders">${TKEYS.map(k => sliderHTML('te', k, TS[k], c[k])).join('')}</div>
-    <div class="fxchips">${FXK.map(k => `<button class="fxchip fx-${k}" data-fx="${k}" aria-pressed="false"><i class="box"></i><span class="fxn">${TFX[k].name}</span><span class="fxm">×${TFX[k].mult.toFixed(2)}</span></button>`).join('')}</div>
+    <div class="sliders">${CORE_TKEYS.map(k => sliderHTML('te', k, TS[k], c[k])).join('')}</div>
+    <div class="fxchips">${TCHIP_KEYS.map(k => `<button class="fxchip fx-${k}" data-fx="${k}" aria-pressed="false"><i class="box"></i><span class="fxt"><span class="fxn">${TCHIPS[k].name}</span><span class="fxm"></span></span></button>`).join('')}</div>
+    <div class="sliders chipsl">${['splash', 'chain'].map(k => sliderHTML('te', k, chipSl(k), Math.max(1, k === 'chain' ? chainOf(c) : c[k]))).join('')}</div>
     <p class="statline" id="te-stat"></p>
     <p class="statline mvline" id="te-move"></p>
     <div class="card-foot"><button class="ed-remove" data-act="remove">Remove +<span id="te-refund2"></span></button><button class="mini" data-act="copy" data-tip="New towers you place get this tuning, until you clear it on the Tower tool.">Copy tuning</button><button class="ed-done" data-act="close">Done</button></div>
@@ -6384,12 +6420,18 @@ function updateTowerEditor(cell) {
   if (!g || g.t !== 'tower' || !root.querySelector('#te-price')) return;
   const c = g.cfg, cost = towerCost(c);
   const up = patch => { const n = { ...c, ...patch }; exclusive(n, patch); const v = towerCost(n) - cost; return { text: '+' + v, poor: v > S.dFree, v }; };
-  for (const k of TKEYS) setSlider(root, 'te', k, TS[k], c[k], towerShort(k, c), c[k] < TS[k].steps.length - 1 ? up({ [k]: c[k] + 1 }) : null, `${TS[k].val(TS[k].steps[c[k]], c)}. ${TS[k].hint}`);
+  for (const k of CORE_TKEYS) setSlider(root, 'te', k, TS[k], c[k], towerShort(k, c), c[k] < TS[k].steps.length - 1 ? up({ [k]: c[k] + 1 }) : null, `${TS[k].val(TS[k].steps[c[k]], c)}. ${TS[k].hint}`);
+  for (const k of ['splash', 'chain']) { // a slider only while its chip is checked
+    const v = chipOn(c, k), row = root.querySelector(`#te-${k}-row`);
+    if (row) row.hidden = !v;
+    if (v) setSlider(root, 'te', k, chipSl(k), v, towerShort(k, { ...c, chain: chainOf(c) }), v < TS[k].steps.length - 1 ? up({ [k]: v + 1 }) : null, `${TS[k].val(TS[k].steps[v], c)}. ${TS[k].hint}`);
+  }
   for (const b of root.querySelectorAll('[data-fx]')) {
-    const k = b.dataset.fx, st = c[k] ? null : up({ [k]: true });
-    b.setAttribute('aria-pressed', !!c[k]);
+    const k = b.dataset.fx, v = chipOn(c, k), st = v ? null : up({ [k]: TCHIPS[k].on || true });
+    b.setAttribute('aria-pressed', !!v);
     b.classList.toggle('poor', !!st && st.poor);
-    b.dataset.tip = `${TFX[k].hint()} ${st ? `Switching it on costs ${st.v}.` : 'On.'}`;
+    putText(b.querySelector('.fxm'), '×' + (k === 'splash' || k === 'chain' ? TS[k].m[v || TCHIPS[k].on] : TFX[k].mult).toFixed(2));
+    b.dataset.tip = `${TCHIPS[k].hint()} ${st ? `Switching it on costs ${st.v}.` : 'On.'}`;
   }
   for (const b of root.querySelectorAll('[data-pre]')) {
     const p = presetTower(b.dataset.pre);
@@ -7649,8 +7691,8 @@ document.addEventListener('pointercancel', slLetGo, true);
 document.addEventListener('change', e => { if (slInput(e.target)) slLetGo(); }, true);
 document.addEventListener('keydown', e => {
   const inp = slInput(e.target); if (!inp) return;
-  const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key], n = +inp.max;
-  const v = d ? clamp(Math.round(+inp.value) + d, 0, n) : e.key === 'Home' ? 0 : e.key === 'End' ? n : null;
+  const d = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[e.key], n = +inp.max, lo = +inp.min || 0;
+  const v = d ? clamp(Math.round(+inp.value) + d, lo, n) : e.key === 'Home' ? lo : e.key === 'End' ? n : null;
   if (v == null) return;
   e.preventDefault(); inp.value = v; inp.dispatchEvent(new Event('input', { bubbles: true })); refreshUI();
 });
@@ -8330,7 +8372,7 @@ function unitIconURL(d) {
 function fillLegends() {
   const fig = (src, cap) => `<figure><img class="art" src="${src}" alt=""><figcaption>${cap}</figcaption></figure>`, T = o => ({ ...defaultTower(), ...o });
   const tl = document.getElementById('info-tlegend'), ul = document.getElementById('info-ulegend');
-  if (tl) tl.innerHTML = [[{}, 'Blaster'], [{ rate: 0 }, 'Gatling'], [{ rate: 5, range: 5 }, 'Railgun'], [{ rate: 4, splash: 2 }, 'Mortar'], [{ slow: true }, 'Frost'], [{ poison: true }, 'Venom'], [{ chain: true }, 'Tesla'], [{ dps: 8, accuracy: 3 }, 'Hits hard, scope']]
+  if (tl) tl.innerHTML = [[{}, 'Blaster'], [{ rate: 0 }, 'Gatling'], [{ rate: 5, range: 5 }, 'Railgun'], [{ rate: 4, splash: 2 }, 'Mortar'], [{ slow: true }, 'Frost'], [{ poison: true }, 'Venom'], [{ chain: 3 }, 'Tesla'], [{ dps: 8, accuracy: 3 }, 'Hits hard, scope']]
     .map(([o, cap]) => fig(towerIconURL(T(o)), cap)).join('');
   if (ul) ul.innerHTML = [[{ hp: 2, speed: 6 }, 'Skimmer', 0], [{ hp: 5, speed: 3 }, 'Rover', 1], [{ hp: 8, speed: 1 }, 'Juggernaut', 2], [{ hp: 5, speed: 3, armor: 3 }, 'Armor 3', 3], [{ hp: 5, speed: 3, regen: 2 }, 'Regen', 0], [{ hp: 5, speed: 3, resist: 'splash+shock' }, 'Resists', 2]]
     .map(([o, cap, k]) => fig(unitIconURL({ hp: 0, speed: 3, armor: 0, regen: 0, resist: 'none', ...o, color: COLORS[k] }), cap)).join('');
@@ -8487,7 +8529,7 @@ function drawMotes(c, t) {
    battle, nothing to do with any match: it has its own units, shells and effects, makes no sound, and runs only while
    the start screen shows. With reduced motion it's one still frame. */
 const HERO = { cv: null, c: null, units: [], shells: [], fx: [], towers: [], walls: new Set(), rough: [], rock: [], route: [], segs: [], len: 0, spawnT: 0, keepHit: 0, last: 0, uid: 0, n: 0, still: false };
-const HERO_TOWERS = [{}, { rate: 0, slow: true }, { rate: 4, splash: 2 }, { rate: 5, range: 5, chain: true, accuracy: 2 }, { poison: true, dps: 4 }, { rate: 5, range: 5, dps: 5 }, { rate: 4, splash: 2, slow: true }, { rate: 0, chain: true }];
+const HERO_TOWERS = [{}, { rate: 0, slow: true }, { rate: 4, splash: 2 }, { rate: 5, range: 5, chain: 3, accuracy: 2 }, { poison: true, dps: 4 }, { rate: 5, range: 5, dps: 5 }, { rate: 4, splash: 2, slow: true }, { rate: 0, chain: 3 }];
 const HERO_ARMY = [{ hp: 2, speed: 6, armor: 0, regen: 0, resist: 'splash', c: 0 }, { hp: 5, speed: 3, armor: 2, regen: 1, resist: 'none', c: 1 }, { hp: 8, speed: 1, armor: 3, regen: 0, resist: 'shock', c: 2 }, { hp: 0, speed: 4, armor: 1, regen: 0, resist: 'none', c: 3 }];
 function heroInit() {
   const hero = document.querySelector('.st-hero'), svg = hero && hero.querySelector('.st-scene');
@@ -8563,7 +8605,7 @@ function heroStep(dt) {
     if (g.cfg.splash) { HERO.shells.push({ x: mx, y: my, tgt: best, tx: bx, ty: by, spd: 8, dmg: hit, g, r: TS.splash.steps[g.cfg.splash], lands }); launchFx(g.cfg, mx, my, a); continue; }
     if (!lands) { const [px, py] = missBeside(mx, my, bx, by); shotFx(g.cfg, mx, my, px, py, false, hit); continue; }
     shotFx(g.cfg, mx, my, bx, by, true, hit); heroHit(best, hit, g.cfg);
-    if (g.cfg.chain) { let p = best; const hitSet = new Set([best]); for (let j = 0; j < 3; j++) { let nb = null, nd = 2.5; for (const u of HERO.units) { if (u.dead || u.gone || hitSet.has(u)) continue; const dd = hyp(u.x - p.x, u.y - p.y); if (dd < nd) { nd = dd; nb = u; } } if (!nb) break; hitSet.add(nb); chainFx(p.x + p.ox, p.y + p.oy, nb.x + nb.ox, nb.y + nb.oy); heroHit(nb, hit * RULES.chainFall[j], g.cfg); p = nb; } }
+    if (g.cfg.chain) { let p = best; const hitSet = new Set([best]); for (let j = 0, J = chainOf(g.cfg); j < J; j++) { let nb = null, nd = 2.5; for (const u of HERO.units) { if (u.dead || u.gone || hitSet.has(u)) continue; const dd = hyp(u.x - p.x, u.y - p.y); if (dd < nd) { nd = dd; nb = u; } } if (!nb) break; hitSet.add(nb); chainFx(p.x + p.ox, p.y + p.oy, nb.x + nb.ox, nb.y + nb.oy); heroHit(nb, hit * RULES.chainFall[j], g.cfg); p = nb; } }
   }
   for (const s of HERO.shells) {
     if (s.tgt && !s.tgt.dead && !s.tgt.gone) { s.tx = s.tgt.x + s.tgt.ox; s.ty = s.tgt.y + s.tgt.oy; }
@@ -8674,7 +8716,7 @@ const SCENES = [
   },
   { // Multiplayer: at the keep's gate, Tesla lightning jumping from jet to jet, a sapper drone slipping through
     W: 10, H: 7, loop: 4.8, keep: [5, 0.9], cam: { cx: 4.6, near: 6.6, far: 0.2, wn: 4.8 },
-    towers: [{ x: 2.5, y: 3.5, cfg: { rate: 1, chain: true, dps: 5 } }, { x: 7.5, y: 2.5, cfg: { rate: 5, range: 5, chain: true } }],
+    towers: [{ x: 2.5, y: 3.5, cfg: { rate: 1, chain: 3, dps: 5 } }, { x: 7.5, y: 2.5, cfg: { rate: 5, range: 5, chain: 3 } }],
     walls: [[3, 2], [3, 3], [6, 2], [6, 3], [6, 4], [3, 4], [2, 5], [7, 5]],
     rock: [[1, 1], [8, 1]],
     lane: [[5, 8], [5, 0.8]],
