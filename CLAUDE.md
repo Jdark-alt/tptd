@@ -33,7 +33,7 @@ The user asked for a minimal, designed look in the game's tech style, with no cl
 | `index.html` | The entire game: HTML, CSS and JS in one file. No build step. |
 | `server.js` | Relay server for online play. It also serves `index.html` at `/` (injecting `window.SIEGE_RELAY="same-origin"`), plus `/health`, WebSocket `/relay` and, since v30, `/music/<name>` (audio files from `music/` only). Keeps no game state. Since v26 a room takes 4 players (two seats and joiners waiting) and 8 watchers (`MAX_PLAYERS`, `MAX_WATCHERS`; a watcher says so when it joins, `w: 1`). |
 | `package.json` | Root dependencies for Render: only `ws`. Don't add test tooling here (Render installs it). |
-| `music/` | The menu music (v30): `menu.mp3` goes here (see its README). Pages serves it; `server.js` serves this folder's audio files (MP3, OGG, M4A, WAV, with ranges) and nothing else. Without the file the game plays a synthesised theme. The user's track is in; at their request it was trimmed to start 22 s in (2:23, 160 kbps, a 20 ms fade-in so the loop doesn't click). |
+| `music/` | The menu music (v30): `menu.mp3` goes here (see its README). Pages serves it; `server.js` serves this folder's audio files (MP3, OGG, M4A, WAV, with ranges) and nothing else. Without the file the game plays a synthesised theme. The user's track is in; at their request it was trimmed to start 23 s in (2:22, 160 kbps, a 20 ms fade-in so the loop doesn't click). |
 | `tools/` | Simulators and browser test suites (below), and since v25 `tools/art/start_art.py`, which draws the start screen's SVGs. Only used locally; Render and Pages ignore them. |
 | `docs/specs/` | The user's specs for builds made from one (v19 on). |
 
