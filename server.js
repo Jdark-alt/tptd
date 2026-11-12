@@ -31,6 +31,27 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+  // The menu music (v30): audio files in the music/ folder beside index.html, and nothing else.
+  const AUDIO = { '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.wav': 'audio/wav' };
+  if (url.startsWith('/music/')) {
+    const name = decodeURIComponent(url.slice(7)), type = AUDIO[path.extname(name).toLowerCase()];
+    if (type && /^[\w.-]+$/.test(name)) {
+      const file = path.join(__dirname, 'music', name);
+      fs.stat(file, (err, st) => {
+        if (err || !st.isFile()) { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('Not found'); return; }
+        const range = /bytes=(\d*)-(\d*)/.exec(req.headers.range || ''); // seeking and Safari ask for ranges
+        if (range) {
+          const start = range[1] ? +range[1] : 0, end = range[2] ? Math.min(+range[2], st.size - 1) : st.size - 1;
+          if (start > end || start >= st.size) { res.writeHead(416, { 'content-range': `bytes */${st.size}` }); res.end(); return; }
+          res.writeHead(206, { 'content-type': type, 'content-range': `bytes ${start}-${end}/${st.size}`, 'accept-ranges': 'bytes', 'content-length': end - start + 1, 'cache-control': 'public, max-age=86400' });
+          fs.createReadStream(file, { start, end }).pipe(res); return;
+        }
+        res.writeHead(200, { 'content-type': type, 'content-length': st.size, 'accept-ranges': 'bytes', 'cache-control': 'public, max-age=86400' });
+        fs.createReadStream(file).pipe(res);
+      });
+      return;
+    }
+  }
   res.writeHead(404, { 'content-type': 'text/plain' });
   res.end('Not found');
 });

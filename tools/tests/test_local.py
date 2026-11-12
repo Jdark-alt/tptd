@@ -1849,7 +1849,8 @@ with sync_playwright() as p:
     near_route = page.evaluate('() => window.siegeline.seenRoute()')
     check(idx(4, 6) in near_route, 'without its fire (its cell still blocked), the near gap would be cheaper')
     page.evaluate(layout)
-    page.evaluate(f"() => {{ const S = window.siegeline.state; S.charges = new Map([[{KO}, {{ kind: 'tower', cost: 0, t: 0 }}]]); S.chargeVer++; }}")
+    # v30: the sapper leaves 3 s in (t 0.15), so a slow page can't miss the moment it lands between the handoff and the check
+    page.evaluate(f"() => {{ const S = window.siegeline.state; S.charges = new Map([[{KO}, {{ kind: 'tower', cost: 0, t: 0.15 }}]]); S.chargeVer++; }}")
     page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(100)
     check(S(page, 'S.step') == 2 and 'if your bridge lands' not in page.inner_text('#atk-body'), 'a knock-out alone doesn’t promise a different route')
     f = page.evaluate('() => window.siegeline.wave.forecast()')
@@ -2420,7 +2421,7 @@ with sync_playwright() as p:
         tap('#info-go'); page.wait_for_timeout(250)
         check(page.is_visible('#ov-mode') and page.is_hidden('#ov-info'), f'v25 {vw}: Start playing leads to the start screen')
         names = page.evaluate('() => [...document.querySelectorAll("#mode-cards .mcard")].map(c => c.querySelector("h2").textContent + " / " + c.querySelector(".msub").textContent)')
-        check(names == ['Single player / Versus computer', 'Multiplayer / On this device', 'Online / Against friends'], f'v25 {vw}: the three ways to play, in order ({names})')
+        check(names == ['Single player / Versus computer', 'This device / Two players, taking turns', 'Multiplayer / Online, against friends'], f'v30 {vw}: the three ways to play, in order, with v30’s names ({names})')
         lbls = page.evaluate('() => [...document.querySelectorAll(".st-set .mlbl")].map(x => x.textContent)')
         check(lbls == ['Waves', 'Clock', 'Sabotage'], f'v25 {vw}: the settings above them ({lbls})')
         over = page.evaluate('() => document.documentElement.scrollWidth > innerWidth || document.querySelector("#ov-mode").scrollWidth > innerWidth')
