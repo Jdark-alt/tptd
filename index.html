@@ -1413,7 +1413,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         </ul>
         <div class="tablewrap"><table class="acc"><thead><tr><th>Shots per second</th></tr></thead><tbody><tr><td>Accuracy</td></tr></tbody></table></div>
         <p><strong>Each shot rolls once.</strong> A hit works as always: armor, splash, effects. A miss does nothing and applies no effects, but a splash miss still blasts the units around its target, just not the target. Chain only jumps from a hit, and its jumps always land.</p>
-        <p><strong>Reading a tower.</strong> Its look follows its tuning, for both players. Splash makes it a <b>Mortar</b> (a drum that lobs shells), rapid fire a <b>Gatling</b> (spinning barrels), slow heavy shots a <b>Railgun</b> (twin rails, a beam), anything else a <b>Blaster</b>. Its effects colour the turret and add a symbol on the plinth: <b>Frost</b> ice-white, <b>Venom</b> (poison) green, <b>Tesla</b> (chain) violet. A longer barrel reaches further, more lights along the plinth hit harder, a scope means extra accuracy.</p>
+        <p><strong>Reading a tower.</strong> Every setting shows, in the same place on every tower, for both players. The outline is how it attacks: an octagon shoots (rapid fire a <b>Gatling</b>’s spinning barrels, slow heavy shots a <b>Railgun</b>’s twin rails, anything else a <b>Blaster</b>), a round dish is a <b>Mortar</b> (splash: a ring on the dish for each step), a three-cornered pylon a <b>Tesla</b> (chain: a node lit in a corner for each jump). What points at the target reaches as far as it is long; the lights along the foot are its damage; one to three chevrons on a dish or coil its fire rate; a scope its accuracy. <b>Frost</b> puts ice and a snowflake on its left side, <b>Venom</b> (poison) canisters and a drop on its right; the metal never changes colour.</p>
         <div class="legend" id="info-tlegend" aria-hidden="true"></div>
       </section>
 
@@ -7880,8 +7880,8 @@ function sfx(name, o = {}) {
 // a tower's shot: its kind's sound, and its element's on top
 function shotSfx(cfg) {
   if (!SND.on || QUIET || !SND.ctx) return;
-  const k = towerKind(cfg); sfx(k === 'mortar' ? 'mortar' : k);
-  if (cfg.chain) sfx('zap'); else if (cfg.slow) sfx('frost'); else if (cfg.poison) sfx('venom');
+  const k = towerKind(cfg); sfx(k === 'tesla' ? 'zap' : k);
+  if (cfg.slow) sfx('frost'); else if (cfg.poison) sfx('venom');
 }
 /* ---------- menu music (v30) ----------
    Music plays from the press on Start playing (browsers allow no sound before a press) while the start screen or a
@@ -8090,62 +8090,131 @@ function bridgeSprite(m) {
   });
 }
 
-/* ---------- towers ---------- */
-// One tower type, tuned with sliders; its look follows the tuning so a defense reads at a glance. The kind comes from
-// fire rate and splash (Mortar: splash; Gatling: rapid fire; Railgun: slow, heavy shots; Blaster: the rest), the
-// element from its effects (Frost, Venom, Tesla), the barrel's length from its range, the lights on its plinth from its
-// damage, a scope from its accuracy.
-const towerKind = c => { const r = TS.rate.steps[c.rate]; return c.splash > 0 ? 'mortar' : r >= 2.5 ? 'gatling' : r <= 0.6 ? 'rail' : 'blaster'; };
-const KIND_NAME = { mortar: 'Mortar', gatling: 'Gatling', rail: 'Railgun', blaster: 'Blaster' };
-const ELEM = { slow: { name: 'Frost', rgb: '191,243,255', hex: '#bff3ff' }, poison: { name: 'Venom', rgb: '143,227,136', hex: '#8fe388' }, chain: { name: 'Tesla', rgb: '169,139,255', hex: '#a98bff' } };
+/* ---------- towers (v31) ----------
+   A tower's look is built from fixed layers: each setting always draws in the same place, the same way, whatever else
+   is on the tower, so every setting can be read off it. The silhouette is the attack type. A shooter stands on an
+   octagonal plinth and its fire rate picks its barrels (a Gatling's spinning three, a Blaster's one, a Railgun's twin
+   rails); a Mortar (splash) is a disc on a round plinth, its dish ringed once for each splash step; a Tesla (chain) is a
+   coil on a three-cornered pylon, a conductor node lit in a corner for each jump. The rest is the same on all three:
+   range is the length of what points at the target (a barrel, the Mortar's sighting needle, the Tesla's emitter
+   prong); damage is one to five power lights along the plinth's foot; fire rate is the barrels, or one to three
+   chevrons on the back of the dish or coil (slow, middle, fast), and a coil that pulses faster; accuracy is a scope on
+   the turret's left; Frost is ice crystals and a snowflake badge on the plinth's left side, Poison venom canisters and a
+   drop badge on its right. The body stays the defender's metal: an element colours only its own slot, and the tower's
+   light carries every colour it has. */
+const towerShape = c => (c.splash > 0 ? 'mortar' : chainOf(c) ? 'tesla' : 'shoot'); // the silhouette: the attack type
+const towerKind = c => { const r = TS.rate.steps[c.rate]; return c.splash > 0 ? 'mortar' : chainOf(c) ? 'tesla' : r >= 2.5 ? 'gatling' : r <= 0.6 ? 'rail' : 'blaster'; };
+const KIND_NAME = { mortar: 'Mortar', tesla: 'Tesla', gatling: 'Gatling', rail: 'Railgun', blaster: 'Blaster' };
+const ELEM = { slow: { name: 'Frost', rgb: '191,243,255', hex: '#bff3ff' }, poison: { name: 'Venom', rgb: '143,227,136', hex: '#8fe388' } };
+const TESLA = { rgb: '169,139,255', hex: '#a98bff' };
 const towerElems = c => FXK.filter(k => c[k]);
-const towerName = c => { const e = towerElems(c); return (e.length ? ELEM[e[e.length - 1]].name + ' ' : '') + KIND_NAME[towerKind(c)]; };
-const towerSig = c => `${towerKind(c)}${c.range}${c.dps}${c.accuracy || 0}${c.splash}${c.slow ? 'f' : ''}${c.poison ? 'p' : ''}${c.chain ? 'c' : ''}`;
-// the tower's main light: its last element's colour, else the defender's cyan
-const towerRGB = (c, off) => (off ? '120,126,140' : (() => { const e = towerElems(c); return e.length ? ELEM[e[e.length - 1]].rgb : '79,214,238'; })());
+// every element, then the attack type: "Frost Venom Tesla"
+const towerName = c => [...towerElems(c).map(k => ELEM[k].name), KIND_NAME[towerKind(c)]].join(' ');
+const rateBand = c => { const r = TS.rate.steps[c.rate]; return r >= 2.5 ? 3 : r <= 0.6 ? 1 : 2; }; // fast 3, middle 2, slow 1
+const towerSig = c => `${towerKind(c)}${c.range}${c.dps}${c.rate}${c.accuracy || 0}${c.splash}${chainOf(c)}${c.slow ? 'f' : ''}${c.poison ? 'p' : ''}`;
+// The tower's light colour for its shots and flashes: its elements blended (none is dropped), else the defender's cyan,
+// a Tesla's violet.
+const towerRGB = (c, off) => {
+  if (off) return '120,126,140';
+  const e = towerElems(c);
+  if (!e.length) return towerShape(c) === 'tesla' ? TESLA.rgb : '79,214,238';
+  const v = e.map(k => ELEM[k].rgb.split(',').map(Number));
+  return v[0].map((_, j) => Math.round(v.reduce((a, x) => a + x[j], 0) / v.length)).join(',');
+};
+// The lamps it lights the board with, [dx, dy, r, rgb, a]: its core, and each element from its own side of the plinth.
+const towerLamps = c => [[0, 0, 2.1, towerShape(c) === 'tesla' ? TESLA.rgb : '150,225,245', 0.6],
+  ...(c.slow ? [[-0.42, 0, 1.25, ELEM.slow.rgb, 0.42]] : []), ...(c.poison ? [[0.42, 0, 1.25, ELEM.poison.rgb, 0.42]] : [])];
 const barrelLen = c => 0.2 + 0.035 * c.range;
-// The plinth: an octagon with a cyan rim, bolts, kind-specific fittings, element modules, and power lights.
-function drawTowerBase(c, cfg, off, px) {
-  const kind = towerKind(cfg), rim = off ? 'rgba(150,150,170,0.5)' : 'rgba(79,214,238,0.7)', dark = off ? ['#191820', '#0e0d13'] : ['#16242e', '#0a1218'];
-  octo(c, 0.43, 0.13); c.fillStyle = off ? '#0b0a10' : '#071016'; c.fill();
-  c.save(); c.translate(-0.012, -0.012); octo(c, 0.42, 0.125); c.fillStyle = diagGrad(c, 0.42, 0.42, dark[0], dark[1]); c.fill();
-  c.lineWidth = px * 1.4; c.strokeStyle = rim; c.stroke(); c.restore();
-  octo(c, 0.33, 0.1); c.lineWidth = px; c.strokeStyle = off ? 'rgba(120,120,140,0.25)' : 'rgba(79,214,238,0.18)'; c.stroke();
-  c.fillStyle = off ? 'rgba(150,150,170,0.4)' : 'rgba(160,220,235,0.5)';
-  for (const [x, y] of [[-0.3, -0.38], [0.3, -0.38], [-0.3, 0.38], [0.3, 0.38], [-0.38, -0.3], [-0.38, 0.3], [0.38, -0.3], [0.38, 0.3]]) { c.beginPath(); c.arc(x, y, 0.014, 0, TAU); c.fill(); }
-  if (kind === 'mortar') { // a blast pit with hazard ticks
-    c.beginPath(); c.arc(0, 0, 0.29, 0, TAU); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fill();
-    c.lineWidth = 0.035; c.strokeStyle = off ? 'rgba(130,130,140,0.4)' : 'rgba(255,200,90,0.55)'; c.setLineDash([0.04, 0.05]); c.beginPath(); c.arc(0, 0, 0.29, 0, TAU); c.stroke(); c.setLineDash([]);
-  } else if (kind === 'gatling') { // ammo boxes
-    c.fillStyle = off ? '#24232c' : '#1d3440';
-    for (const s of [-1, 1]) { c.fillRect(-0.2, s * 0.28 - 0.05, 0.4, 0.1); c.fillStyle = off ? '#33323c' : '#2a4c5c'; for (let k = 0; k < 5; k++) c.fillRect(-0.18 + k * 0.08, s * 0.28 - 0.03, 0.04, 0.06); c.fillStyle = off ? '#24232c' : '#1d3440'; }
-  } else if (kind === 'rail') { // capacitor banks
-    for (const s of [-1, 1]) {
-      c.fillStyle = off ? '#24232c' : '#132a35'; c.fillRect(-0.3, s * 0.3 - 0.045, 0.6, 0.09);
-      c.fillStyle = off ? 'rgba(120,120,140,0.5)' : 'rgba(79,214,238,0.75)'; c.fillRect(-0.26, s * 0.3 - 0.01, 0.52, 0.02);
-    }
-  } else { c.beginPath(); c.arc(0, 0, 0.27, 0, TAU); c.lineWidth = px; c.strokeStyle = off ? 'rgba(120,120,140,0.25)' : 'rgba(79,214,238,0.25)'; c.stroke(); }
-  // element modules on the corners, each its symbol on a dark disc: a snowflake, a drop, a bolt
-  const mods = towerElems(cfg), spots = [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3]];
-  if (mods.length && !off) { octo(c, 0.33, 0.1); c.lineWidth = px * 1.4; c.strokeStyle = `rgba(${ELEM[mods[mods.length - 1]].rgb},0.45)`; c.stroke(); }
-  mods.forEach((k, n) => {
-    const [x, y] = spots[n], col = off ? '#6a6a78' : ELEM[k].hex;
-    c.save(); c.translate(x, y);
-    c.beginPath(); c.arc(0, 0, 0.085, 0, TAU); c.fillStyle = '#05090c'; c.fill(); c.lineWidth = px * 1.2; c.strokeStyle = col; c.stroke();
-    c.strokeStyle = col; c.fillStyle = col; c.lineWidth = Math.max(px * 1.3, 0.014); c.lineCap = 'round';
-    if (k === 'slow') { c.beginPath(); for (let j = 0; j < 3; j++) { const a = j * Math.PI / 3; c.moveTo(Math.cos(a) * 0.055, Math.sin(a) * 0.055); c.lineTo(-Math.cos(a) * 0.055, -Math.sin(a) * 0.055); } c.stroke(); }
-    else if (k === 'poison') { c.beginPath(); c.moveTo(0, -0.055); c.quadraticCurveTo(0.045, 0.0, 0.035, 0.022); c.arc(0, 0.022, 0.035, 0, Math.PI); c.quadraticCurveTo(-0.045, 0, 0, -0.055); c.fill(); }
-    else { c.beginPath(); c.moveTo(0.015, -0.06); c.lineTo(-0.03, 0.008); c.lineTo(0.012, 0.008); c.lineTo(-0.015, 0.06); c.lineTo(0.035, -0.012); c.lineTo(-0.006, -0.012); c.closePath(); c.fill(); }
-    c.restore();
-  });
-  // damage: one to five power lights along the bottom edge
-  const pips = 1 + Math.floor(cfg.dps / 2);
-  for (let k = 0; k < pips; k++) { c.fillStyle = off ? 'rgba(120,120,140,0.5)' : '#8ff0ff'; c.fillRect(-0.15 + k * 0.07 - 0.02 + (5 - pips) * 0.035, 0.355, 0.04, 0.022); }
+const pointerTip = c => 0.2 + barrelLen(c); // where a Mortar's needle or a Tesla's prong ends: range, like a barrel
+// the Tesla pylon's corners (its node sockets) and the plinths' outlines
+const TESLA_TRI = [[0, -0.47], [0.47, 0.4], [-0.47, 0.4]];
+const TESLA_NODES = [[0, -0.31], [0.33, 0.29], [-0.33, 0.29]]; // lit in this order: one, two, three jumps
+function roundPoly(c, P, r) {
+  const n = P.length, mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], m0 = mid(P[n - 1], P[0]);
+  c.moveTo(m0[0], m0[1]);
+  for (let k = 0; k < n; k++) { const p = P[k], q = mid(p, P[(k + 1) % n]); c.arcTo(p[0], p[1], q[0], q[1], r); }
+  c.closePath();
 }
-// The turret, facing +x: its housing, barrels by kind, a scope for accuracy, element accents.
-const ELEM_METAL = { none: ['#56899c', '#13303c', '#4fd6ee'], slow: ['#d8f4fb', '#4d8396', '#bff3ff'], poison: ['#7fc078', '#173a1c', '#8fe388'], chain: ['#a08ae8', '#251a48', '#a98bff'] };
+function plinthPath(c, shape, k = 1) { // k < 1: an inner outline
+  c.beginPath();
+  if (shape === 'mortar') c.arc(0, 0, 0.44 * k, 0, TAU);
+  else if (shape === 'tesla') roundPoly(c, TESLA_TRI.map(([x, y]) => [x * k, (y - 0.11) * k + 0.11]), 0.1 * k);
+  else octo(c, 0.43 * k, 0.13 * k);
+}
+// The plinth's left and right sides, where Frost and Poison sit on every silhouette.
+const SIDE_X = { shoot: 0.43, mortar: 0.44, tesla: 0.34 };
+const SIDE_Y = { shoot: 0, mortar: 0, tesla: 0.1 };
+function drawTowerBase(c, cfg, off, px) {
+  const shape = towerShape(cfg), rim = off ? 'rgba(150,150,170,0.5)' : 'rgba(79,214,238,0.7)', dark = off ? ['#191820', '#0e0d13'] : ['#16242e', '#0a1218'];
+  // the plinth: its shadow, a lit-from-the-top-left face, the defender's cyan rim, an inner line
+  c.save(); c.translate(0.012, 0.014); plinthPath(c, shape); c.fillStyle = '#03070a'; c.fill(); c.restore();
+  c.save(); c.translate(-0.01, -0.01); plinthPath(c, shape, 0.98); c.fillStyle = diagGrad(c, 0.44, 0.44, dark[0], dark[1]); c.fill();
+  c.lineWidth = px * 1.4; c.strokeStyle = rim; c.stroke(); c.restore();
+  plinthPath(c, shape, 0.78); c.lineWidth = px; c.strokeStyle = off ? 'rgba(120,120,140,0.25)' : 'rgba(79,214,238,0.18)'; c.stroke();
+  if (shape === 'mortar') { // a turntable track with hazard ticks
+    c.beginPath(); c.arc(0, 0, 0.36, 0, TAU); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fill();
+    c.lineWidth = 0.03; c.strokeStyle = off ? 'rgba(130,130,140,0.4)' : 'rgba(255,200,90,0.5)'; c.setLineDash([0.035, 0.05]); c.beginPath(); c.arc(0, 0, 0.36, 0, TAU); c.stroke(); c.setLineDash([]);
+  } else if (shape === 'tesla') { // conductor rails to each corner, and a socket in every corner: lit for each jump
+    const J = chainOf(cfg);
+    c.lineWidth = 0.026; c.lineCap = 'round';
+    TESLA_NODES.forEach(([x, y], k) => { c.beginPath(); c.moveTo(x * 0.35, y * 0.35); c.lineTo(x * 0.8, y * 0.8); c.strokeStyle = off ? '#2a2932' : k < J ? 'rgba(169,139,255,0.55)' : '#1b2a33'; c.stroke(); });
+    TESLA_NODES.forEach(([x, y], k) => {
+      const lit = k < J && !off;
+      c.beginPath(); c.arc(x, y, 0.075, 0, TAU); c.fillStyle = '#04070a'; c.fill();
+      c.lineWidth = px * 1.3; c.strokeStyle = off ? '#55545e' : lit ? TESLA.hex : 'rgba(79,214,238,0.3)'; c.stroke();
+      if (lit) {
+        const g = c.createRadialGradient(x - 0.018, y - 0.018, 0.005, x, y, 0.06); g.addColorStop(0, '#f2edff'); g.addColorStop(0.5, '#a98bff'); g.addColorStop(1, '#3d2a85');
+        c.beginPath(); c.arc(x, y, 0.055, 0, TAU); c.fillStyle = g; c.fill();
+      } else { c.beginPath(); c.arc(x, y, 0.03, 0, TAU); c.fillStyle = off ? '#26252d' : '#13202a'; c.fill(); }
+    });
+  } else { // the shooter's ring of bolts
+    c.fillStyle = off ? 'rgba(150,150,170,0.4)' : 'rgba(160,220,235,0.5)';
+    for (const [x, y] of [[-0.3, -0.38], [0.3, -0.38], [-0.38, -0.3], [-0.38, 0.3], [0.38, -0.3], [0.38, 0.3]]) { c.beginPath(); c.arc(x, y, 0.014, 0, TAU); c.fill(); }
+  }
+  // Frost on the left: ice crystals along the side and a snowflake badge
+  const sx = SIDE_X[shape], sy = SIDE_Y[shape];
+  if (cfg.slow) {
+    const ice = off ? '#7c7e88' : '#e6fbff', rime = off ? 'rgba(120,124,136,0.5)' : 'rgba(191,243,255,0.55)';
+    for (const [dx, dy, h, a] of [[0.02, -0.2, 0.1, -0.5], [0.0, -0.11, 0.07, -0.2], [0.03, 0.12, 0.08, 0.3], [0.01, 0.2, 0.11, 0.6], [0.05, -0.27, 0.06, -0.9]]) {
+      c.save(); c.translate(-sx + dx + 0.02, sy + dy * (shape === 'tesla' ? 0.7 : 1)); c.rotate(Math.PI + a);
+      c.beginPath(); c.moveTo(0, -h * 0.28); c.lineTo(h, 0); c.lineTo(0, h * 0.28); c.closePath(); c.fillStyle = rime; c.fill();
+      c.beginPath(); c.moveTo(0, -h * 0.12); c.lineTo(h * 0.8, 0); c.lineTo(0, h * 0.12); c.closePath(); c.fillStyle = ice; c.fill();
+      c.restore();
+    }
+    badge(c, -sx + 0.02, sy, off ? '#7c7e88' : ELEM.slow.hex, px, 'slow');
+  }
+  // Poison on the right: two venom canisters and a drop badge
+  if (cfg.poison) {
+    const glass = off ? '#3a3b44' : '#2f7a3a', fluid = off ? '#5c5e66' : '#8fe388';
+    for (const dy of [-0.17, 0.17]) {
+      const x = sx - (shape === 'tesla' ? 0.1 : 0.06), y = sy + dy * (shape === 'tesla' ? 0.7 : 1);
+      c.beginPath(); rr(c, x - 0.045, y - 0.075, 0.09, 0.15, 0.04); c.fillStyle = '#05100a'; c.fill();
+      c.beginPath(); rr(c, x - 0.035, y - 0.065, 0.07, 0.13, 0.03); c.fillStyle = glass; c.fill();
+      c.beginPath(); rr(c, x - 0.035, y - 0.01, 0.07, 0.065, 0.025); c.fillStyle = fluid; c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(x - 0.025, y - 0.055, 0.012, 0.08);
+      c.fillStyle = off ? '#55565e' : '#9fb7a6'; c.fillRect(x - 0.04, y - 0.08, 0.08, 0.018);
+    }
+    badge(c, sx - 0.02, sy, off ? '#7c7e88' : ELEM.poison.hex, px, 'poison');
+  }
+  // damage: one to five power lights along the foot of the plinth, on every silhouette
+  const pips = 1 + Math.floor(cfg.dps / 2), py = 0.335;
+  c.fillStyle = '#04080b'; c.fillRect(-0.19, py - 0.012, 0.38, 0.046);
+  for (let k = 0; k < 5; k++) { c.fillStyle = k < pips ? (off ? 'rgba(140,140,160,0.7)' : '#8ff0ff') : (off ? '#1d1c24' : '#10242c'); c.fillRect(-0.17 + k * 0.07, py, 0.05, 0.022); }
+}
+// An element's badge: its symbol on a dark disc ringed in its colour (a snowflake, a drop).
+function badge(c, x, y, col, px, k) {
+  c.save(); c.translate(x, y);
+  c.beginPath(); c.arc(0, 0, 0.075, 0, TAU); c.fillStyle = '#04080b'; c.fill(); c.lineWidth = px * 1.4; c.strokeStyle = col; c.stroke();
+  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = Math.max(px * 1.3, 0.013); c.lineCap = 'round';
+  if (k === 'slow') { c.beginPath(); for (let j = 0; j < 3; j++) { const a = j * Math.PI / 3; c.moveTo(Math.cos(a) * 0.048, Math.sin(a) * 0.048); c.lineTo(-Math.cos(a) * 0.048, -Math.sin(a) * 0.048); } c.stroke(); }
+  else { c.beginPath(); c.moveTo(0, -0.05); c.quadraticCurveTo(0.04, 0.0, 0.031, 0.019); c.arc(0, 0.019, 0.031, 0, Math.PI); c.quadraticCurveTo(-0.04, 0, 0, -0.05); c.fill(); }
+  c.restore();
+}
+// The turret, facing +x, in the defender's metal: barrels by fire rate (shooters), the dish (Mortar) or the coil
+// (Tesla), what points at the target (its length the range), the fire-rate chevrons, the scope.
+const METAL = ['#56899c', '#13303c', '#4fd6ee'];
 function drawTurret(c, cfg, off, px) {
-  const kind = towerKind(cfg), len = barrelLen(cfg), e = towerElems(cfg), M = off ? ['#4a4954', '#1a1920', '#5a5f6a'] : ELEM_METAL[e.length ? e[e.length - 1] : 'none'];
+  const kind = towerKind(cfg), shape = towerShape(cfg), len = barrelLen(cfg), M = off ? ['#4a4954', '#1a1920', '#5a5f6a'] : METAL;
   const acc = M[2], hi = off ? 'rgba(200,200,210,0.35)' : 'rgba(225,250,255,0.6)', ink = '#04080b';
   const metalG = r => { const g = c.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.05, 0, 0, r * 1.15); g.addColorStop(0, M[0]); g.addColorStop(1, M[1]); return g; };
   const barrel = (x, y, l, w) => {
@@ -8155,17 +8224,40 @@ function drawTurret(c, cfg, off, px) {
     c.fillStyle = off ? '#45444e' : M[0]; c.fillRect(x + l - 0.05, y - w / 2 - 0.012, 0.05, w + 0.024);
   };
   const housing = (r, draw) => { c.beginPath(); draw(); c.fillStyle = ink; c.save(); c.translate(0.015, 0.015); c.fill(); c.restore(); c.beginPath(); draw(); c.fillStyle = metalG(r); c.fill(); c.lineWidth = px * 1.6; c.strokeStyle = acc; c.stroke(); };
-  if (kind === 'mortar') {
-    const R = 0.22 + 0.03 * cfg.splash, L = len * 0.8;
-    barrel(0.04, 0, L, 0.22);
+  // a Mortar's needle or a Tesla's prong: thin, from the middle out, as long as the tower reaches
+  const pointer = (tipCol) => {
+    const L = pointerTip(cfg);
+    c.fillStyle = ink; c.fillRect(0, -0.02 - px, L, 0.04 + 2 * px);
+    c.fillStyle = off ? '#3a3944' : '#2a5566'; c.fillRect(0, -0.017, L, 0.034);
+    c.fillStyle = hi; c.fillRect(0, -0.017, L, Math.max(px, 0.008));
+    c.beginPath(); c.arc(L, 0, 0.034, 0, TAU); c.fillStyle = ink; c.fill();
+    c.beginPath(); c.arc(L, 0, 0.026, 0, TAU); c.fillStyle = off ? '#5a5a66' : tipCol; c.fill();
+  };
+  // fire rate on a dish or a coil: one to three chevrons on its back, pointing forward
+  const chevrons = x0 => {
+    const n = rateBand(cfg);
+    c.lineWidth = 0.022; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = off ? '#6a6a78' : '#bdf6ff';
+    for (let k = 0; k < n; k++) { const x = x0 - k * 0.055; c.beginPath(); c.moveTo(x - 0.03, -0.05); c.lineTo(x, 0); c.lineTo(x - 0.03, 0.05); c.stroke(); }
+  };
+  if (shape === 'mortar') { // a dish, ringed once for each splash step, a launch well in the middle
+    const R = 0.23 + 0.03 * cfg.splash;
     housing(R, () => c.arc(0, 0, R, 0, TAU));
-    c.beginPath(); c.arc(0, 0, R * 0.62, 0, TAU); c.lineWidth = px * 1.2; c.strokeStyle = 'rgba(0,0,0,0.35)'; c.stroke();
-    for (let k = 0; k < 6; k++) { const a = k * TAU / 6 + 0.5; c.beginPath(); c.arc(Math.cos(a) * R * 0.8, Math.sin(a) * R * 0.8, 0.014, 0, TAU); c.fillStyle = 'rgba(0,0,0,0.4)'; c.fill(); }
-    c.beginPath(); c.ellipse(0.04 + L, 0, 0.03, 0.085, 0, 0, TAU); c.fillStyle = '#020405'; c.fill();
+    for (let k = 1; k <= cfg.splash; k++) { c.beginPath(); c.arc(0, 0, R * (1 - k * 0.22), 0, TAU); c.lineWidth = px * 1.6; c.strokeStyle = off ? 'rgba(160,160,170,0.5)' : 'rgba(255,214,140,0.75)'; c.stroke(); }
+    c.beginPath(); c.arc(0.02, 0, 0.065, 0, TAU); c.fillStyle = '#020405'; c.fill();
+    c.beginPath(); c.arc(0.02, 0, 0.065, Math.PI * 1.1, Math.PI * 1.6); c.lineWidth = px * 1.4; c.strokeStyle = hi; c.stroke();
+    chevrons(-R + 0.11);
+    pointer(off ? '#5a5a66' : '#ffd27a');
+  } else if (shape === 'tesla') { // a coil: rings round a bright core, the prong out front
+    chevrons(-0.2);
+    pointer(TESLA.hex);
+    housing(0.17, () => c.arc(0, 0, 0.17, 0, TAU));
+    for (const r of [0.135, 0.1]) { c.beginPath(); c.arc(0, 0, r, 0, TAU); c.lineWidth = 0.014; c.strokeStyle = off ? '#33323c' : '#0f2a35'; c.stroke(); c.beginPath(); c.arc(0, 0, r, Math.PI * 1.05, Math.PI * 1.55); c.lineWidth = px * 1.4; c.strokeStyle = hi; c.stroke(); }
+    const g = c.createRadialGradient(-0.015, -0.015, 0.004, 0, 0, 0.065); g.addColorStop(0, off ? '#9a9aa6' : '#f6f2ff'); g.addColorStop(0.55, off ? '#5a5a66' : TESLA.hex); g.addColorStop(1, off ? '#26252d' : '#3a2a7a');
+    c.beginPath(); c.arc(0, 0, 0.062, 0, TAU); c.fillStyle = g; c.fill();
   } else if (kind === 'rail') {
     const L = len + 0.14;
     for (const s of [-1, 1]) { c.fillStyle = ink; c.fillRect(0, s * 0.06 - 0.026, L + px, 0.052); c.fillStyle = off ? '#2b2a33' : '#1d3a47'; c.fillRect(0, s * 0.06 - 0.023, L, 0.046); c.fillStyle = hi; c.fillRect(0, s * 0.06 - 0.023, L, px * 1.2); }
-    c.fillStyle = off ? 'rgba(120,120,140,0.4)' : `rgba(${towerRGB(cfg)},0.9)`; c.fillRect(0.14, -0.013, L - 0.16, 0.026);
+    c.fillStyle = off ? 'rgba(120,120,140,0.4)' : 'rgba(79,214,238,0.9)'; c.fillRect(0.14, -0.013, L - 0.16, 0.026);
     housing(0.24, () => rr(c, -0.24, -0.15, 0.42, 0.3, 0.07));
     c.fillStyle = 'rgba(0,0,0,0.35)'; for (let k = 0; k < 3; k++) c.fillRect(-0.19 + k * 0.05, -0.1, 0.025, 0.2);
   } else if (kind === 'gatling') {
@@ -8176,14 +8268,16 @@ function drawTurret(c, cfg, off, px) {
     housing(0.2, () => c.arc(0, 0, 0.2, 0, TAU));
     c.beginPath(); c.arc(0, 0, 0.13, -1.1, 1.1); c.lineWidth = px * 1.2; c.strokeStyle = 'rgba(0,0,0,0.3)'; c.stroke();
   }
-  if ((cfg.accuracy || 0) > 0) { // a scope beside the barrel, longer with each step
-    const sl = 0.09 + 0.04 * cfg.accuracy, y = kind === 'rail' ? -0.2 : -0.19;
-    c.fillStyle = ink; c.fillRect(0.01, y - 0.032, sl + 0.02, 0.064);
-    c.fillStyle = off ? '#33323c' : '#2a5060'; c.fillRect(0.02, y - 0.024, sl, 0.048);
-    c.fillStyle = off ? '#6a6a78' : '#ff5a5a'; c.beginPath(); c.arc(0.02 + sl, y, 0.02, 0, TAU); c.fill();
+  if ((cfg.accuracy || 0) > 0) { // a scope on the turret's left, longer with each step, on every silhouette
+    const sl = 0.09 + 0.04 * cfg.accuracy, y = -0.205;
+    c.fillStyle = ink; c.fillRect(0.0, y - 0.032, sl + 0.02, 0.064);
+    c.fillStyle = off ? '#33323c' : '#2a5060'; c.fillRect(0.01, y - 0.024, sl, 0.048);
+    c.fillStyle = off ? '#6a6a78' : '#ff5a5a'; c.beginPath(); c.arc(0.01 + sl, y, 0.02, 0, TAU); c.fill();
   }
-  c.beginPath(); c.arc(0, 0, kind === 'rail' ? 0.05 : 0.06, 0, TAU); c.fillStyle = acc; c.fill();
-  c.beginPath(); c.arc(-0.015, -0.015, 0.022, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.7)'; c.fill();
+  if (shape === 'shoot') {
+    c.beginPath(); c.arc(0, 0, kind === 'rail' ? 0.05 : 0.06, 0, TAU); c.fillStyle = acc; c.fill();
+    c.beginPath(); c.arc(-0.015, -0.015, 0.022, 0, TAU); c.fillStyle = 'rgba(255,255,255,0.7)'; c.fill();
+  }
 }
 const towerBaseSpr = (cfg, off) => sprite('tb' + towerSig(cfg) + (off ? 'x' : ''), 1, (c, px) => drawTowerBase(c, cfg, off, px));
 const turretSpr = (cfg, off) => sprite('tt' + towerSig(cfg) + (off ? 'x' : ''), 1.4, (c, px) => drawTurret(c, cfg, off, px));
@@ -8372,7 +8466,7 @@ function unitIconURL(d) {
 function fillLegends() {
   const fig = (src, cap) => `<figure><img class="art" src="${src}" alt=""><figcaption>${cap}</figcaption></figure>`, T = o => ({ ...defaultTower(), ...o });
   const tl = document.getElementById('info-tlegend'), ul = document.getElementById('info-ulegend');
-  if (tl) tl.innerHTML = [[{}, 'Blaster'], [{ rate: 0 }, 'Gatling'], [{ rate: 5, range: 5 }, 'Railgun'], [{ rate: 4, splash: 2 }, 'Mortar'], [{ slow: true }, 'Frost'], [{ poison: true }, 'Venom'], [{ chain: 3 }, 'Tesla'], [{ dps: 8, accuracy: 3 }, 'Hits hard, scope']]
+  if (tl) tl.innerHTML = [[{}, 'Blaster'], [{ rate: 0 }, 'Gatling'], [{ rate: 5, range: 5 }, 'Railgun'], [{ rate: 4, splash: 2 }, 'Mortar'], [{ chain: 3 }, 'Tesla'], [{ slow: true }, 'Frost, left'], [{ poison: true }, 'Venom, right'], [{ dps: 8, accuracy: 3 }, 'Hits hard, scope']]
     .map(([o, cap]) => fig(towerIconURL(T(o)), cap)).join('');
   if (ul) ul.innerHTML = [[{ hp: 2, speed: 6 }, 'Skimmer', 0], [{ hp: 5, speed: 3 }, 'Rover', 1], [{ hp: 8, speed: 1 }, 'Juggernaut', 2], [{ hp: 5, speed: 3, armor: 3 }, 'Armor 3', 3], [{ hp: 5, speed: 3, regen: 2 }, 'Regen', 0], [{ hp: 5, speed: 3, resist: 'splash+shock' }, 'Resists', 2]]
     .map(([o, cap, k]) => fig(unitIconURL({ hp: 0, speed: 3, armor: 0, regen: 0, resist: 'none', ...o, color: COLORS[k] }), cap)).join('');
@@ -8395,16 +8489,34 @@ function gatlingBarrels(c, cfg, off, t, spin) {
   }
   c.fillStyle = off ? '#45444e' : '#5b8798'; c.fillRect(0.06 + L - 0.035, -0.1, 0.035, 0.2);
 }
-const muzzleAt = cfg => { const k = towerKind(cfg); return k === 'mortar' ? 0.06 + barrelLen(cfg) * 0.8 : k === 'rail' ? barrelLen(cfg) + 0.15 : k === 'gatling' ? barrelLen(cfg) + 0.13 : barrelLen(cfg) + 0.1; };
+const muzzleAt = cfg => { const k = towerKind(cfg); return k === 'mortar' ? 0.02 : k === 'tesla' ? pointerTip(cfg) : k === 'rail' ? barrelLen(cfg) + 0.15 : k === 'gatling' ? barrelLen(cfg) + 0.13 : barrelLen(cfg) + 0.1; };
+// A point on the plinth (as drawn, unturned) in the world: the portrait board is the landscape one transposed, and the
+// plinth is drawn transposed back, so its left stays the screen's left.
+const baseXY = (dx, dy) => (view.rot ? [dy, dx] : [dx, dy]);
 const towerSpin = new Map(); // gatling barrels keep spinning down after the last shot: cell → [phase, speed, last t]
-// A tower at (x, y): its light on the ground, the plinth, the turret turned to ang and pushed back by its recoil (kick),
-// the muzzle flash while kick is fresh, and its element's live detail. off: knocked out. o.scale: the build animation.
+// A tower at (x, y): the plinth, the turret turned to ang and pushed back by its recoil (kick), the muzzle flash while
+// kick is fresh, and the live detail (a Gatling's spin, a Tesla's lit nodes and crackle). off: knocked out.
+// o.scale: the build animation.
 function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0, o = {}) {
-  const sc = o.scale ?? 1, kind = towerKind(cfg), rgb = towerRGB(cfg, off);
-  if (!off && !o.ghost && o.pool) glow(c, x, y, 0.72 * sc, rgb, 0.12 + 0.2 * kick); // a pool of light where there's no light map
-  blit(c, towerBaseSpr(cfg, off), x, y, sc);
+  const sc = o.scale ?? 1, kind = towerKind(cfg), shape = towerShape(cfg), rgb = towerRGB(cfg, off);
+  if (!off && !o.ghost && o.pool) for (const [dx, dy, r, col, a] of towerLamps(cfg)) { const [bx, by] = baseXY(dx, dy); glow(c, x + bx * sc, y + by * sc, 0.34 * r * sc, col, (0.12 + 0.2 * kick) * a / 0.6); } // a pool of light where there's no light map
+  if (view.rot) { c.save(); c.translate(x, y); c.transform(0, 1, 1, 0, 0, 0); blit(c, towerBaseSpr(cfg, off), 0, 0, sc); c.restore(); }
+  else blit(c, towerBaseSpr(cfg, off), x, y, sc);
+  if (shape === 'tesla' && !off && !o.ghost) { // the lit nodes glow, and now and then an arc runs from the coil to one
+    const J = chainOf(cfg), pulse = 0.65 + 0.35 * Math.sin(t * (2 + 3 * rateBand(cfg)) + x * 2);
+    const rnd = mulberry32(((t * 12) | 0) * 7919 + ((x * 97 + y * 13) | 0));
+    for (let k = 0; k < J; k++) {
+      const [bx, by] = baseXY(TESLA_NODES[k][0] * sc, TESLA_NODES[k][1] * sc);
+      glow(c, x + bx, y + by, 0.2 * sc, TESLA.rgb, 0.35 + 0.35 * pulse + kick * 0.4);
+      if (rnd() < 0.55 + kick) { // a crackle from the core out to the node
+        c.beginPath(); c.moveTo(x, y);
+        for (let s = 1; s <= 3; s++) { const f = s / 3, j = s < 3 ? (rnd() - 0.5) * 0.09 : 0; c.lineTo(x + bx * f - by * j, y + by * f + bx * j); }
+        c.lineWidth = 0.016; c.strokeStyle = `rgba(225,215,255,${0.5 + 0.4 * pulse})`; c.lineJoin = 'round'; c.stroke();
+      }
+    }
+  }
   c.save(); c.translate(x, y); c.rotate(off ? ang + 0.6 : ang); c.scale(sc, sc);
-  c.translate(-kick * (kind === 'rail' ? 0.1 : kind === 'mortar' ? 0.09 : 0.05), 0);
+  c.translate(-kick * (kind === 'rail' ? 0.1 : kind === 'mortar' ? 0.07 : kind === 'tesla' ? 0.03 : 0.05), 0);
   if (kind === 'gatling') {
     let sp = o.cell != null ? towerSpin.get(o.cell) : null;
     if (o.cell != null) {
@@ -8417,23 +8529,12 @@ function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0, o = {}) {
   }
   blit(c, turretSpr(cfg, off), 0, 0, 1.4);
   if (!off && !o.ghost) {
-    if (cfg.chain) { // a tesla orb on the housing, crackling
-      const pulse = 0.6 + 0.4 * Math.sin(t * 6 + x * 2);
-      glow(c, 0, 0, 0.32, '169,139,255', 0.35 + 0.3 * pulse + kick * 0.5);
-      const rnd = mulberry32(((t * 14) | 0) * 7919 + ((x * 97 + y * 13) | 0));
-      c.beginPath();
-      for (let k = 0; k < 2; k++) {
-        let a = rnd() * TAU, px = 0, py = 0; c.moveTo(0, 0);
-        for (let s = 1; s <= 3; s++) { a += (rnd() - 0.5) * 1.4; px += Math.cos(a) * 0.07; py += Math.sin(a) * 0.07; c.lineTo(px, py); }
-      }
-      c.lineWidth = 0.018; c.strokeStyle = 'rgba(225,215,255,0.85)'; c.lineJoin = 'round'; c.stroke();
-    }
+    if (shape === 'tesla') glow(c, 0, 0, 0.26, TESLA.rgb, 0.3 + 0.25 * Math.sin(t * (2 + 3 * rateBand(cfg)) + x) + kick * 0.5); // the core
     if (kick > 0.45) { // the muzzle flash
       const m = muzzleAt(cfg), f = (kick - 0.45) / 0.55, col = towerRGB(cfg);
-      const big = kind === 'mortar' ? 1.5 : kind === 'rail' ? 1.35 : kind === 'gatling' ? 0.7 : 1;
+      const big = kind === 'mortar' ? 1.5 : kind === 'rail' ? 1.35 : kind === 'gatling' ? 0.7 : kind === 'tesla' ? 0.8 : 1;
       glow(c, m, 0, 0.36 * big * (0.6 + f), col === '79,214,238' ? '170,240,255' : col, 0.9 * f);
-      c.beginPath(); c.moveTo(m, -0.05 * big * f); c.lineTo(m + 0.22 * big * f, 0); c.lineTo(m, 0.05 * big * f); c.closePath();
-      c.fillStyle = `rgba(255,255,255,${0.85 * f})`; c.fill();
+      if (kind !== 'tesla' && kind !== 'mortar') { c.beginPath(); c.moveTo(m, -0.05 * big * f); c.lineTo(m + 0.22 * big * f, 0); c.lineTo(m, 0.05 * big * f); c.closePath(); c.fillStyle = `rgba(255,255,255,${0.85 * f})`; c.fill(); }
     }
   }
   c.restore();
@@ -8650,7 +8751,7 @@ function heroFrame(now) {
     const [ex, ey] = HERO.route[0], [kx, ky] = HERO.route[HERO.route.length - 1], hit = HERO.keepHit;
     if (!ART.lo) { // the same light as the board's
       const lc = lightBegin(vw, vh, '92,100,118');
-      for (const g of HERO.towers) lamp(lc, g.x, g.y, 2.4 + g.kick * 0.6, towerRGB(g.cfg) === '79,214,238' ? '150,225,245' : towerRGB(g.cfg), 0.65 + g.kick * 0.5);
+      for (const g of HERO.towers) towerLamps(g.cfg).forEach(([dx, dy, r, rgb, a], k) => lamp(lc, g.x + dx, g.y + dy, r * 1.14 + (k ? 0 : g.kick * 0.6), rgb, a + 0.05 + (k ? 0 : g.kick * 0.5)));
       lamp(lc, kx + 0.4, ky, 4, hit ? '255,110,100' : '255,214,150', 0.9 + hit * 0.5);
       for (const u of HERO.units) { if (u.d < -0.5) continue; const ca = Math.cos(u.ang), sa = Math.sin(u.ang); if (u.sap) { lamp(lc, u.x, u.y, 0.8, rgbs(u.color), 0.5); continue; } lamp(lc, u.x + ca * u.r * 2.4, u.y + sa * u.r * 2.4, u.r * 2.6 + 0.2, '255,236,200', 0.45); if (u.shape === 'arrow') lamp(lc, u.x - ca * u.r * 1.3, u.y - sa * u.r * 1.3, u.r * 2.2, '255,170,90', 0.5); }
       for (const q of HERO.fx) { const l = Math.max(0, q.life / q.max); if (q.k === 'glow') lamp(lc, q.x, q.y, q.r * 1.7, q.rgb, (q.a ?? 0.9) * l); else if (q.k === 'beam' || q.k === 'bolt') for (let s2 = 0; s2 <= 4; s2++) lamp(lc, q.x1 + (q.x2 - q.x1) * s2 / 4, q.y1 + (q.y2 - q.y1) * s2 / 4, 0.8, q.k === 'bolt' ? '170,140,255' : q.rgb, 0.5 * l); }
@@ -8801,7 +8902,7 @@ function scnDraw(S0, dt) {
   if (sc.keep) { const [kx, ky] = sc.keep; glow(c, kx, ky, 2, '255,214,150', 0.5); c.save(); c.translate(kx, ky); c.rotate(Math.PI / 4); c.fillStyle = '#17130a'; c.fillRect(-0.5, -0.5, 1, 1); c.lineWidth = 0.05; c.strokeStyle = '#e8c873'; c.strokeRect(-0.5, -0.5, 1, 1); c.fillStyle = '#e8c873'; c.fillRect(-0.24, -0.24, 0.48, 0.48); c.fillStyle = 'rgba(255,245,215,0.75)'; c.fillRect(-0.24, -0.24, 0.48, 0.16); c.restore(); }
   for (const g of S0.towers) drawTowerShape(c, g.cfg, g.x, g.y, g.ang, g.kick, false, t, { cell: g.key });
   const lc = lightBegin(sc.W, sc.H, sc.light);
-  for (const g of S0.towers) lamp(lc, g.x, g.y, 2.2 + g.kick, towerRGB(g.cfg) === '79,214,238' ? '150,225,245' : towerRGB(g.cfg), 0.65 + g.kick * 0.6);
+  for (const g of S0.towers) towerLamps(g.cfg).forEach(([dx, dy, r, rgb, a], k) => lamp(lc, g.x + dx, g.y + dy, r * 1.05 + (k ? 0 : g.kick), rgb, a + 0.05 + (k ? 0 : g.kick * 0.6)));
   if (sc.keep) lamp(lc, sc.keep[0], sc.keep[1], 3.5, '255,214,150', 0.9);
   for (const u of units) { const ca = Math.cos(u.ang), sa = Math.sin(u.ang); lamp(lc, u.x + ca * u.r * 2.4, u.y + sa * u.r * 2.4, u.r * 2.6 + 0.2, '255,236,200', 0.45); if (u.shape === 'arrow') lamp(lc, u.x - ca * u.r * 1.3, u.y - sa * u.r * 1.3, u.r * 2.2, '255,170,90', 0.55); }
   for (const q of S0.fx) { const l = Math.max(0, q.life / q.max); if (q.k === 'glow') lamp(lc, q.x, q.y, q.r * 1.8, q.rgb, (q.a ?? 0.9) * l); else if (q.k === 'beam' || q.k === 'bolt') for (let s = 0; s <= 4; s++) lamp(lc, q.x1 + (q.x2 - q.x1) * s / 4, q.y1 + (q.y2 - q.y1) * s / 4, 0.9, q.k === 'bolt' ? '170,140,255' : q.rgb, 0.6 * l); }
@@ -9017,8 +9118,9 @@ function boardLights(lc, t, G) {
     const g = G[i]; if (!g) continue;
     const [x, y] = center(i);
     if (g.t === 'tower') {
-      const off = g.off > 0 || wvOff.has(i), rgb = off ? '150,120,230' : towerRGB(g.cfg), kick = g.kick || 0;
-      lamp(lc, x, y, 2.1 + kick * 0.5, rgb === '79,214,238' ? '150,225,245' : rgb, (off ? 0.35 : 0.6) + kick * 0.5);
+      const off = g.off > 0 || wvOff.has(i), kick = g.kick || 0;
+      if (off) { lamp(lc, x, y, 2.1, '150,120,230', 0.35); continue; }
+      towerLamps(g.cfg).forEach(([dx, dy, r, rgb, a], k) => { const [bx, by] = baseXY(dx, dy); lamp(lc, x + bx, y + by, r + (k ? 0 : kick * 0.5), rgb, a + (k ? 0 : kick * 0.5)); }); // its core, and each element from its side
     }
   }
   for (const i of S.bridges) { const [x, y] = center(i); lamp(lc, x, y, 1, '255,160,90', 0.25); }
@@ -9083,11 +9185,12 @@ function bridgeFx(x, y) {
   addShake(5); sfx('bridge');
 }
 // A direct shot: a streak from the muzzle to the target (or beside it on a miss) and sparks where it lands. Railguns
-// fire a beam with a lingering glow; gatlings short, thin streaks.
+// fire a beam with a lingering glow; gatlings short, thin streaks; a Tesla a bolt of lightning.
 function shotFx(cfg, mx, my, bx, by, lands, hit) {
   if (QUIET || !fxRoom(4)) return;
   const kind = towerKind(cfg), col = towerRGB(cfg), core = cfg.poison ? '200,255,190' : cfg.slow ? '235,252,255' : cfg.chain ? '225,215,255' : '235,248,255';
-  if (kind === 'rail') FXL.push({ k: 'beam', x1: mx, y1: my, x2: bx, y2: by, life: 0.32, max: 0.32, rgb: lands ? col : '150,162,174', core: lands ? core : '200,205,210', w: 0.05 + Math.min(0.06, hit / 600) });
+  if (kind === 'tesla' && lands) chainFx(mx, my, bx, by);
+  else if (kind === 'rail') FXL.push({ k: 'beam', x1: mx, y1: my, x2: bx, y2: by, life: 0.32, max: 0.32, rgb: lands ? col : '150,162,174', core: lands ? core : '200,205,210', w: 0.05 + Math.min(0.06, hit / 600) });
   else FXL.push({ k: 'streak', x1: mx, y1: my, x2: bx, y2: by, life: 0.12, max: 0.12, rgb: lands ? col : '150,162,174', core: lands ? core : '190,196,204', w: kind === 'gatling' ? 0.02 : 0.026 + Math.min(0.03, hit / 700) });
   if (!lands) { missPuff(bx, by); return; }
   FXL.push({ k: 'glow', x: bx, y: by, r: 0.25 + Math.min(0.3, hit / 120), rgb: col, life: 0.14, max: 0.14, a: 0.8 });

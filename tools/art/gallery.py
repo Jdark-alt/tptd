@@ -4,6 +4,9 @@ armor, regeneration and resists, screenshotted at 2× (and zoomed crops), plus t
     python tools/art/gallery.py                # screenshots land in tools/.build/shots/art
     python tools/art/gallery.py --perf 4       # also the frame times of a 160-unit wave, the CPU slowed 4×
 
+Since v31 a specimen sheet of every tower (attack type × element × damage × fire rate, and the extremes) is
+tools/art/sheet.py towers (and --phone).
+
 The towers and the army are put straight into the state through window.siegeline (no rules are checked: it's a
 picture, not a match). Headless Chromium rasterises in software, so its frame rates are a floor, not what a player sees.
 """
@@ -18,6 +21,7 @@ TOWERS = '''[
  [2,2, {}], [2,4, {rate:0}], [2,6, {rate:5, range:6}], [2,8, {rate:4, splash:2}],
  [5,2, {slow:true}], [5,4, {rate:0, poison:true}], [5,6, {rate:5, range:7, chain:3, accuracy:3}], [5,8, {rate:4, splash:3, slow:true}],
  [8,2, {dps:8, chain:3}], [8,4, {rate:1, slow:true, poison:true}], [8,6, {rate:4, range:3, dps:6, accuracy:2}], [8,8, {rate:4, splash:1, poison:true}],
+ [3,0, {chain:1, rate:5, slow:true}], [6,0, {chain:2, rate:0, poison:true, accuracy:2}], [3,10, {splash:2, rate:0, slow:true, poison:true}], [6,10, {rate:0, slow:true, poison:true, dps:8, range:7}],
 ]'''
 ARMY = '''(per) => { const sl = window.siegeline, S = sl.state; S.aFree = 999999; const C = ['#ffb547', '#e5472b', '#ff7b36', '#ff6fa8'];
   S.designs = [
