@@ -1388,7 +1388,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       </section>
 
       <section class="pane" id="pane-wave" hidden>
-        <div class="pane-head"><h2 class="pane-title" id="wave-title">Wave 1</h2><div class="speed" role="group" aria-label="Wave speed"><button data-speed="1" aria-pressed="true">1×</button><button data-speed="5" aria-pressed="false">5×</button><button data-speed="10" aria-pressed="false">10×</button></div></div>
+        <div class="pane-head"><h2 class="pane-title" id="wave-title">Wave 1</h2><div class="speed" role="group" aria-label="Wave speed"><button data-speed="1" aria-pressed="true" data-tip="Normal speed · key 1">1×</button><button data-speed="5" aria-pressed="false" data-tip="Five times as fast · key 2">5×</button><button data-speed="10" aria-pressed="false" data-tip="Ten times as fast · key 3">10×</button></div></div>
         <div class="breach">
           <div class="brow"><span>Army strength sent</span><b id="w-x">0</b></div>
           <div class="brow"><span>Got through to the keep</span><b id="w-y">0</b><em id="w-pct">0%</em></div>
@@ -1415,7 +1415,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v32.4</p>
+        <p class="tagline">Two Player Tower Defence · v32.5</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1451,7 +1451,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       <section id="info-build">
         <h2>Build</h2>
         <p><strong>Tools.</strong> Wall (<b>W</b>), Tower (<b>T</b>), Remove &amp; Inspect (<b>R</b>), Shapes (<b>S</b>). Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. A tower placed on a wall replaces it, and the wall’s 5 coins come back. Drag a tower to move it, or onto a wall or another tower to swap them. The chips above the tools are your towers: tap one to open its card.</p>
-        <p><strong>Shortcuts.</strong> W, T, R and S pick the tools; with Shapes picked, R turns the piece and F flips it. Delete or Backspace removes the selected tower (Undo brings it back) or deletes the open design. Escape is Done. Ctrl+Z (⌘Z) undoes. M turns the sound on or off (the speaker in the top bar too). On the Wave step the space bar plays the forecast and Ctrl+Z undoes its last change. None of them work while you type in a field.</p>
+        <p><strong>Shortcuts.</strong> W, T, R and S pick the tools; with Shapes picked, R turns the piece and F flips it. Delete or Backspace removes the selected tower (Undo brings it back) or deletes the open design. Escape is Done. Ctrl+Z (⌘Z) undoes. M turns the sound on or off (the speaker in the top bar too). On the Wave step the space bar plays the forecast and Ctrl+Z undoes its last change. Hold Shift to see every tower’s range. During a wave 1, 2 and 3 set the speed (1×, 5×, 10×). None of them work while you type in a field.</p>
         <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">60</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built, and, when it can, on a <strong>hairpin</strong> in the corner by a gate: a short wall the route has to pass on both sides, there and back, so one tower on it covers the route twice. <strong>Auto-tune</strong> spends your free coins on upgrades to the towers you’ve placed. <strong>Undo</strong> takes back your last change this round, coins and tuning included, until the wave starts; the starter maze is where a round begins, so Undo never takes it away.</p>
         <p><strong>Remove &amp; Inspect:</strong> hover a wall (on touch, hold it) and a red line shows where units would go if it were bridged. A click or tap takes a wall or tower back.</p>
         <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning as it is now for your first relocation in the match, then <span data-rule="moveFeeRise:pt">1</span>% more for each one after, whichever tower it is (10%, 11%, 12%…), at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 11%”), and the drag label its price. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends. With sabotage off there is no move fee: towers move free all match.</p>
@@ -1568,7 +1568,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v32.4</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v32.5</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -9562,11 +9562,11 @@ function drawTerrain() {
   setWorld(c);
   // the field: plates of a dark alloy, faintly uneven, each perforated by a fine grid of dots; hairline seams, a dot at
   // every corner, and here and there a marking
-  c.fillStyle = diagGrad(c, 0, COLS, '#131a21', '#0c1014'); c.fillRect(0, 0, COLS, ROWS);
+  c.fillStyle = diagGrad(c, 0, COLS, '#1c2630', '#141b23'); c.fillRect(0, 0, COLS, ROWS); // v32.5: lighter plates (#131a21, #0c1014 before)
   const ds = Math.max(px * 0.9, 0.012);
   for (let i = 0; i < N; i++) {
     const q = i % COLS, r = (i / COLS) | 0;
-    c.fillStyle = `rgba(150,182,206,${0.008 + rnd() * 0.022})`; c.fillRect(q + 0.025, r + 0.025, 0.95, 0.95);
+    c.fillStyle = `rgba(150,182,206,${0.012 + rnd() * 0.026})`; c.fillRect(q + 0.025, r + 0.025, 0.95, 0.95);
     if (S.terrain[i]) continue;
     c.fillStyle = 'rgba(150,182,206,0.05)';
     for (let y = 1; y < 6; y++) for (let x = 1; x < 6; x++) c.fillRect(q + x / 6 - ds, r + y / 6 - ds, 2 * ds, 2 * ds);
@@ -9591,7 +9591,7 @@ function drawTerrain() {
   drawGround(c, px);
   // a vignette toward the edges, so the eye rests on the middle of the field
   const v = c.createRadialGradient(COLS / 2, ROWS / 2, ROWS * 0.3, COLS / 2, ROWS / 2, COLS * 0.62);
-  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.3)'); c.fillStyle = v; c.fillRect(0, 0, COLS, ROWS);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.14)'); // v32.5: lighter (0.3) c.fillStyle = v; c.fillRect(0, 0, COLS, ROWS);
 }
 // Terrain in the game's dot-matrix look, as designed tiles rather than anything natural. Rock is a blocker: a raised
 // slab faced with a matrix of square tiles, lit from the top left, a diagonal hatch picked out in brighter tiles (the
@@ -9687,7 +9687,7 @@ const LIGHT = { cv: document.createElement('canvas'), bv: document.createElement
 LIGHT.c = LIGHT.cv.getContext('2d'); LIGHT.b = LIGHT.bv.getContext('2d');
 // v32: the board reads about 12% brighter (v30-v31: 100,110,128 in a wave, 138,148,166 while planning, 92,100,118 on the
 // start screen's hero); the floor, the grid and the terrain went up with it
-const AMB_WAVE = '165,176,196', AMB_PLAN = '165,176,196', AMB_HERO = '103,112,132'; // v32.1: a wave as bright as planning
+const AMB_WAVE = '214,222,236', AMB_PLAN = '214,222,236', AMB_HERO = '103,112,132'; // v32.1: a wave as bright as planning; v32.5: both brighter (165,176,196 before)
 function lightBegin(wx, wy, amb) { LIGHT.list.length = 0; LIGHT.wx = wx; LIGHT.wy = wy; LIGHT.amb = amb; return LIGHT.list; } // the map covers world (−mx, −my) to (wx + mx, wy + my)
 const lamp = (list, x, y, r, rgb, a) => { if (a > 0.01 && r > 0) list.push(x, y, r, rgb, Math.min(1, a)); };
 // Two maps from the same lights: one starting at the ambient, multiplied over what's drawn so far, the other starting
@@ -10396,10 +10396,10 @@ function drawAnchor(c, at, wall, alpha = 1) {
 
 
 
-function drawRange(c, x, y, R, ok = true) {
+function drawRange(c, x, y, R, ok = true, k = 1) {
   c.beginPath(); c.arc(x, y, R, 0, TAU);
-  c.fillStyle = ok ? 'rgba(79,214,238,0.09)' : 'rgba(255,93,93,0.08)'; c.fill();
-  c.setLineDash([0.13, 0.1]); c.lineWidth = 0.04; c.strokeStyle = ok ? 'rgba(79,214,238,0.8)' : 'rgba(255,93,93,0.8)'; c.stroke(); c.setLineDash([]);
+  c.fillStyle = ok ? `rgba(79,214,238,${0.09 * k})` : 'rgba(255,93,93,0.08)'; c.fill();
+  c.setLineDash([0.13, 0.1]); c.lineWidth = 0.04; c.strokeStyle = ok ? `rgba(79,214,238,${0.8 * k})` : 'rgba(255,93,93,0.8)'; c.stroke(); c.setLineDash([]);
 }
 function drawX(c, cell) {
   const q = cell % COLS, r = (cell / COLS) | 0;
@@ -10510,6 +10510,10 @@ function drawInteraction(c, t, G) {
   const ranged = new Set();
   if (S.sel && S.sel.k === 'tower' && G[S.sel.cell] && G[S.sel.cell].t === 'tower') ranged.add(S.sel.cell);
   if (hoverType === 'mouse' && hover >= 0 && G[hover] && G[hover].t === 'tower' && !(S.phase === 'defend' && S.tool === 'remove')) ranged.add(hover);
+  if (allRanges) for (let i = 0; i < N; i++) { // v32.5: Shift held shows every tower's reach, faintly
+    const g = G[i]; if (!g || g.t !== 'tower' || g.off || ranged.has(i)) continue;
+    const [x, y] = center(i); drawRange(c, x, y, TS.range.steps[g.cfg.range], true, 0.4);
+  }
   for (const i of ranged) {
     const [x, y] = center(i);
     if (!G[i].off) drawRange(c, x, y, TS.range.steps[G[i].cfg.range]);
@@ -10874,8 +10878,15 @@ $('#end-again').addEventListener('click', () => { hide(el.ovEnd); if (online()) 
 // None of them fire while something is being typed.
 const typing = e => !!(e.target.closest && e.target.closest('input:not([type=range]), textarea, select, [contenteditable]'));
 const TOOL_KEYS = { w: 'wall', t: 'tower', r: 'remove', s: 'shape' };
+// v32.5: holding Shift shows every tower's range on the board; 1, 2 and 3 set a wave's speed (1×, 5×, 10×)
+let allRanges = false;
+document.addEventListener('keyup', e => { if (e.key === 'Shift') allRanges = false; });
+addEventListener('blur', () => { allRanges = false; });
 document.addEventListener('keydown', e => {
   const plain = !e.metaKey && !e.ctrlKey && !e.altKey && !typing(e) && !!S && el.ovInfo.hidden;
+  if (e.key === 'Shift' && !typing(e)) allRanges = true;
+  const sp = { 1: 1, 2: 5, 3: 10 }[e.key];
+  if (sp && plain && !e.repeat && (S.phase === 'wave' || testing() || replay)) { if (testing()) testSpeed = sp; else waveSpeed = sp; syncSpeed(); return; }
   if ((e.key === 'r' || e.key === 'R' || e.key === 'f' || e.key === 'F') && plain && S.phase === 'defend' && S.tool === 'shape') {
     turnShape(e.key.toLowerCase() === 'r' ? 'rot' : 'flip'); return;
   }
