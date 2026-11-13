@@ -907,6 +907,10 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .wavebox b{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
 .wavebox small{font:500 11px/1 var(--f-ui);color:var(--muted);margin-left:3px}
 .wavebox .kd{color:var(--keep)}
+.coinsbox{flex-direction:row;align-items:center;gap:16px} /* v32.1: both sides' coins left, big and bold */
+.coinsbox .ccol{display:flex;flex-direction:column;gap:4px}
+.coinsbox b{font:700 30px/.9 var(--f-body);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.coinsbox .d b{color:var(--cool)} .coinsbox .a b{color:var(--warm)}
 .potbox{flex-direction:row;align-items:baseline;gap:8px;align-content:center;flex-wrap:nowrap;align-items:center}
 .potbox .pval{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .potbox .prange{font:500 11px/1 var(--f-ui);color:var(--muted);white-space:nowrap}
@@ -1161,6 +1165,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .hud-row > *{min-height:44px}
   .roundchip{order:1} .keepbox{order:2;flex:1 1 0} .clockbox,.wavebox{order:3} #btn-sound,#btn-info{order:4}
   .hud-row > .hbreak{display:block;order:5;flex-basis:100%;height:0;min-height:0} /* coins and the pot always start row 2 */
+  .coinsbox{order:6;gap:12px;padding:0 10px} .coinsbox b{font-size:24px}
   .potbox{order:7;flex:0 1 auto;padding:0 10px} .hud-row .netpill{order:8;min-height:0}
   .potbox.live{flex:1 1 auto}
   .potbox .ptag,.pm-top .lbl{display:none} /* the POT label goes before the numbers shrink */
@@ -1329,6 +1334,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       </div>
       <div class="hbox clockbox" id="clockbox" hidden data-tip="Planning time left this round. When it runs out, your plan goes as it stands."><span class="lbl">Time</span><b class="cval" id="t-clock">3:00</b></div>
       <div class="hbox wavebox" id="wavebox" hidden><span class="wcol" data-tip="Units that reached the keep, of all the army sent"><span class="lbl">Leaked</span><b><span id="h-leak">0</span><small id="h-sent">/ 0</small></b></span><span class="wcol" data-tip="Damage to the keep this wave"><span class="lbl">Keep</span><b class="kd" id="h-kdmg">−0</b></span></div>
+      <div class="hbox coinsbox" id="coinsbox" data-tip="Coins each side has left to spend"><span class="ccol d"><span class="lbl">Defender</span><b id="h-dfree">300</b></span><span class="ccol a"><span class="lbl">Attacker</span><b id="h-afree">300</b></span></div>
       <div class="hbox potbox" id="potbox" data-tip="This round's pot: the more of the army gets through, the bigger the defender's share. It grows round by round, and so does the swing between the shares.">
         <span class="lbl ptag">Pot</span><b class="pval" id="pot-v">200</b><small class="prange" id="pot-r">35–65</small>
         <span class="pmeter" id="pot-meter" hidden><span class="pm-top"><span class="pm-d" id="pm-d">+100</span><span class="lbl ptag2">Pot <b id="pm-pot">200</b></span><span class="pm-a" id="pm-a">+100</span></span><span class="pm-bar"><i class="d" id="pm-sd" style="width:50%"></i><i class="a" id="pm-sa" style="width:50%"></i></span></span>
@@ -1413,7 +1419,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v32.1</p>
+        <p class="tagline">Two Player Tower Defence · v32.2</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1566,7 +1572,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v32.1</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v32.2</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -7803,6 +7809,7 @@ function updateHUD(dt) {
     setText(el.keepMax, 'km', '/ ' + S.keepMax);
     setStyle(el.keepbar, 'width', (S.keep / S.keepMax * 100) + '%');
     el.keepbox.classList.toggle('low', S.keep <= S.keepMax * 0.25);
+    setText($('#h-dfree'), 'hdf', fmtNum(Math.max(0, Math.floor(S.dFree)))); setText($('#h-afree'), 'haf', fmtNum(Math.max(0, Math.floor(S.aFree)))); // v32.1
   } finally { S = T; }
   // the wave's live numbers, and the pot
   const wave = S.phase === 'wave', settled = S.phase === 'summary' || S.phase === 'over';
