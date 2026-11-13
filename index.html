@@ -1427,7 +1427,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
           <li><strong>Regeneration</strong>: heals 1, 2 or 3% of its health a second from the moment it’s hurt, even under fire, up to <span data-rule="regenCap">10</span>% a wave per 1%. Beats poison and chip damage; heavy, focused fire kills it before it heals much.</li>
           <li><strong>Resists</strong> (×1.3 each; take as many as you like, the prices multiply): Splash takes 60% less splash damage; Poison 60% less poison; Frost is slowed 60% less and is never brittle; <strong>Shock</strong> takes 60% less chain damage. None clears them.</li>
         </ul>
-        <p><strong>Reading a unit.</strong> Fast designs (1.9 cells/s and up) are <b>Skimmers</b>, jets on two engines with blinking wingtip lights; slow ones (0.9 and under) <b>Juggernauts</b>, tanks on treads; the rest <b>Rovers</b>, armoured four-wheelers with a lit visor. Bigger means more health; steel plates are armor (front, then sides, then all round); a glowing core is regeneration; motes circling it are its resists, in their colours. Each colour has its own marking too (a stripe, two bands, a chevron, two spots).</p>
+        <p><strong>Reading a unit.</strong> Its shape is its speed. Slow designs (1.1 cells/s and under) are heavy plates with a slow pulse: a three-lobed <b>Bastion</b>, an orb behind a crescent shield, a pointed <b>Lens</b>. At mid speed they’re sleek hulls: an <b>Ogive</b>, an <b>Arrowhead</b>, a swept <b>Dart</b>. Fast ones (2.3 and up) are blades split by lines of light, trailing jet streaks: a <b>Splitwing</b> and a <b>Talon</b>. The faster, the longer the trail and the higher it hovers; the bigger, the more health. Steel brackets round it are armor (the front, then the sides, then all round), a green cross at its heart regeneration, and glowing plates orbiting it its resists, in their colours.</p>
         <div class="legend" id="info-ulegend" aria-hidden="true"></div>
       </section>
 
@@ -1879,7 +1879,8 @@ const unitCost = d => {
 // A unit's health in this match: its slider's, times noSabHp with sabotage off (v24; sappers never, there are none then).
 const hpBoost = () => (S && S.sabo === false ? RULES.noSabHp : 1);
 const hpOf = d => Math.round(US.hp.steps[d.hp] * hpBoost());
-const unitShape = d => { const v = US.speed.steps[d.speed]; return v >= 1.9 ? 'arrow' : v <= 0.9 ? 'block' : 'round'; };
+// v31: a unit's shape is its speed step (0 the slowest, 7 the fastest; see "units (v31)"), sappers 'sapper'.
+const unitShape = d => clamp(d.speed | 0, 0, US.speed.steps.length - 1);
 const unitRadius = hpIdx => 0.11 + 0.21 * Math.sqrt((US.hp.steps[hpIdx] - 50) / 850);
 const makeDesign = (preset, name, color) => ({ name, color, ...UPRESETS[preset], count: 0, tl: { s: 0, e: 0.3, pos: null } });
 
@@ -7349,7 +7350,7 @@ function drawForecast(c, fc) {
     c.globalAlpha = (0.25 + 0.75 * p.h) * (Z.lens ? (key === Z.lens ? 1 : 0.3) : inSel.has(key) ? 1 : 0.6);
     c.save(); c.translate(x, y);
     if (r.sap) drawSapper(c, { r: r.r, color: r.sap === 'bridge' ? '#ff8a3d' : '#a98bff', sap: { kind: r.sap, state: 'go' } });
-    else { const dz = S.designs[r.di]; blit(c, unitSpr(r.shape, (dz || {}).color || r.color, r.r, dz ? dz.armor : 0, angBucket(p.a || 0)), 0, 0, unitSz(r.r)); }
+    else { const dz = S.designs[r.di]; blit(c, unitSpr(r.shape, (dz || {}).color || r.color, r.r, dz ? dz.armor : 0, dz ? dz.regen > 0 : false, angBucket(p.a || 0)), 0, 0, unitBodySz(r.r, r.shape, dz ? dz.armor : 0)); }
     c.restore();
     if (p.s) { c.beginPath(); c.arc(x, y, r.r + 0.06, 0, TAU); c.lineWidth = 0.04; c.strokeStyle = 'rgba(191,243,255,0.8)'; c.stroke(); }
     if (key === Z.lens) { c.globalAlpha = 1; c.beginPath(); c.arc(x, y, r.r + 0.14, 0, TAU); c.lineWidth = px * 2; c.strokeStyle = '#ffffff'; c.stroke(); }
@@ -8279,138 +8280,231 @@ function drawTurret(c, cfg, off, px) {
 const towerBaseSpr = (cfg, off) => sprite('tb' + towerSig(cfg) + (off ? 'x' : ''), 1, (c, px) => drawTowerBase(c, cfg, off, px));
 const turretSpr = (cfg, off) => sprite('tt' + towerSig(cfg) + (off ? 'x' : ''), 1.4, (c, px) => drawTurret(c, cfg, off, px));
 
-/* ---------- units (v30) ----------
-   A vehicle army, each class its own silhouette and a face: fast units (1.9 cells/s and up) are Skimmers, delta jets
-   on two engines with blinking wingtip lights; slow ones (0.9 and under) Juggernauts, tanks on treads with a turret and a
-   glowing vision slit; the rest Rovers, armoured four-wheelers with a lit visor across the cab. Size follows health,
-   steel plates armor (the front, then the sides, then all round), a pulsing core regeneration, motes circling it its
-   resists. The colour also picks a marking (a spine stripe, two bands, a chevron, two spots), so two designs never
-   differ by hue alone. Sprites are drawn turned to one of 32 headings, so the light on them always comes from the top
-   left of the board, like everything else. */
-const unitMark = color => Math.max(0, COLORS.indexOf(color)) % 4;
-const UB = 32; // headings a unit's sprite is drawn at
+/* ---------- units (v31) ----------
+   Abstract shapes, one for each speed step (the user's spec: "shape = speed only … no vehicles", then, from three
+   families tried on a sheet: "for slower units, take inspiration from energy, for mid-speed units … sharpening, and for
+   high-speed units … a fragmented style"). Every unit has the same glowing core and luminous rim in its army colour.
+   Slow, it's heavy stacked plates with a slow pulse, each step its own outline: a three-lobed Bastion (0.7 cells/s), an
+   orb behind a crescent shield (0.9), a pointed Lens (1.1). At mid speed it's a sleek hull: an Ogive, round with
+   curved flanks to a fine point (1.3), a broad Arrowhead (1.6), a swept Dart (1.9). Fast, it's blades split apart by
+   lines of light, a jet streak behind each: a Splitwing (2.3) and a Talon (2.8), as wide as the slow shapes and
+   longer, so a fast unit at full health is the biggest thing on the board. Size is health (unitRadius), colour the
+   army colour. The faster the step, the longer its trail, the higher it hovers (its shadow further off) and the
+   quicker its pulse. Armour is steel brackets on a ring round it (the front, then the sides, then all round),
+   regeneration a pulsing green cross at its heart, resists glowing shield plates in their colours orbiting outside the
+   armour. The body is drawn once per heading (32) with the light fixed to the board's top left; trails, glows and
+   the markers are drawn live from cached pieces. */
+const UB = 32; // headings a unit's body is drawn at
 const angBucket = a => ((Math.round(a / (TAU / UB)) % UB) + UB) % UB;
-// The hull (what's lit and marked) and the silhouette (the hull plus wheels or treads: shadows and flashes).
-function bodyPath(c, shape, R) {
-  c.beginPath();
-  if (shape === 'arrow') { c.moveTo(R * 1.35, 0); c.lineTo(-R * 0.15, -R * 0.42); c.lineTo(-R * 0.82, -R * 1.0); c.lineTo(-R * 0.7, -R * 0.28); c.lineTo(-R * 0.82, 0); c.lineTo(-R * 0.7, R * 0.28); c.lineTo(-R * 0.82, R * 1.0); c.lineTo(-R * 0.15, R * 0.42); c.closePath(); }
-  else if (shape === 'block') { c.moveTo(-R * 0.92, -R * 0.62); c.lineTo(R * 0.72, -R * 0.62); c.lineTo(R * 0.98, -R * 0.4); c.lineTo(R * 0.98, R * 0.4); c.lineTo(R * 0.72, R * 0.62); c.lineTo(-R * 0.92, R * 0.62); c.closePath(); }
-  else { rr(c, -R * 0.95, -R * 0.58, R * 1.95, R * 1.16, R * 0.3); }
+const UNAMES = ['Bastion', 'Shieldbearer', 'Lens', 'Ogive', 'Arrowhead', 'Dart', 'Splitwing', 'Talon'];
+const uHex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const uMix = (h, to, k) => { const a = uHex(h), b = uHex(to); return '#' + a.map((v, i) => Math.round(v + (b[i] - v) * k).toString(16).padStart(2, '0')).join(''); };
+const uLit = (h, k) => uMix(h, '#ffffff', k), uDark = (h, k) => uMix(h, '#000000', k), uRgb = h => uHex(h).join(',');
+const uPoly = (c, P) => { c.moveTo(P[0][0], P[0][1]); for (let k = 1; k < P.length; k++) c.lineTo(P[k][0], P[k][1]); c.closePath(); };
+const uSc = (P, R) => P.map(([x, y]) => [x * R, y * R]);
+const uF = s => (s === 'sapper' ? 0.5 : s / 7); // 0 at the slowest step, 1 at the fastest
+const U_TRI = [0, 2.094, -2.094];
+const U_ARROW = [[1.3, 0], [-0.62, -1.02], [-0.26, 0], [-0.62, 1.02]];
+const U_DART = [[1.55, 0], [0.2, -0.32], [-0.55, -0.98], [-0.38, -0.32], [-0.78, -0.2], [-0.78, 0.2], [-0.38, 0.32], [-0.55, 0.98], [0.2, 0.32]];
+const U_FINS = [[[-0.22, -0.66], [-0.66, -1.06], [-0.74, -0.98], [-0.58, -0.6]], [[-0.22, 0.66], [-0.66, 1.06], [-0.74, 0.98], [-0.58, 0.6]]];
+const U_BLADES = {
+  6: [[[1.75, 0], [0.15, -0.21], [-0.82, -0.12], [-0.82, 0.12], [0.15, 0.21]],
+    [[0.95, -0.34], [-0.38, -1.06], [-0.8, -0.96], [-0.12, -0.33]], [[0.95, 0.34], [-0.38, 1.06], [-0.8, 0.96], [-0.12, 0.33]]],
+  7: [[[1.95, 0], [0.32, -0.17], [-0.92, -0.1], [-0.92, 0.1], [0.32, 0.17]],
+    [[1.1, -0.29], [-0.2, -0.6], [-0.68, -0.54], [0.06, -0.25]], [[1.1, 0.29], [-0.2, 0.6], [-0.68, 0.54], [0.06, 0.25]],
+    [[0.38, -0.7], [-0.72, -1.1], [-1.02, -0.97], [-0.46, -0.66]], [[0.38, 0.7], [-0.72, 1.1], [-1.02, 0.97], [-0.46, 0.66]]],
+};
+// where each step's core sits and how big it is, and where its front light is (multiples of R)
+const U_CORE = [[0, 0.3], [-0.12, 0.32], [-0.05, 0.27], [-0.22, 0.25], [0.12, 0.22], [0.05, 0.2], [0.05, 0.19], [0.05, 0.19]];
+const U_FRONT = [1.0, 0.95, 1.12, 1.4, 1.22, 1.5, 1.75, 1.95];
+// the square each body's sprite needs, in R (the longest reach from the middle, both ways, and its rim)
+const U_BOX = [2.3, 2.3, 2.5, 3.1, 2.85, 3.35, 3.75, 4.15];
+const unitSz = (R, s) => R * (s === 'sapper' ? 2.9 : U_BOX[s] || 2.9);
+const uLens = (c, R, k = 1, dx = 0, dy = 0) => { c.moveTo((1.15 * k + dx) * R, dy * R); c.quadraticCurveTo((0.1 * k + dx) * R, (-1.72 * k + dy) * R, (-1.0 * k + dx) * R, dy * R); c.quadraticCurveTo((0.1 * k + dx) * R, (1.72 * k + dy) * R, (1.15 * k + dx) * R, dy * R); c.closePath(); };
+const uCrescent = (c, R) => { c.arc(0, 0, 1.0 * R, -1.95, 1.95); c.arc(0.16 * R, 0, 0.78 * R, 1.75, -1.75, true); c.closePath(); };
+// the 1.3 cells/s step: a round body whose flanks curve in to a fine point (the user: "a better blend of pointy and round")
+const uOgive = (c, R, k = 1, dx = 0) => {
+  const P = (x, y) => [(x * k + dx) * R, y * k * R];
+  c.moveTo(...P(1.45, 0));
+  c.bezierCurveTo(...P(1.02, -0.07), ...P(0.62, -0.72), ...P(0.02, -0.8));
+  c.bezierCurveTo(...P(-0.52, -0.86), ...P(-1.0, -0.52), ...P(-0.98, 0));
+  c.bezierCurveTo(...P(-1.0, 0.52), ...P(-0.52, 0.86), ...P(0.02, 0.8));
+  c.bezierCurveTo(...P(0.62, 0.72), ...P(1.02, 0.07), ...P(1.45, 0)); c.closePath();
+};
+// The silhouette (shadows, the white flash of a hit, frost's blue, poison's green), facing +x.
+function unitPath(c, s, R) {
+  if (s === 0) { for (const a of U_TRI) { c.moveTo(Math.cos(a) * 0.42 * R + 0.6 * R, Math.sin(a) * 0.42 * R); c.arc(Math.cos(a) * 0.42 * R, Math.sin(a) * 0.42 * R, 0.6 * R, 0, TAU); } c.moveTo(0.5 * R, 0); c.arc(0, 0, 0.5 * R, 0, TAU); }
+  else if (s === 1) { c.moveTo(0.6 * R, 0); c.arc(-0.12 * R, 0, 0.72 * R, 0, TAU); uCrescent(c, R); }
+  else if (s === 2) uLens(c, R);
+  else if (s === 3) { uOgive(c, R); for (const P of U_FINS) uPoly(c, uSc(P, R)); }
+  else if (s === 4) uPoly(c, uSc(U_ARROW, R));
+  else if (s === 5) uPoly(c, uSc(U_DART, R));
+  else for (const P of U_BLADES[s]) uPoly(c, uSc(P, R));
 }
-function silPath(c, shape, R) {
-  bodyPath(c, shape, R);
-  if (shape === 'block') for (const s of [-1, 1]) rr(c, -R * 1.04, s * R * 0.8 - R * 0.2, R * 2.08, R * 0.4, R * 0.12);
-  if (shape === 'round') for (const x of [-0.55, 0.5]) for (const s of [-1, 1]) rr(c, R * (x - 0.26), s * R * 0.72 - R * 0.2, R * 0.52, R * 0.4, R * 0.11);
+// A solid plate: its face lit from the board's top left whatever way the unit faces (ga: its heading), a luminous rim.
+function uPiece(c, R, col, path, px, ga, rim = 1) {
+  c.beginPath(); path();
+  const ca = Math.cos(-ga), sa = Math.sin(-ga), g = c.createLinearGradient(-R * ca + R * sa, -R * sa - R * ca, R * ca - R * sa, R * sa + R * ca);
+  g.addColorStop(0, uLit(col, 0.32)); g.addColorStop(0.55, col); g.addColorStop(1, uDark(col, 0.5));
+  c.fillStyle = g; c.fill(); c.lineWidth = Math.max(px * 1.1, R * 0.055) * rim; c.strokeStyle = uLit(col, 0.6); c.lineJoin = 'round'; c.stroke();
 }
-function drawUnitBody(c, shape, color, R, armor, mark, px) {
-  const ink = '#140703', lw = Math.max(px * 1.1, R * 0.07);
-  const cyl = (half) => { const g = c.createLinearGradient(0, -half, 0, half); g.addColorStop(0, darkC(color, 0.38)); g.addColorStop(0.4, litC(color, 0.18)); g.addColorStop(0.62, color); g.addColorStop(1, darkC(color, 0.5)); return g; };
-  const steel = (x, y, w, h) => { c.fillStyle = '#1d2329'; c.fillRect(x - px, y - px, w + 2 * px, h + 2 * px); const g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, '#c6d0d8'); g.addColorStop(1, '#6d7a86'); c.fillStyle = g; c.fillRect(x, y, w, h); };
-  if (shape === 'block') { // treads
-    for (const s of [-1, 1]) {
-      c.beginPath(); rr(c, -R * 1.04, s * R * 0.8 - R * 0.2, R * 2.08, R * 0.4, R * 0.12); c.fillStyle = '#17110c'; c.fill();
-      c.fillStyle = '#2c241b'; for (let k = 0; k < 7; k++) c.fillRect(-R * 0.98 + k * R * 0.3, s * R * 0.8 - R * 0.16, R * 0.1, R * 0.32);
+const uInk = (c, R, col, px) => { c.lineWidth = Math.max(px * 0.9, R * 0.035); c.strokeStyle = uDark(col, 0.62); };
+const uSeam = (c, pts, w, a) => { c.save(); c.globalCompositeOperation = 'lighter'; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const q of pts.slice(1)) c.lineTo(q[0], q[1]); c.lineWidth = w; c.lineCap = 'round'; c.strokeStyle = `rgba(255,236,205,${a})`; c.stroke(); c.restore(); };
+function uCoreDisc(c, x, r, col) { const g = c.createRadialGradient(x - r * 0.25, -r * 0.25, r * 0.05, x, 0, r); g.addColorStop(0, '#fff7ea'); g.addColorStop(0.5, uLit(col, 0.45)); g.addColorStop(1, uDark(col, 0.15)); c.beginPath(); c.arc(x, 0, r, 0, TAU); c.fillStyle = g; c.fill(); }
+// The body, facing +x, drawn into its heading's sprite (ga: the heading, for the light).
+function unitBody(c, s, col, R, px, ga) {
+  const hot = '#fff6e6', [cx, cr] = U_CORE[s];
+  if (s === 0) { // three heavy lobes stacked round the core, the forward one lit
+    for (const a of [U_TRI[1], U_TRI[2], U_TRI[0]]) {
+      const x = Math.cos(a) * 0.42 * R, y = Math.sin(a) * 0.42 * R;
+      uPiece(c, R, col, () => c.arc(x, y, 0.6 * R, 0, TAU), px, ga);
+      uInk(c, R, col, px); c.beginPath(); c.arc(x - 0.04 * R, y - 0.04 * R, 0.38 * R, 0, TAU); c.stroke();
     }
+    uPiece(c, R, uDark(col, 0.35), () => c.arc(0, 0, 0.5 * R, 0, TAU), px, ga, 0.8);
+    c.beginPath(); c.arc(0.42 * R, 0, 0.6 * R, -0.55, 0.55); c.lineWidth = R * 0.13; c.strokeStyle = hot; c.globalAlpha = 0.85; c.stroke(); c.globalAlpha = 1;
+  } else if (s === 1) { // an orb behind a crescent shield
+    uPiece(c, R, uDark(col, 0.2), () => c.arc(-0.12 * R, 0, 0.72 * R, 0, TAU), px, ga);
+    uInk(c, R, col, px); c.beginPath(); c.arc(-0.16 * R, -0.04 * R, 0.5 * R, 0, TAU); c.stroke();
+    uCoreDisc(c, cx * R, cr * R, col);
+    uPiece(c, R, col, () => uCrescent(c, R), px, ga);
+    c.beginPath(); c.arc(0, 0, 0.93 * R, -0.6, 0.6); c.lineWidth = R * 0.1; c.strokeStyle = hot; c.globalAlpha = 0.85; c.stroke(); c.globalAlpha = 1;
+    uInk(c, R, col, px); c.beginPath(); for (const a of [-1.2, 1.2]) { c.moveTo(Math.cos(a) * 0.82 * R, Math.sin(a) * 0.82 * R); c.lineTo(Math.cos(a) * 0.98 * R, Math.sin(a) * 0.98 * R); } c.stroke();
+    return;
+  } else if (s === 2) { // a pointed lens, two plates stacked
+    uPiece(c, R, col, () => uLens(c, R), px, ga);
+    uPiece(c, R, uDark(col, 0.25), () => uLens(c, R, 0.62, -0.06, -0.03), px, ga, 0.8);
+    uSeam(c, [[0.3 * R, 0], [1.05 * R, 0]], R * 0.07, 0.8);
+    uInk(c, R, col, px); c.beginPath(); for (const sg of [-1, 1]) { c.moveTo(-0.55 * R, sg * 0.45 * R); c.lineTo(-0.15 * R, sg * 0.62 * R); } c.stroke();
+  } else if (s === 3) { // the ogive: swept fins, a round body, a lit seam to its point
+    for (const P of U_FINS) uPiece(c, R, uDark(col, 0.12), () => uPoly(c, uSc(P, R)), px, ga, 0.8);
+    uPiece(c, R, col, () => uOgive(c, R), px, ga);
+    uInk(c, R, col, px); c.beginPath(); uOgive(c, R, 0.58, -0.12); c.stroke();
+    uSeam(c, [[0.08 * R, 0], [1.3 * R, 0]], R * 0.065, 0.85);
+  } else if (s === 4) { // a broad arrowhead, a lit spine
+    uPiece(c, R, col, () => uPoly(c, uSc(U_ARROW, R)), px, ga);
+    uInk(c, R, col, px); c.beginPath(); uPoly(c, uSc([[0.8, 0], [-0.3, -0.58], [-0.08, 0], [-0.3, 0.58]], R)); c.stroke();
+    uSeam(c, [[0.3 * R, 0], [1.15 * R, 0]], R * 0.06, 0.9);
+  } else if (s === 5) { // a swept dart, its panel lines
+    uPiece(c, R, col, () => uPoly(c, uSc(U_DART, R)), px, ga);
+    uInk(c, R, col, px); c.beginPath(); for (const sg of [-1, 1]) { c.moveTo(0.2 * R, sg * 0.32 * R); c.lineTo(-0.38 * R, sg * 0.32 * R); c.moveTo(-0.1 * R, sg * 0.42 * R); c.lineTo(-0.48 * R, sg * 0.8 * R); } c.stroke();
+    uSeam(c, [[0.35 * R, 0], [1.4 * R, 0]], R * 0.055, 0.9);
+  } else { // blades split apart by lines of light, hairlines from the heart to each
+    const B = U_BLADES[s];
+    for (const P of B) uPiece(c, R, col, () => uPoly(c, uSc(P, R)), px, ga, 0.9);
+    uSeam(c, [[1.55 * R, 0], [-0.7 * R, 0]], R * 0.045, 0.85);
+    for (const P of B.slice(1)) uSeam(c, [[P[0][0] * R, P[0][1] * R], [P[3][0] * R, P[3][1] * R]], R * 0.05, 0.75);
+    c.beginPath(); for (const P of B.slice(1)) { c.moveTo(0.05 * R, 0); c.lineTo(P[3][0] * R, P[3][1] * R); } c.lineWidth = Math.max(px * 0.8, R * 0.02); c.strokeStyle = `rgba(${uRgb(uLit(col, 0.5))},0.45)`; c.stroke();
+    uInk(c, R, col, px); c.beginPath(); for (const P of B) { const m = [(P[0][0] + P[2][0]) / 2, (P[0][1] + P[2][1]) / 2]; c.moveTo(P[0][0] * R * 0.9 + m[0] * R * 0.1, P[0][1] * R); c.lineTo(m[0] * R, m[1] * R); } c.stroke();
   }
-  if (shape === 'round') { // wheels
-    for (const x of [-0.55, 0.5]) for (const s of [-1, 1]) {
-      c.beginPath(); rr(c, R * (x - 0.26), s * R * 0.72 - R * 0.2, R * 0.52, R * 0.4, R * 0.11); c.fillStyle = '#100b08'; c.fill();
-      c.lineWidth = Math.max(px, R * 0.04); c.strokeStyle = '#4a3c2c'; c.stroke();
-      c.fillStyle = '#3a2f22'; for (let k = 0; k < 3; k++) c.fillRect(R * (x - 0.18 + k * 0.14), s * R * 0.72 - R * 0.15, R * 0.06, R * 0.3);
-    }
-  }
-  bodyPath(c, shape, R);
-  c.fillStyle = cyl(shape === 'arrow' ? R * 0.9 : R * 0.62); c.fill();
-  c.lineWidth = lw; c.strokeStyle = ink; c.lineJoin = 'round'; c.stroke();
-  // markings, by colour, on the hull's back half
-  c.save(); bodyPath(c, shape, R); c.clip();
-  c.fillStyle = mark === 0 ? 'rgba(255,246,226,0.5)' : darkC(color, 0.62);
-  c.globalAlpha = mark === 0 ? 1 : 0.65;
-  if (mark === 0) c.fillRect(-R * 1.1, -R * 0.06, R * 1.3, R * 0.12);
-  else if (mark === 1) { c.fillRect(-R * 0.72, -R * 1.2, R * 0.12, R * 2.4); c.fillRect(-R * 0.48, -R * 1.2, R * 0.12, R * 2.4); }
-  else if (mark === 2) { c.beginPath(); c.moveTo(-R * 0.8, -R * 0.5); c.lineTo(-R * 0.4, 0); c.lineTo(-R * 0.8, R * 0.5); c.lineTo(-R * 0.94, R * 0.5); c.lineTo(-R * 0.54, 0); c.lineTo(-R * 0.94, -R * 0.5); c.closePath(); c.fill(); }
-  else { for (const s of [-1, 1]) { c.beginPath(); c.arc(-R * 0.62, s * R * 0.3, R * 0.11, 0, TAU); c.fill(); } }
-  c.restore(); c.globalAlpha = 1;
-  if (shape === 'arrow') {
-    c.beginPath(); c.moveTo(R * 0.15, 0); c.lineTo(-R * 0.55, 0); c.lineWidth = Math.max(px, R * 0.05); c.strokeStyle = 'rgba(20,7,3,0.4)'; c.stroke(); // spine
-    c.beginPath(); c.ellipse(R * 0.42, 0, R * 0.34, R * 0.15, 0, 0, TAU); c.fillStyle = '#120804'; c.fill();
-    c.beginPath(); c.ellipse(R * 0.5, -R * 0.05, R * 0.15, R * 0.05, 0, 0, TAU); c.fillStyle = 'rgba(255,240,215,0.75)'; c.fill();
-    c.fillStyle = '#1b0d05'; for (const s of [-1, 1]) c.fillRect(-R * 0.84, s * R * 0.2 - R * 0.08, R * 0.18, R * 0.16); // nozzles
-    if (armor >= 1) { c.beginPath(); c.moveTo(R * 1.35, 0); c.lineTo(R * 0.95, -R * 0.13); c.lineTo(R * 0.95, R * 0.13); c.closePath(); c.fillStyle = '#b8c3cc'; c.fill(); c.lineWidth = px; c.strokeStyle = '#1d2329'; c.stroke(); }
-    if (armor >= 2) for (const s of [-1, 1]) { c.beginPath(); c.moveTo(-R * 0.15, s * R * 0.42); c.lineTo(-R * 0.82, s * R * 1.0); c.lineWidth = R * 0.12; c.strokeStyle = '#9eabb6'; c.lineCap = 'round'; c.stroke(); c.lineCap = 'butt'; }
-    if (armor >= 3) steel(-R * 0.66, -R * 0.12, R * 0.36, R * 0.24);
-  } else if (shape === 'block') {
-    c.fillStyle = 'rgba(20,7,3,0.5)'; for (let k = 0; k < 3; k++) c.fillRect(-R * 0.86 + k * R * 0.12, -R * 0.4, R * 0.05, R * 0.8); // engine grille
-    if (armor >= 1) steel(R * 0.72, -R * 0.42, R * 0.2, R * 0.84);
-    if (armor >= 2) for (const s of [-1, 1]) steel(-R * 0.8, s > 0 ? R * 0.5 : -R * 0.62, R * 1.4, R * 0.12);
-    if (armor >= 3) steel(-R * 0.98, -R * 0.4, R * 0.1, R * 0.8);
-    const tg = c.createRadialGradient(-R * 0.15, -R * 0.12, R * 0.05, -R * 0.05, 0, R * 0.48);
-    tg.addColorStop(0, litC(color, 0.3)); tg.addColorStop(1, darkC(color, 0.3));
-    c.fillStyle = ink; c.fillRect(R * 0.3, -R * 0.1, R * 0.98, R * 0.2); // the barrel
-    c.fillStyle = '#3a2a20'; c.fillRect(R * 0.32, -R * 0.07, R * 0.92, R * 0.14); c.fillStyle = ink; c.fillRect(R * 1.12, -R * 0.1, R * 0.14, R * 0.2);
-    c.beginPath(); c.arc(-R * 0.05, 0, R * 0.46, 0, TAU); c.fillStyle = tg; c.fill(); c.lineWidth = lw * 0.8; c.strokeStyle = ink; c.stroke();
-    if (armor >= 3) { c.beginPath(); c.arc(-R * 0.05, 0, R * 0.46, 0, TAU); c.lineWidth = R * 0.07; c.strokeStyle = '#9eabb6'; c.stroke(); }
-    c.beginPath(); c.arc(-R * 0.25, 0, R * 0.12, 0, TAU); c.fillStyle = darkC(color, 0.45); c.fill(); // the hatch
-    c.beginPath(); rr(c, R * 0.24, -R * 0.2, R * 0.1, R * 0.4, R * 0.04); c.fillStyle = '#ffe6b8'; c.fill(); // its vision slit
-    c.fillStyle = '#fff6e0'; for (const s of [-1, 1]) c.fillRect(R * 0.9, s * R * 0.3 - R * 0.05, R * 0.08, R * 0.1); // headlights
-  } else {
-    c.fillStyle = 'rgba(20,7,3,0.45)'; c.fillRect(-R * 0.2, -R * 0.58, R * 0.04, R * 1.16); // a panel seam
-    if (armor >= 1) steel(R * 0.86, -R * 0.44, R * 0.16, R * 0.88);
-    if (armor >= 2) for (const s of [-1, 1]) steel(-R * 0.75, s > 0 ? R * 0.46 : -R * 0.58, R * 1.45, R * 0.12);
-    if (armor >= 3) steel(-R * 1.0, -R * 0.42, R * 0.1, R * 0.84);
-    c.beginPath(); rr(c, R * 0.12, -R * 0.44, R * 0.56, R * 0.88, R * 0.16); c.fillStyle = '#120804'; c.fill(); // the cab
-    c.beginPath(); rr(c, R * 0.44, -R * 0.34, R * 0.14, R * 0.68, R * 0.06); c.fillStyle = '#ffe6b8'; c.fill(); // its visor
-    c.beginPath(); c.arc(-R * 0.5, 0, R * 0.17, 0, TAU); c.fillStyle = darkC(color, 0.4); c.fill(); c.lineWidth = px; c.strokeStyle = ink; c.stroke(); // a sensor
-    c.fillStyle = '#fff6e0'; for (const s of [-1, 1]) c.fillRect(R * 0.9, s * R * 0.38 - R * 0.06, R * 0.08, R * 0.12); // headlights
-  }
+  uCoreDisc(c, cx * R, cr * R, col);
 }
-// Light from the top left, the same for every heading: a sheen where it falls, shade where it doesn't, a lit rim.
-function unitLight(c, shape, R, a, px) {
-  c.save(); c.rotate(a); bodyPath(c, shape, R); c.restore();
-  c.save(); c.clip();
-  const g = c.createLinearGradient(-R, -R, R, R);
-  g.addColorStop(0, 'rgba(255,255,255,0.32)'); g.addColorStop(0.42, 'rgba(255,255,255,0)'); g.addColorStop(0.6, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.38)');
-  c.fillStyle = g; c.fillRect(-R * 1.6, -R * 1.6, R * 3.2, R * 3.2);
-  c.restore();
-  c.save(); c.rotate(a); bodyPath(c, shape, R); c.restore();
-  const rim = c.createLinearGradient(-R, -R, R * 0.2, R * 0.2); rim.addColorStop(0, 'rgba(255,250,235,0.65)'); rim.addColorStop(1, 'rgba(255,250,235,0)');
-  c.lineWidth = Math.max(px * 1.2, R * 0.05); c.strokeStyle = rim; c.stroke();
-}
-const unitSz = R => R * 2.9;
-const unitSpr = (shape, color, R, armor, b = 0) => sprite(`u${shape}${color}${Math.round(R * 1000)}${armor}h${b}`, unitSz(R), (c, px) => {
-  const a = b * TAU / UB; c.save(); c.rotate(a); drawUnitBody(c, shape, color, R, armor, unitMark(color), px); c.restore(); unitLight(c, shape, R, a, px);
+// The body sprite, at a heading: the shape with its armour brackets and regeneration's cross baked in (both turn with
+// it), big enough for the brackets. The silhouette (shadows, frost, poison, a hit's flash) is the shape alone.
+const U_ARM = R => R * 1.32 + 0.035; // the armour ring's radius
+const unitBodySz = (R, s, armor) => (armor ? Math.max(unitSz(R, s), 2 * (U_ARM(R) + R * 0.1) + 0.06) : unitSz(R, s));
+const unitSpr = (s, color, R, armor = 0, regen = 0, b = 0) => sprite(`u${s}${color}${Math.round(R * 1000)}a${armor}r${regen ? 1 : 0}h${b}`, unitBodySz(R, s, armor), (c, px) => {
+  const a = b * TAU / UB; c.rotate(a); unitBody(c, s, color, R, px, a); unitArmor(c, armor, R, px); if (regen) unitCross(c, R, px);
 });
-// the silhouette in one colour, at a heading: shadows, the white flash of a hit, frost's blue, poison's green
-const unitSil = (shape, R, col, b = 0) => sprite(`s${shape}${Math.round(R * 1000)}${col}h${b}`, unitSz(R), c => { c.rotate(b * TAU / UB); silPath(c, shape, R); c.fillStyle = col; c.fill(); });
-// Live parts, in the unit's own frame: tread and wheel stripes that roll with the distance walked, engine flames (the
-// wingtip lights blink in drawUnits).
-function unitLive(c, u, R, t, walked) {
-  if (u.shape === 'block') {
-    const step = R * 0.3, off = (walked * 3.2) % step;
-    c.fillStyle = 'rgba(150,124,96,0.55)';
-    for (const s of [-1, 1]) for (let x = -R * 0.98 + off; x < R * 0.98; x += step) c.fillRect(x, s * R * 0.8 - R * 0.16, R * 0.05, R * 0.32);
-  } else if (u.shape === 'round') {
-    const off = (walked * 5) % (R * 0.14);
-    c.fillStyle = 'rgba(150,124,96,0.45)';
-    for (const x of [-0.55, 0.5]) for (const s of [-1, 1]) for (let k = 0; k < 3; k++) c.fillRect(R * (x - 0.2) + ((off + k * R * 0.14) % (R * 0.4)), s * R * 0.7 - R * 0.13, R * 0.04, R * 0.26);
+const unitSil = (s, R, col, b = 0) => sprite(`s${s}${Math.round(R * 1000)}${col}h${b}`, unitSz(R, s), c => { c.rotate(b * TAU / UB); c.beginPath(); unitPath(c, s, R); c.fillStyle = col; c.fill(); });
+// A unit's light, facing +x, added over it: the trail behind a moving unit (streaks of its colour fading out, longer
+// the faster the step), its core's glow, the light at its nose, and regeneration's green. Drawn once per step, colour,
+// size and regeneration into a canvas of its own, at half the board's resolution (it's all soft light), and drawn
+// turned to its heading; its pulse is its opacity.
+function uStreak(c, x0, y, L, w, col, a) {
+  const g = c.createLinearGradient(x0, 0, x0 - L, 0); g.addColorStop(0, `rgba(${uRgb(col)},${a})`); g.addColorStop(1, `rgba(${uRgb(col)},0)`);
+  c.fillStyle = g; c.beginPath(); c.moveTo(x0, y - w / 2); c.lineTo(x0 - L, y - w * 0.1); c.lineTo(x0 - L, y + w * 0.1); c.lineTo(x0, y + w / 2); c.closePath(); c.fill();
+}
+const U_TRAIL = [0, 0, 0, 1.7, 2.4, 3.4, 4.3, 5.7]; // how far behind the core a trail reaches, in R
+function unitTrail(c, s, col, R) {
+  if (s === 3) uStreak(c, -0.9 * R, 0, R * 1.3, R * 1.2, col, 0.2);
+  else if (s === 4) for (const sg of [-1, 1]) uStreak(c, -0.3 * R, sg * 0.32 * R, R * 1.8, R * 0.32, col, 0.35);
+  else if (s === 5) { for (const sg of [-1, 1]) uStreak(c, -0.72 * R, sg * 0.16 * R, R * 2.6, R * 0.3, col, 0.45); uStreak(c, -0.72 * R, 0, R * 1.8, R * 0.18, '#fff2dc', 0.5); }
+  else if (s >= 6) {
+    const B = U_BLADES[s], L = s === 6 ? 3.2 : 4.4;
+    for (const P of B) { const tail = P.reduce((m, q) => (q[0] < m[0] ? q : m), P[0]), w = Math.max(...P.map(q => Math.abs(q[1]))) - Math.min(...P.map(q => Math.abs(q[1]))); uStreak(c, tail[0] * R, (P[0][1] + tail[1]) / 2 * R, R * L * (P === B[0] ? 1 : 0.8), R * Math.max(0.2, w * 0.7), col, 0.42); }
+    uStreak(c, -0.9 * R, 0, R * L * 1.1, R * 0.16, '#fff2dc', 0.6);
   }
 }
-function unitEngines(c, u, R, t) {
-  if (u.shape !== 'arrow') return;
-  const f = 0.7 + 0.3 * Math.sin(t * 40 + u.id);
-  c.beginPath();
-  for (const s of [-1, 1]) { c.moveTo(-R * 0.84, s * R * 0.2 - R * 0.09); c.lineTo(-R * (1.05 + 0.45 * f), s * R * 0.2); c.lineTo(-R * 0.84, s * R * 0.2 + R * 0.09); }
-  c.fillStyle = 'rgba(255,170,80,0.8)'; c.fill();
-  c.beginPath(); for (const s of [-1, 1]) { c.moveTo(-R * 0.84, s * R * 0.2 - R * 0.045); c.lineTo(-R * (0.95 + 0.22 * f), s * R * 0.2); c.lineTo(-R * 0.84, s * R * 0.2 + R * 0.045); }
-  c.fillStyle = '#fff4d6'; c.fill();
+function unitGlow(c, s, R, col, regen) {
+  const [cx, cr] = U_CORE[s];
+  glow(c, cx * R, 0, cr * R * 3.4, uRgb(col), 0.48);
+  glow(c, U_FRONT[s] * R, 0, R * (s >= 6 ? 0.7 : 0.8), '255,236,210', s >= 6 ? 0.35 : 0.22);
+  if (regen) glow(c, 0, 0, Math.max(R * 0.32, 0.05) * 3, '150,255,180', 0.42);
 }
-// What a design looks like, without a unit: for the forecast and the icons.
-function drawUnitStill(c, d, R, ang, t, alpha = 1) {
-  const shape = unitShape(d), b = angBucket(ang);
-  c.save(); c.globalAlpha = alpha;
-  c.save(); c.rotate(b * TAU / UB); if (shape !== 'arrow') unitLive(c, { shape }, R, t, t * US.speed.steps[d.speed]); c.restore();
-  blit(c, unitSpr(shape, d.color, R, d.armor, b), 0, 0, unitSz(R));
-  c.restore();
+function unitFx(s, col, R, regen, b) {
+  const sc = ART.sc || view.cs * view.dpr, key = `fx${s}${col}${Math.round(R * 1000)}r${regen ? 1 : 0}h${b}@${Math.round(sc * 4)}`;
+  let o = ART.cache.get(key);
+  if (o) return o;
+  const x0 = -Math.max(U_TRAIL[s] * R + 0.1, R * 1.4), x1 = (U_FRONT[s] + 0.85) * R, h = 2.8 * R, a = b * TAU / UB, ca = Math.cos(a), sa = Math.sin(a);
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity; // the box of the light turned to its heading
+  for (const [x, y] of [[x0, -h / 2], [x1, -h / 2], [x1, h / 2], [x0, h / 2]]) { const X = x * ca - y * sa, Y = x * sa + y * ca; bx0 = Math.min(bx0, X); bx1 = Math.max(bx1, X); by0 = Math.min(by0, Y); by1 = Math.max(by1, Y); }
+  const cv = document.createElement('canvas'); cv.width = Math.max(4, Math.ceil((bx1 - bx0) * sc)); cv.height = Math.max(4, Math.ceil((by1 - by0) * sc));
+  const c = cv.getContext('2d'); c.setTransform(sc, 0, 0, sc, -bx0 * sc, -by0 * sc); c.rotate(a); c.globalCompositeOperation = 'lighter';
+  unitTrail(c, s, col, R); unitGlow(c, s, R, col, regen);
+  o = { cv, x0: bx0, y0: by0, w: cv.width / sc, h: cv.height / sc };
+  if (ART.cache.size > 3000) ART.cache.clear();
+  ART.cache.set(key, o);
+  return o;
+}
+// Its light, added, in the board's frame at the unit; it pulses quicker the faster the step. Drawn at the size it was
+// made (a light scaled or turned as it's drawn cost twice as much).
+function unitLight(c, u, s, R, t, a = 1) {
+  const o = unitFx(s, u.color, R, u.regen > 0, angBucket(u.ang)), f = uF(s), p = reduceMotion ? 0.85 : 0.72 + 0.28 * Math.sin(t * (0.9 + 7 * f * f) + u.id);
+  const ga = c.globalAlpha, op = c.globalCompositeOperation;
+  c.globalAlpha = ga * a * p; c.globalCompositeOperation = 'lighter'; c.drawImage(o.cv, o.x0, o.y0, o.w, o.h);
+  c.globalAlpha = ga; c.globalCompositeOperation = op;
+}
+// Armour: steel brackets on a ring round the unit (the front; the sides too; all round, with rivets). Turned with it.
+function unitArmor(c, lvl, R, px) {
+  if (!lvl) return;
+  const rr = U_ARM(R), aw = Math.max(px * 1.6, R * 0.1), segs = [[-0.6, 0.6]];
+  if (lvl >= 2) segs.push([1.2, 1.94], [-1.94, -1.2]); if (lvl >= 3) segs.push([Math.PI - 0.6, Math.PI + 0.6]);
+  for (const [w, col] of [[aw + px * 1.6, 'rgba(6,8,10,0.9)'], [aw, '#c6d0d8']]) { c.beginPath(); for (const [a0, a1] of segs) { c.moveTo(Math.cos(a0) * rr, Math.sin(a0) * rr); c.arc(0, 0, rr, a0, a1); } c.lineWidth = w; c.strokeStyle = col; c.lineCap = 'butt'; c.stroke(); }
+  if (lvl >= 3) { c.fillStyle = '#8d99a5'; for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + Math.PI / 4; c.beginPath(); c.arc(Math.cos(a) * rr, Math.sin(a) * rr, aw * 0.45, 0, TAU); c.fill(); } }
+}
+// Regeneration: a green cross at its heart (its glow, in the unit's light, pulses).
+function unitCross(c, R, px) {
+  const k = Math.max(R * 0.3, 0.045), w = k * 0.38;
+  c.fillStyle = '#04110a'; c.fillRect(-k - px, -w / 2 - px, 2 * k + 2 * px, w + 2 * px); c.fillRect(-w / 2 - px, -k - px, w + 2 * px, 2 * k + 2 * px);
+  c.fillStyle = '#c8ffd9'; c.fillRect(-k, -w / 2, 2 * k, w); c.fillRect(-w / 2, -k, w, 2 * k);
+}
+// Resists: a glowing plate in each one's colour, orbiting outside the armour. Each plate is a small sprite turned to
+// one of 64 angles, drawn where it is on its ring (a plate the size of the ring, turned as it's drawn, cost several
+// times more to draw).
+const U_RES_SPAN = n => Math.min(1.5, TAU / n - 0.32), U_PB = 64;
+function plateGeo(n, R) {
+  const r = R * 1.5 + 0.05, w = Math.max(R * 0.18, 0.045), span = U_RES_SPAN(n), hc = (r + w) * Math.sin(span / 2), sag = (r + w) * (1 - Math.cos(span / 2));
+  return { r, w, span, rm: r + w / 2, half: Math.max(hyp(hc, sag) + w * 0.7, w * 4.5) + 0.02 };
+}
+function plateSpr(k, n, R, pb) {
+  const { r, w, span, rm, half } = plateGeo(n, R), d = span * 0.16, col = RESIST[k].color;
+  return sprite(`rp${k}${n}${Math.round(R * 1000)}b${pb}`, 2 * half, (c, px) => {
+    c.rotate(pb * TAU / U_PB); c.translate(-rm, 0);
+    const a0 = -span / 2, a1 = span / 2;
+    glow(c, rm, 0, w * 4.5, uRgb(col), 0.4); // its glow, baked in
+    c.beginPath(); c.moveTo(Math.cos(a0) * rm, Math.sin(a0) * rm); c.arc(0, 0, r + w, a0 + d, a1 - d);
+    c.lineTo(Math.cos(a1) * rm, Math.sin(a1) * rm); c.arc(0, 0, r, a1 - d, a0 + d, true); c.closePath();
+    const g = c.createRadialGradient(0, 0, r - w, 0, 0, r + w * 1.4); g.addColorStop(0, `rgba(${uRgb(col)},0.15)`); g.addColorStop(0.6, `rgba(${uRgb(col)},0.95)`); g.addColorStop(1, uLit(col, 0.5));
+    c.fillStyle = g; c.fill(); c.lineWidth = Math.max(px * 0.8, 0.008); c.strokeStyle = 'rgba(5,8,12,0.8)'; c.stroke();
+    c.beginPath(); c.arc(0, 0, r + w * 0.82, a0 + d * 1.6, a1 - d * 1.6); c.lineWidth = Math.max(px, w * 0.18); c.strokeStyle = 'rgba(255,255,255,0.75)'; c.stroke();
+  });
+}
+// c in the board's frame, at the unit (resists don't turn with it: they orbit).
+function unitResists(c, rl, R, t, id) {
+  const n = rl.length; if (!n) return;
+  const { rm, half } = plateGeo(n, R);
+  rl.forEach((k, j) => {
+    const a = (reduceMotion ? 0.4 : t * 0.55 + id * 0.7) + j * TAU / n, pb = ((Math.round(a / (TAU / U_PB)) % U_PB) + U_PB) % U_PB;
+    blit(c, plateSpr(k, n, R, pb), Math.cos(a) * rm, Math.sin(a) * rm, 2 * half);
+  });
+}
+// The light a unit throws (the board, the hero, the scenes): a pool in its colour round its core, a white light
+// ahead of its nose, and its trail's glow behind a fast one.
+function unitLamps(lc, u, x, y) {
+  const s = u.shape, R = u.r, ca = Math.cos(u.ang), sa = Math.sin(u.ang), fr = (U_FRONT[s] || 1.2) * R + R * 0.9, tl = U_TRAIL[s] || 0;
+  lamp(lc, x, y, R * 2.3 + 0.2, rgbs(u.color), 0.32);
+  lamp(lc, x + ca * fr, y + sa * fr, R * 2.2 + 0.18, '255,236,205', 0.36);
+  if (tl) lamp(lc, x - ca * R * (0.8 + tl * 0.5), y - sa * R * (0.8 + tl * 0.5), R * (1.2 + tl * 0.45), rgbs(u.color), 0.12 + 0.035 * s);
 }
 
 /* ---------- sappers: drones carrying their payload ---------- */
@@ -8450,13 +8544,22 @@ function artIcon(key, size, draw) {
   }
   return u;
 }
+// The body pointing up, centred on its outline, sized by health (a fast unit is long, so it's sized to fit), with its
+// core's glow, its armour, regeneration and resists (on a ring round the icon), and a fast one's trail.
+const U_LEN = [[-0.81, 1.02], [-0.84, 1.0], [-1.0, 1.15], [-0.98, 1.45], [-0.62, 1.3], [-0.78, 1.55], [-0.82, 1.75], [-1.02, 1.95]];
 function unitIconURL(d) {
-  const R = 0.19 + 0.18 * Math.sqrt((US.hp.steps[d.hp] - 50) / 850), shape = unitShape(d), rl = resList(d.resist);
-  return artIcon(`ui${shape}${d.color}${d.hp}${d.armor}${d.regen}${d.resist}`, 1, (c, px) => {
-    c.save(); c.rotate(-Math.PI / 2); drawUnitBody(c, shape, d.color, R, d.armor, unitMark(d.color), px); c.restore();
-    unitLight(c, shape, R, -Math.PI / 2, px);
-    rl.forEach((k, j) => { const a = -Math.PI / 2 + j * TAU / Math.max(1, rl.length) + 0.6, q = Math.min(0.42, R * 1.3 + 0.05); c.beginPath(); c.arc(Math.cos(a) * q, Math.sin(a) * q, 0.05, 0, TAU); c.fillStyle = RESIST[k].color; c.fill(); c.lineWidth = px * 2; c.strokeStyle = '#0b0f14'; c.stroke(); });
-    if (d.regen) { c.beginPath(); c.arc(0, 0, R * 0.26, 0, TAU); c.fillStyle = '#fff3c4'; c.fill(); }
+  const s = unitShape(d), rl = resList(d.resist), [bk, fr] = U_LEN[s], h = Math.sqrt((US.hp.steps[d.hp] - 50) / 850);
+  const R = Math.min(0.15 + 0.11 * h, 0.44 / ((fr - bk) / 2)), sh = -(fr + bk) / 2 * R;
+  return artIcon(`ui${s}${d.color}${d.hp}${d.armor}${d.regen}${d.resist}`, 1, (c, px) => {
+    const was = ART.sc; ART.sc = 1 / px;
+    try {
+      c.save(); c.rotate(-Math.PI / 2); c.translate(sh, 0);
+      c.save(); c.globalCompositeOperation = 'lighter'; unitTrail(c, s, d.color, R); c.restore();
+      unitBody(c, s, d.color, R, px, -Math.PI / 2); unitArmor(c, d.armor, R, px); if (d.regen) unitCross(c, R, px);
+      c.save(); c.globalCompositeOperation = 'lighter'; unitGlow(c, s, R, d.color, d.regen); c.restore();
+      c.restore();
+      if (rl.length) { c.save(); c.rotate(-Math.PI / 2 - 0.5); unitResists(c, rl, 0.253, 0, 0); c.restore(); }
+    } finally { ART.sc = was; }
   });
 }
 // The rules sheet's legends: the tower kinds and elements, the unit classes, drawn with the board's own art.
@@ -8465,7 +8568,7 @@ function fillLegends() {
   const tl = document.getElementById('info-tlegend'), ul = document.getElementById('info-ulegend');
   if (tl) tl.innerHTML = [[{}, 'Blaster'], [{ rate: 0 }, 'Gatling'], [{ rate: 5, range: 5 }, 'Railgun'], [{ rate: 4, splash: 2 }, 'Mortar'], [{ chain: 3 }, 'Tesla'], [{ slow: true }, 'Frost: icy base'], [{ poison: true }, 'Venom: green turret'], [{ dps: 8, accuracy: 3 }, 'Hits hard, scope']]
     .map(([o, cap]) => fig(towerIconURL(T(o)), cap)).join('');
-  if (ul) ul.innerHTML = [[{ hp: 2, speed: 6 }, 'Skimmer', 0], [{ hp: 5, speed: 3 }, 'Rover', 1], [{ hp: 8, speed: 1 }, 'Juggernaut', 2], [{ hp: 5, speed: 3, armor: 3 }, 'Armor 3', 3], [{ hp: 5, speed: 3, regen: 2 }, 'Regen', 0], [{ hp: 5, speed: 3, resist: 'splash+shock' }, 'Resists', 2]]
+  if (ul) ul.innerHTML = [[{ hp: 6, speed: 0 }, 'Slow: plates', 2], [{ hp: 6, speed: 3 }, 'Mid: a hull', 1], [{ hp: 6, speed: 7 }, 'Fast: blades', 0], [{ hp: 2, speed: 7 }, 'Less health', 0], [{ hp: 5, speed: 2, armor: 3 }, 'Armor 3', 3], [{ hp: 5, speed: 4, regen: 2 }, 'Regen', 1], [{ hp: 5, speed: 1, resist: 'splash+shock' }, 'Resists', 2]]
     .map(([o, cap, k]) => fig(unitIconURL({ hp: 0, speed: 3, armor: 0, regen: 0, resist: 'none', ...o, color: COLORS[k] }), cap)).join('');
 }
 function towerIconURL(cfg, off) {
@@ -8756,7 +8859,7 @@ function heroFrame(now) {
       const lc = lightBegin(vw, vh, '92,100,118');
       for (const g of HERO.towers) towerLamps(g.cfg).forEach(([dx, dy, r, rgb, a], k) => lamp(lc, g.x + dx, g.y + dy, r * 1.14 + (k ? 0 : g.kick * 0.6), rgb, a + 0.05 + (k ? 0 : g.kick * 0.5)));
       lamp(lc, kx + 0.4, ky, 4, hit ? '255,110,100' : '255,214,150', 0.9 + hit * 0.5);
-      for (const u of HERO.units) { if (u.d < -0.5) continue; const ca = Math.cos(u.ang), sa = Math.sin(u.ang); if (u.sap) { lamp(lc, u.x, u.y, 0.8, rgbs(u.color), 0.5); continue; } lamp(lc, u.x + ca * u.r * 2.4, u.y + sa * u.r * 2.4, u.r * 2.6 + 0.2, '255,236,200', 0.45); if (u.shape === 'arrow') lamp(lc, u.x - ca * u.r * 1.3, u.y - sa * u.r * 1.3, u.r * 2.2, '255,170,90', 0.5); }
+      for (const u of HERO.units) { if (u.d < -0.5) continue; if (u.sap) { lamp(lc, u.x, u.y, 0.8, rgbs(u.color), 0.5); continue; } unitLamps(lc, u, u.x, u.y); }
       for (const q of HERO.fx) { const l = Math.max(0, q.life / q.max); if (q.k === 'glow') lamp(lc, q.x, q.y, q.r * 1.7, q.rgb, (q.a ?? 0.9) * l); else if (q.k === 'beam' || q.k === 'bolt') for (let s2 = 0; s2 <= 4; s2++) lamp(lc, q.x1 + (q.x2 - q.x1) * s2 / 4, q.y1 + (q.y2 - q.y1) * s2 / 4, 0.8, q.k === 'bolt' ? '170,140,255' : q.rgb, 0.5 * l); }
       for (const sh of HERO.shells) lamp(lc, sh.x, sh.y, 0.7, '255,190,120', 0.45);
       lightEnd(c, 0.22);
@@ -8907,7 +9010,7 @@ function scnDraw(S0, dt) {
   const lc = lightBegin(sc.W, sc.H, sc.light);
   for (const g of S0.towers) towerLamps(g.cfg).forEach(([dx, dy, r, rgb, a], k) => lamp(lc, g.x + dx, g.y + dy, r * 1.05 + (k ? 0 : g.kick), rgb, a + 0.05 + (k ? 0 : g.kick * 0.6)));
   if (sc.keep) lamp(lc, sc.keep[0], sc.keep[1], 3.5, '255,214,150', 0.9);
-  for (const u of units) { const ca = Math.cos(u.ang), sa = Math.sin(u.ang); lamp(lc, u.x + ca * u.r * 2.4, u.y + sa * u.r * 2.4, u.r * 2.6 + 0.2, '255,236,200', 0.45); if (u.shape === 'arrow') lamp(lc, u.x - ca * u.r * 1.3, u.y - sa * u.r * 1.3, u.r * 2.2, '255,170,90', 0.55); }
+  for (const u of units) unitLamps(lc, u, u.x, u.y);
   for (const q of S0.fx) { const l = Math.max(0, q.life / q.max); if (q.k === 'glow') lamp(lc, q.x, q.y, q.r * 1.8, q.rgb, (q.a ?? 0.9) * l); else if (q.k === 'beam' || q.k === 'bolt') for (let s = 0; s <= 4; s++) lamp(lc, q.x1 + (q.x2 - q.x1) * s / 4, q.y1 + (q.y2 - q.y1) * s / 4, 0.9, q.k === 'bolt' ? '170,140,255' : q.rgb, 0.6 * l); }
   for (const s of S0.shells) lamp(lc, s.x, s.y, 0.8, '255,190,120', 0.5);
   lightEnd(c, 0.32);
@@ -9129,12 +9232,11 @@ function boardLights(lc, t, G) {
   for (const i of S.bridges) { const [x, y] = center(i); lamp(lc, x, y, 1, '255,160,90', 0.25); }
   const p = S.phase === 'attack' && S.step === A_WAVE ? null : S.phase === 'attack' ? seenPath() : S.path;
   if (p) for (let k = 0; k < p.length; k += 2) { const [x, y] = center(p[k]); lamp(lc, x, y, 0.9, '160,200,225', S.phase === 'wave' ? 0.1 : 0.18); }
-  for (const u of S.units) { // headlights ahead of each unit, engines behind the fast ones, a sapper's beacon
+  for (const u of S.units) { // each unit's core and front light, a fast one's trail, a sapper's beacon
     if (u.dead || u.gone) continue;
-    const x = u.x + u.ox, y = u.y + u.oy, ca = Math.cos(u.ang), sa = Math.sin(u.ang), R = u.r;
+    const x = u.x + u.ox, y = u.y + u.oy;
     if (u.sap) { lamp(lc, x, y, 0.7, rgbs(u.color), Math.sin(t * 9) > 0.3 ? 0.6 : 0.25); continue; }
-    lamp(lc, x + ca * R * 2.4, y + sa * R * 2.4, R * 2.6 + 0.2, '255,236,200', 0.42);
-    if (u.shape === 'arrow') lamp(lc, x - ca * R * 1.3, y - sa * R * 1.3, R * 2.2, '255,170,90', 0.5);
+    unitLamps(lc, u, x, y);
   }
   for (const q of FXL) { // flashes, blasts, beams and bolts light the ground around them
     const l = Math.max(0, q.life / q.max);
@@ -9519,16 +9621,16 @@ function drawTowers(c, t, G) {
 const uvis = new WeakMap(); // a unit's health bar trail: the health it showed, easing down to the real one
 function drawUnits(c, t, list = S.units) {
   const sel = S && S.sel && S.sel.k === 'unit' ? S.sel.u : null, [ux, uy] = upW();
-  c.globalAlpha = 0.42; // shadows under everyone first: each unit's own silhouette, further off the ground for fliers
+  c.globalAlpha = 0.42; // shadows under everyone first: each unit's own silhouette, further off the ground the faster it is
   for (const u of list) {
-    const R = u.r, hov = u.shape === 'arrow' || u.sap ? 2 : 1, [sx, sy] = scrW(0.045 * hov, 0.06 * hov);
+    const R = u.r, f = uF(u.shape), hov = u.sap ? 2 : 1 + 1.3 * f, [sx, sy] = scrW(0.045 * hov, 0.06 * hov);
     if (u.sap) { c.beginPath(); c.arc(u.x + u.ox + sx, u.y + u.oy + sy, R * 1.1, 0, TAU); c.fillStyle = '#000'; c.fill(); continue; }
-    blit(c, unitSil(u.shape, R, '#000', angBucket(u.ang)), u.x + u.ox + sx, u.y + u.oy + sy, unitSz(R) * (hov > 1 ? 0.92 : 1));
+    blit(c, unitSil(u.shape, R, '#000', angBucket(u.ang)), u.x + u.ox + sx, u.y + u.oy + sy, unitSz(R, u.shape)); // drawn 1:1 (a scaled draw costs several times more)
   }
   c.globalAlpha = 1;
   for (const u of list) {
-    const R = u.r, x = u.x + u.ox, y = u.y + u.oy, fade = clamp(0.25 + u.walked / 0.45, 0, 1);
-    const bob = u.shape === 'arrow' && !reduceMotion ? Math.sin(t * 6 + u.id) * 0.015 : 0;
+    const R = u.r, x = u.x + u.ox, y = u.y + u.oy, fade = clamp(0.25 + u.walked / 0.45, 0, 1), f = uF(u.shape);
+    const bob = !u.sap && !reduceMotion ? Math.sin(t * (2 + 4 * f) + u.id) * 0.012 * (0.4 + f) : 0;
     c.save(); c.translate(x + ux * bob, y + uy * bob); c.globalAlpha = fade;
     if (u.sap) {
       if (u.slowT > 0) { c.beginPath(); c.arc(0, 0, R * 1.5, 0, TAU); c.lineWidth = 0.04; c.strokeStyle = 'rgba(191,243,255,0.9)'; c.stroke(); }
@@ -9538,33 +9640,23 @@ function drawUnits(c, t, list = S.units) {
       if (sel === u) selRing(c, x, y, R * 1.3 + 0.16);
       continue;
     }
-    const b = angBucket(u.ang), sz = unitSz(R), body = unitSpr(u.shape, u.color, R, u.armorLvl, b), rl = u.rl || (u.rl = resList(u.resist));
-    if (u.shape === 'arrow' && !reduceMotion && !ART.lo) { // a fast unit leaves an afterimage
-      c.globalAlpha = 0.14 * fade; blit(c, body, -Math.cos(u.ang) * R * 1.1, -Math.sin(u.ang) * R * 1.1, sz); c.globalAlpha = fade;
-    }
-    if (u.shape === 'arrow') { c.save(); c.rotate(u.ang); unitEngines(c, u, R, t); c.restore(); }
-    blit(c, body, 0, 0, sz);
-    if (u.shape !== 'arrow') { c.save(); c.rotate(u.ang); unitLive(c, u, R, t, u.walked); c.restore(); }
-    else { c.save(); c.rotate(u.ang); const blink = ((t * 1.4 + u.id * 0.37) % 1) < 0.18; c.fillStyle = blink ? '#ff6a6a' : '#7a2c2c'; c.fillRect(-R * 0.8, -R * 0.98, R * 0.1, R * 0.1); c.fillStyle = blink ? '#7dffb0' : '#2c6a44'; c.fillRect(-R * 0.8, R * 0.88, R * 0.1, R * 0.1); c.restore(); }
-    if (u.slowT > 0) { c.globalAlpha = 0.5 * fade; blit(c, unitSil(u.shape, R, '#bff3ff', b), 0, 0, sz); c.globalAlpha = fade; }
-    else if (u.poisonT > 0) { c.globalAlpha = 0.3 * fade; blit(c, unitSil(u.shape, R, '#8fe388', b), 0, 0, sz); c.globalAlpha = fade; }
-    if (u.flash > 0) { c.globalAlpha = Math.min(1, u.flash / 0.1) * 0.85; blit(c, unitSil(u.shape, R, '#ffffff', b), 0, 0, sz); c.globalAlpha = fade; }
-    if (u.regen > 0) { const p = 0.75 + 0.25 * Math.sin(t * 5 + u.id); c.beginPath(); c.arc(-Math.cos(u.ang) * R * 0.2, -Math.sin(u.ang) * R * 0.2, Math.max(0.035, R * 0.3) * p, 0, TAU); c.fillStyle = 'rgba(160,255,190,0.3)'; c.fill(); c.beginPath(); c.arc(-Math.cos(u.ang) * R * 0.2, -Math.sin(u.ang) * R * 0.2, Math.max(0.02, R * 0.15) * p, 0, TAU); c.fillStyle = '#e8fff0'; c.fill(); }
-    for (let j = 0; j < rl.length; j++) { // resists: motes circling the unit in their colours
-      const a = (reduceMotion ? 0 : t * 2.2) + j * TAU / rl.length + u.id, rr2 = R * 1.3 + 0.05;
-      c.beginPath(); c.arc(Math.cos(a) * rr2, Math.sin(a) * rr2, Math.max(0.03, R * 0.15), 0, TAU); c.fillStyle = RESIST[rl[j]].color; c.fill();
-      c.lineWidth = 0.012; c.strokeStyle = 'rgba(7,9,12,0.8)'; c.stroke();
-    }
+    const s = u.shape, b = angBucket(u.ang), sz = unitSz(R, s), rl = u.rl || (u.rl = resList(u.resist));
+    blit(c, unitSpr(s, u.color, R, u.armorLvl, u.regen > 0, b), 0, 0, unitBodySz(R, s, u.armorLvl));
+    if (u.slowT > 0) { c.globalAlpha = 0.5 * fade; blit(c, unitSil(s, R, '#bff3ff', b), 0, 0, sz); c.globalAlpha = fade; }
+    else if (u.poisonT > 0) { c.globalAlpha = 0.3 * fade; blit(c, unitSil(s, R, '#8fe388', b), 0, 0, sz); c.globalAlpha = fade; }
+    if (u.flash > 0) { c.globalAlpha = Math.min(1, u.flash / 0.1) * 0.85; blit(c, unitSil(s, R, '#ffffff', b), 0, 0, sz); c.globalAlpha = fade; }
+    if (s >= 3 || !ART.lo) unitLight(c, u, s, R, t, u.slowT > 0 ? 0.6 : 1); // its light: trail, core, nose
+    unitResists(c, rl, R, t, u.id);
     if (u.slowT > 0) { // frost: ice shards round it (and it's brittle)
       c.strokeStyle = 'rgba(220,250,255,0.9)'; c.lineWidth = 0.02; c.beginPath();
-      for (let j = 0; j < 3; j++) { const a = j * 2.1 + u.id * 0.7, r1 = R * 1.05, r2 = R * 1.35; c.moveTo(Math.cos(a) * r1, Math.sin(a) * r1); c.lineTo(Math.cos(a + 0.12) * r2, Math.sin(a + 0.12) * r2); c.lineTo(Math.cos(a + 0.25) * r1, Math.sin(a + 0.25) * r1); }
+      for (let j = 0; j < 3; j++) { const a = j * 2.1 + u.id * 0.7, r1 = R * 1.15, r2 = R * 1.5; c.moveTo(Math.cos(a) * r1, Math.sin(a) * r1); c.lineTo(Math.cos(a + 0.12) * r2, Math.sin(a + 0.12) * r2); c.lineTo(Math.cos(a + 0.25) * r1, Math.sin(a + 0.25) * r1); }
       c.stroke();
     }
     if (u.poisonT > 0 && !reduceMotion) { // poison: bubbles rising off it
       for (let j = 0; j < 3; j++) { const ph = (t * 0.9 + j / 3 + u.id * 0.37) % 1; c.beginPath(); c.arc(ux * ph * 0.4 + (j - 1) * R * 0.5 * (1 - Math.abs(uy)), uy * ph * 0.4 + (j - 1) * R * 0.5 * Math.abs(uy), 0.025 + 0.02 * (1 - ph), 0, TAU); c.fillStyle = `rgba(143,227,136,${0.75 * (1 - ph)})`; c.fill(); }
     }
     c.restore();
-    if (sel === u) selRing(c, x, y, R * 1.25 + 0.18);
+    if (sel === u) selRing(c, x, y, R * 1.55 + 0.16);
   }
   c.globalAlpha = 1;
 }

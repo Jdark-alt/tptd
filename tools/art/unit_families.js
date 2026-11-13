@@ -147,12 +147,23 @@
     [[0.38, -0.7], [-0.72, -1.1], [-1.02, -0.97], [-0.46, -0.66]], [[0.38, 0.7], [-0.72, 1.1], [-1.02, 0.97], [-0.46, 0.66]]];
   const TRI = [0, 2.094, -2.094];
   const lens = (c, R, k = 1, dx = 0, dy = 0) => { c.moveTo((1.15 * k + dx) * R, dy * R); c.quadraticCurveTo((0.1 * k + dx) * R, (-1.72 * k + dy) * R, (-1.0 * k + dx) * R, dy * R); c.quadraticCurveTo((0.1 * k + dx) * R, (1.72 * k + dy) * R, (1.15 * k + dx) * R, dy * R); c.closePath(); };
+  // the 1.3 cells/s step (round 2, the user: "a better blend of pointy and round shapes"): a round body whose flanks
+  // curve in to a fine point, two small swept fins at its shoulders
+  const ogive = (c, R, k = 1, dx = 0) => {
+    const P = (x, y) => [(x * k + dx) * R, y * k * R];
+    c.moveTo(...P(1.45, 0));
+    c.bezierCurveTo(...P(1.02, -0.07), ...P(0.62, -0.72), ...P(0.02, -0.8));
+    c.bezierCurveTo(...P(-0.52, -0.86), ...P(-1.0, -0.52), ...P(-0.98, 0));
+    c.bezierCurveTo(...P(-1.0, 0.52), ...P(-0.52, 0.86), ...P(0.02, 0.8));
+    c.bezierCurveTo(...P(0.62, 0.72), ...P(1.02, 0.07), ...P(1.45, 0)); c.closePath();
+  };
+  const OG_FINS = [[[-0.22, -0.66], [-0.66, -1.06], [-0.74, -0.98], [-0.58, -0.6]], [[-0.22, 0.66], [-0.66, 1.06], [-0.74, 0.98], [-0.58, 0.6]]];
   const crescent = (c, R) => { c.arc(0, 0, 1.0 * R, -1.95, 1.95); c.arc(0.16 * R, 0, 0.78 * R, 1.75, -1.75, true); c.closePath(); };
   function cbPath(c, s, R) {
     if (s === 0) { for (const a of TRI) { c.moveTo(Math.cos(a) * 0.42 * R + 0.6 * R, Math.sin(a) * 0.42 * R); c.arc(Math.cos(a) * 0.42 * R, Math.sin(a) * 0.42 * R, 0.6 * R, 0, TAU); } c.moveTo(0.5 * R, 0); c.arc(0, 0, 0.5 * R, 0, TAU); }
     else if (s === 1) { c.moveTo(0.6 * R, 0); c.arc(-0.12 * R, 0, 0.72 * R, 0, TAU); crescent(c, R); }
     else if (s === 2) lens(c, R);
-    else if (s === 3) tear(c, R);
+    else if (s === 3) { ogive(c, R); for (const P of OG_FINS) poly(c, sc(P, R)); }
     else if (s === 4) poly(c, sc([[1.3, 0], [-0.62, -1.02], [-0.26, 0], [-0.62, 1.02]], R));
     else if (s === 5) poly(c, sc(CB_DART, R));
     else for (const P of s === 6 ? CB_SPLIT : CB_TALON) poly(c, sc(P, R));
@@ -191,12 +202,13 @@
       cbCore(c, -0.05 * R, 0.27 * R, col, t, f);
       seam(c, [[0.3 * R, 0], [1.05 * R, 0]], R * 0.07, 0.8);
       ink(c, R, col, px); c.beginPath(); for (const sg of [-1, 1]) { c.moveTo(-0.55 * R, sg * 0.45 * R); c.lineTo(-0.15 * R, sg * 0.62 * R); } c.stroke();
-    } else if (s === 3) { // a teardrop with a lit seam to its point
-      streak(c, -0.85 * R, 0, R * 1.2, R * 1.2, col, 0.2);
-      piece(c, R, col, () => tear(c, R), px);
-      ink(c, R, col, px); c.beginPath(); c.moveTo(1.0 * R, 0); c.arc(-0.18 * R, 0, 0.55 * R, 0.72, TAU - 0.72); c.closePath(); c.stroke();
-      cbCore(c, -0.2 * R, 0.25 * R, col, t, f);
-      seam(c, [[0.1 * R, 0], [1.25 * R, 0]], R * 0.07, 0.85);
+    } else if (s === 3) { // a round body tapering to a fine point, swept fins at its shoulders, a lit seam to the point
+      streak(c, -0.9 * R, 0, R * 1.3, R * 1.2, col, 0.2);
+      for (const P of OG_FINS) piece(c, R, dark(col, 0.12), () => poly(c, sc(P, R)), px, 0.8);
+      piece(c, R, col, () => ogive(c, R), px);
+      ink(c, R, col, px); c.beginPath(); ogive(c, R, 0.58, -0.12); c.stroke();
+      cbCore(c, -0.22 * R, 0.25 * R, col, t, f);
+      seam(c, [[0.08 * R, 0], [1.3 * R, 0]], R * 0.065, 0.85);
     } else if (s === 4) { // a broad arrowhead: lit spine, two engines
       for (const sg of [-1, 1]) streak(c, -0.3 * R, sg * 0.32 * R, R * 1.8, R * 0.32, col, 0.35);
       piece(c, R, col, () => poly(c, sc([[1.3, 0], [-0.62, -1.02], [-0.26, 0], [-0.62, 1.02]], R)), px);
@@ -244,7 +256,7 @@
     sharpen: { name: 'Sharpening', draw: sharpen, path: shPath, words: ['Monolith', 'Hexagon', 'Orb', 'Teardrop', 'Chevron', 'Dart', 'Split blade', 'Needle'] },
     fragment: { name: 'Fragmenting', draw: fragment, path: frPath, words: ['Block', 'Cracked', 'Wedge', 'Four shards', 'Five', 'Six', 'Seven', 'Flock'] },
     energy: { name: 'Energy', draw: energy, path: enPath, words: ['Three plates', 'Two plates', 'One plate', 'Open ring', 'Shielded core', 'Winged core', 'Comet', 'Spark'] },
-    combined: { name: 'Combined', draw: combined, path: cbPath, words: ['Bastion', 'Shieldbearer', 'Lens', 'Teardrop', 'Arrowhead', 'Dart', 'Splitwing', 'Talon'] },
+    combined: { name: 'Combined', draw: combined, path: cbPath, words: ['Bastion', 'Shieldbearer', 'Lens', 'Ogive', 'Arrowhead', 'Dart', 'Splitwing', 'Talon'] },
   };
   const RES_COL = { splash: '#ffd27a', poison: '#8fe388', frost: '#bff3ff', shock: '#a98bff' };
   // u: { fam, s (speed step), R, col, ang, armor, regen, res: [...], slow, poison, flash }
