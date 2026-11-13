@@ -70,4 +70,7 @@ with sync_playwright() as p:
         if vids and shutil.which('ffmpeg'):
             out = os.path.join(OUT, 'motion.mp4')
             subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', vids[0], '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '24', out], check=False)
-            print('video', out)
+            # a close-up of the entry's corner, where the first units turn (the board at 1280x800, middle-row gates)
+            corner = os.path.join(OUT, 'motion_corner.mp4')
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', vids[0], '-vf', 'crop=400:300:16:300,scale=1200:900:flags=lanczos', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '22', corner], check=False)
+            print('video', out, corner)

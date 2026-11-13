@@ -2520,7 +2520,7 @@ with sync_playwright() as p:
       for (let i = 0; i < 176; i++) {{ const g = S.grid[i]; if ((g && g.t !== 'wall') || (!g && on.has(i))) continue; best = Math.max(best, n(i)); }} return [n({c0}), best]; }}''')
     check(cover[0] == cover[1], f'v32: it is the spot that covers the most route cells (each pass counts): {cover[0]} of the best {cover[1]}')
     page.click('.tool[data-tool=tower]')
-    free = [i for i in range(176) if S(page, f'!S.grid[{i}] && !S.path.includes({i}) && !S.terrain[{i}] && {i} % 16 > 0 && {i} % 16 < 15')]
+    free = page.evaluate('() => { const S = window.siegeline.state, on = new Set(S.path); const near = i => S.path.findIndex(j => [i - 1, i + 1, i - 16, i + 16].includes(j)); return [...Array(176).keys()].filter(i => !S.grid[i] && !on.has(i) && !S.terrain[i] && i % 16 > 0 && i % 16 < 15 && near(i) >= 0).sort((a, b) => near(a) - near(b)); }')  # beside the route, near the entry, so it fires soon
     click_cell(page, free[0] % 16, free[0] // 16); page.wait_for_timeout(150)
     if S(page, f'!S.grid[{free[0]}]'): click_cell(page, free[0] % 16, free[0] // 16); page.wait_for_timeout(150)
     page.wait_for_timeout(300)
@@ -2537,7 +2537,9 @@ with sync_playwright() as p:
     hand(page); page.wait_for_timeout(3500)
     snd = page.evaluate('() => window.siegeline.sound')
     check(S(page, 'S.phase') == 'wave' and snd['played'] == played and snd['ctx'] == 'suspended', f'v32: a wave with the sound off plays no sound at all ({played} → {snd["played"]})')
-    check(len(page.evaluate('() => window.siegeline.aim.err')) > 0, 'v32: turrets fired, drawn with weight')
+    try: page.wait_for_function('() => window.siegeline.aim.n > 0', timeout=20000)
+    except Exception: pass
+    check(len(page.evaluate('() => window.siegeline.aim.err')) > 0 and page.evaluate('() => window.siegeline.sound.played') == played, 'v32: turrets fired, drawn with weight, still in silence')
     page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_selector('#ov-sum', state='visible', timeout=20000); page.wait_for_timeout(600)
     page.click('#sum-next'); page.wait_for_timeout(60)
     ghost = page.evaluate('() => { const L = document.getElementById("exit-layer"); return L ? [L.children.length, L.querySelectorAll("[id]").length, !!(L.firstElementChild && L.firstElementChild.inert)] : null; }')

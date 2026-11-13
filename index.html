@@ -1277,7 +1277,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 #toast.atk{--glow:var(--warm)} #toast.def{--glow:var(--cool)} #toast.bad{--glow:var(--bad)}
 #undo-pop{--glow:var(--cool);border-radius:8px;border-left:2px solid var(--cool)}
 /* the summary's numbers, MVPs and lines rise in a beat apart */
-.sumcell,.sum-big>div{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008));border-color:rgba(160,190,215,.12)}
+.sum-big>.sb{background:linear-gradient(180deg,color-mix(in srgb,var(--k) 9%,transparent),rgba(255,255,255,.008) 70%)}
+.sumcell,.sum-big>div{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008));border-right-color:rgba(160,190,215,.12);border-bottom-color:rgba(160,190,215,.12);border-left-color:rgba(160,190,215,.12)} /* the top edge keeps its colour */
 .overlay:not([hidden]) .sum-body>*{animation:rise .34s cubic-bezier(.2,.7,.2,1) both}
 .overlay:not([hidden]) .sum-body>*:nth-child(2){animation-delay:.04s}
 .overlay:not([hidden]) .sum-body>*:nth-child(3){animation-delay:.08s}
@@ -1298,7 +1299,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .urow{background:linear-gradient(180deg,rgba(22,29,37,.9),rgba(11,15,20,.92));border-color:rgba(160,190,215,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 24px -18px rgba(0,0,0,.8)}
 .urow.open{background:radial-gradient(120% 60% at 0% 0%,rgba(255,138,61,.1),transparent 60%),linear-gradient(180deg,rgba(24,28,34,.95),rgba(11,14,19,.96));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 0 0 1px rgba(255,138,61,.12),0 18px 40px -20px rgba(0,0,0,.9)}
-.ued{--glow:var(--warm);border-radius:8px;padding:8px;margin-top:2px;animation:rise .24s cubic-bezier(.2,.7,.2,1)}
+.ued{--glow:var(--warm);border-radius:8px;padding:6px 7px;animation:rise .24s cubic-bezier(.2,.7,.2,1)}
 #roster.enter .urow{animation:rise .3s cubic-bezier(.2,.7,.2,1) both}
 #roster.enter .urow:nth-child(2){animation-delay:.04s} #roster.enter .urow:nth-child(3){animation-delay:.08s} #roster.enter .urow:nth-child(n+4){animation-delay:.12s}
 /* v32 item 8: the army's unit icons, drawn at their size (unitIconURL(d, true)), not a small bitmap scaled up */
@@ -10421,7 +10422,7 @@ function drawSuggest(c, t) {
   if (S.towerSeq !== TSUG.seq) { TSUG.gone = true; return; } // a tower went up: gone for the round
   const k = t - TSUG.t0;
   if (k > TSUG_TO) { TSUG.gone = true; return; }
-  if (k < TSUG_FROM || drag || S.dFree < newTowerPrice()) return;
+  if (k < TSUG_FROM || drag || S.dFree < towerCost(defaultTower()) + nextFee()) return; // a default tower affordable
   const i = suggestCell(); if (i < 0) return;
   const env = Math.min(1, (k - TSUG_FROM) / 1.5) * Math.min(1, (TSUG_TO - k) / 4), a = env * (reduceMotion ? 0.32 : 0.2 + 0.14 * (0.5 + 0.5 * Math.sin(t * 1.6)));
   TSUG.vis = i;
@@ -11029,7 +11030,7 @@ window.siegeline = {
   get suggestion() { return { cell: TSUG.vis ?? -1, gone: TSUG.gone, best: S.phase === 'defend' ? suggestCell() : -1 }; }, // v32: the tower suggestion on the board now (-1: none)
   get gates() { return [ENTRY_R, EXIT_R]; }, setGates: (er, xr) => { setGates(er, xr); recompute(); }, gatesFor, // v32: this match's gate rows (entry, keep); the rows a map seed gets
   potFor, refresh: () => refreshUI(), get tag() { const t = boardTag(); return t ? t[0] : ''; }, // since v21: a round's pot, a redraw of the panels, the board's corner label
-  starterAt: (seed, presses = RULES.starterPresses) => { const T = makeTerrain(seed >>> 0).T; return starterWalls(withRocks(new Array(N).fill(null), T), T, presses).sort((a, b) => a - b); }, // the starter maze for a map seed
+  starterAt: (seed, presses = RULES.starterPresses) => { const g = [ENTRY_R, EXIT_R]; try { const T = makeTerrain(seed >>> 0).T; return starterWalls(withRocks(new Array(N).fill(null), T), T, presses).sort((a, b) => a - b); } finally { setGates(...g); } }, // the starter maze for a map seed (on that map's gates; the match's are put back)
   shotAcc, encodeArmy: ds => encodeArmy(ds, true), // one shot's chance to hit for a tower's sliders (%); an army as a plan carries it
   streamId() { if (!srand.__id) srand.__id = ++streamIds; return srand.__id; }, // which random stream the match draws from now (v22: the forecast must leave it alone)
   worldToClient(x, y) { const [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
