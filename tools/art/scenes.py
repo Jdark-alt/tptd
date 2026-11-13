@@ -68,7 +68,8 @@ with sync_playwright() as p:
             tmp = tempfile.mkdtemp()
             for j, d in enumerate(frames): open(f'{tmp}/f{j:04d}.jpg', 'wb').write(base64.b64decode(d.split(',', 1)[1]))
             out = f'{OUT}/scenes_{args.tag}_{k + 1}.mp4'
-            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', f'{len(frames) / span:.3f}',  # real time, however many frames the page managed '-i', f'{tmp}/f%04d.jpg', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-crf', '20', out], check=True)
+            # played back in real time, however many frames the page managed
+            subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', f'{len(frames) / span:.3f}', '-i', f'{tmp}/f%04d.jpg', '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-crf', '20', out], check=True)
             shutil.rmtree(tmp)
     ctx.close(); b.close()
     print(f'scenes in {OUT} (scenes_{args.tag}_*); errors: {errs[:5]}')

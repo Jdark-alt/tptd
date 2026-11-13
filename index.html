@@ -8900,7 +8900,7 @@ const SCN = { list: [], last: 0, grain: null, odd: false, floor: null };
 const SCN_LOOPS = 3, SCN_HP = 0.24, SCN_HT = 0.42, SCN_WALL = 0.42, SCN_ROCK = 0.32; // a camera move lasts three loops; plinth, turret, wall, rock heights (cells)
 const scnUnit = (d, x, y, ang, k = 0) => {
   const shape = unitShape(d);
-  return { id: 900 + k, x, y, ox: 0, oy: 0, ang, r: unitRadius(d.hp) * 1.2, shape, color: d.color, armorLvl: d.armor || 0, regen: d.regen || 0, resist: d.resist || 'none', walked: 5 + k, slowT: 0, poisonT: 0, flash: 0, hp: 1, max: 1 };
+  return { id: 900 + k, x, y, ox: 0, oy: 0, ang, r: unitRadius(d.hp) * 1.4, shape, color: d.color, armorLvl: d.armor || 0, regen: d.regen || 0, resist: d.resist || 'none', walked: 5 + k, slowT: 0, poisonT: 0, flash: 0, hp: 1, max: 1 };
 };
 const ease2 = p => (1 - Math.cos(TAU * p)) / 2; // 0 → 1 → 0 over a period, eased at both ends
 const SCENES = [
