@@ -129,8 +129,9 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 
 /* budget */
 .budget{display:flex;align-items:center;gap:14px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:8px 12px}
-.bfree{flex:none;display:flex;align-items:baseline;gap:7px;font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-.bfree b{font:900 28px/.9 var(--f-display);color:var(--side);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.bfree{flex:none;display:flex;align-items:baseline;gap:9px;font:600 12px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.bfree b{font:700 38px/.85 var(--f-body);color:var(--side);letter-spacing:-.02em;font-variant-numeric:tabular-nums} /* v32.3: big and bold, so running out is hard to miss */
+.budget.out .bfree b{color:var(--bad)} .budget.out .bfree{color:#ff9a8f} .budget.out{border-color:rgba(255,90,90,.55)}
 .bright{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
 .bbar{display:flex;height:4px;overflow:hidden;background:rgba(255,255,255,.05);gap:2px}
 .bbar i{display:block;height:100%;transition:width .2s;min-width:0}
@@ -907,10 +908,6 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .wavebox b{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
 .wavebox small{font:500 11px/1 var(--f-ui);color:var(--muted);margin-left:3px}
 .wavebox .kd{color:var(--keep)}
-.coinsbox{flex-direction:row;align-items:center;gap:16px} /* v32.1: both sides' coins left, big and bold */
-.coinsbox .ccol{display:flex;flex-direction:column;gap:4px}
-.coinsbox b{font:700 30px/.9 var(--f-body);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.coinsbox .d b{color:var(--cool)} .coinsbox .a b{color:var(--warm)}
 .potbox{flex-direction:row;align-items:baseline;gap:8px;align-content:center;flex-wrap:nowrap;align-items:center}
 .potbox .pval{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .potbox .prange{font:500 11px/1 var(--f-ui);color:var(--muted);white-space:nowrap}
@@ -1112,7 +1109,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .pane.drill .browse{display:flex}
   .steps button{padding:9px 2px 10px;font-size:10px;gap:4px;letter-spacing:.1em}
   .budget{padding:7px 10px}
-  .bfree b{font-size:24px}
+  .bfree b{font-size:32px}
   .tool{min-height:46px;padding:7px 10px}
   .tool .ico{width:20px;height:20px}
   .tools.bar .tool{flex-direction:row;min-height:44px;padding:5px 4px;gap:6px}
@@ -1165,7 +1162,6 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .hud-row > *{min-height:44px}
   .roundchip{order:1} .keepbox{order:2;flex:1 1 0} .clockbox,.wavebox{order:3} #btn-sound,#btn-info{order:4}
   .hud-row > .hbreak{display:block;order:5;flex-basis:100%;height:0;min-height:0} /* coins and the pot always start row 2 */
-  .coinsbox{order:6;gap:12px;padding:0 10px} .coinsbox b{font-size:24px}
   .potbox{order:7;flex:0 1 auto;padding:0 10px} .hud-row .netpill{order:8;min-height:0}
   .potbox.live{flex:1 1 auto}
   .potbox .ptag,.pm-top .lbl{display:none} /* the POT label goes before the numbers shrink */
@@ -1234,7 +1230,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .pane{gap:6px}
   .pane-head,.note:not(.show),.shint,.blegend{display:none}
   .steps button{padding:7px 2px 8px;font-size:9.5px}
-  .budget{padding:5px 10px} .bfree b{font-size:22px}
+  .budget{padding:5px 10px} .bfree b{font-size:30px}
   .tool{min-height:40px;padding:5px 8px}
   .tool .ico{width:20px;height:20px}
   .bigstat b{font-size:22px}
@@ -1334,7 +1330,6 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       </div>
       <div class="hbox clockbox" id="clockbox" hidden data-tip="Planning time left this round. When it runs out, your plan goes as it stands."><span class="lbl">Time</span><b class="cval" id="t-clock">3:00</b></div>
       <div class="hbox wavebox" id="wavebox" hidden><span class="wcol" data-tip="Units that reached the keep, of all the army sent"><span class="lbl">Leaked</span><b><span id="h-leak">0</span><small id="h-sent">/ 0</small></b></span><span class="wcol" data-tip="Damage to the keep this wave"><span class="lbl">Keep</span><b class="kd" id="h-kdmg">−0</b></span></div>
-      <div class="hbox coinsbox" id="coinsbox" data-tip="Coins each side has left to spend"><span class="ccol d"><span class="lbl">Defender</span><b id="h-dfree">300</b></span><span class="ccol a"><span class="lbl">Attacker</span><b id="h-afree">300</b></span></div>
       <div class="hbox potbox" id="potbox" data-tip="This round's pot: the more of the army gets through, the bigger the defender's share. It grows round by round, and so does the swing between the shares.">
         <span class="lbl ptag">Pot</span><b class="pval" id="pot-v">200</b><small class="prange" id="pot-r">35–65</small>
         <span class="pmeter" id="pot-meter" hidden><span class="pm-top"><span class="pm-d" id="pm-d">+100</span><span class="lbl ptag2">Pot <b id="pm-pot">200</b></span><span class="pm-a" id="pm-a">+100</span></span><span class="pm-bar"><i class="d" id="pm-sd" style="width:50%"></i><i class="a" id="pm-sa" style="width:50%"></i></span></span>
@@ -1365,7 +1360,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <aside id="panel">
       <section class="pane" id="pane-def" hidden>
         <nav class="steps one" id="def-steps" aria-label="Defender"></nav>
-        <div class="budget" id="d-budget"><span class="bfree" id="d-fbox">Coins <b id="d-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div></div>
+        <div class="budget" id="d-budget"><span class="bfree" id="d-fbox">Coins left <b id="d-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div></div>
         <div class="testcard" id="d-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="def-body"></div>
@@ -1376,7 +1371,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 
       <section class="pane" id="pane-atk" hidden>
         <nav class="steps" id="atk-steps" aria-label="Attacker steps"></nav>
-        <div class="budget" id="a-budget"><span class="bfree" id="a-fbox">Coins <b id="a-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div></div>
+        <div class="budget" id="a-budget"><span class="bfree" id="a-fbox">Coins left <b id="a-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div></div>
         <div class="testcard" id="a-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="atk-body"></div>
@@ -1419,7 +1414,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v32.2</p>
+        <p class="tagline">Two Player Tower Defence · v32.3</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1572,7 +1567,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v32.2</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v32.3</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -6196,6 +6191,9 @@ const bodyKey = { def: null, atk: null };
 function setBudget(p, free, a, b, aLbl, bLbl) {
   const tot = free + a + b, pc = v => (tot ? (v / tot * 100) : 0) + '%', s0 = $(`#${p}-s0`), s1 = $(`#${p}-s1`), s2 = $(`#${p}-s2`);
   putText($(`#${p}-free`), String(free));
+  // v32.3: red once nothing more can be bought (a wall for the defender, one unit of the cheapest design for the attacker)
+  const least = p === 'd' ? RULES.wall : Math.min(...(S.designs || []).map(d => unitCost(d)).filter(c => c > 0), Infinity);
+  const bud = $(`#${p}-budget`); if (bud) bud.classList.toggle('out', free < least);
   const fb = $(`#${p}-fbox`), tip = `${free} free coins. Worth ${tot}: free, plus ${aLbl.toLowerCase()} ${a} and ${bLbl.toLowerCase()} ${b}, all refundable.`;
   if (fb.dataset.tip !== tip) fb.dataset.tip = tip;
   setStyle(s0, 'width', pc(free)); setStyle(s1, 'width', pc(a)); setStyle(s2, 'width', pc(b));
@@ -7809,7 +7807,6 @@ function updateHUD(dt) {
     setText(el.keepMax, 'km', '/ ' + S.keepMax);
     setStyle(el.keepbar, 'width', (S.keep / S.keepMax * 100) + '%');
     el.keepbox.classList.toggle('low', S.keep <= S.keepMax * 0.25);
-    setText($('#h-dfree'), 'hdf', fmtNum(Math.max(0, Math.floor(S.dFree)))); setText($('#h-afree'), 'haf', fmtNum(Math.max(0, Math.floor(S.aFree)))); // v32.1
   } finally { S = T; }
   // the wave's live numbers, and the pot
   const wave = S.phase === 'wave', settled = S.phase === 'summary' || S.phase === 'over';
