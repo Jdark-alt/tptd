@@ -26,8 +26,9 @@ def set_slider(page, sel, v):
     page.evaluate(f"""() => {{ const i = document.querySelector('{sel}'); i.value = i.dataset.flip ? +i.max - {v} : {v}; i.dispatchEvent(new Event('input', {{bubbles:true}})); i.dispatchEvent(new Event('change', {{bubbles:true}})); }}""")
 def no_terrain(page):
     """The fixed scenarios click known cells, so their matches start without rough ground or rock, and without the
-    planning clock (it has checks of its own), so a slow machine never sends a plan early."""
-    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.planSecs = 0; R.starterPresses = 0; }')
+    planning clock (it has checks of its own), so a slow machine never sends a plan early; and since v32 with the middle-row
+    gates (fixedGates), where the scenarios were drawn."""
+    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.planSecs = 0; R.starterPresses = 0; R.fixedGates = true; if (window.siegeline.setGates) window.siegeline.setGates(); }')
 def sure_sappers(page):
     """The fixed scenarios check what sappers do on arrival, so theirs get top health and always arrive."""
     page.evaluate('() => { window.siegeline.rules.sapper.hp = 9; }')
@@ -1878,8 +1879,20 @@ with sync_playwright() as p:
     T = S(page, '[...S.terrain]')
     rough = [i for i, v in enumerate(T) if v == 1]; rock = [i for i, v in enumerate(T) if v == 2]
     check(len(rough) == round(176 * 0.05) and len(rock) == round(176 * 0.05), f'about 5% rough ground and 5% rock ({len(rough)}, {len(rock)})')
-    gates = {r * COLS + c for c0 in (0, 15) for r in (4, 5, 6) for c in (c0 - 1, c0, c0 + 1) if 0 <= c < COLS}
-    check(not (set(rough) | set(rock)) & gates, 'the gates and the cells around them stay clear')
+    er, xr = S(page, 'S.gates')
+    gates = {r * COLS + c for c0, g in ((0, er), (15, xr)) for r in (g - 1, g, g + 1) for c in (c0 - 1, c0, c0 + 1) if 0 <= c < COLS}
+    check(not (set(rough) | set(rock)) & gates, f'the gates (rows {er} and {xr}) and the cells around them stay clear')
+    # v32: the gates move per match, in opposite halves, at least two rows from a corner
+    check(page.evaluate('() => window.siegeline.gates').__eq__([er, xr]), 'v32: the match keeps the gates its map seed gave it')
+    check((er < 5) != (xr < 5) and 5 not in (er, xr) and all(2 <= g <= 8 for g in (er, xr)), f'v32: entry and keep rows in opposite halves, 2+ rows from a corner ({er}, {xr})')
+    p0 = S(page, 'S.path')
+    check(p0[0] == er * COLS and p0[-1] == xr * COLS + 15, f'v32: the route runs from the entry (row {er}) to the keep (row {xr})')
+    seen = set()
+    for k in range(40): seen.add(tuple(page.evaluate(f'() => window.siegeline.gatesFor({k * 7919 + 13})')))
+    check(len(seen) >= 12 and all((a < 5) != (b < 5) and 2 <= a <= 8 and 2 <= b <= 8 for a, b in seen), f'v32: map seeds give many gate pairs, all in opposite halves ({len(seen)} of 18 over 40 seeds)')
+    page.evaluate('() => { window.siegeline.rules.fixedGates = true; }')
+    check(page.evaluate('() => window.siegeline.gatesFor(12345)') == [5, 5], 'v32: fixedGates keeps the middle row for both')
+    page.evaluate('() => { window.siegeline.rules.fixedGates = false; }')
     zones = [[sum(1 for r in range(r0, r1) for c in range(c0, c1) if T[r * COLS + c] == k) for (r0, r1) in ((0, 4), (4, 7), (7, 11)) for (c0, c1) in ((0, 5), (5, 11), (11, 16))] for k in (1, 2)]
     check(all(0 <= z <= 2 for zs in zones for z in zs), f'spread evenly: each of the 3x3 zones holds 0-2 of each kind {zones}')
     check(S(page, 'S.path !== null') and not set(S(page, 'S.path')) & set(rock), 'a route exists and goes around the rock')
@@ -2474,7 +2487,7 @@ with sync_playwright() as p:
     # the clock's last 30 seconds: it grows and turns red, and the last 10 count down over the board too
     ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('file://' + HARNESS); page.wait_for_timeout(400); page.evaluate('() => { const r = window.siegeline.rules; r.roughShare = 0; r.rockShare = 0; r.starterPresses = 0; r.planSecsFirst = 33; }')
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); page.evaluate('() => { const r = window.siegeline.rules; r.roughShare = 0; r.rockShare = 0; r.starterPresses = 0; r.planSecsFirst = 33; r.fixedGates = true; }')
     page.click('#info-go'); page.click('#mode-local'); page.wait_for_timeout(500); hand(page)
     fs0 = page.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#t-clock')).fontSize)")
     check('low' not in (page.get_attribute('#clockbox', 'class') or '') and page.is_hidden('#clockbig'), 'with 33 s left the clock is its usual size')
@@ -2485,6 +2498,69 @@ with sync_playwright() as p:
     check('last' in page.get_attribute('#clockbox', 'class') and page.inner_text('#clockbig-v').startswith('0:'), f'the last 10 seconds also count down over the board ({page.inner_text("#clockbig-v")})')
     check(not errors, f'v21.1 clock: no errors {errors[:3]}')
     ctx.close()
+
+    # ---------- v32: the polish pass: the tower suggestion, the speaker, the army's icons, the pop-ups' fade, turrets
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400)
+    page.evaluate('() => { const R = window.siegeline.rules; R.planSecs = 0; R.planSecsFirst = 0; }')
+    page.click('#info-go'); page.wait_for_timeout(1500)
+    snd = page.evaluate('() => window.siegeline.sound')
+    check(snd['ctx'] == 'running' and snd['music'], f'v32: sound and music are on at the start screen ({snd})')
+    page.click('#mode-local'); page.wait_for_timeout(500); hand(page)
+    # the tower suggestion: hints on, a couple of seconds in, one cell (a wall, or a free cell off the route)
+    check(page.evaluate('() => window.siegeline.hints'), 'v32: hints are on')
+    page.wait_for_function('() => window.siegeline.suggestion.cell >= 0', timeout=8000)
+    sg = page.evaluate('() => window.siegeline.suggestion'); c0 = sg['cell']
+    kind = S(page, f'S.grid[{c0}] ? S.grid[{c0}].t : (S.path.includes({c0}) ? "route" : "free")')
+    check(kind in ('wall', 'free'), f'v32: a tower suggestion shows on one cell ({c0}, {kind}) a couple of seconds into planning')
+    cover = page.evaluate(f'''() => {{ const S = window.siegeline.state, on = new Set(S.path), R = 2.5; let best = 0, at = 0;
+      const n = i => {{ let k = 0; const q = i % 16, r = (i / 16) | 0; for (const p of S.path) {{ const dx = p % 16 - q, dy = ((p / 16) | 0) - r; if (dx * dx + dy * dy <= R * R + 1e-9) k++; }} return k; }};
+      for (let i = 0; i < 176; i++) {{ const g = S.grid[i]; if ((g && g.t !== 'wall') || (!g && on.has(i))) continue; best = Math.max(best, n(i)); }} return [n({c0}), best]; }}''')
+    check(cover[0] == cover[1], f'v32: it is the spot that covers the most route cells (each pass counts): {cover[0]} of the best {cover[1]}')
+    page.click('.tool[data-tool=tower]')
+    free = [i for i in range(176) if S(page, f'!S.grid[{i}] && !S.path.includes({i}) && !S.terrain[{i}] && {i} % 16 > 0 && {i} % 16 < 15')]
+    click_cell(page, free[0] % 16, free[0] // 16); page.wait_for_timeout(150)
+    if S(page, f'!S.grid[{free[0]}]'): click_cell(page, free[0] % 16, free[0] // 16); page.wait_for_timeout(150)
+    page.wait_for_timeout(300)
+    check(page.evaluate('() => window.siegeline.suggestion').get('gone') and page.evaluate('() => window.siegeline.suggestion.cell') == -1, 'v32: placing any tower takes it away for the round')
+    # the speaker silences everything: effects (a wave plays without a sound) and the music
+    page.click('#btn-sound'); page.wait_for_timeout(200)
+    snd = page.evaluate('() => window.siegeline.sound')
+    check(not snd['on'] and snd['ctx'] == 'suspended', f'v32: the top bar speaker switches the sound off ({snd})')
+    played = snd['played']
+    page.click('#def-lock'); hand(page)
+    page.evaluate('''() => { const S = window.siegeline.state; S.designs[0].count = 10; window.siegeline.refresh(); }''')
+    page.click('#atk-lock'); page.wait_for_timeout(200)
+    if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+    hand(page); page.wait_for_timeout(3500)
+    snd = page.evaluate('() => window.siegeline.sound')
+    check(S(page, 'S.phase') == 'wave' and snd['played'] == played and snd['ctx'] == 'suspended', f'v32: a wave with the sound off plays no sound at all ({played} → {snd["played"]})')
+    check(len(page.evaluate('() => window.siegeline.aim.err')) > 0, 'v32: turrets fired, drawn with weight')
+    page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_selector('#ov-sum', state='visible', timeout=20000); page.wait_for_timeout(600)
+    page.click('#sum-next'); page.wait_for_timeout(60)
+    ghost = page.evaluate('() => { const L = document.getElementById("exit-layer"); return L ? [L.children.length, L.querySelectorAll("[id]").length, !!(L.firstElementChild && L.firstElementChild.inert)] : null; }')
+    check(ghost and ghost[0] >= 1 and ghost[1] == 0 and ghost[2] and page.is_hidden('#ov-sum'), f'v32: the summary closes at once and a copy of it (no ids, inert) fades out ({ghost})')
+    page.wait_for_timeout(400)
+    check(page.evaluate('() => document.getElementById("exit-layer").children.length') == 0, 'v32: the fading copy is gone after a moment')
+    snd = page.evaluate('() => window.siegeline.sound')
+    check(not snd['music'] and not snd['synth'], f'v32: and no music: the synthesised theme is off too ({snd})')
+    check(not errors, f'v32: no errors {errors[:3]}')
+    ctx.close()
+    # the army's unit icons: drawn big, at their size, on desktop and at 390 px
+    for vp, box in (({'width': 1366, 'height': 860}, 46), ({'width': 390, 'height': 844}, 40)):
+        ctx = b.new_context(viewport=vp); page = ctx.new_page(); errors = []
+        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+        page.click('#info-go'); page.click('#mode-local'); hand(page); page.click('#def-lock'); hand(page); page.wait_for_timeout(300)
+        ic = page.evaluate('() => { const i = document.querySelector("#roster .urow .ico"), im = i && i.querySelector("img"); return i && im ? [i.getBoundingClientRect().width, im.naturalWidth] : null; }')
+        check(ic and abs(ic[0] - box) < 1 and ic[1] >= 4 * box, f'v32 {vp["width"]}: the army\'s unit icons are {box} px, drawn at {ic and ic[1]} px (v31: 24 px from a 96 px drawing)')
+        fits = page.evaluate('() => [...document.querySelectorAll("#roster .ustats")].every(e => e.scrollWidth <= e.clientWidth + 1)')
+        check(fits, f'v32 {vp["width"]}: every row\'s stats still fit')
+        page.click('#roster .urow >> nth=0 >> .rpick'); page.wait_for_timeout(300)
+        check(page.is_visible('#ue') and not errors, f'v32 {vp["width"]}: the design editor opens under its row, no errors {errors[:2]}')
+        ctx.close()
     b.close()
 
 print('\nFAILURES:', len(fails))

@@ -235,9 +235,9 @@ def tower_spec():
     key = ('Silhouette: the attack type (octagon shooter, round Mortar, three-cornered Tesla). Barrels (shooters) or chevrons on the back '
            '(Mortar, Tesla): fire rate, one chevron slow, three fast. What points at the target: range. Lights at the foot: damage. '
            'Scope on the left of the turret: accuracy. Rings on the dish: splash. Lit corner nodes: chain jumps. '
-           'Ice and a snowflake on the left: Frost. Canisters and a drop on the right: Poison.')
+           'A steel-blue base with ice: Frost. A turret filled with venom: Poison.')
     sections[0]['key'] = key
-    return {'sub': 'Towers · v31 · every setting in its own place', 'sections': sections}
+    return {'sub': 'Towers · v32 · gunmetal, every setting in its own place', 'sections': sections}
 
 ap = argparse.ArgumentParser()
 ap.add_argument('what', choices=['towers', 'units'])

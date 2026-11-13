@@ -33,7 +33,7 @@ ARMY = '''(per) => { const sl = window.siegeline, S = sl.state; S.aFree = 999999
 
 def match(pg, per):
     pg.goto('file://' + PAGE); pg.wait_for_timeout(600)
-    pg.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0.05; R.rockShare = 0.05; R.planSecs = 0; R.starterPresses = 0; }')
+    pg.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0.05; R.rockShare = 0.05; R.planSecs = 0; R.starterPresses = 0; R.fixedGates = true; }')
     pg.click('#info-go'); pg.click('#mode-local'); pg.wait_for_timeout(500); pg.click('#ov-hand'); pg.wait_for_timeout(100)
     pg.evaluate('''() => { const sl = window.siegeline, S = sl.state; S.dFree = 99999; const T = ''' + TOWERS + ''';
       let n = 0; for (const [c, r, o] of T) { const i = r * 16 + c; S.terrain[i] = 0; S.grid[i] = { t: 'tower', cfg: { range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: 0, ...o }, n: ++n, fee: 0, fresh: true, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; }

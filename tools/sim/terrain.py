@@ -31,13 +31,13 @@ a = ap.parse_args()
 
 MAP_SEED = 'seed => Math.imul(seed, 2654435761) >>> 0'  # the map each match seed gets in ai.js runMatch
 
-def draw(T):
+def draw(T, gates=(5, 5)):
     rows = []
     for r in range(11):
         row = ''
         for c in range(16):
             i = r * 16 + c
-            row += 'E' if i == 80 else 'K' if i == 95 else '#' if T[i] == 2 else ':' if T[i] == 1 else '.'
+            row += 'E' if (c == 0 and r == gates[0]) else 'K' if (c == 15 and r == gates[1]) else '#' if T[i] == 2 else ':' if T[i] == 1 else '.'
         rows.append('      ' + row)
     return '\n'.join(rows)
 
@@ -66,10 +66,10 @@ def summary(files):
         d = 100 * (on_r - off_r)
         mark = '  <-- FLAG' if abs(d) >= a.flag else ''
         print(f'  seed {s:3d}: {100 * on_r:4.0f}% / {100 * off_r:4.0f}%  ({d:+4.0f})  keep {sum(r["keep"] for r, _ in ps) / n:4.0f} / {sum(o["keep"] for _, o in ps) / n:4.0f}{mark}')
-        if mark: flagged.append((s, ps[0][0].get('map')))
+        if mark: flagged.append((s, ps[0][0].get('map'), ps[0][0].get('gates') or (5, 5)))
     print(f'{len(flagged)} flagged map(s) (attacker win rate moved {a.flag:.0f}+ points)')
-    for s, T in flagged:
-        if T: print(f'  seed {s}:\n' + draw(T))
+    for s, T, g in flagged:
+        if T: print(f'  seed {s}:\n' + draw(T, g))
 
 if a.summary:
     summary(a.summary); sys.exit()
@@ -82,7 +82,7 @@ with sync_playwright() as p:
         r = pg.evaluate('''([n, ms]) => {
           const I = window.siegeline._i, COLS = 16, N = 176, mapSeed = eval(ms);
           const out = { tries: {}, fallback: 0, rough: {}, rock: {}, zoneMax: 0, clusterMax: 0, room: [] };
-          const empty = I.mazeRoom(new Uint8Array(N)), ZC = [0, 5, 11, 16], ZR = [0, 4, 7, 11];
+          const ZC = [0, 5, 11, 16], ZR = [0, 4, 7, 11];
           for (let seed = 1; seed <= n; seed++) {
             const m = I.makeTerrain(mapSeed(seed)), T = m.T, cnt = k => T.filter(v => v === k).length;
             out.tries[m.tries] = (out.tries[m.tries] || 0) + 1; if (m.scale < 1) out.fallback++;
@@ -97,7 +97,7 @@ with sync_playwright() as p:
               while (st.length) { const j = st.pop(); sz++; for (const k of [j - 1, j + 1, j - COLS, j + COLS]) if (k >= 0 && k < N && Math.abs((k % COLS) - (j % COLS)) <= 1 && T[k] && !seen.has(k)) { seen.add(k); st.push(k); } }
               out.clusterMax = Math.max(out.clusterMax, sz);
             }
-            out.room.push(I.mazeRoom(T) / empty);
+            out.room.push(I.mazeRoom(T) / I.mazeRoom(new Uint8Array(N))); // v32: the empty board's room for this map's gates (makeTerrain set them)
           }
           out.room.sort((x, y) => x - y);
           out.room = { min: out.room[0], p10: out.room[Math.floor(n / 10)], median: out.room[Math.floor(n / 2)], max: out.room[n - 1] };
@@ -112,7 +112,7 @@ with sync_playwright() as p:
            else {k: v for k, v in ATTACKERS.items() if any(s.strip() in k for s in a.attackers.split(','))})
     with open(a.out, 'a') as out:
         for seed in range(a.seed0, a.seed0 + a.seeds):
-            T = pg.evaluate('([s, ms, r]) => { const I = window.siegeline._i; Object.assign(I.RULES, window.__baseRules, r); return [...I.makeTerrain(eval(ms)(s)).T]; }', [seed, MAP_SEED, rules])
+            T, G = pg.evaluate('([s, ms, r]) => { const I = window.siegeline._i; Object.assign(I.RULES, window.__baseRules, r); const m = I.makeTerrain(eval(ms)(s)); return [[...m.T], (m.gates || [5, 5])]; }', [seed, MAP_SEED, rules])
             for dn in a.defenders.split(','):
                 for an, ao in atk.items():
                     opts = {**GAME_RULES_OPTS, **ao}
@@ -120,7 +120,7 @@ with sync_playwright() as p:
                         rr = {**rules} if terrain else {**rules, 'roughShare': 0, 'rockShare': 0}
                         res = pg.evaluate('([d,a,s,r]) => runMatch(d,a,s,r)', [DEFENDERS[dn], opts, seed, rr])
                         out.write(json.dumps({'seed': seed, 'd': dn, 'a': an, 'terrain': terrain, 'winner': res['winner'], 'keep': res['keep'], 'round': res['round'],
-                                              'map': T if terrain else None}) + '\n')
+                                              'map': T if terrain else None, 'gates': G}) + '\n')
                     out.flush()
             print(f'seed {seed} done', flush=True)
     b.close()

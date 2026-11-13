@@ -44,7 +44,7 @@ def snap(pg):
 def no_terrain(*pgs):
     """Known cells are clicked, so no terrain and no starter maze; sappers get top health so the planned sabotage always
     arrives; and no planning clock (it has checks of its own), so a slow machine never sends a plan early."""
-    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.starterPresses=0; R.sapper.hp=9; R.planSecs=0;}')
+    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.starterPresses=0; R.sapper.hp=9; R.planSecs=0; R.fixedGates=true;}')
 def join(pg, role, code, waves=None):
     """v26: rooms. 'def' hosts the room with this code (the host sits as Defender); 'atk' joins it and sits in the free seat.
     The host starts the match with start()."""
@@ -303,9 +303,10 @@ try:
             C.wait_for_timeout(300)
             join(C, 'def', 'TERR'); join(D, 'atk', 'TERR'); start(C)
             wait(C, "N.st==='play' && S.phase==='defend'"); wait(D, "N.st==='play' && S.phase==='attack'")
-            MAP = '[S.mapSeed,[...S.terrain].join(""),S.grid.map(g=>g&&g.t==="rock"?1:0).join("")]'
+            MAP = '[S.mapSeed,[...S.terrain].join(""),S.grid.map(g=>g&&g.t==="rock"?1:0).join(""),S.gates.join(","),window.siegeline.gates.join(",")]'
             m1 = ev(C, MAP)
             check('terrain: both devices build the same map', m1 == ev(D, MAP) and '1' in m1[1] and '2' in m1[1], m1[0])
+            check('v32: and the same gates, from the map seed, in opposite halves', m1[3] == m1[4] and (int(m1[3].split(',')[0]) < 5) != (int(m1[3].split(',')[1]) < 5), m1[3])
             check('terrain: the attacker sees the rock from the start', ev(D, 'S.seenGrid.filter(g=>g&&g.t==="rock").length') == m1[1].count('2'))
             # v21: the starter maze is built on both devices from the shared seed; nothing about it travels
             ST = 'S.grid.map(g=>g&&g.t==="wall"?1:0).join("")'

@@ -83,8 +83,9 @@
     const seen = (i, t) => !!(S.seenGrid[i] && S.seenGrid[i].t === t);
     const towers = () => S.grid.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0);
     // like a player, it can't close the route (rock can leave a column's gap blocked)
-    const open = () => { const seenC = new Uint8Array(N), q = [at(0, 5)]; seenC[q[0]] = 1;
-      while (q.length) { const i = q.pop(); if (i === at(15, 5)) return true; const c = i % COLS;
+    const [E, K] = I.gates(); // v32: the gates move per match
+    const open = () => { const seenC = new Uint8Array(N), q = [E]; seenC[q[0]] = 1;
+      while (q.length) { const i = q.pop(); if (i === K) return true; const c = i % COLS;
         for (const j of [c > 0 ? i - 1 : -1, c < COLS - 1 ? i + 1 : -1, i - COLS, i + COLS]) if (j >= 0 && j < N && !seenC[j] && !S.grid[j]) { seenC[j] = 1; q.push(j); } }
       return false; };
     const addWall = i => {
@@ -263,7 +264,7 @@
 
   // What a defense for runWave costs under the rules, without playing a wave (scan.py --fit uses it). v23.
   window.defenseCost = (towers, rules = {}, cols = 4, layout = null) => {
-    resetUS();
+    resetUS(); I.setGates(); // the fixed layouts are drawn for the middle-row gates
     const { US, ...plain } = rules;
     Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     const walls = new Set(layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: cols }, (_, k) => colCells(k)).flat());
@@ -292,7 +293,7 @@
   // Army step's Auto-army (from the three starting designs, as a new attacker has them), 'easy' | 'normal' | 'hard' the
   // computer attacker. Round 2 of 8 for Auto-army, round 1 for the computer (no sabotage either way: none is planned).
   window.botArmyVs = (kind, towers, budget, rules = {}, layout = null, seed = 7) => {
-    resetUS();
+    resetUS(); I.setGates();
     const { US, ...plain } = rules;
     Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     I.S = I.newState(); const S = I.S; saboFor(rules);
@@ -319,7 +320,7 @@
   // army: [[stats or preset, count, start, end], ...]. Returns breach and costs.
   // layout (optional): { walls: [[c, r], ...], slots: [[c, r], ...] } replaces the 4-column maze and its slots.
   window.runWave = (towers, army, rules = {}, cols = 4, seed = 7, layout = null) => {
-    resetUS();
+    resetUS(); I.setGates();
     const { US, ...plain } = rules;
     Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     if (US) for (const [k, v] of Object.entries(US)) { if (v.steps) I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); }

@@ -47,7 +47,7 @@ CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].
 TERRAIN_OK = 'S.grid.every((g, i) => S.terrain[i] === 2 ? !!(g && g.t === "rock") : S.terrain[i] === 1 ? !g : !(g && g.t === "rock"))'
 def terrain(page, on):
     """Terrain and the starter maze (v21) together: the fixed scenarios click known cells on an empty board."""
-    page.evaluate(f'() => {{ const R = window.siegeline.rules; R.roughShare = R.rockShare = {0.05 if on else 0}; R.starterPresses = {3 if on else 0}; }}')
+    page.evaluate(f'() => {{ const R = window.siegeline.rules; R.roughShare = R.rockShare = {0.05 if on else 0}; R.starterPresses = {3 if on else 0}; R.fixedGates = {'false' if on else 'true'}; }}')
 def details(page, ov='#ov-sum'):
     """Open the summary's Details (closed by default since v21): the computer's note is in there."""
     t = page.locator(f'{ov} [data-act=details]')
