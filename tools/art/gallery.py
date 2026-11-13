@@ -3,6 +3,7 @@ armor, regeneration and resists, screenshotted at 2× (and zoomed crops), plus t
 
     python tools/art/gallery.py                # screenshots land in tools/.build/shots/art
     python tools/art/gallery.py --perf 4       # also the frame times of a 160-unit wave, the CPU slowed 4×
+    python tools/art/gallery.py --perf 4 --seed 1   # ... the same match and wave every run, to compare two builds
 
 Since v31 a specimen sheet of every tower (attack type × element × damage × fire rate, and the extremes) is
 tools/art/sheet.py towers (and --phone).
@@ -52,10 +53,13 @@ def wave(pg, per):
     pg.wait_for_selector('#ov-hand', state='visible'); pg.wait_for_timeout(500)
 
 ap = argparse.ArgumentParser(); ap.add_argument('--perf', type=float, default=0, help='also time a busy wave, the CPU slowed this many times (1 = not slowed)')
+ap.add_argument('--seed', type=int, default=0, help='seed Math.random (v32), so two builds play the same match code, map and wave: compare builds run for run')
 args = ap.parse_args()
 with sync_playwright() as p:
     b = launch(p)
-    ctx = b.new_context(viewport={'width': 1440, 'height': 900}, device_scale_factor=2); pg = ctx.new_page()
+    ctx = b.new_context(viewport={'width': 1440, 'height': 900}, device_scale_factor=2)
+    if args.seed: ctx.add_init_script('(() => { let a = %d; Math.random = () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; })();' % args.seed)
+    pg = ctx.new_page()
     errs = []; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' else None)
     match(pg, 6)
     x, y, w, h = board(pg)

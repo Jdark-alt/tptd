@@ -8481,6 +8481,29 @@ function drawTurret(c, cfg, off, px) {
 }
 const towerBaseSpr = (cfg, off) => sprite('tb' + towerSig(cfg) + (off ? 'x' : ''), 1, (c, px) => drawTowerBase(c, cfg, off, px));
 const turretSpr = (cfg, off) => sprite('tt' + towerSig(cfg) + (off ? 'x' : ''), 1.4, (c, px) => drawTurret(c, cfg, off, px));
+// v32: a turret is drawn turned (its weight: towerAim), and a turned image costs by the pixels it covers, most of its
+// 1.4-cell square empty; so it's drawn from a copy cropped to what's in it, found once per sprite (the same picture;
+// it took the towers' drawing back to v31's cost in a busy wave).
+const turretCrop = new WeakMap();
+function turretBox(s) {
+  let b = turretCrop.get(s);
+  if (b) return b;
+  const W = s.width, H = s.height, k = 1.4 / W;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  try {
+    const d = s.getContext('2d').getImageData(0, 0, W, H).data;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  } catch (e) { x1 = -1; }
+  if (x1 < 0 || (x1 - x0 + 1) * (y1 - y0 + 1) > W * H * 0.8) b = { cv: s, x: -0.7, y: -0.7, w: 1.4, h: 1.4 };
+  else {
+    x0 = Math.max(0, x0 - 1); y0 = Math.max(0, y0 - 1); x1 = Math.min(W - 1, x1 + 1); y1 = Math.min(H - 1, y1 + 1);
+    const cv = document.createElement('canvas'); cv.width = x1 - x0 + 1; cv.height = y1 - y0 + 1;
+    cv.getContext('2d').drawImage(s, -x0, -y0);
+    b = { cv, x: -0.7 + x0 * k, y: -0.7 + y0 * k, w: cv.width * k, h: cv.height * k };
+  }
+  turretCrop.set(s, b);
+  return b;
+}
 
 /* ---------- units (v31) ----------
    Abstract shapes, one for each speed step (the user's spec: "shape = speed only … no vehicles", then, from three
@@ -8657,7 +8680,7 @@ function unitLight(c, u, s, R, t, a = 1, v = null) {
   const f = uF(s), p = reduceMotion ? 0.85 : 0.72 + 0.28 * Math.sin(t * (0.9 + 7 * f * f) + u.id);
   const ga = c.globalAlpha, op = c.globalCompositeOperation;
   c.globalAlpha = ga * a * p; c.globalCompositeOperation = 'lighter';
-  const h = v ? v.h : u.ang, split = v && U_TRAIL[s] && Math.abs(wrapA(v.ta - v.h)) > 0.12;
+  const h = v ? v.h : u.ang, split = v && !ART.lo && U_TRAIL[s] && Math.abs(wrapA(v.ta - v.h)) > 0.12;
   const draw = o => c.drawImage(o.cv, o.x0, o.y0, o.w, o.h);
   if (split) {
     c.save(); c.rotate(wrapA(v.ta - v.hb)); draw(unitFx(s, u.color, R, u.regen > 0, angBucket(v.hb), 1)); c.restore(); // the trail, along the curve
@@ -8850,7 +8873,7 @@ function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0, o = {}) {
     }
     gatlingBarrels(c, cfg, off, t, sp ? sp[0] : 0.4);
   }
-  blit(c, turretSpr(cfg, off), 0, 0, 1.4);
+  { const tb = turretBox(turretSpr(cfg, off)); c.drawImage(tb.cv, tb.x, tb.y, tb.w, tb.h); } // cropped (v32)
   if (!off && !o.ghost) {
     if (shape === 'tesla') glow(c, 0, 0, 0.24, TESLA.rgb, 0.16 + 0.12 * Math.sin(t * (2 + 3 * rateBand(cfg)) + x) + kick * 0.5); // the core
     if (cfg.poison) { // venom bubbling up inside the turret
@@ -10203,7 +10226,7 @@ function drawUnits(c, t, list = S.units) {
     const u = list[n], R = u.r, f = uF(u.shape), hov = u.sap ? 2 : 1 + 1.3 * f, [sx, sy] = scrW(0.045 * hov, 0.06 * hov), v = vws[n];
     const px = v ? v.x : u.x + u.ox, py = v ? v.y : u.y + u.oy;
     if (u.sap) { c.beginPath(); c.arc(px + sx, py + sy, R * 1.1, 0, TAU); c.fillStyle = '#000'; c.fill(); continue; }
-    if (v && Math.abs(v.bank) > 0.04) { // banked: its shadow slides out from under the lifted side
+    if (v && !ART.lo && Math.abs(v.bank) > 0.04) { // banked: its shadow slides out from under the lifted side (not while frames run slow)
       const k = 1 - Math.abs(v.bank) * 0.4, o = v.bank * 0.07 * hov;
       c.save(); c.translate(px + sx - Math.sin(v.h) * o, py + sy + Math.cos(v.h) * o); c.rotate(v.h); c.scale(1, k); c.rotate(-v.hb);
       blit(c, unitSil(u.shape, R, '#000', angBucket(v.h)), 0, 0, unitSz(R, u.shape)); c.restore();
@@ -10223,7 +10246,7 @@ function drawUnits(c, t, list = S.units) {
       continue;
     }
     const s = u.shape, b = angBucket(v ? v.h : u.ang), sz = unitSz(R, s), rl = u.rl || (u.rl = resList(u.resist));
-    const banked = v && Math.abs(v.bank) > 0.04;
+    const banked = v && !ART.lo && Math.abs(v.bank) > 0.04;
     if (banked) { c.save(); c.rotate(v.h); c.scale(1, 1 - Math.abs(v.bank) * 0.4); c.rotate(-v.hb); } // v32: tilted, squashed across its heading
     blit(c, unitSpr(s, u.color, R, u.armorLvl, u.regen > 0, b), 0, 0, unitBodySz(R, s, u.armorLvl));
     if (u.slowT > 0) { c.globalAlpha = 0.5 * fade; blit(c, unitSil(s, R, '#bff3ff', b), 0, 0, sz); c.globalAlpha = fade; }
