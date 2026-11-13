@@ -1413,7 +1413,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         </ul>
         <div class="tablewrap"><table class="acc"><thead><tr><th>Shots per second</th></tr></thead><tbody><tr><td>Accuracy</td></tr></tbody></table></div>
         <p><strong>Each shot rolls once.</strong> A hit works as always: armor, splash, effects. A miss does nothing and applies no effects, but a splash miss still blasts the units around its target, just not the target. Chain only jumps from a hit, and its jumps always land.</p>
-        <p><strong>Reading a tower.</strong> Every setting shows, in the same place on every tower, for both players. The outline is how it attacks: an octagon shoots (rapid fire a <b>Gatling</b>’s spinning barrels, slow heavy shots a <b>Railgun</b>’s twin rails, anything else a <b>Blaster</b>), a round dish is a <b>Mortar</b> (splash: a ring on the dish for each step), a three-cornered pylon a <b>Tesla</b> (chain: a node lit in a corner for each jump). What points at the target reaches as far as it is long; the lights along the foot are its damage; one to three chevrons on a dish or coil its fire rate; a scope its accuracy. <b>Frost</b> puts ice and a snowflake on its left side, <b>Venom</b> (poison) canisters and a drop on its right; the metal never changes colour.</p>
+        <p><strong>Reading a tower.</strong> Every setting shows, in the same place on every tower, for both players. The outline is how it attacks: an octagon shoots (rapid fire a <b>Gatling</b>’s spinning barrels, slow heavy shots a <b>Railgun</b>’s twin rails, anything else a <b>Blaster</b>), a round dish is a <b>Mortar</b> (splash: a ring on the dish for each step), a three-cornered pylon a <b>Tesla</b> (chain: a node lit in a corner for each jump). What points at the target reaches as far as it is long; the lights along the foot and the turret’s size are its damage (a ring of light at the top step); one to three chevrons on a dish or coil its fire rate; a scope its accuracy. <b>Frost</b> freezes its whole base pale, with ice growing from it; <b>Venom</b> (poison) fills its turret with glowing green; a tower with both has both.</p>
         <div class="legend" id="info-tlegend" aria-hidden="true"></div>
       </section>
 
@@ -8097,11 +8097,13 @@ function bridgeSprite(m) {
    rails); a Mortar (splash) is a disc on a round plinth, its dish ringed once for each splash step; a Tesla (chain) is a
    coil on a three-cornered pylon, a conductor node lit in a corner for each jump. The rest is the same on all three:
    range is the length of what points at the target (a barrel, the Mortar's sighting needle, the Tesla's emitter
-   prong); damage is one to five power lights along the plinth's foot; fire rate is the barrels, or one to three
-   chevrons on the back of the dish or coil (slow, middle, fast), and a coil that pulses faster; accuracy is a scope on
-   the turret's left; Frost is ice crystals and a snowflake badge on the plinth's left side, Poison venom canisters and a
-   drop badge on its right. The body stays the defender's metal: an element colours only its own slot, and the tower's
-   light carries every colour it has. */
+   prong); damage is one to five power lights along the plinth's foot and the turret's size (a bar of light and an
+   overcharge ring at the top step); fire rate is the barrels, or one to three chevrons on the back of the dish or coil
+   (slow, middle, fast), and a coil that pulses faster; accuracy is a scope on the turret's left. The elements take big
+   areas, so they read from across the board (the user, after the first look: "if they could affect the colour"):
+   Frost freezes the whole plinth pale with ice crystals growing from it, Poison fills the turret with glowing, bubbling
+   venom. Each keeps its own part of the tower, so a tower with both shows both; the tower's light carries every colour
+   it has. */
 const towerShape = c => (c.splash > 0 ? 'mortar' : chainOf(c) ? 'tesla' : 'shoot'); // the silhouette: the attack type
 const towerKind = c => { const r = TS.rate.steps[c.rate]; return c.splash > 0 ? 'mortar' : chainOf(c) ? 'tesla' : r >= 2.5 ? 'gatling' : r <= 0.6 ? 'rail' : 'blaster'; };
 const KIND_NAME = { mortar: 'Mortar', tesla: 'Tesla', gatling: 'Gatling', rail: 'Railgun', blaster: 'Blaster' };
@@ -8123,7 +8125,7 @@ const towerRGB = (c, off) => {
 };
 // The lamps it lights the board with, [dx, dy, r, rgb, a]: its core, and each element from its own side of the plinth.
 const towerLamps = c => [[0, 0, 2.1, towerShape(c) === 'tesla' ? TESLA.rgb : '150,225,245', 0.6],
-  ...(c.slow ? [[-0.42, 0, 1.25, ELEM.slow.rgb, 0.42]] : []), ...(c.poison ? [[0.42, 0, 1.25, ELEM.poison.rgb, 0.42]] : [])];
+  ...(c.slow ? [[0, 0, 1.7, ELEM.slow.rgb, 0.5]] : []), ...(c.poison ? [[0, 0, 1.3, ELEM.poison.rgb, 0.5]] : [])]; // Frost lights its plinth, Poison its turret
 const barrelLen = c => 0.2 + 0.035 * c.range;
 const pointerTip = c => 0.2 + barrelLen(c); // where a Mortar's needle or a Tesla's prong ends: range, like a barrel
 // the Tesla pylon's corners (its node sockets) and the plinths' outlines
@@ -8141,16 +8143,35 @@ function plinthPath(c, shape, k = 1) { // k < 1: an inner outline
   else if (shape === 'tesla') roundPoly(c, TESLA_TRI.map(([x, y]) => [x * k, (y - 0.11) * k + 0.11]), 0.1 * k);
   else octo(c, 0.43 * k, 0.13 * k);
 }
-// The plinth's left and right sides, where Frost and Poison sit on every silhouette.
-const SIDE_X = { shoot: 0.43, mortar: 0.44, tesla: 0.34 };
-const SIDE_Y = { shoot: 0, mortar: 0, tesla: 0.1 };
+// Where the frost's ice crystals grow on each plinth (inside its outline, clear of the pips and the Tesla's nodes).
+const ICE_AT = {
+  shoot: [[-0.3, -0.3, -2.36], [0.3, -0.3, -0.79], [-0.3, 0.27, 2.36], [0.3, 0.27, 0.79]],
+  mortar: [[-0.29, -0.29, -2.36], [0.29, -0.29, -0.79], [-0.31, 0.22, 2.5], [0.31, 0.22, 0.64]],
+  tesla: [[-0.2, -0.05, -2.6], [0.2, -0.05, -0.54], [0, -0.17, -1.57]],
+};
+const dpsMax = () => TS.dps.steps.length - 1;
+const turretK = cfg => 0.9 + 0.2 * cfg.dps / dpsMax(); // more damage, a bigger turret: 0.9 to 1.1
 function drawTowerBase(c, cfg, off, px) {
-  const shape = towerShape(cfg), rim = off ? 'rgba(150,150,170,0.5)' : 'rgba(79,214,238,0.7)', dark = off ? ['#191820', '#0e0d13'] : ['#16242e', '#0a1218'];
-  // the plinth: its shadow, a lit-from-the-top-left face, the defender's cyan rim, an inner line
+  const shape = towerShape(cfg), ice = cfg.slow, rim = off ? 'rgba(150,150,170,0.5)' : ice ? '#f2fdff' : 'rgba(79,214,238,0.7)';
+  const face = off ? (ice ? ['#4a4c56', '#22232b'] : ['#191820', '#0e0d13']) : ice ? ['#c4ecf7', '#2b6478'] : ['#16242e', '#0a1218'];
+  // the plinth: its shadow, a lit-from-the-top-left face (Frost freezes it pale), the rim, an inner line
   c.save(); c.translate(0.012, 0.014); plinthPath(c, shape); c.fillStyle = '#03070a'; c.fill(); c.restore();
-  c.save(); c.translate(-0.01, -0.01); plinthPath(c, shape, 0.98); c.fillStyle = diagGrad(c, 0.44, 0.44, dark[0], dark[1]); c.fill();
-  c.lineWidth = px * 1.4; c.strokeStyle = rim; c.stroke(); c.restore();
-  plinthPath(c, shape, 0.78); c.lineWidth = px; c.strokeStyle = off ? 'rgba(120,120,140,0.25)' : 'rgba(79,214,238,0.18)'; c.stroke();
+  c.save(); c.translate(-0.01, -0.01); plinthPath(c, shape, 0.98); c.fillStyle = diagGrad(c, 0.44, 0.44, face[0], face[1]); c.fill();
+  c.lineWidth = px * (ice ? 2 : 1.4); c.strokeStyle = rim; c.stroke(); c.restore();
+  plinthPath(c, shape, 0.78); c.lineWidth = px; c.strokeStyle = off ? 'rgba(120,120,140,0.25)' : ice ? 'rgba(255,255,255,0.45)' : 'rgba(79,214,238,0.18)'; c.stroke();
+  if (ice) { // rime: a scatter of frost on the face, and ice crystals growing from it
+    c.fillStyle = off ? 'rgba(200,200,210,0.25)' : 'rgba(255,255,255,0.55)';
+    for (let k = 0; k < 26; k++) { const a = k * 2.399, r = 0.1 + 0.3 * ((k * 0.618) % 1); c.fillRect(Math.cos(a) * r, Math.sin(a) * r * 0.95, 0.014, 0.014); }
+    for (const [x, y, a] of ICE_AT[shape]) {
+      c.save(); c.translate(x, y); c.rotate(a);
+      for (const [d, h, w] of [[0, 0.12, 0.034], [0.5, 0.085, 0.026], [-0.5, 0.09, 0.026]]) {
+        c.save(); c.rotate(d); c.beginPath(); c.moveTo(-0.02, -w); c.lineTo(h, 0); c.lineTo(-0.02, w); c.closePath();
+        c.fillStyle = off ? '#8a8c96' : '#f4feff'; c.fill(); c.lineWidth = px; c.strokeStyle = off ? '#3a3b44' : '#2a6a80'; c.stroke();
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(h * 0.8, 0); c.strokeStyle = off ? 'rgba(80,80,90,0.5)' : 'rgba(110,190,215,0.8)'; c.stroke(); c.restore();
+      }
+      c.restore();
+    }
+  }
   if (shape === 'mortar') { // a turntable track with hazard ticks
     c.beginPath(); c.arc(0, 0, 0.36, 0, TAU); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fill();
     c.lineWidth = 0.03; c.strokeStyle = off ? 'rgba(130,130,140,0.4)' : 'rgba(255,200,90,0.5)'; c.setLineDash([0.035, 0.05]); c.beginPath(); c.arc(0, 0, 0.36, 0, TAU); c.stroke(); c.setLineDash([]);
@@ -8168,62 +8189,38 @@ function drawTowerBase(c, cfg, off, px) {
       } else { c.beginPath(); c.arc(x, y, 0.03, 0, TAU); c.fillStyle = off ? '#26252d' : '#13202a'; c.fill(); }
     });
   } else { // the shooter's ring of bolts
-    c.fillStyle = off ? 'rgba(150,150,170,0.4)' : 'rgba(160,220,235,0.5)';
+    c.fillStyle = off ? 'rgba(150,150,170,0.4)' : ice ? 'rgba(20,60,75,0.5)' : 'rgba(160,220,235,0.5)';
     for (const [x, y] of [[-0.3, -0.38], [0.3, -0.38], [-0.38, -0.3], [-0.38, 0.3], [0.38, -0.3], [0.38, 0.3]]) { c.beginPath(); c.arc(x, y, 0.014, 0, TAU); c.fill(); }
   }
-  // Frost on the left: ice crystals along the side and a snowflake badge
-  const sx = SIDE_X[shape], sy = SIDE_Y[shape];
-  if (cfg.slow) {
-    const ice = off ? '#7c7e88' : '#e6fbff', rime = off ? 'rgba(120,124,136,0.5)' : 'rgba(191,243,255,0.55)';
-    for (const [dx, dy, h, a] of [[0.02, -0.2, 0.1, -0.5], [0.0, -0.11, 0.07, -0.2], [0.03, 0.12, 0.08, 0.3], [0.01, 0.2, 0.11, 0.6], [0.05, -0.27, 0.06, -0.9]]) {
-      c.save(); c.translate(-sx + dx + 0.02, sy + dy * (shape === 'tesla' ? 0.7 : 1)); c.rotate(Math.PI + a);
-      c.beginPath(); c.moveTo(0, -h * 0.28); c.lineTo(h, 0); c.lineTo(0, h * 0.28); c.closePath(); c.fillStyle = rime; c.fill();
-      c.beginPath(); c.moveTo(0, -h * 0.12); c.lineTo(h * 0.8, 0); c.lineTo(0, h * 0.12); c.closePath(); c.fillStyle = ice; c.fill();
-      c.restore();
-    }
-    badge(c, -sx + 0.02, sy, off ? '#7c7e88' : ELEM.slow.hex, px, 'slow');
-  }
-  // Poison on the right: two venom canisters and a drop badge
-  if (cfg.poison) {
-    const glass = off ? '#3a3b44' : '#2f7a3a', fluid = off ? '#5c5e66' : '#8fe388';
-    for (const dy of [-0.17, 0.17]) {
-      const x = sx - (shape === 'tesla' ? 0.1 : 0.06), y = sy + dy * (shape === 'tesla' ? 0.7 : 1);
-      c.beginPath(); rr(c, x - 0.045, y - 0.075, 0.09, 0.15, 0.04); c.fillStyle = '#05100a'; c.fill();
-      c.beginPath(); rr(c, x - 0.035, y - 0.065, 0.07, 0.13, 0.03); c.fillStyle = glass; c.fill();
-      c.beginPath(); rr(c, x - 0.035, y - 0.01, 0.07, 0.065, 0.025); c.fillStyle = fluid; c.fill();
-      c.fillStyle = 'rgba(255,255,255,0.45)'; c.fillRect(x - 0.025, y - 0.055, 0.012, 0.08);
-      c.fillStyle = off ? '#55565e' : '#9fb7a6'; c.fillRect(x - 0.04, y - 0.08, 0.08, 0.018);
-    }
-    badge(c, sx - 0.02, sy, off ? '#7c7e88' : ELEM.poison.hex, px, 'poison');
-  }
-  // damage: one to five power lights along the foot of the plinth, on every silhouette
-  const pips = 1 + Math.floor(cfg.dps / 2), py = 0.335;
+  // damage: one to five power lights along the foot of the plinth, on every silhouette; at the top step one bar
+  // and an overcharge ring round the turret
+  const pips = 1 + Math.floor(cfg.dps / 2), py = 0.335, top = cfg.dps >= dpsMax();
   c.fillStyle = '#04080b'; c.fillRect(-0.19, py - 0.012, 0.38, 0.046);
-  for (let k = 0; k < 5; k++) { c.fillStyle = k < pips ? (off ? 'rgba(140,140,160,0.7)' : '#8ff0ff') : (off ? '#1d1c24' : '#10242c'); c.fillRect(-0.17 + k * 0.07, py, 0.05, 0.022); }
-}
-// An element's badge: its symbol on a dark disc ringed in its colour (a snowflake, a drop).
-function badge(c, x, y, col, px, k) {
-  c.save(); c.translate(x, y);
-  c.beginPath(); c.arc(0, 0, 0.075, 0, TAU); c.fillStyle = '#04080b'; c.fill(); c.lineWidth = px * 1.4; c.strokeStyle = col; c.stroke();
-  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = Math.max(px * 1.3, 0.013); c.lineCap = 'round';
-  if (k === 'slow') { c.beginPath(); for (let j = 0; j < 3; j++) { const a = j * Math.PI / 3; c.moveTo(Math.cos(a) * 0.048, Math.sin(a) * 0.048); c.lineTo(-Math.cos(a) * 0.048, -Math.sin(a) * 0.048); } c.stroke(); }
-  else { c.beginPath(); c.moveTo(0, -0.05); c.quadraticCurveTo(0.04, 0.0, 0.031, 0.019); c.arc(0, 0.019, 0.031, 0, Math.PI); c.quadraticCurveTo(-0.04, 0, 0, -0.05); c.fill(); }
-  c.restore();
+  if (top) { c.fillStyle = off ? 'rgba(140,140,160,0.7)' : '#e6fdff'; c.fillRect(-0.17, py, 0.34, 0.022); }
+  else for (let k = 0; k < 5; k++) { c.fillStyle = k < pips ? (off ? 'rgba(140,140,160,0.7)' : '#8ff0ff') : (off ? '#1d1c24' : '#10242c'); c.fillRect(-0.17 + k * 0.07, py, 0.05, 0.022); }
+  if (top && !off) for (let k = 0; k < 6; k++) { const a = k * TAU / 6 + 0.26; c.beginPath(); c.arc(0, 0, 0.3, a, a + 0.62); c.lineWidth = 0.022; c.strokeStyle = '#04080b'; c.stroke(); c.lineWidth = 0.012; c.strokeStyle = '#c8fbff'; c.stroke(); }
 }
 // The turret, facing +x, in the defender's metal: barrels by fire rate (shooters), the dish (Mortar) or the coil
 // (Tesla), what points at the target (its length the range), the fire-rate chevrons, the scope.
 const METAL = ['#56899c', '#13303c', '#4fd6ee'];
 function drawTurret(c, cfg, off, px) {
   const kind = towerKind(cfg), shape = towerShape(cfg), len = barrelLen(cfg), M = off ? ['#4a4954', '#1a1920', '#5a5f6a'] : METAL;
-  const acc = M[2], hi = off ? 'rgba(200,200,210,0.35)' : 'rgba(225,250,255,0.6)', ink = '#04080b';
-  const metalG = r => { const g = c.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.05, 0, 0, r * 1.15); g.addColorStop(0, M[0]); g.addColorStop(1, M[1]); return g; };
+  const ven = cfg.poison, acc = ven && !off ? '#c4ffba' : M[2], hi = off ? 'rgba(200,200,210,0.35)' : 'rgba(225,250,255,0.6)', ink = '#04080b';
+  // Poison fills the turret's housing with glowing venom; otherwise it's the defender's metal
+  const metalG = r => {
+    const g = c.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.05, 0, 0, r * 1.15);
+    if (ven) { g.addColorStop(0, off ? '#9a9ca4' : '#e2ffd9'); g.addColorStop(0.35, off ? '#5c5e66' : '#79d66f'); g.addColorStop(1, off ? '#202128' : '#123f17'); }
+    else { g.addColorStop(0, M[0]); g.addColorStop(1, M[1]); }
+    return g;
+  };
+  const bubbles = r => { if (!ven) return; c.fillStyle = off ? 'rgba(220,220,230,0.3)' : 'rgba(240,255,235,0.75)'; for (const [x, y, b] of [[-0.35, 0.3, 0.13], [0.2, 0.42, 0.09], [0.38, -0.1, 0.1], [-0.1, -0.45, 0.07]]) { c.beginPath(); c.arc(x * r, y * r, b * r, 0, TAU); c.fill(); } };
   const barrel = (x, y, l, w) => {
     c.fillStyle = ink; c.fillRect(x, y - w / 2 - px, l + px, w + 2 * px);
     c.fillStyle = off ? '#2b2a33' : '#1d3a47'; c.fillRect(x, y - w / 2, l, w);
     c.fillStyle = hi; c.fillRect(x, y - w / 2, l, Math.max(px, w * 0.22));
     c.fillStyle = off ? '#45444e' : M[0]; c.fillRect(x + l - 0.05, y - w / 2 - 0.012, 0.05, w + 0.024);
   };
-  const housing = (r, draw) => { c.beginPath(); draw(); c.fillStyle = ink; c.save(); c.translate(0.015, 0.015); c.fill(); c.restore(); c.beginPath(); draw(); c.fillStyle = metalG(r); c.fill(); c.lineWidth = px * 1.6; c.strokeStyle = acc; c.stroke(); };
+  const housing = (r, draw) => { c.beginPath(); draw(); c.fillStyle = ink; c.save(); c.translate(0.015, 0.015); c.fill(); c.restore(); c.beginPath(); draw(); c.fillStyle = metalG(r); c.fill(); c.lineWidth = px * (ven ? 2 : 1.6); c.strokeStyle = acc; c.stroke(); bubbles(r); };
   // a Mortar's needle or a Tesla's prong: thin, from the middle out, as long as the tower reaches
   const pointer = (tipCol) => {
     const L = pointerTip(cfg);
@@ -8466,7 +8463,7 @@ function unitIconURL(d) {
 function fillLegends() {
   const fig = (src, cap) => `<figure><img class="art" src="${src}" alt=""><figcaption>${cap}</figcaption></figure>`, T = o => ({ ...defaultTower(), ...o });
   const tl = document.getElementById('info-tlegend'), ul = document.getElementById('info-ulegend');
-  if (tl) tl.innerHTML = [[{}, 'Blaster'], [{ rate: 0 }, 'Gatling'], [{ rate: 5, range: 5 }, 'Railgun'], [{ rate: 4, splash: 2 }, 'Mortar'], [{ chain: 3 }, 'Tesla'], [{ slow: true }, 'Frost, left'], [{ poison: true }, 'Venom, right'], [{ dps: 8, accuracy: 3 }, 'Hits hard, scope']]
+  if (tl) tl.innerHTML = [[{}, 'Blaster'], [{ rate: 0 }, 'Gatling'], [{ rate: 5, range: 5 }, 'Railgun'], [{ rate: 4, splash: 2 }, 'Mortar'], [{ chain: 3 }, 'Tesla'], [{ slow: true }, 'Frost: icy base'], [{ poison: true }, 'Venom: green turret'], [{ dps: 8, accuracy: 3 }, 'Hits hard, scope']]
     .map(([o, cap]) => fig(towerIconURL(T(o)), cap)).join('');
   if (ul) ul.innerHTML = [[{ hp: 2, speed: 6 }, 'Skimmer', 0], [{ hp: 5, speed: 3 }, 'Rover', 1], [{ hp: 8, speed: 1 }, 'Juggernaut', 2], [{ hp: 5, speed: 3, armor: 3 }, 'Armor 3', 3], [{ hp: 5, speed: 3, regen: 2 }, 'Regen', 0], [{ hp: 5, speed: 3, resist: 'splash+shock' }, 'Resists', 2]]
     .map(([o, cap, k]) => fig(unitIconURL({ hp: 0, speed: 3, armor: 0, regen: 0, resist: 'none', ...o, color: COLORS[k] }), cap)).join('');
@@ -8474,7 +8471,7 @@ function fillLegends() {
 function towerIconURL(cfg, off) {
   return artIcon('ti' + towerSig(cfg) + (off ? 'x' : ''), 0.94, (c, px) => {
     drawTowerBase(c, cfg, off, px);
-    c.save(); c.rotate(-Math.PI / 4); c.scale(1.18, 1.18); if (towerKind(cfg) === 'gatling') gatlingBarrels(c, cfg, off, 0, 0.6); drawTurret(c, cfg, off, px); c.restore();
+    c.save(); c.rotate(-Math.PI / 4); c.scale(1.18 * turretK(cfg), 1.18 * turretK(cfg)); if (towerKind(cfg) === 'gatling') gatlingBarrels(c, cfg, off, 0, 0.6); drawTurret(c, cfg, off, px); c.restore();
   });
 }
 
@@ -8515,7 +8512,9 @@ function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0, o = {}) {
       }
     }
   }
-  c.save(); c.translate(x, y); c.rotate(off ? ang + 0.6 : ang); c.scale(sc, sc);
+  if (cfg.dps >= dpsMax() && !off && !o.ghost) glow(c, x, y, 0.42 * sc, '200,250,255', 0.16 + 0.1 * Math.sin(t * 3 + x)); // overcharged: the ring breathes
+  const tk = turretK(cfg);
+  c.save(); c.translate(x, y); c.rotate(off ? ang + 0.6 : ang); c.scale(sc * tk, sc * tk);
   c.translate(-kick * (kind === 'rail' ? 0.1 : kind === 'mortar' ? 0.07 : kind === 'tesla' ? 0.03 : 0.05), 0);
   if (kind === 'gatling') {
     let sp = o.cell != null ? towerSpin.get(o.cell) : null;
@@ -8530,6 +8529,10 @@ function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0, o = {}) {
   blit(c, turretSpr(cfg, off), 0, 0, 1.4);
   if (!off && !o.ghost) {
     if (shape === 'tesla') glow(c, 0, 0, 0.26, TESLA.rgb, 0.3 + 0.25 * Math.sin(t * (2 + 3 * rateBand(cfg)) + x) + kick * 0.5); // the core
+    if (cfg.poison) { // venom bubbling up inside the turret
+      glow(c, 0, 0, 0.3, ELEM.poison.rgb, 0.22 + 0.08 * Math.sin(t * 2.3 + y));
+      for (let k = 0; k < 3; k++) { const ph = (t * 0.7 + k / 3 + x * 0.13) % 1, bx = (k - 1) * 0.06, by = 0.09 - ph * 0.18; c.beginPath(); c.arc(bx, by, 0.012 + 0.012 * ph, 0, TAU); c.fillStyle = `rgba(235,255,225,${0.8 * Math.sin(ph * Math.PI)})`; c.fill(); }
+    }
     if (kick > 0.45) { // the muzzle flash
       const m = muzzleAt(cfg), f = (kick - 0.45) / 0.55, col = towerRGB(cfg);
       const big = kind === 'mortar' ? 1.5 : kind === 'rail' ? 1.35 : kind === 'gatling' ? 0.7 : kind === 'tesla' ? 0.8 : 1;

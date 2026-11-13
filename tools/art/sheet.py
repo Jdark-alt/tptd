@@ -118,13 +118,14 @@ UNITS_JS = r'''
     for (const u of units) UF.drawUnit(c, u, T + u.x * 0.37, 1 / cell);
     return cv;
   }
-  sheet.append(el('h1', null, 'TPTD'), el('div', 'sub', 'Units · v31 · three families to pick from'));
-  sheet.append(el('p', 'intro', 'Shape is speed only, eight steps from 0.7 to 2.8 cells a second. Size is health, as now. Colour is the army colour. Every shape faces right, the way they march, with a lit front. Faster steps trail more light, hover higher (the shadow sits further off) and pulse faster. Armour is steel brackets on a ring round the unit (the front, then the sides, then all round), regeneration a pulsing green cross at the heart, resists motes circling it; frosted, poisoned and hit units are tinted. None of this is in the game yet.'));
+  const round2 = famKeys.length === 1 && famKeys[0] === 'combined';
+  sheet.append(el('h1', null, 'TPTD'), el('div', 'sub', round2 ? 'Units · v31 · round 2: one set from the three' : 'Units · v31 · three families to pick from'));
+  sheet.append(el('p', 'intro', 'Shape is speed only, eight steps from 0.7 to 2.8 cells a second. Size is health, as now. Colour is the army colour. Every shape faces right, the way they march, with a lit front. Faster steps trail more light, hover higher (the shadow sits further off) and pulse faster. Armour is steel brackets on a ring round the unit (the front, then the sides, then all round), regeneration a pulsing green cross at the heart, ' + (round2 ? 'resists glowing shield plates in their colours, orbiting the unit' : 'resists motes circling it') + '; frosted, poisoned and hit units are tinted. None of this is in the game yet.'));
   const TWpx = phone ? 0 : Math.floor((W - 60 - 112 - 7 * 8) / 8), cell = TWpx / TW;
   for (const fk of famKeys) {
     const fam = UF.FAM[fk];
-    sheet.append(el('h2', null, `<b>${'ABC'[famKeys.indexOf(fk)]}</b>${fam.name}`));
-    sheet.append(el('p', 'key', { sharpen: 'Solid and blocky when slow, stretching and sharpening into a blade, then a needle with a comet tail when fast.', fragment: 'Slow units are one dense whole; faster ones break into more shards flying in tight formation, held by hairlines to a glowing heart, as if speed pulls the body apart.', energy: 'Slow units are heavy stacked plates and rings with a slow pulse; fast units are bright cores behind a shield of light, trailing streaks and sparks.' }[fk]));
+    sheet.append(el('h2', null, famKeys.length > 1 ? `<b>${'ABCD'[famKeys.indexOf(fk)]}</b>${fam.name}` : fam.name));
+    sheet.append(el('p', 'key', { combined: 'Energy when slow: heavy stacked plates round a glowing core, each slow step its own outline. Sharpening at mid speed: a teardrop, a broad arrowhead, a swept dart. Fragmented when fast: blades split apart by lines of light, trailing jet streaks, as wide as the slow ones and longer, so the fastest unit at full health is the biggest thing on the board. Resists are glowing shield plates in their colours.', sharpen: 'Solid and blocky when slow, stretching and sharpening into a blade, then a needle with a comet tail when fast.', fragment: 'Slow units are one dense whole; faster ones break into more shards flying in tight formation, held by hairlines to a glowing heart, as if speed pulls the body apart.', energy: 'Slow units are heavy stacked plates and rings with a slow pulse; fast units are bright cores behind a shield of light, trailing streaks and sparks.' }[fk]));
     // the eight steps at small, mid and max health
     const head = el('div', 'row'); head.append(el('div', 'rl', ''));
     for (let s = 0; s < 8; s++) head.append(Object.assign(el('div', 'cap', `<b style="color:#e9f2f8">${SP[s]} cells/s</b><i>${fam.words[s]}</i>`), { style: `width:${TWpx}px` }));
@@ -135,7 +136,7 @@ UNITS_JS = r'''
       sheet.append(r);
     });
     // the markers, each on a different shape and size
-    const MK = [[0, 9, { armor: 3 }, 'Armour 3', 'all round'], [1, 2, { armor: 1 }, 'Armour 1', 'the front'], [2, 5, { regen: 2 }, 'Regeneration', 'a green cross'], [3, 6, { res: ['splash', 'poison', 'frost', 'shock'] }, 'Four resists', 'motes'],
+    const MK = [[0, 9, { armor: 3 }, 'Armour 3', 'all round'], [1, 2, { armor: 1 }, 'Armour 1', 'the front'], [2, 5, { regen: 2 }, 'Regeneration', 'a green cross'], [3, 6, { res: ['splash', 'poison', 'frost', 'shock'] }, 'Four resists', round2 ? 'shield plates' : 'motes'],
       [4, 7, { armor: 2 }, 'Armour 2', 'front and sides'], [5, 5, { slow: true }, 'Frosted', 'iced over'], [6, 6, { poison: true }, 'Poisoned', 'bubbles'], [7, 3, { flash: true, armor: 3, regen: 3 }, 'Hit', 'armour 3, regen']];
     const r = el('div', 'row'); r.append(el('div', 'rl', '<b>Markers</b>on any shape'));
     for (const [s, hi, o, a, b] of MK) { const box = el('div'); const cv = scene(TW, TH, cell, [{ fam: fk, s, R: Rof(hi), col: COL[s % 4], ang: 0, x: 1.4, y: TH / 2, ...o }]); cv.className = 't'; box.append(cv, el('div', 'cap', `${a}<i>${b}</i>`)); r.append(box); }
@@ -146,6 +147,15 @@ UNITS_JS = r'''
     for (let k = 0; k < 4; k++) U.push({ fam: fk, s: 6, R: Rof(0), col: COL[1], ang: 0, x: 2.5 + SP[6] * 6.3 + k * 0.42, y: LH / 2 - 0.02 + (k % 2 ? 0.16 : -0.16) });
     const lane = el('div', 'lane'); lane.append(scene(LW, LH, lcell, U, true)); sheet.append(lane);
     sheet.append(el('div', 'lanecap', 'On the board, all eight a few seconds after leaving together: slowest on the left'));
+    if (fk === 'combined') { // three armies on one board: every design different, so a wave reads busy
+      const A = [];
+      const army = (s, hi, col, n, x0, y0, o = {}) => { for (let k = 0; k < n; k++) A.push({ fam: fk, s, R: Rof(hi), col, ang: 0, x: x0 + k * (0.5 + Rof(hi) * 2.2), y: y0 + (k % 2 ? 0.18 : -0.18) * (n > 1), ...o }); };
+      army(0, 9, COL[2], 2, 1.0, 1.0, { armor: 3 }); army(1, 6, COL[0], 3, 3.2, 2.6, { regen: 2 }); army(3, 3, COL[3], 4, 6.0, 1.1, { res: ['shock'] });
+      army(4, 5, COL[1], 3, 9.0, 2.7, { armor: 1, res: ['splash', 'frost'] }); army(5, 2, COL[0], 5, 11.3, 1.0); army(6, 7, COL[3], 2, 14.0, 2.6, { res: ['poison', 'shock', 'splash'] });
+      army(7, 9, COL[1], 1, 17.6, 1.6, { armor: 2, regen: 3 }); army(2, 4, COL[2], 3, 15.2, 0.7, { slow: true });
+      const lane2 = el('div', 'lane'); lane2.append(scene(LW, 3.4, lcell, A, true)); sheet.append(lane2);
+      sheet.append(el('div', 'lanecap', 'Several designs on one board: armour, regeneration, resists, a frosted group, every speed and size'));
+    }
   }
   [A.view.cs, A.view.dpr, A.view.rot] = old;
   return sheet.offsetHeight;
@@ -164,13 +174,19 @@ VIDEO_JS = r'''
   const LW = 17, LH = 2.4, gap = 0.55, top = 0.55, cell = W / (LW + 0.6), rows = famKeys.length;
   A.view.cs = cell; A.view.dpr = dpr; A.view.rot = false; A.ART.lo = false;
   // each lane: two of every speed, staggered, plus a pack of small fast ones
-  const lanes = famKeys.map((fk, li) => { const U = []; for (let s = 0; s < 8; s++) for (let k = 0; k < 2; k++) U.push({ fam: fk, s, hi: [3, 7, 5, 9, 2, 6, 4, 8][(s + k * 3) % 8], col: COL[(s + k) % 4], x0: (s * 2.3 + k * 9.1) % LW, y: (k ? 0.62 : -0.62) * (s % 2 ? 1 : 0.55) }); return { fk, U }; });
+  const one = famKeys.length === 1;
+  const lanes = one ? [0, 1, 2].map(li => { const fk = famKeys[0], U = [];
+    if (li < 2) for (let s = 0; s < 8; s++) U.push({ fam: fk, s, hi: li ? 9 : 5, col: COL[s % 4], x0: (s * 2.1) % LW, y: (s % 2 ? 0.55 : -0.55) });
+    else [[0, 9, 2, { armor: 3 }], [1, 6, 0, { regen: 2 }], [3, 3, 3, { res: ['shock'] }], [4, 5, 1, { armor: 1, res: ['splash', 'frost'] }], [5, 2, 0, {}], [6, 7, 3, { res: ['poison', 'shock', 'splash'] }], [7, 9, 1, { armor: 2, regen: 3 }]]
+      .forEach(([s, hi, ci, o], k) => { for (let j = 0; j < (hi > 7 ? 1 : 2); j++) U.push({ fam: fk, s, hi, col: COL[ci], x0: (k * 2.5 + j * 0.8) % LW, y: (k % 2 ? 0.5 : -0.5) + (j ? 0.25 : 0), ...o }); });
+    return { fk, U, title: ['Every speed, middle health (275 HP)', 'Every speed, full health (900 HP)', 'Mixed armies: armour, regeneration, resists'][li] }; })
+  : famKeys.map((fk, li) => { const U = []; for (let s = 0; s < 8; s++) for (let k = 0; k < 2; k++) U.push({ fam: fk, s, hi: [3, 7, 5, 9, 2, 6, 4, 8][(s + k * 3) % 8], col: COL[(s + k) % 4], x0: (s * 2.3 + k * 9.1) % LW, y: (k ? 0.62 : -0.62) * (s % 2 ? 1 : 0.55) }); return { fk, U }; });
   window.__frame = t => {
     c.setTransform(dpr, 0, 0, dpr, 0, 0); c.fillStyle = '#07090c'; c.fillRect(0, 0, W, H);
     c.font = '600 12px Geist Mono, ui-monospace, monospace'; c.fillStyle = '#e9f2f8';
     lanes.forEach((L, li) => {
       const oy = (top + li * (LH + gap)) * cell, ox = 0.3 * cell;
-      c.setTransform(dpr, 0, 0, dpr, 0, 0); c.fillText(`${'ABC'[li]}  ${UF.FAM[L.fk].name.toUpperCase()}`, ox, oy - 8);
+      c.setTransform(dpr, 0, 0, dpr, 0, 0); c.fillText(L.title ? L.title.toUpperCase() : `${'ABC'[li]}  ${UF.FAM[L.fk].name.toUpperCase()}`, ox, oy - 8);
       c.setTransform(cell * dpr, 0, 0, cell * dpr, ox * dpr, oy * dpr);
       c.save(); c.beginPath(); c.rect(0, 0, LW, LH); c.clip();
       const g = c.createLinearGradient(0, 0, LW, LH); g.addColorStop(0, '#10161c'); g.addColorStop(1, '#0a0d11'); c.fillStyle = g; c.fillRect(0, 0, LW, LH);
@@ -227,6 +243,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument('what', choices=['towers', 'units'])
 ap.add_argument('--phone', action='store_true', help='at a phone’s cell size, 390 px wide')
 ap.add_argument('--video', action='store_true', help='units: an 8 s MP4 of the families marching instead of the sheet')
+ap.add_argument('--fam', default='combined', help='units: the families to draw (combined, or sharpen,fragment,energy: round 1)')
 args = ap.parse_args()
 src = game_html()
 assert 'window.siegeline = {' in src
@@ -244,7 +261,7 @@ with sync_playwright() as p:
         import subprocess, tempfile, shutil
         VW, VH, FPS, SECS = 1280, 720, 30, 8
         pg.set_viewport_size({'width': VW, 'height': VH})
-        pg.evaluate(VIDEO_JS, [VW, VH, 1, ['sharpen', 'fragment', 'energy']])
+        pg.evaluate(VIDEO_JS, [VW, VH, 1, args.fam.split(',')])
         tmp = tempfile.mkdtemp()
         for k in range(FPS * SECS):
             pg.evaluate(f'() => window.__frame({k / FPS})')
@@ -254,7 +271,7 @@ with sync_playwright() as p:
         shutil.rmtree(tmp)
         print(f'{out}: {SECS} s at {FPS} fps; errors: {errs[:4]}')
         b.close(); sys.exit(0)
-    h = pg.evaluate(SHEET_JS, [tower_spec(), W, CELL, DPR]) if args.what == 'towers' else pg.evaluate(UNITS_JS, [W, CELL, DPR, ['sharpen', 'fragment', 'energy']])
+    h = pg.evaluate(SHEET_JS, [tower_spec(), W, CELL, DPR]) if args.what == 'towers' else pg.evaluate(UNITS_JS, [W, CELL, DPR, args.fam.split(',')])
     pg.set_viewport_size({'width': W, 'height': h}); pg.wait_for_timeout(300)
     out = os.path.join(OUT, name + '.png')
     pg.screenshot(path=out, clip={'x': 0, 'y': 0, 'width': W, 'height': h})
