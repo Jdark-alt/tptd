@@ -1415,7 +1415,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v32.5</p>
+        <p class="tagline">Two Player Tower Defence · v32.6</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1568,7 +1568,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v32.5</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v32.6</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -8178,6 +8178,9 @@ function sprite(key, size, draw) {
   return s;
 }
 const blit = (c, s, x, y, size) => c.drawImage(s, x - size / 2, y - size / 2, size, size);
+// v32.6: a sprite drawn at one of a few fixed headings, turned the rest of the way (only while it's off one of them)
+const blitR = (c, s, x, y, size, r) => { if (Math.abs(r) < 0.002) return blit(c, s, x, y, size); c.save(); c.translate(x, y); c.rotate(r); c.drawImage(s, -size / 2, -size / 2, size, size); c.restore(); };
+const bucketRest = h => (ART.lo ? 0 : wrapA(h - angBucket(h) * TAU / UB)); // what's left of a heading after its sprite's
 // A soft round light, added: one 64 px gradient per colour, scaled to any size.
 const glowCache = new Map();
 function glowSpr(rgb) {
@@ -8218,7 +8221,7 @@ const diagGrad = (c, a, b, c0, c1) => { const g = c.createLinearGradient(-a, -a,
 function wallSprite(m, fresh) {
   return sprite('w' + m + (fresh ? 'f' : ''), 1, (c, px) => {
     const I = 0.08, A = -0.5 + I, B = 0.5 - I, e = 0.045;
-    const face = fresh ? ['#33637d', '#1c3d50'] : ['#2e4456', '#1a2834'], side = fresh ? '#0f2532' : '#0c151d';
+    const face = fresh ? ['#3e7896', '#20475d'] : ['#3c5870', '#22364a'], side = fresh ? '#0a1d28' : '#081118'; // v32.6: brighter faces, darker sides (v32: #2e4456/#1a2834)
     const links = [];
     if (m & 1) links.push([-0.5, -0.2, I + 0.02, 0.4]);
     if (m & 2) links.push([B - 0.02, -0.2, I + 0.02, 0.4]);
@@ -8234,11 +8237,11 @@ function wallSprite(m, fresh) {
     // bevel: light on the top and left edges, dark on the bottom and right
     c.lineWidth = px * 1.4; c.lineCap = 'round';
     c.beginPath(); c.moveTo(A + 0.06, A + px); c.lineTo(B - e - 0.06, A + px); c.moveTo(A + px, A + 0.06); c.lineTo(A + px, B - e - 0.06);
-    c.strokeStyle = fresh ? 'rgba(190,240,255,0.5)' : 'rgba(190,220,240,0.26)'; c.stroke();
+    c.strokeStyle = fresh ? 'rgba(190,240,255,0.6)' : 'rgba(200,226,244,0.42)'; c.stroke();
     // the panel and its rivets
-    c.lineWidth = px; c.strokeStyle = fresh ? 'rgba(150,230,250,0.4)' : 'rgba(140,175,200,0.2)';
+    c.lineWidth = px; c.strokeStyle = fresh ? 'rgba(150,230,250,0.45)' : 'rgba(150,185,210,0.28)';
     c.strokeRect(-0.22, -0.22, 0.4, 0.4);
-    c.fillStyle = fresh ? 'rgba(190,240,255,0.55)' : 'rgba(170,200,222,0.32)';
+    c.fillStyle = fresh ? 'rgba(190,240,255,0.6)' : 'rgba(180,208,230,0.42)';
     for (const [x, y] of [[-0.31, -0.31], [0.27, -0.31], [-0.31, 0.27], [0.27, 0.27]]) { c.beginPath(); c.arc(x, y, 0.022, 0, TAU); c.fill(); }
     c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(-0.18, 0.02, 0.32, 0.14);
   });
@@ -8685,12 +8688,13 @@ function unitLight(c, u, s, R, t, a = 1, v = null) {
   const f = uF(s), p = reduceMotion ? 0.85 : 0.72 + 0.28 * Math.sin(t * (0.9 + 7 * f * f) + u.id);
   const ga = c.globalAlpha, op = c.globalCompositeOperation;
   c.globalAlpha = ga * a * p; c.globalCompositeOperation = 'lighter';
-  const h = v ? v.h : u.ang, split = v && !ART.lo && U_TRAIL[s] && Math.abs(wrapA(v.ta - v.h)) > 0.12;
-  const draw = o => c.drawImage(o.cv, o.x0, o.y0, o.w, o.h);
+  const h = v ? v.h : u.ang, split = v && !ART.lo && U_TRAIL[s] && Math.abs(wrapA(v.ta - v.h)) > 0.03; // v32.6: 0.12 (the trail jumped as it split)
+  const draw = o => c.drawImage(o.cv, o.x0, o.y0, o.w, o.h), rot = v ? bucketRest(h) : 0; // v32.6: turned to its exact heading
+  const drawR = (o, r) => { if (Math.abs(r) < 0.002) return draw(o); c.save(); c.rotate(r); draw(o); c.restore(); };
   if (split) {
-    c.save(); c.rotate(wrapA(v.ta - v.hb)); draw(unitFx(s, u.color, R, u.regen > 0, angBucket(v.hb), 1)); c.restore(); // the trail, along the curve
-    draw(unitFx(s, u.color, R, u.regen > 0, angBucket(h), 2));
-  } else draw(unitFx(s, u.color, R, u.regen > 0, angBucket(h)));
+    drawR(unitFx(s, u.color, R, u.regen > 0, angBucket(v.hb), 1), wrapA(v.ta - v.hb)); // the trail, along the curve
+    drawR(unitFx(s, u.color, R, u.regen > 0, angBucket(h), 2), rot);
+  } else drawR(unitFx(s, u.color, R, u.regen > 0, angBucket(h)), rot);
   c.globalAlpha = ga; c.globalCompositeOperation = op;
 }
 // Armour: steel brackets on a ring round the unit (the front; the sides too; all round, with rivets). Turned with it.
@@ -9562,13 +9566,13 @@ function drawTerrain() {
   setWorld(c);
   // the field: plates of a dark alloy, faintly uneven, each perforated by a fine grid of dots; hairline seams, a dot at
   // every corner, and here and there a marking
-  c.fillStyle = diagGrad(c, 0, COLS, '#1c2630', '#141b23'); c.fillRect(0, 0, COLS, ROWS); // v32.5: lighter plates (#131a21, #0c1014 before)
+  c.fillStyle = diagGrad(c, 0, COLS, '#161e27', '#0f151b'); c.fillRect(0, 0, COLS, ROWS); // v32.6: darker than v32.5's #1c2630/#141b23 (washed out), the walls brighter, for contrast
   const ds = Math.max(px * 0.9, 0.012);
   for (let i = 0; i < N; i++) {
     const q = i % COLS, r = (i / COLS) | 0;
-    c.fillStyle = `rgba(150,182,206,${0.012 + rnd() * 0.026})`; c.fillRect(q + 0.025, r + 0.025, 0.95, 0.95);
+    c.fillStyle = `rgba(150,182,206,${0.008 + rnd() * 0.02})`; c.fillRect(q + 0.025, r + 0.025, 0.95, 0.95);
     if (S.terrain[i]) continue;
-    c.fillStyle = 'rgba(150,182,206,0.05)';
+    c.fillStyle = 'rgba(150,182,206,0.04)';
     for (let y = 1; y < 6; y++) for (let x = 1; x < 6; x++) c.fillRect(q + x / 6 - ds, r + y / 6 - ds, 2 * ds, 2 * ds);
   }
   c.beginPath();
@@ -9591,7 +9595,7 @@ function drawTerrain() {
   drawGround(c, px);
   // a vignette toward the edges, so the eye rests on the middle of the field
   const v = c.createRadialGradient(COLS / 2, ROWS / 2, ROWS * 0.3, COLS / 2, ROWS / 2, COLS * 0.62);
-  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.14)'); // v32.5: lighter (0.3) c.fillStyle = v; c.fillRect(0, 0, COLS, ROWS);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.22)'); // v32.5: 0.14 (0.3 before); v32.6 0.22 c.fillStyle = v; c.fillRect(0, 0, COLS, ROWS);
 }
 // Terrain in the game's dot-matrix look, as designed tiles rather than anything natural. Rock is a blocker: a raised
 // slab faced with a matrix of square tiles, lit from the top left, a diagonal hatch picked out in brighter tiles (the
@@ -10065,7 +10069,7 @@ function drawGates(c, t) {
 }
 function drawWalls(c, t, G) {
   const [sx, sy] = scrW(0.06, 0.07), I = 0.08;
-  c.fillStyle = 'rgba(0,0,0,0.42)'; c.beginPath(); // shadows first, so no wall shades its neighbour's top
+  c.fillStyle = 'rgba(0,0,0,0.55)'; c.beginPath(); // shadows first, so no wall shades its neighbour's top (v32.6: 0.55, was 0.42)
   for (let i = 0; i < N; i++) {
     const g = G[i]; if (!g || g.t !== 'wall') continue;
     const q = i % COLS, r = (i / COLS) | 0;
@@ -10172,8 +10176,8 @@ function drawTowers(c, t, G) {
    trail points back along that curve. The simulated position and route are
    untouched: the points ahead come from the route field as the simulation would step it (stepDir put back). */
 const uviews = new WeakMap(), UV_L = 1, UV_PULL = 0.25;
-function uAhead(u, L) {
-  let x = u.x, y = u.y, left = L, tgt = u.target, dir = u.dir;
+function uAhead(u, L, x0 = u.x, y0 = u.y) {
+  let x = x0, y = y0, left = L, tgt = u.target, dir = u.dir;
   const sd = stepDir;
   try {
     for (let k = 0; k < 12 && left > 1e-6; k++) {
@@ -10201,10 +10205,11 @@ function uBehind(hist, x, y, L) { // the point L back along the way it came (its
 }
 function uview(u, dtR) {
   let v = uviews.get(u);
-  const x = u.x, y = u.y;
+  const pp = simPrev.get(u), ok = pp && Math.abs(u.x - pp.x) + Math.abs(u.y - pp.y) < 0.5; // v32.6: between the last two steps
+  const x = ok ? pp.x + (u.x - pp.x) * simA : u.x, y = ok ? pp.y + (u.y - pp.y) * simA : u.y;
   if (!v) { v = { h: u.ang, hb: u.ang, ta: u.ang, x, y, hist: [x, y], dh: [x + u.ox, y + u.oy], last: u.walked }; uviews.set(u, v); }
   if (u.walked - v.last >= 0.08) { v.last = u.walked; v.hist.push(x, y); if (v.hist.length > 60) v.hist.splice(0, 2); }
-  const A = uAhead(u, UV_L), B = uBehind(v.hist, x, y, UV_L) || [x - Math.cos(u.ang) * UV_L, y - Math.sin(u.ang) * UV_L];
+  const A = uAhead(u, UV_L, x, y), B = uBehind(v.hist, x, y, UV_L) || [x - Math.cos(u.ang) * UV_L, y - Math.sin(u.ang) * UV_L];
   const ax = A[0] - B[0], ay = A[1] - B[1];
   if (ax * ax + ay * ay > 1e-6) v.h = Math.atan2(ay, ax);
   v.x = x + ((A[0] + B[0]) / 2 - x) * UV_PULL + u.ox; v.y = y + ((A[1] + B[1]) / 2 - y) * UV_PULL + u.oy;
@@ -10227,7 +10232,8 @@ function drawUnits(c, t, list = S.units) {
     const u = list[n], R = u.r, f = uF(u.shape), hov = u.sap ? 2 : 1 + 1.3 * f, [sx, sy] = scrW(0.045 * hov, 0.06 * hov), v = vws[n];
     const px = v ? v.x : u.x + u.ox, py = v ? v.y : u.y + u.oy;
     if (u.sap) { c.beginPath(); c.arc(px + sx, py + sy, R * 1.1, 0, TAU); c.fillStyle = '#000'; c.fill(); continue; }
-    blit(c, unitSil(u.shape, R, '#000', angBucket(v ? v.h : u.ang)), px + sx, py + sy, unitSz(R, u.shape)); // drawn 1:1 (a scaled draw costs several times more)
+    const hh = v ? v.h : u.ang;
+    blitR(c, unitSil(u.shape, R, '#000', angBucket(hh)), px + sx, py + sy, unitSz(R, u.shape), bucketRest(hh)); // drawn 1:1 (a scaled draw costs several times more); v32.6: turned to its exact heading
   }
   c.globalAlpha = 1;
   for (let n = 0; n < list.length; n++) {
@@ -10242,11 +10248,13 @@ function drawUnits(c, t, list = S.units) {
       if (sel === u) selRing(c, x, y, R * 1.3 + 0.16);
       continue;
     }
-    const s = u.shape, b = angBucket(v ? v.h : u.ang), sz = unitSz(R, s), rl = u.rl || (u.rl = resList(u.resist));
+    const s = u.shape, hh = v ? v.h : u.ang, b = angBucket(hh), rot = bucketRest(hh), sz = unitSz(R, s), rl = u.rl || (u.rl = resList(u.resist));
+    if (rot) { c.save(); c.rotate(rot); } // v32.6: the body is drawn at one of 32 headings; while a unit turns it's turned the rest of the way, so it doesn't step round
     blit(c, unitSpr(s, u.color, R, u.armorLvl, u.regen > 0, b), 0, 0, unitBodySz(R, s, u.armorLvl));
     if (u.slowT > 0) { c.globalAlpha = 0.5 * fade; blit(c, unitSil(s, R, '#bff3ff', b), 0, 0, sz); c.globalAlpha = fade; }
     else if (u.poisonT > 0) { c.globalAlpha = 0.3 * fade; blit(c, unitSil(s, R, '#8fe388', b), 0, 0, sz); c.globalAlpha = fade; }
     if (u.flash > 0) { c.globalAlpha = Math.min(1, u.flash / 0.1) * 0.85; blit(c, unitSil(s, R, '#ffffff', b), 0, 0, sz); c.globalAlpha = fade; }
+    if (rot) c.restore();
     if (s >= 3 || !ART.lo) unitLight(c, u, s, R, t, u.slowT > 0 ? 0.6 : 1, v); // its light: trail, core, nose
     unitResists(c, rl, R, t, u.id);
     if (u.slowT > 0) { // frost: ice shards round it (and it's brittle)
@@ -10915,6 +10923,10 @@ document.addEventListener('keydown', e => {
 /* =====================================================================
    Loop
    ===================================================================== */
+// v32.6: units are drawn between the last two simulation steps (simA of the way), so they glide at any frame rate
+// instead of moving in 1/60 s steps that land unevenly on frames; display only, the simulation is untouched
+const simPrev = new WeakMap(); let simA = 1;
+function snapPrev() { for (const u of S.units) { let p = simPrev.get(u); if (!p) simPrev.set(u, p = {}); p.x = u.x; p.y = u.y; } }
 let last = performance.now(), simAcc = 0, waveSpeed = 1, frameSim = 0; // frameSim: wave time played this frame (v32: turrets and units drawn on it)
 // Fast-forward only runs more fixed steps per frame, so a faster wave plays out exactly the same.
 // A test run keeps its own speed (it starts at RULES.testSpeed), so trying a build fast never speeds up the real wave.
@@ -10932,10 +10944,10 @@ function frame(now) {
       simAcc += dt * speed;
       let n = 0;
       const most = 4 * speed;
-      while (simAcc >= STEP && n < most && waveRunning()) { waveStep(STEP); simAcc -= STEP; n++; }
+      while (simAcc >= STEP && n < most && waveRunning()) { if (simAcc < 2 * STEP || n === most - 1) snapPrev(); waveStep(STEP); simAcc -= STEP; n++; }
       if (n === most) simAcc = 0;
-      frameSim = n * STEP;
-    } else frameSim = 0;
+      frameSim = n * STEP; simA = clamp(simAcc / STEP, 0, 1);
+    } else { frameSim = 0; simA = 1; }
     if (S.over && S.phase === 'wave' && !(replay && replay.done)) {
       S.overT -= dt;
       if (S.overT <= 0) finishOver();
