@@ -131,7 +131,8 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .budget{display:flex;align-items:center;gap:14px;background:var(--slate);border:1px solid var(--line);border-radius:var(--r2);padding:8px 12px}
 .bfree{flex:none;display:flex;align-items:baseline;gap:9px;font:600 12px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
 .bfree b{font:700 38px/.85 var(--f-body);color:var(--side);letter-spacing:-.02em;font-variant-numeric:tabular-nums} /* v32.3: big and bold, so running out is hard to miss */
-.budget.out .bfree b{color:var(--bad)} .budget.out .bfree{color:#ff9a8f} .budget.out{border-color:rgba(255,90,90,.55)}
+.btext{font:600 12px/1 var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)} /* v32.4: the number first, then the label over the bar */
+.budget.out .bfree b{color:var(--bad)} .budget.out .btext{color:#ff9a8f} .budget.out{border-color:rgba(255,90,90,.55)}
 .bright{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
 .bbar{display:flex;height:4px;overflow:hidden;background:rgba(255,255,255,.05);gap:2px}
 .bbar i{display:block;height:100%;transition:width .2s;min-width:0}
@@ -1360,7 +1361,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <aside id="panel">
       <section class="pane" id="pane-def" hidden>
         <nav class="steps one" id="def-steps" aria-label="Defender"></nav>
-        <div class="budget" id="d-budget"><span class="bfree" id="d-fbox">Coins left <b id="d-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div></div>
+        <div class="budget" id="d-budget"><span class="bfree" id="d-fbox"><b id="d-free">300</b></span><div class="bright"><span class="btext">Coins left</span><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div></div>
         <div class="testcard" id="d-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="def-body"></div>
@@ -1371,7 +1372,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 
       <section class="pane" id="pane-atk" hidden>
         <nav class="steps" id="atk-steps" aria-label="Attacker steps"></nav>
-        <div class="budget" id="a-budget"><span class="bfree" id="a-fbox">Coins left <b id="a-free">300</b></span><div class="bright"><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div></div>
+        <div class="budget" id="a-budget"><span class="bfree" id="a-fbox"><b id="a-free">300</b></span><div class="bright"><span class="btext">Coins left</span><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div></div>
         <div class="testcard" id="a-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="atk-body"></div>
@@ -1414,7 +1415,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v32.3</p>
+        <p class="tagline">Two Player Tower Defence · v32.4</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1567,7 +1568,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v32.3</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v32.4</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
