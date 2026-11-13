@@ -1413,7 +1413,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v32</p>
+        <p class="tagline">Two Player Tower Defence · v32.1</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1566,7 +1566,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v32</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v32.1</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -9682,7 +9682,7 @@ const LIGHT = { cv: document.createElement('canvas'), bv: document.createElement
 LIGHT.c = LIGHT.cv.getContext('2d'); LIGHT.b = LIGHT.bv.getContext('2d');
 // v32: the board reads about 12% brighter (v30-v31: 100,110,128 in a wave, 138,148,166 while planning, 92,100,118 on the
 // start screen's hero); the floor, the grid and the terrain went up with it
-const AMB_WAVE = '112,123,143', AMB_PLAN = '155,166,186', AMB_HERO = '103,112,132';
+const AMB_WAVE = '165,176,196', AMB_PLAN = '165,176,196', AMB_HERO = '103,112,132'; // v32.1: a wave as bright as planning
 function lightBegin(wx, wy, amb) { LIGHT.list.length = 0; LIGHT.wx = wx; LIGHT.wy = wy; LIGHT.amb = amb; return LIGHT.list; } // the map covers world (−mx, −my) to (wx + mx, wy + my)
 const lamp = (list, x, y, r, rgb, a) => { if (a > 0.01 && r > 0) list.push(x, y, r, rgb, Math.min(1, a)); };
 // Two maps from the same lights: one starting at the ambient, multiplied over what's drawn so far, the other starting
@@ -10160,12 +10160,11 @@ function drawTowers(c, t, G) {
 }
 
 /* ---------- units on the board ---------- */
-/* Units bank into corners (v32, display only): a unit's drawn heading is the line from the point a tile behind it on
-   the way it came to the point a tile ahead on its route, so it starts to turn a tile before a corner, is half round
-   at the corner and level a tile after it. It banks first: the bank follows how far the route turns a little further
-   ahead (two tiles), eased, so the hull tilts before the heading swings, and it's drawn squashed across its heading
-   with its shadow off to the side. It's drawn a little inside the corner (a quarter of the way to the middle of that
-   line), so it flies a curve, and its trail points back along that curve. The simulated position and route are
+/* Units turn smoothly round corners (v32, display only): a unit's drawn heading is the line from the point a tile
+   behind it on the way it came to the point a tile ahead on its route, so it starts to turn a tile before a corner, is
+   half round at the corner and level a tile after it (v32.1: no bank or squash any more, at the user's request). It's
+   drawn a little inside the corner (a quarter of the way to the middle of that line), so it flies a curve, and its
+   trail points back along that curve. The simulated position and route are
    untouched: the points ahead come from the route field as the simulation would step it (stepDir put back). */
 const uviews = new WeakMap(), UV_L = 1, UV_PULL = 0.25;
 function uAhead(u, L) {
@@ -10198,14 +10197,11 @@ function uBehind(hist, x, y, L) { // the point L back along the way it came (its
 function uview(u, dtR) {
   let v = uviews.get(u);
   const x = u.x, y = u.y;
-  if (!v) { v = { h: u.ang, hb: u.ang, ta: u.ang, bank: 0, x, y, hist: [x, y], dh: [x + u.ox, y + u.oy], last: u.walked }; uviews.set(u, v); }
+  if (!v) { v = { h: u.ang, hb: u.ang, ta: u.ang, x, y, hist: [x, y], dh: [x + u.ox, y + u.oy], last: u.walked }; uviews.set(u, v); }
   if (u.walked - v.last >= 0.08) { v.last = u.walked; v.hist.push(x, y); if (v.hist.length > 60) v.hist.splice(0, 2); }
   const A = uAhead(u, UV_L), B = uBehind(v.hist, x, y, UV_L) || [x - Math.cos(u.ang) * UV_L, y - Math.sin(u.ang) * UV_L];
   const ax = A[0] - B[0], ay = A[1] - B[1];
   if (ax * ax + ay * ay > 1e-6) v.h = Math.atan2(ay, ax);
-  const F = uAhead(u, 2 * UV_L), hf = Math.atan2(F[1] - y, F[0] - x);
-  const bt = reduceMotion || u.sap ? 0 : clamp(wrapA(hf - v.h) * 1.1, -0.6, 0.6);
-  v.bank += (bt - v.bank) * Math.min(1, dtR * 9);
   v.x = x + ((A[0] + B[0]) / 2 - x) * UV_PULL + u.ox; v.y = y + ((A[1] + B[1]) / 2 - y) * UV_PULL + u.oy;
   if (u.walked - (v.dl || 0) >= 0.08) { v.dl = u.walked; v.dh.push(v.x, v.y); if (v.dh.length > 60) v.dh.splice(0, 2); }
   const T = uBehind(v.dh, v.x, v.y, clamp(U_TRAIL[u.shape] * u.r, 0.3, 1.2)); // the trail: back along the curve it drew
@@ -10226,11 +10222,7 @@ function drawUnits(c, t, list = S.units) {
     const u = list[n], R = u.r, f = uF(u.shape), hov = u.sap ? 2 : 1 + 1.3 * f, [sx, sy] = scrW(0.045 * hov, 0.06 * hov), v = vws[n];
     const px = v ? v.x : u.x + u.ox, py = v ? v.y : u.y + u.oy;
     if (u.sap) { c.beginPath(); c.arc(px + sx, py + sy, R * 1.1, 0, TAU); c.fillStyle = '#000'; c.fill(); continue; }
-    if (v && !ART.lo && Math.abs(v.bank) > 0.04) { // banked: its shadow slides out from under the lifted side (not while frames run slow)
-      const k = 1 - Math.abs(v.bank) * 0.4, o = v.bank * 0.07 * hov;
-      c.save(); c.translate(px + sx - Math.sin(v.h) * o, py + sy + Math.cos(v.h) * o); c.rotate(v.h); c.scale(1, k); c.rotate(-v.hb);
-      blit(c, unitSil(u.shape, R, '#000', angBucket(v.h)), 0, 0, unitSz(R, u.shape)); c.restore();
-    } else blit(c, unitSil(u.shape, R, '#000', angBucket(v ? v.h : u.ang)), px + sx, py + sy, unitSz(R, u.shape)); // drawn 1:1 (a scaled draw costs several times more)
+    blit(c, unitSil(u.shape, R, '#000', angBucket(v ? v.h : u.ang)), px + sx, py + sy, unitSz(R, u.shape)); // drawn 1:1 (a scaled draw costs several times more)
   }
   c.globalAlpha = 1;
   for (let n = 0; n < list.length; n++) {
@@ -10246,13 +10238,10 @@ function drawUnits(c, t, list = S.units) {
       continue;
     }
     const s = u.shape, b = angBucket(v ? v.h : u.ang), sz = unitSz(R, s), rl = u.rl || (u.rl = resList(u.resist));
-    const banked = v && !ART.lo && Math.abs(v.bank) > 0.04;
-    if (banked) { c.save(); c.rotate(v.h); c.scale(1, 1 - Math.abs(v.bank) * 0.4); c.rotate(-v.hb); } // v32: tilted, squashed across its heading
     blit(c, unitSpr(s, u.color, R, u.armorLvl, u.regen > 0, b), 0, 0, unitBodySz(R, s, u.armorLvl));
     if (u.slowT > 0) { c.globalAlpha = 0.5 * fade; blit(c, unitSil(s, R, '#bff3ff', b), 0, 0, sz); c.globalAlpha = fade; }
     else if (u.poisonT > 0) { c.globalAlpha = 0.3 * fade; blit(c, unitSil(s, R, '#8fe388', b), 0, 0, sz); c.globalAlpha = fade; }
     if (u.flash > 0) { c.globalAlpha = Math.min(1, u.flash / 0.1) * 0.85; blit(c, unitSil(s, R, '#ffffff', b), 0, 0, sz); c.globalAlpha = fade; }
-    if (banked) c.restore();
     if (s >= 3 || !ART.lo) unitLight(c, u, s, R, t, u.slowT > 0 ? 0.6 : 1, v); // its light: trail, core, nose
     unitResists(c, rl, R, t, u.id);
     if (u.slowT > 0) { // frost: ice shards round it (and it's brittle)
