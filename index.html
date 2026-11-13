@@ -8600,9 +8600,10 @@ const towerSpin = new Map(); // gatling barrels keep spinning down after the las
 function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0, o = {}) {
   const sc = o.scale ?? 1, kind = towerKind(cfg), shape = towerShape(cfg), rgb = towerRGB(cfg, off);
   if (!off && !o.ghost && o.pool) for (const [dx, dy, r, col, a] of towerLamps(cfg)) { const [bx, by] = baseXY(dx, dy); glow(c, x + bx * sc, y + by * sc, 0.34 * r * sc, col, (0.12 + 0.2 * kick) * a / 0.6); } // a pool of light where there's no light map
-  if (view.rot) { c.save(); c.translate(x, y); c.transform(0, 1, 1, 0, 0, 0); blit(c, towerBaseSpr(cfg, off), 0, 0, sc); c.restore(); }
-  else blit(c, towerBaseSpr(cfg, off), x, y, sc);
-  if (shape === 'tesla' && !off && !o.ghost) { // the lit nodes glow, and now and then an arc runs from the coil to one
+  const base = o.part !== 'top'; // o.part: 'base' draws only the plinth, 'top' only the turret (the start screen's standing towers, v31)
+  if (base && view.rot) { c.save(); c.translate(x, y); c.transform(0, 1, 1, 0, 0, 0); blit(c, towerBaseSpr(cfg, off), 0, 0, sc); c.restore(); }
+  else if (base) blit(c, towerBaseSpr(cfg, off), x, y, sc);
+  if (base && shape === 'tesla' && !off && !o.ghost) { // the lit nodes glow, and now and then an arc runs from the coil to one
     const J = chainOf(cfg), pulse = 0.65 + 0.35 * Math.sin(t * (2 + 3 * rateBand(cfg)) + x * 2);
     const rnd = mulberry32(((t * 12) | 0) * 7919 + ((x * 97 + y * 13) | 0));
     for (let k = 0; k < J; k++) {
@@ -8615,7 +8616,8 @@ function drawTowerShape(c, cfg, x, y, ang, kick, off, t = 0, o = {}) {
       }
     }
   }
-  if (cfg.dps >= dpsMax() && !off && !o.ghost) glow(c, x, y, 0.42 * sc, '200,250,255', 0.16 + 0.1 * Math.sin(t * 3 + x)); // overcharged: the ring breathes
+  if (base && cfg.dps >= dpsMax() && !off && !o.ghost) glow(c, x, y, 0.42 * sc, '200,250,255', 0.16 + 0.1 * Math.sin(t * 3 + x)); // overcharged: the ring breathes
+  if (o.part === 'base') return;
   const tk = turretK(cfg);
   c.save(); c.translate(x, y); c.rotate(off ? ang + 0.6 : ang); c.scale(sc * tk, sc * tk);
   c.translate(-kick * (kind === 'rail' ? 0.1 : kind === 'mortar' ? 0.07 : kind === 'tesla' ? 0.03 : 0.05), 0);
@@ -8878,22 +8880,33 @@ function heroFrame(now) {
   finally { view.rot = rot; ART.sc = 0; ART.mute = false; FXL = L; }
 }
 
-/* ---------- the start screen's three scenes (v30) ----------
+/* ---------- the start screen's three scenes (v31: standing up) ----------
    Each mode card opens on a moment from the battle, shot from low and to one side like a still from the front: a
-   railgun's beam hitting the lead tank, a mortar shell bursting among rovers, Tesla lightning arcing across jets at the
-   keep's gate. Each is a little scripted loop in the game's own art and light, drawn top-down into a canvas of its own
-   and then laid onto the card in perspective, a band at a time (far bands smaller, drawn from a softer copy so the
-   distance and the foreground blur like a shallow lens), then graded: haze toward the horizon, a teal and amber
-   split, a vignette and fine grain. Nothing here touches a match; it runs only while the start screen shows, at
-   30 frames a second, and with reduced motion it's one still frame. */
-const SCN = { list: [], last: 0, grain: null, odd: false };
+   railgun's beam hitting the lead Shieldbearer of a column (Single player), a mortar shell bursting among Ogives and
+   Arrowheads while a gatling rakes the rest (This device), Tesla lightning jumping from Splitwing to Splitwing at the
+   keep's gate while a sapper drone slips through (Multiplayer). Each is a little scripted loop in the game's own art
+   and light, seen through a camera of its own: a place, a height, a heading, a pitch and a lens. The ground is drawn
+   flat, in the camera's frame, into a canvas (the floor, rough ground, the lane, scorches, every shadow, and the light
+   map), then laid onto the card in perspective a band at a time, the far and the nearest bands from softer copies
+   (depth of field). Everything on it stands, projected through the same camera and drawn far to near: walls and rock
+   as blocks with lit tops and sides shaded by their light, towers as a plinth with the turret on top, units hovering
+   at their height (higher the faster, thicker the slower) over their shadows, the keep's crystal turning. Shells arc
+   from the mortar's dish, beams and bolts run from the muzzle to the unit, blasts and debris rise and fall. Each
+   camera moves slowly and loops over three loops of its scene: card 1 pushes in along the lane, card 2 tracks the
+   column sideways, card 3 swings round toward the keep's gate. Then the grade: flares, embers, haze toward the
+   horizon, a teal and amber split, a vignette and grain. Nothing here touches a match; it runs only while the start
+   screen shows and a card is on screen, at 30 frames a second, and with reduced motion it's one still frame. */
+const SCN = { list: [], last: 0, grain: null, odd: false, floor: null };
+const SCN_LOOPS = 3, SCN_HP = 0.24, SCN_HT = 0.42, SCN_WALL = 0.42, SCN_ROCK = 0.32; // a camera move lasts three loops; plinth, turret, wall, rock heights (cells)
 const scnUnit = (d, x, y, ang, k = 0) => {
   const shape = unitShape(d);
-  return { id: 900 + k, x, y, ox: 0, oy: 0, ang, r: unitRadius(d.hp) * 1.2, shape, color: d.color, armorLvl: d.armor, regen: d.regen || 0, resist: d.resist || 'none', walked: 5 + k, slowT: 0, poisonT: 0, flash: 0, hp: 1, max: 1 };
+  return { id: 900 + k, x, y, ox: 0, oy: 0, ang, r: unitRadius(d.hp) * 1.2, shape, color: d.color, armorLvl: d.armor || 0, regen: d.regen || 0, resist: d.resist || 'none', walked: 5 + k, slowT: 0, poisonT: 0, flash: 0, hp: 1, max: 1 };
 };
+const ease2 = p => (1 - Math.cos(TAU * p)) / 2; // 0 → 1 → 0 over a period, eased at both ends
 const SCENES = [
-  { // Versus computer: tanks grinding up the lane, a railgun on the flank taking the lead one apart
-    W: 10, H: 7, loop: 5, cam: { cx: 5.6, near: 6.4, far: 0.6, wn: 4.6 },
+  { // Single player: a column of Shieldbearers grinding up the lane, a railgun on the flank taking the lead one apart
+    W: 10, H: 7, loop: 5,
+    cam3: p => ({ x: 5.4 + 0.12 * Math.sin(TAU * p), y: 11.6 - 1.3 * ease2(p), h: 3.3 - 0.4 * ease2(p), yaw: -Math.PI / 2 - 0.04, pitch: 0.4 + 0.02 * ease2(p), fov: 0.95, roll: -0.035 }),
     towers: [{ x: 7.5, y: 5.2, cfg: { rate: 5, range: 6, dps: 6, accuracy: 3 } }, { x: 2.5, y: 1.5, cfg: { rate: 0, slow: true } }, { x: 7.5, y: 1.5, cfg: { rate: 4, splash: 2 } }],
     walls: [[3, 2], [3, 3], [3, 4], [3, 5], [6, 2], [6, 3], [6, 4], [3, 6], [6, 1], [3, 1]],
     rock: [[1, 4], [8, 3]],
@@ -8905,10 +8918,11 @@ const SCENES = [
       return out;
     },
     events: [[1.1, 'beam', 0, 2], [3.4, 'beam', 0, 2, true], [0.4, 'frost', 1, 11], [1.9, 'frost', 1, 12], [2.6, 'shell', 2, 1]],
-    light: '96,104,122',
+    light: '112,120,140',
   },
-  { // This device: a mortar shell bursting among a column of rovers, a gatling raking the stragglers
-    W: 10, H: 7, loop: 4.6, cam: { cx: 4.6, near: 6.4, far: 1.6, wn: 4.4 },
+  { // This device: a mortar shell bursting in a column of Ogives and Arrowheads, a venom gatling raking the stragglers
+    W: 10, H: 7, loop: 4.6,
+    cam3: p => ({ x: 4.1 + 1.3 * Math.sin(TAU * p), y: 11.6, h: 4.0 + 0.1 * Math.cos(TAU * p), yaw: -Math.PI / 2 + 0.07 * Math.sin(TAU * p), pitch: 0.5, fov: 0.95, roll: 0.03 }),
     towers: [{ x: 6.5, y: 5.5, cfg: { rate: 4, splash: 3, dps: 5 } }, { x: 2.5, y: 2.5, cfg: { rate: 0, poison: true } }, { x: 6.5, y: 2.5, cfg: {} }],
     walls: [[3, 3], [4, 3], [5, 3], [7, 3], [3, 5], [4, 5], [5, 5], [7, 5], [1, 5], [2, 5]],
     rough: [[8, 1], [8, 2]],
@@ -8919,10 +8933,11 @@ const SCENES = [
       return out;
     },
     events: [[0.6, 'shell', 0, 2], [1.0, 'streak', 1, 0], [1.4, 'streak', 1, 0], [1.72, 'kill', 0, 2], [1.73, 'kill', 0, 3], [3.0, 'shell', 0, 4], [2.4, 'streak', 2, 1], [3.6, 'streak', 1, 1]],
-    light: '92,100,118',
+    light: '110,118,138',
   },
-  { // Multiplayer: at the keep's gate, Tesla lightning jumping from jet to jet, a sapper drone slipping through
-    W: 10, H: 7, loop: 4.8, keep: [5, 0.9], cam: { cx: 4.6, near: 6.6, far: 0.2, wn: 4.8 },
+  { // Multiplayer: at the keep's gate, Tesla lightning jumping from Splitwing to Splitwing, a sapper drone slipping through
+    W: 10, H: 7, loop: 4.8, keep: [5, 0.9],
+    cam3: p => { const a = Math.PI / 2 + 0.3 * Math.sin(TAU * p), r = 8.2 - 0.7 * ease2(p), tx = 5, ty = 2.5; return { x: tx + Math.cos(a) * r, y: ty + Math.sin(a) * r, h: 3.1 + 0.15 * Math.cos(TAU * p), yaw: a + Math.PI, pitch: 0.35, fov: 0.95, roll: -0.03 }; },
     towers: [{ x: 2.5, y: 3.5, cfg: { rate: 1, chain: 3, dps: 5 } }, { x: 7.5, y: 2.5, cfg: { rate: 5, range: 5, chain: 3 } }],
     walls: [[3, 2], [3, 3], [6, 2], [6, 3], [6, 4], [3, 4], [2, 5], [7, 5]],
     rock: [[1, 1], [8, 1]],
@@ -8934,115 +8949,342 @@ const SCENES = [
       return out;
     },
     events: [[0.3, 'chain', 0], [1.1, 'chain', 0], [1.9, 'chain', 0], [2.7, 'chain', 0], [3.5, 'chain', 0], [4.3, 'chain', 0], [1.5, 'beam', 1, 0], [2.98, 'kill', 0, 1]],
-    light: '92,98,120',
+    light: '104,110,134',
   },
 ];
+// How high a unit's top is and how thick it is: the faster, the higher it hovers and the thinner it is.
+const scnUZ = (u, t) => { if (u.sap) return [0.5, 0]; const f = uF(u.shape), th = u.r * (0.42 - 0.3 * f), bob = reduceMotion ? 0 : Math.sin(t * (2 + 4 * f) + u.id) * 0.02; return [0.1 + 0.3 * f + th + bob, th]; };
 function scnInit() {
   if (SCN.list.length) return;
   const g = document.createElement('canvas'); g.width = g.height = 128; const gc = g.getContext('2d'), im = gc.createImageData(128, 128);
   for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
   gc.putImageData(im, 0, 0); SCN.grain = g;
+  const fl = document.createElement('canvas'); fl.width = fl.height = 64; const fc = fl.getContext('2d'); // a floor plate: perforated, a dot at its corner
+  fc.fillStyle = '#0d1217'; fc.fillRect(0, 0, 64, 64); fc.fillStyle = 'rgba(150,182,206,0.05)'; fc.fillRect(2, 2, 60, 60);
+  fc.fillStyle = 'rgba(150,182,206,0.07)'; for (let a = 1; a < 6; a++) for (let b = 1; b < 6; b++) fc.fillRect(a * 64 / 6 - 1, b * 64 / 6 - 1, 2, 2);
+  fc.fillStyle = 'rgba(150,172,190,0.32)'; fc.fillRect(0, 0, 2, 2); fc.fillRect(62, 0, 2, 2); fc.fillRect(0, 62, 2, 2); fc.fillRect(62, 62, 2, 2);
+  SCN.floor = fl;
   document.querySelectorAll('#mode-cards .mcard').forEach((card, k) => {
     const svg = card.querySelector('svg.mart'), sc = SCENES[k]; if (!svg || !sc) return;
     const cv = document.createElement('canvas'); cv.className = 'mart mart-live'; cv.setAttribute('aria-hidden', 'true');
     svg.after(cv); card.classList.add('live');
-    const world = document.createElement('canvas'), half = document.createElement('canvas'), quarter = document.createElement('canvas');
-    SCN.list.push({ sc, cv, c: cv.getContext('2d'), world, wc: world.getContext('2d'), half, quarter, fx: [], shells: [], fired: new Set(), t: Math.random() * sc.loop, towers: sc.towers.map((q, i) => ({ ...q, cfg: { ...defaultTower(), range: 4, ...q.cfg }, ang: Math.PI / 2, kick: 0, key: `scn${k}t${i}` })) });
+    const ground = document.createElement('canvas'), half = document.createElement('canvas'), far = document.createElement('canvas');
+    SCN.list.push({ sc, cv, c: cv.getContext('2d'), ground, gc: ground.getContext('2d'), half, far, fc: far.getContext('2d'), fx: [], shells: [], fired: new Set(), t: Math.random() * sc.loop, T: Math.random() * sc.loop * SCN_LOOPS, towers: sc.towers.map((q, i) => ({ ...q, cfg: { ...defaultTower(), range: 4, ...q.cfg }, ang: Math.PI / 2, kick: 0, key: `scn${k}t${i}` })) });
   });
 }
-function scnEvent(S0, ev, units) {
-  const [, kind, ti, ui, kill] = ev, g = S0.towers[ti], u = units[ui];
-  if (kind === 'kill') { if (u) deathFx(u); return; }
+
+/* the camera: world x, y on the ground and z up, seen from (x, y, h) looking along yaw, tipped down by pitch */
+function scnCam(sc, T, OW, OH) {
+  const m = sc.cam3(reduceMotion ? 0.2 : (T / (sc.loop * SCN_LOOPS)) % 1);
+  const f = Math.max((OW / 2) / Math.tan(m.fov / 2), (OH / 2) / Math.tan(0.2)); // a narrow card keeps about its height of view and loses its sides
+  return { ...m, f, cx: OW / 2, cy: OH / 2, Fx: Math.cos(m.yaw), Fy: Math.sin(m.yaw), Rx: -Math.sin(m.yaw), Ry: Math.cos(m.yaw), cp: Math.cos(m.pitch), sp: Math.sin(m.pitch) };
+}
+// a world point on the card: [x, y, depth]
+function scnP(C, x, y, z) {
+  const dx = x - C.x, dy = y - C.y, u = dx * C.Rx + dy * C.Ry, v = dx * C.Fx + dy * C.Fy, w = z - C.h;
+  const zc = Math.max(0.05, v * C.cp - w * C.sp), yc = v * C.sp + w * C.cp;
+  return [C.cx + C.f * u / zc, C.cy - C.f * yc / zc, zc];
+}
+// the ground seen at a screen row: [its distance ahead, its depth], or null above the horizon
+function scnRow(C, sy) { const q = (C.cy - sy) / C.f, den = C.sp - q * C.cp; if (den <= 1e-3) return null; const v = C.h * (C.cp + q * C.sp) / den; return [v, v * C.cp + C.h * C.sp]; }
+// o drawn at height z around (x, y), in world units on the world's own axes (an affine fit, close enough for one object)
+function scnPlane(o, C, x, y, z, d = 0.25) {
+  const [x0, y0] = scnP(C, x, y, z), [x1, y1] = scnP(C, x + d, y, z), [x2, y2] = scnP(C, x, y + d, z);
+  o.transform((x1 - x0) / d, (y1 - y0) / d, (x2 - x0) / d, (y2 - y0) / d, x0, y0);
+}
+// sprites for an object at this depth: drawn at about the size they're shown, in steps of √2 so few are made
+const scnRes = (C, zc) => { const s = C.f / zc; ART.sc = Math.pow(2, Math.round(Math.log2(Math.max(8, s)) * 2) / 2); };
+
+/* light on standing things: the light map's ambient and lamps (the same list the ground was lit by), at a point */
+const lampRGB = new Map(), lampOf = s => { let v = lampRGB.get(s); if (!v) lampRGB.set(s, v = s.split(',').map(Number)); return v; };
+const lprof = t => (t < 0.22 ? 1 - t * 1.818 : t < 0.55 ? 0.6 - (t - 0.22) * 1.333 : t < 1 ? 0.16 * (1 - (t - 0.55) / 0.45) : 0); // the glow sprite's falloff
+function scnLightAt(x, y) {
+  const A = LIGHT.list, L = lampOf(LIGHT.amb).slice();
+  for (let k = 0; k < A.length; k += 5) {
+    const R = A[k + 2], d = hyp(A[k] - x, A[k + 1] - y); if (d >= R) continue;
+    const p = lprof(d / R) * A[k + 4], c = lampOf(A[k + 3]); L[0] += c[0] * p; L[1] += c[1] * p; L[2] += c[2] * p;
+  }
+  return L; // 255 is full light, as in the light map
+}
+const scnPoly = (o, P) => { o.beginPath(); P.forEach(([x, y], j) => (j ? o.lineTo(x, y) : o.moveTo(x, y))); o.closePath(); };
+const scnFace = (rgb, L, k) => `rgb(${rgb.map((v, i) => Math.min(255, Math.round(v * k * L[i] / 255))).join(',')})`;
+// multiply what's in a polygon by the light there (and add what's over full light, a little)
+function scnLit(o, P, L) {
+  scnPoly(o, P); o.globalCompositeOperation = 'multiply'; o.fillStyle = `rgb(${L.map(v => Math.min(255, Math.round(v))).join(',')})`; o.fill();
+  const ex = L.map(v => Math.max(0, Math.round((v - 255) * 0.35)));
+  if (ex[0] + ex[1] + ex[2] > 6) { o.globalCompositeOperation = 'lighter'; o.fillStyle = `rgb(${ex.join(',')})`; o.fill(); }
+  o.globalCompositeOperation = 'source-over';
+}
+// A prism standing on the ground at (x, y): a convex outline (local points, clockwise on the board), from z0 to z1;
+// the sides that face the camera, each shaded by where it faces (the top left is lit) and by the light there; a rim.
+// Returns the top's outline on the card.
+function scnPrism(o, C, x, y, pts, z0, z1, rgb, rim) {
+  const n = pts.length;
+  for (let j = 0; j < n; j++) {
+    const [ax, ay] = pts[j], [bx, by] = pts[(j + 1) % n];
+    let nx = by - ay, ny = -(bx - ax); const l = hyp(nx, ny) || 1; nx /= l; ny /= l; // outward for a clockwise outline (y down)
+    const mx = x + (ax + bx) / 2, my = y + (ay + by) / 2;
+    if ((C.x - mx) * nx + (C.y - my) * ny <= 0) continue;
+    const P = [scnP(C, x + ax, y + ay, z0), scnP(C, x + bx, y + by, z0), scnP(C, x + bx, y + by, z1), scnP(C, x + ax, y + ay, z1)];
+    const k = 0.5 + 0.32 * Math.max(0, -(nx + ny) * 0.707) + 0.1 * Math.max(0, nx * 0.5 - ny * 0.2);
+    scnPoly(o, P); o.fillStyle = scnFace(rgb, scnLightAt(mx + nx * 0.35, my + ny * 0.35), k); o.fill();
+    if (rim) { o.beginPath(); o.moveTo(P[3][0], P[3][1]); o.lineTo(P[2][0], P[2][1]); o.lineWidth = Math.max(1, C.f / P[2][2] * 0.012); o.strokeStyle = rim; o.stroke(); }
+  }
+  return pts.map(([px, py]) => scnP(C, x + px, y + py, z1));
+}
+const scnRect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]; // clockwise on the board (y down)
+const scnCircle = (r, n = 14) => Array.from({ length: n }, (_, k) => [Math.cos(k * TAU / n) * r, Math.sin(k * TAU / n) * r]);
+const SCN_PLINTH = {
+  shoot: [[-0.3, -0.43], [0.3, -0.43], [0.43, -0.3], [0.43, 0.3], [0.3, 0.43], [-0.3, 0.43], [-0.43, 0.3], [-0.43, -0.3]],
+  mortar: scnCircle(0.44, 18),
+  tesla: [[-0.06, -0.47], [0.06, -0.47], [0.47, 0.34], [0.41, 0.4], [-0.41, 0.4], [-0.47, 0.34]],
+};
+const scnRockTop = () => sprite('scnrock', 1, (c, px) => { // the blocker's top: square tiles lit from the top left, the hatch, a red light
+  const A = -0.43, w = 0.86 / TILE;
+  for (let a = 0; a < TILE; a++) for (let b = 0; b < TILE; b++) { const lk = 1 - (a + b) / (2 * TILE), hatch = ((a + b) % 4) === 0, base = hatch ? [70, 80, 94] : [38, 45, 54], m = 0.75 + 0.45 * lk; c.fillStyle = `rgb(${base.map(v => Math.round(v * m)).join(',')})`; c.fillRect(A + a * w + 0.01, A + b * w + 0.01, w - 0.02, w - 0.02); }
+  c.fillStyle = '#ff5a5a'; c.fillRect(0.22, -0.3, 0.08, 0.08);
+});
+
+/* the things that stand, each drawn into the card (o, turned by the camera's roll) */
+function scnWall(o, C, q, y, has) {
+  const I = 0.08, cx = q + 0.5, cy = y + 0.5;
+  scnRes(C, scnP(C, cx, cy, SCN_WALL)[2]);
+  scnPrism(o, C, cx, cy, scnRect(-0.5 + I, -0.5 + I, 0.5 - I, 0.5 - I), 0, SCN_WALL, [36, 54, 70], 'rgba(120,170,200,0.35)');
+  o.save(); scnPlane(o, C, cx, cy, SCN_WALL); blit(o, wallSprite(0, false), 0, 0, 1); o.restore();
+  const top = scnRect(-0.5 + I, -0.5 + I, 0.5 - I, 0.5 - I).map(([a, b]) => scnP(C, cx + a, cy + b, SCN_WALL));
+  scnLit(o, top, scnLightAt(cx, cy));
+}
+function scnLink(o, C, x0, y0, x1, y1) { // the bar joining two walls
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, top = scnPrism(o, C, cx, cy, scnRect(x0 - cx, y0 - cy, x1 - cx, y1 - cy), 0, SCN_WALL * 0.78, [30, 46, 60], 'rgba(120,170,200,0.25)');
+  scnPoly(o, top); o.fillStyle = scnFace([46, 68, 86], scnLightAt(cx, cy), 1); o.fill();
+}
+function scnRock(o, C, q, y) {
+  const cx = q + 0.5, cy = y + 0.5; scnRes(C, scnP(C, cx, cy, SCN_ROCK)[2]);
+  scnPrism(o, C, cx, cy, scnRect(-0.43, -0.43, 0.43, 0.43), 0, SCN_ROCK, [26, 32, 40], 'rgba(150,170,190,0.25)');
+  o.save(); scnPlane(o, C, cx, cy, SCN_ROCK); blit(o, scnRockTop(), 0, 0, 1); o.restore();
+  scnLit(o, scnRect(-0.43, -0.43, 0.43, 0.43).map(([a, b]) => scnP(C, cx + a, cy + b, SCN_ROCK)), scnLightAt(cx, cy));
+}
+function scnTower(o, C, g, t) {
+  const cfg = g.cfg, shape = towerShape(cfg), tk = turretK(cfg), L = scnLightAt(g.x, g.y);
+  scnRes(C, scnP(C, g.x, g.y, SCN_HT)[2]);
+  const top = scnPrism(o, C, g.x, g.y, SCN_PLINTH[shape], 0, SCN_HP, [24, 36, 46], 'rgba(79,214,238,0.55)');
+  o.save(); scnPlane(o, C, g.x, g.y, SCN_HP); drawTowerShape(o, cfg, 0, 0, g.ang, g.kick, false, t, { cell: g.key, part: 'base' }); o.restore();
+  scnLit(o, top, L.map(v => v * 1.15));
+  const rd = (shape === 'mortar' ? 0.24 : shape === 'tesla' ? 0.15 : 0.2) * tk; // the turret's drum
+  const dt = scnPrism(o, C, g.x, g.y, scnCircle(rd, 12), SCN_HP, SCN_HT, [20, 30, 38], null);
+  scnPoly(o, dt); o.fillStyle = scnFace([40, 58, 72], L, 1); o.fill();
+  o.save(); scnPlane(o, C, g.x, g.y, SCN_HT); drawTowerShape(o, cfg, 0, 0, g.ang, g.kick, false, t, { cell: g.key, part: 'top' }); o.restore();
+}
+function scnKeep(o, C, x, y, t) { // a gold-rimmed pad and the crystal turning above it, lit from the top left
+  scnRes(C, scnP(C, x, y, 0.2)[2]);
+  const pad = scnPrism(o, C, x, y, scnRect(-0.55, -0.55, 0.55, 0.55), 0, 0.14, [42, 36, 22], 'rgba(232,200,115,0.8)');
+  scnPoly(o, pad); o.fillStyle = '#17130a'; o.fill(); o.lineWidth = Math.max(1, C.f / pad[0][2] * 0.02); o.strokeStyle = '#e8c873'; o.stroke();
+  const a = reduceMotion ? 0.5 : t * 0.8, zc = 0.8 + (reduceMotion ? 0 : 0.05 * Math.sin(t * 2)), V = [[x, y, zc + 0.52], [x, y, zc - 0.42]];
+  const ring = [0, 1, 2, 3].map(k => [x + Math.cos(a + k * Math.PI / 2) * 0.36, y + Math.sin(a + k * Math.PI / 2) * 0.36, zc]);
+  const [gx, gy] = scnP(C, x, y, zc); glow(o, gx, gy, C.f / scnP(C, x, y, zc)[2] * 1.3, '255,214,150', 0.45);
+  const faces = [];
+  for (let k = 0; k < 4; k++) { const A = ring[k], B = ring[(k + 1) % 4]; faces.push([V[0], A, B], [V[1], B, A]); }
+  const cam = [C.x, C.y, C.h];
+  for (const F of faces) {
+    const [P, Q, R] = F, u = [Q[0] - P[0], Q[1] - P[1], Q[2] - P[2]], v = [R[0] - P[0], R[1] - P[1], R[2] - P[2]];
+    const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]], m = [(P[0] + Q[0] + R[0]) / 3, (P[1] + Q[1] + R[1]) / 3, (P[2] + Q[2] + R[2]) / 3];
+    F.d = (cam[0] - m[0]) * n[0] + (cam[1] - m[1]) * n[1] + (cam[2] - m[2]) * n[2];
+    const nl = Math.hypot(n[0], n[1], n[2]) || 1; F.k = 0.45 + 0.55 * Math.max(0, (-n[0] - n[1] + n[2] * 1.2) / (nl * 1.75));
+  }
+  for (const F of faces) {
+    if (F.d <= 0) continue; // the crystal's own front faces only
+    const P = F.map(p => scnP(C, p[0], p[1], p[2])); scnPoly(o, P);
+    o.fillStyle = `rgb(${[232, 200, 115].map(v => Math.min(255, Math.round(v * (0.5 + F.k * 0.75)))).join(',')})`; o.fill();
+    o.lineWidth = 1; o.strokeStyle = `rgba(255,245,215,${0.3 + 0.4 * F.k})`; o.stroke();
+  }
+}
+function scnUnitDraw(o, C, u, t) {
+  const [zt, th] = scnUZ(u, t), [, , zc] = scnP(C, u.x, u.y, zt);
+  scnRes(C, zc);
+  if (u.sap) { o.save(); scnPlane(o, C, u.x, u.y, zt); drawSapper(o, u, t); o.restore(); return; }
+  const s = u.shape, R = u.r, b = angBucket(u.ang), sz = unitSz(R, s);
+  if (th > 0) { // its body's thickness: its silhouette stacked, dark, from its underside up
+    const px = Math.abs(scnP(C, u.x, u.y, zt)[1] - scnP(C, u.x, u.y, zt - th)[1]), n = clamp(Math.ceil(px / 2), 1, 9), dark = uDark(u.color, 0.62);
+    for (let j = 0; j < n; j++) { o.save(); scnPlane(o, C, u.x, u.y, zt - th + th * j / n); blit(o, unitSil(s, R, j ? dark : '#07090c', b), 0, 0, sz); o.restore(); }
+  }
+  o.save(); scnPlane(o, C, u.x, u.y, zt);
+  blit(o, unitSpr(s, u.color, R, u.armorLvl, u.regen > 0, b), 0, 0, unitBodySz(R, s, u.armorLvl));
+  if (u.slowT > 0) { o.globalAlpha = 0.5; blit(o, unitSil(s, R, '#bff3ff', b), 0, 0, sz); o.globalAlpha = 1; }
+  if (u.flash > 0) { o.globalAlpha = Math.min(1, u.flash / 0.1) * 0.85; blit(o, unitSil(s, R, '#ffffff', b), 0, 0, sz); o.globalAlpha = 1; }
+  unitLight(o, u, s, R, t);
+  unitResists(o, resList(u.resist), R, t, u.id);
+  o.restore();
+}
+// A shell's height on its arc, from where it left (the dish) to where it lands.
+const scnShellZ = s => { const left = hyp(s.tx - s.x, s.ty - s.y), k = clamp(1 - left / s.d0, 0, 1); return SCN_HT + Math.sin(k * Math.PI) * Math.min(1.2, 0.35 + s.d0 * 0.28) - (SCN_HT - 0.05) * k; };
+
+/* effects in the air: every effect was given its height when it was made (h, or h1 and h2 for one that runs from a
+   muzzle to a unit); debris falls to the ground and bounces, smoke rises, flashes and bolts glow */
+function scnTag(list, from, h1, h2) { for (let j = from; j < list.length; j++) { const p = list[j]; if (p.h1 != null || p.h != null) continue; p.h1 = h1; p.h2 = h2; p.h = h2; if (p.k === 'debris') { p.z = (p.z || 0) + h2; p.vz = (p.vz || 0) + 1.5; } } }
+function scnFx(o, C, list, dpr) {
+  const W = (w, zc) => Math.max(dpr * 0.7, w * C.f / zc);
+  for (const p of list) {
+    const l = Math.max(0, p.life / p.max), h = p.h ?? 0.3;
+    if (p.k === 'scorch' || p.k === 'ring') continue; // on the ground
+    if (p.k === 'glow' || p.k === 'flash') { const [x, y, z] = scnP(C, p.x, p.y, h); glow(o, x, y, p.r * C.f / z * (p.k === 'glow' ? 0.85 + 0.25 * (1 - l) : 1), p.rgb || p.color, (p.a ?? 0.9) * l); }
+    else if (p.k === 'spark') { const [x1, y1, z] = scnP(C, p.x, p.y, h), [x2, y2] = scnP(C, p.x - p.vx * 0.04, p.y - p.vy * 0.04, h + 0.02); o.beginPath(); o.moveTo(x1, y1); o.lineTo(x2, y2); o.globalAlpha = l; o.strokeStyle = p.color; o.lineWidth = W(0.035, z); o.lineCap = 'round'; o.stroke(); o.globalAlpha = 1; }
+    else if (p.k === 'debris') { const [x, y, z] = scnP(C, p.x, p.y, p.z || 0), s = W(p.size, z); o.save(); o.translate(x, y); o.rotate(p.rot); o.globalAlpha = Math.min(1, l * 2); o.fillStyle = p.color; o.fillRect(-s / 2, -s / 2, s, s * 0.75); o.fillStyle = 'rgba(255,255,255,0.25)'; o.fillRect(-s / 2, -s / 2, s, s * 0.2); o.restore(); }
+    else if (p.k === 'smoke') { const [x, y, z] = scnP(C, p.x, p.y, h + (1 - l) * 0.7); o.beginPath(); o.arc(x, y, W(p.size * (1 + (1 - l) * 1.8), z), 0, TAU); o.fillStyle = `rgba(${p.rgb || '48,44,44'},${0.38 * l})`; o.fill(); }
+    else if (p.k === 'shard' || p.k === 'drop') { const [x, y, z] = scnP(C, p.x, p.y, h); o.beginPath(); o.arc(x, y, W(0.03, z), 0, TAU); o.fillStyle = p.k === 'drop' ? `rgba(143,227,136,${l})` : p.gold ? '#ffe39a' : `rgba(230,251,255,${l})`; o.fill(); }
+    else if (p.k === 'tracer' || p.k === 'streak' || p.k === 'beam' || p.k === 'bolt') {
+      const A = scnP(C, p.x1, p.y1, p.h1 ?? SCN_HT), B = scnP(C, p.x2, p.y2, p.h2 ?? 0.3), zc = (A[2] + B[2]) / 2;
+      o.lineCap = 'round'; o.lineJoin = 'round'; o.globalCompositeOperation = 'lighter';
+      if (p.k === 'streak') {
+        const k = 1 - l, hd = Math.min(1, k * 1.4), tl = Math.max(0, hd - 0.45), at = f => [A[0] + (B[0] - A[0]) * f, A[1] + (B[1] - A[1]) * f];
+        for (const [w, col] of [[p.w * 2.4, `rgba(${p.rgb},0.22)`], [p.w, `rgba(${p.core},0.95)`]]) { o.beginPath(); o.moveTo(...at(tl)); o.lineTo(...at(hd)); o.lineWidth = W(w, zc); o.strokeStyle = col; o.stroke(); }
+      } else if (p.k === 'beam' || p.k === 'tracer') {
+        const pairs = p.k === 'beam' ? [[p.w * (2 + 3 * (1 - l)), `rgba(${p.rgb},${0.35 * l})`], [p.w * l, `rgba(${p.core},${l})`]] : [[p.w * l + 0.01, `rgba(${p.color},${l})`]];
+        for (const [w, col] of pairs) { o.beginPath(); o.moveTo(A[0], A[1]); o.lineTo(B[0], B[1]); o.lineWidth = W(w, zc); o.strokeStyle = col; o.stroke(); }
+      } else {
+        const rnd = mulberry32(((p.seed * 1000) | 0) + Math.floor(l * 6)), pts = [A];
+        for (let s = 1; s < 6; s++) { const f = s / 6, j = (rnd() - 0.5) * 0.35; pts.push(scnP(C, p.x1 + (p.x2 - p.x1) * f, p.y1 + (p.y2 - p.y1) * f, (p.h1 ?? SCN_HT) + ((p.h2 ?? 0.3) - (p.h1 ?? SCN_HT)) * f + j * 0.6 + Math.sin(f * Math.PI) * 0.25)); }
+        pts.push(B);
+        for (const [w, col] of [[0.14 * (p.w || 1), `rgba(140,110,255,${0.3 * l})`], [0.045 * (p.w || 1), `rgba(235,228,255,${l})`]]) { o.beginPath(); o.moveTo(pts[0][0], pts[0][1]); for (const q of pts.slice(1)) o.lineTo(q[0], q[1]); o.lineWidth = W(w * (0.6 + 0.4 * l), zc); o.strokeStyle = col; o.stroke(); }
+        glow(o, B[0], B[1], C.f / B[2] * 0.35, '169,139,255', 0.7 * l);
+      }
+      o.globalCompositeOperation = 'source-over';
+    }
+  }
+}
+
+function scnEvent(S0, ev, units, t) {
+  const [, kind, ti, ui, kill] = ev, g = S0.towers[ti], u = units[ui], from = FXL.length;
+  if (kind === 'kill') { if (u) { deathFx(u); scnTag(FXL, from, scnUZ(u, t)[0], scnUZ(u, t)[0]); } return; }
   if (!g) return;
   const tgt = kind === 'chain' ? units.find(v => !v.sap && !v.dead) : u;
-  if (tgt && tgt.dead) return;
-  if (!tgt) return;
+  if (!tgt || tgt.dead) return;
   const a = Math.atan2(tgt.y - g.y, tgt.x - g.x); g.ang = a; g.kick = 1;
-  const mx = g.x + Math.cos(a) * 0.42, my = g.y + Math.sin(a) * 0.42;
+  const mx = g.x + Math.cos(a) * 0.42, my = g.y + Math.sin(a) * 0.42, uz = scnUZ(tgt, t)[0];
   if (kind === 'beam') { shotFx({ ...g.cfg, rate: 5 }, mx, my, tgt.x, tgt.y, true, 60); FXL.push({ k: 'glow', x: tgt.x, y: tgt.y, r: 1.1, rgb: '255,200,140', life: 0.4, max: 0.4, a: 1 }); debris(tgt.x, tgt.y, '#9eabb6', 6, 3, 0.07); smoke(tgt.x, tgt.y, 3, 0.16); if (kill) deathFx(tgt); }
   else if (kind === 'frost') shotFx(g.cfg, mx, my, tgt.x, tgt.y, true, 8);
   else if (kind === 'streak') shotFx(g.cfg, mx, my, tgt.x, tgt.y, true, 18);
-  else if (kind === 'shell') S0.shells.push({ x: mx, y: my, tgt, tx: tgt.x, ty: tgt.y, spd: 5, dmg: 1, g, r: TS.splash.steps[g.cfg.splash || 2], lands: true });
-  else if (kind === 'chain') { let p = { x: mx, y: my }; const hit = units.filter(v => !v.sap && !v.dead && v.y > 1.2 && v.y < 6.5).sort((a, b) => hyp(a.x - g.x, a.y - g.y) - hyp(b.x - g.x, b.y - g.y)).slice(0, 4); for (const v of hit) { FXL.push({ k: 'bolt', x1: p.x, y1: p.y, x2: v.x, y2: v.y, life: 0.45, max: 0.45, seed: Math.random() * 100, w: 2.2 }); FXL.push({ k: 'glow', x: v.x, y: v.y, r: 0.6, rgb: '190,170,255', life: 0.35, max: 0.35, a: 0.9 }); p = v; } }
+  else if (kind === 'shell') S0.shells.push({ x: mx, y: my, tgt, tx: tgt.x, ty: tgt.y, d0: Math.max(0.5, hyp(tgt.x - mx, tgt.y - my)), spd: 5, dmg: 1, g, r: TS.splash.steps[g.cfg.splash || 2], lands: true });
+  else if (kind === 'chain') {
+    let p = { x: mx, y: my }, ph = SCN_HT;
+    const hit = units.filter(v => !v.sap && !v.dead && v.y > 1.2 && v.y < 6.5).sort((a, b) => hyp(a.x - g.x, a.y - g.y) - hyp(b.x - g.x, b.y - g.y)).slice(0, 4);
+    for (const v of hit) { const vz = scnUZ(v, t)[0]; FXL.push({ k: 'bolt', x1: p.x, y1: p.y, x2: v.x, y2: v.y, h1: ph, h2: vz, life: 0.45, max: 0.45, seed: Math.random() * 100, w: 2.2 }); FXL.push({ k: 'glow', x: v.x, y: v.y, h: vz, r: 0.6, rgb: '190,170,255', life: 0.35, max: 0.35, a: 0.9 }); p = v; ph = vz; }
+  }
+  scnTag(FXL, from, SCN_HT, uz);
 }
 function scnFrame(now) {
   if (!SCN.list.length) { if (SCN.tried) return; SCN.tried = true; scnInit(); }
   SCN.odd = !SCN.odd; if (SCN.odd && !reduceMotion) return; // 30 frames a second is plenty for a card
   const t = now / 1000, dt = Math.min(0.08, Math.max(0, t - (SCN.last || t))); SCN.last = t;
-  const rot = view.rot, L = FXL; view.rot = false; ART.mute = true;
+  const rot = view.rot, L = FXL, mx = LIGHT.mx, my = LIGHT.my, lk = LIGHT.k; view.rot = false; ART.mute = true;
   try { for (const S0 of SCN.list) scnDraw(S0, reduceMotion ? 0 : dt); }
   catch (e) { /* decoration only */ }
-  finally { view.rot = rot; ART.sc = 0; ART.mute = false; FXL = L; }
+  finally { view.rot = rot; ART.sc = 0; ART.mute = false; FXL = L; LIGHT.mx = mx; LIGHT.my = my; LIGHT.k = lk; }
 }
 function scnDraw(S0, dt) {
   const { sc, cv } = S0, r = cv.getBoundingClientRect();
-  if (!r.width || !r.height || r.bottom < 0 || r.right < 0 || r.left > innerWidth) return;
+  if (!r.width || !r.height || r.bottom < 0 || r.right < 0 || r.left > innerWidth || r.top > innerHeight) return; // off screen: nothing drawn
   if (dt === 0 && S0.drawn) return;
   const dpr = Math.min(window.devicePixelRatio || 1, 2), OW = Math.round(r.width * dpr), OH = Math.round(r.height * dpr);
   if (cv.width !== OW || cv.height !== OH) { cv.width = OW; cv.height = OH; }
-  const k = Math.round(Math.min(110, OW / sc.W * 1.15)), WW = sc.W * k, WH = sc.H * k, w = S0.world, c = S0.wc;
-  if (w.width !== WW || w.height !== WH) { w.width = WW; w.height = WH; }
   // the moment: advance the loop, fire what's due
   const t0 = S0.t; S0.t = (S0.t + dt) % sc.loop; if (S0.t < t0) S0.fired.clear();
+  S0.T = (S0.T + dt) % (sc.loop * SCN_LOOPS);
   const t = S0.t, all = sc.units(t), units = all.filter(u => !u.dead);
   FXL = S0.fx;
-  for (const ev of sc.events) if (t >= ev[0] && !S0.fired.has(ev)) { S0.fired.add(ev); scnEvent(S0, ev, sc.units(ev[0] - 0.001)); }
+  for (const ev of sc.events) if (t >= ev[0] && !S0.fired.has(ev)) { S0.fired.add(ev); scnEvent(S0, ev, sc.units(ev[0] - 0.001), t); }
   for (const g of S0.towers) g.kick = Math.max(0, g.kick - dt * 5);
-  for (const s of S0.shells) { if (s.tgt) { s.tx = s.tgt.x; s.ty = s.tgt.y; } const dx = s.tx - s.x, dy = s.ty - s.y, d = hyp(dx, dy), st = s.spd * dt; if (d > st) { s.x += dx / d * st; s.y += dy / d * st; } else { s.done = true; blastFx(s); } }
+  for (const s of S0.shells) { if (s.tgt) { s.tx = s.tgt.x; s.ty = s.tgt.y; } const dx = s.tx - s.x, dy = s.ty - s.y, d = hyp(dx, dy), st = s.spd * dt; if (d > st) { s.x += dx / d * st; s.y += dy / d * st; } else { s.done = true; const from = FXL.length; blastFx(s); scnTag(FXL, from, 0.08, 0.08); } }
   S0.shells = S0.shells.filter(s => !s.done);
   stepFx(S0.fx, dt);
-  // the world, top-down, in the game's art and light
-  ART.sc = k; c.setTransform(k, 0, 0, k, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
-  c.fillStyle = '#0c1116'; c.fillRect(0, 0, sc.W, sc.H);
-  c.fillStyle = 'rgba(150,182,206,0.05)'; for (let x = 0; x < sc.W; x++) for (let y = 0; y < sc.H; y++) { c.fillRect(x + 0.03, y + 0.03, 0.94, 0.94); }
-  c.fillStyle = 'rgba(150,172,190,0.3)'; for (let x = 1; x < sc.W; x++) for (let y = 1; y < sc.H; y++) c.fillRect(x - 0.025, y - 0.025, 0.05, 0.05);
-  for (const [q, y] of sc.rough || []) { c.fillStyle = 'rgba(150,116,66,0.14)'; c.fillRect(q, y, 1, 1); for (let a = 0; a < TILE; a++) for (let b = 0; b < TILE; b++) { const h = phash(q * TILE + a, y * TILE + b), s = (0.18 + 0.34 * h) / TILE; c.fillStyle = `rgba(214,180,112,${0.15 + 0.4 * h})`; c.fillRect(q + (a + 0.5) / TILE - s / 2, y + (b + 0.5) / TILE - s / 2, s, s); } }
-  for (const [q, y] of sc.rock || []) { c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(q + 0.13, y + 0.13, 0.86, 0.86); c.fillStyle = '#0d1116'; c.fillRect(q + 0.07, y + 0.07, 0.86, 0.86); for (let a = 0; a < TILE; a++) for (let b = 0; b < TILE; b++) { const lk = 1 - (a + b) / (2 * TILE), hatch = ((a + b) % 4) === 0, base = hatch ? [70, 80, 94] : [38, 45, 54], m = 0.75 + 0.45 * lk; c.fillStyle = `rgb(${base.map(v => Math.round(v * m)).join(',')})`; c.fillRect(q + 0.07 + a * 0.86 / TILE + 0.01, y + 0.07 + b * 0.86 / TILE + 0.01, 0.86 / TILE - 0.02, 0.86 / TILE - 0.02); } c.fillStyle = '#ff5a5a'; c.fillRect(q + 0.72, y + 0.2, 0.08, 0.08); }
-  const [[ax, ay], [bx, by]] = sc.lane;
-  c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.lineCap = 'round'; c.lineWidth = 0.55; c.strokeStyle = 'rgba(160,200,225,0.05)'; c.stroke();
-  c.setLineDash([0.16, 0.15]); c.lineDashOffset = -t * 0.6; c.lineWidth = 0.05; c.strokeStyle = 'rgba(200,228,242,0.4)'; c.stroke(); c.setLineDash([]);
-  drawDecals(c, S0.fx);
-  const has = new Set(sc.walls.map(([q, y]) => q + ',' + y)), Wl = (q, y) => has.has(q + ',' + y);
-  c.fillStyle = 'rgba(0,0,0,0.42)'; for (const [q, y] of sc.walls) c.fillRect(q + 0.14, y + 0.15, 0.84, 0.84);
-  for (const [q, y] of sc.walls) blit(c, wallSprite((Wl(q - 1, y) ? 1 : 0) | (Wl(q + 1, y) ? 2 : 0) | (Wl(q, y - 1) ? 4 : 0) | (Wl(q, y + 1) ? 8 : 0), false), q + 0.5, y + 0.5, 1);
-  if (sc.keep) { const [kx, ky] = sc.keep; glow(c, kx, ky, 2, '255,214,150', 0.5); c.save(); c.translate(kx, ky); c.rotate(Math.PI / 4); c.fillStyle = '#17130a'; c.fillRect(-0.5, -0.5, 1, 1); c.lineWidth = 0.05; c.strokeStyle = '#e8c873'; c.strokeRect(-0.5, -0.5, 1, 1); c.fillStyle = '#e8c873'; c.fillRect(-0.24, -0.24, 0.48, 0.48); c.fillStyle = 'rgba(255,245,215,0.75)'; c.fillRect(-0.24, -0.24, 0.48, 0.16); c.restore(); }
-  for (const g of S0.towers) drawTowerShape(c, g.cfg, g.x, g.y, g.ang, g.kick, false, t, { cell: g.key });
-  const lc = lightBegin(sc.W, sc.H, sc.light);
-  for (const g of S0.towers) towerLamps(g.cfg).forEach(([dx, dy, r, rgb, a], k) => lamp(lc, g.x + dx, g.y + dy, r * 1.05 + (k ? 0 : g.kick), rgb, a + 0.05 + (k ? 0 : g.kick * 0.6)));
-  if (sc.keep) lamp(lc, sc.keep[0], sc.keep[1], 3.5, '255,214,150', 0.9);
-  for (const u of units) unitLamps(lc, u, u.x, u.y);
-  for (const q of S0.fx) { const l = Math.max(0, q.life / q.max); if (q.k === 'glow') lamp(lc, q.x, q.y, q.r * 1.8, q.rgb, (q.a ?? 0.9) * l); else if (q.k === 'beam' || q.k === 'bolt') for (let s = 0; s <= 4; s++) lamp(lc, q.x1 + (q.x2 - q.x1) * s / 4, q.y1 + (q.y2 - q.y1) * s / 4, 0.9, q.k === 'bolt' ? '170,140,255' : q.rgb, 0.6 * l); }
-  for (const s of S0.shells) lamp(lc, s.x, s.y, 0.8, '255,190,120', 0.5);
-  lightEnd(c, 0.32);
   for (const u of units) u.flash = Math.max(0, u.flash - dt);
-  drawUnits(c, t, units);
-  drawShots(c, S0.shells);
-  drawFx(c, S0.fx);
-  // softer copies for the depth of field
-  const hw = WW >> 1, hh = WH >> 1, qw = WW >> 2, qh = WH >> 2;
-  if (S0.half.width !== hw) { S0.half.width = hw; S0.half.height = hh; S0.quarter.width = qw; S0.quarter.height = qh; }
-  S0.half.getContext('2d').drawImage(w, 0, 0, hw, hh); S0.quarter.getContext('2d').drawImage(S0.half, 0, 0, qw, qh);
-  // the camera: low and turned a little; the ground laid in perspective band by band, the far bands from the softer copies
-  const o = S0.c, cam = { ...sc.cam }; o.setTransform(1, 0, 0, 1, 0, 0);
-  if (!reduceMotion) { cam.cx += Math.sin(t * 0.7) * 0.12; cam.near += Math.sin(t * 0.5) * 0.08; } // a slow, handheld drift o.globalCompositeOperation = 'source-over'; o.globalAlpha = 1;
-  o.fillStyle = '#0a0e13'; o.fillRect(0, 0, OW, OH);
-  o.save(); o.translate(OW / 2, OH / 2); o.rotate(-0.05); o.translate(-OW / 2, -OH / 2);
-  const yh = -OH * 0.95, zf = (OH - yh) / (0 - yh), wide = OW * 1.12;
-  for (let y = OH + 6; y > -10; y -= 2) {
-    const z = (OH - yh) / (y - yh), f = (z - 1) / (zf - 1), z2 = (OH - yh) / (y + 2 - yh), f2 = (z2 - 1) / (zf - 1);
-    const src = f > 0.7 ? S0.quarter : f > 0.42 || f < 0.04 ? S0.half : w, sk = src.width / WW;
-    const wy = cam.near + (cam.far - cam.near) * f, wy2 = cam.near + (cam.far - cam.near) * f2, wcells = cam.wn * z;
-    const sy = wy * k * sk, bh = Math.max(0.5, (wy2 - wy) * k * sk), sw = wcells * k * sk, sx = (cam.cx - wcells / 2) * k * sk;
-    if (sy < 0 || sy >= src.height) continue;
-    o.drawImage(src, sx, sy, sw, Math.min(bh, src.height - sy), (OW - wide) / 2, y, wide, 2.6);
+  const C = scnCam(sc, S0.T, OW, OH), pad = Math.ceil(OW * Math.abs(C.roll) * 0.6) + 6;
+
+  // the ground, flat, in the camera's frame: canvas x is across the view, canvas y the distance ahead (far at the top).
+  // Two canvases: the near ground at about the card's own detail, the far ground (past the focus) at a quarter of it.
+  const near = scnRow(C, OH + pad), far = scnRow(C, -pad), focus = scnRow(C, C.cy);
+  if (!near) return;
+  const V0 = Math.max(0.5, near[0] - 0.4), V1 = Math.min(far ? far[0] : 16, 16) + 0.5, vf = focus ? focus[0] : (V0 + V1) / 2, Vm = Math.min(V1, Math.max(V0 + 1, vf + 4.5));
+  const zOf = v => v * C.cp + C.h * C.sp, UMn = (OW / 2 + pad) / C.f * zOf(Vm) + 0.6, UMf = (OW / 2 + pad) / C.f * zOf(V1) + 0.6;
+  let k = clamp(Math.round(C.f / zOf(vf) * 0.75), 16, 80); // the focus at 3/4 of the card's detail; the rest is softened anyway
+  while (k > 16 && 2 * UMn * k * (Vm - V0) * k > 0.4e6) k -= 2;
+  const kf = Math.max(6, Math.round(k / 4));
+  const has = new Set(sc.walls.map(([q, y]) => q + ',' + y)), Wl = (q, y) => has.has(q + ',' + y);
+  const ground = (G, c, kk, UM, Va, Vb, lit) => {
+    const GW = Math.max(2, Math.ceil(2 * UM * kk)), GH = Math.max(2, Math.ceil((Vb - Va) * kk));
+    if (G.width !== GW || G.height !== GH) { G.width = GW; G.height = GH; }
+    c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.fillStyle = '#0b0f14'; c.fillRect(0, 0, GW, GH);
+    c.setTransform(kk * C.Rx, -kk * C.Fx, kk * C.Ry, -kk * C.Fy, kk * (UM - C.Rx * C.x - C.Ry * C.y), kk * (Vb + C.Fx * C.x + C.Fy * C.y));
+    ART.sc = kk;
+    const pat = c.createPattern(SCN.floor, 'repeat'); if (pat.setTransform) pat.setTransform(new DOMMatrix().scale(1 / 64));
+    c.fillStyle = pat; c.fillRect(-24, -24, sc.W + 48, sc.H + 48);
+    for (const [q, y] of sc.rough || []) { c.fillStyle = 'rgba(150,116,66,0.14)'; c.fillRect(q, y, 1, 1); for (let a = 0; a < TILE; a++) for (let b = 0; b < TILE; b++) { const h = phash(q * TILE + a, y * TILE + b), s = (0.18 + 0.34 * h) / TILE; c.fillStyle = `rgba(214,180,112,${0.15 + 0.4 * h})`; c.fillRect(q + (a + 0.5) / TILE - s / 2, y + (b + 0.5) / TILE - s / 2, s, s); } }
+    const [[ax, ay], [bx, by]] = sc.lane;
+    c.beginPath(); c.moveTo(ax, ay); c.lineTo(bx, by); c.lineCap = 'round'; c.lineWidth = 0.55; c.strokeStyle = 'rgba(160,200,225,0.05)'; c.stroke();
+    c.setLineDash([0.16, 0.15]); c.lineDashOffset = -t * 0.6; c.lineWidth = 0.05; c.strokeStyle = 'rgba(200,228,242,0.4)'; c.stroke(); c.setLineDash([]);
+    drawDecals(c, S0.fx);
+    for (const p of S0.fx) if (p.k === 'ring') { const l = Math.max(0, p.life / p.max); c.beginPath(); c.arc(p.x, p.y, p.r0 + (p.r1 - p.r0) * ease(1 - l), 0, TAU); c.lineWidth = p.w * l + 0.008; c.strokeStyle = `rgba(${p.color},${l})`; c.stroke(); }
+    // shadows: the light is high and to the top left, so they fall to the bottom right, further the higher a thing is
+    c.fillStyle = 'rgba(0,0,0,0.5)';
+    for (const [q, y] of sc.walls) c.fillRect(q + 0.08, y + 0.08, 0.84 + 0.3, 0.84 + 0.36);
+    for (const [q, y] of sc.rock || []) c.fillRect(q + 0.07, y + 0.07, 0.86 + 0.2, 0.86 + 0.24);
+    for (const g of S0.towers) { c.beginPath(); c.ellipse(g.x + 0.16, g.y + 0.2, 0.5, 0.5, 0, 0, TAU); c.fill(); }
+    if (sc.keep) { c.beginPath(); c.ellipse(sc.keep[0] + 0.5, sc.keep[1] + 0.6, 0.55, 0.45, 0, 0, TAU); c.fill(); }
+    c.globalAlpha = 0.45;
+    for (const u of units) { const [zt] = scnUZ(u, t), ox = zt * 0.45, oy = zt * 0.55; if (u.sap) { c.beginPath(); c.arc(u.x + ox, u.y + oy, u.r * 1.1, 0, TAU); c.fillStyle = '#000'; c.fill(); continue; } blit(c, unitSil(u.shape, u.r, '#000', angBucket(u.ang)), u.x + ox, u.y + oy, unitSz(u.r, u.shape)); }
+    for (const s of S0.shells) { const z = scnShellZ(s); c.beginPath(); c.arc(s.x + z * 0.45, s.y + z * 0.55, 0.07, 0, TAU); c.fillStyle = '#000'; c.fill(); }
+    c.globalAlpha = 1;
+    // the light map, laid on the ground (made once a frame; the same lamps light the sides of things)
+    if (!lit) {
+      LIGHT.mx = LIGHT.my = 18; LIGHT.k = 5; const lc = lightBegin(sc.W, sc.H, sc.light); // wide, so the far ground is lit too, and soft
+      for (const g of S0.towers) towerLamps(g.cfg).forEach(([dx, dy, rr, rgb, a], j) => lamp(lc, g.x + dx, g.y + dy, rr * 1.05 + (j ? 0 : g.kick), rgb, a + 0.05 + (j ? 0 : g.kick * 0.6)));
+      if (sc.keep) lamp(lc, sc.keep[0], sc.keep[1], 3.5, '255,214,150', 0.9);
+      for (const u of units) unitLamps(lc, u, u.x, u.y);
+      for (const q of S0.fx) { const l = Math.max(0, q.life / q.max); if (q.k === 'glow') lamp(lc, q.x, q.y, q.r * 1.8, q.rgb, (q.a ?? 0.9) * l); else if (q.k === 'beam' || q.k === 'bolt') for (let s = 0; s <= 4; s++) lamp(lc, q.x1 + (q.x2 - q.x1) * s / 4, q.y1 + (q.y2 - q.y1) * s / 4, 0.9, q.k === 'bolt' ? '170,140,255' : q.rgb, 0.6 * l); }
+      for (const s of S0.shells) lamp(lc, s.x, s.y, 0.8, '255,190,120', 0.5);
+      lightEnd(c, 0.32);
+    } else { const L = LIGHT, x = -L.mx, y = -L.my, W = L.wx + 2 * L.mx, H = L.wy + 2 * L.my; c.save(); c.globalCompositeOperation = 'multiply'; c.drawImage(L.cv, x, y, W, H); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.32; c.drawImage(L.bv, x, y, W, H); c.restore(); }
+    return GW;
+  };
+  const G = S0.ground, GW = ground(G, S0.gc, k, UMn, V0, Vm, false);
+  const FW = Vm < V1 - 0.05 ? ground(S0.far, S0.fc, kf, UMf, Vm, V1, true) : 0;
+  // a softer copy of the near ground for the depth of field
+  const hw = Math.max(1, GW >> 1), hh = Math.max(1, G.height >> 1);
+  if (S0.half.width !== hw || S0.half.height !== hh) { S0.half.width = hw; S0.half.height = hh; }
+  S0.half.getContext('2d').drawImage(G, 0, 0, hw, hh);
+
+  // the card: the ground in perspective a band at a time (the far and the nearest from the softer copies), then
+  // everything standing on it, far to near, then what's in the air
+  const o = S0.c; o.setTransform(1, 0, 0, 1, 0, 0); o.globalCompositeOperation = 'source-over'; o.globalAlpha = 1;
+  let bg = o.createLinearGradient(0, 0, 0, OH); bg.addColorStop(0, '#121a22'); bg.addColorStop(1, '#0a0e13'); o.fillStyle = bg; o.fillRect(0, 0, OW, OH);
+  o.save(); o.translate(OW / 2, OH / 2); o.rotate(C.roll); o.translate(-OW / 2, -OH / 2);
+  for (let y = OH + pad; y > -pad; y -= 2) {
+    const A = scnRow(C, y), B = scnRow(C, y - 2); if (!A || !B || B[0] > V1) break;
+    const v = (A[0] + B[0]) / 2, zm = (A[1] + B[1]) / 2, isFar = A[0] >= Vm && FW;
+    const src = isFar ? S0.far : v - vf > 2.2 || v - vf < -2.4 ? S0.half : G, kk = isFar ? kf : k, UM = isFar ? UMf : UMn, Vt = isFar ? V1 : Vm, sk = isFar ? 1 : src.width / GW;
+    const u0 = (-pad - C.cx) * zm / C.f, u1 = (OW + pad - C.cx) * zm / C.f;
+    o.drawImage(src, (u0 + UM) * kk * sk, (Vt - B[0]) * kk * sk, (u1 - u0) * kk * sk, Math.max(0.5, (B[0] - A[0]) * kk * sk), -pad, y - 2, OW + 2 * pad, 2.6);
   }
+  const items = [];
+  for (const [q, y] of sc.walls) {
+    items.push([scnP(C, q + 0.5, y + 0.5, 0.25)[2], () => scnWall(o, C, q, y)]);
+    if (Wl(q + 1, y)) items.push([scnP(C, q + 1, y + 0.5, 0.2)[2] + 0.01, () => scnLink(o, C, q + 0.9, y + 0.3, q + 1.1, y + 0.7)]);
+    if (Wl(q, y + 1)) items.push([scnP(C, q + 0.5, y + 1, 0.2)[2] + 0.01, () => scnLink(o, C, q + 0.3, y + 0.9, q + 0.7, y + 1.1)]);
+  }
+  for (const [q, y] of sc.rock || []) items.push([scnP(C, q + 0.5, y + 0.5, 0.15)[2], () => scnRock(o, C, q, y)]);
+  for (const g of S0.towers) items.push([scnP(C, g.x, g.y, 0.2)[2], () => scnTower(o, C, g, t)]);
+  if (sc.keep) items.push([scnP(C, sc.keep[0], sc.keep[1], 0.4)[2], () => scnKeep(o, C, sc.keep[0], sc.keep[1], t)]);
+  for (const u of units) items.push([scnP(C, u.x, u.y, scnUZ(u, t)[0])[2] - 0.05, () => scnUnitDraw(o, C, u, t)]);
+  for (const s of S0.shells) items.push([scnP(C, s.x, s.y, scnShellZ(s))[2], () => { const [x, y, z] = scnP(C, s.x, s.y, scnShellZ(s)), rr = C.f / z * 0.075; glow(o, x, y, rr * 4, '255,200,120', 0.6); o.beginPath(); o.arc(x, y, rr, 0, TAU); o.fillStyle = '#1b2328'; o.fill(); o.lineWidth = Math.max(1, rr * 0.25); o.strokeStyle = 'rgba(255,200,120,0.95)'; o.stroke(); }]);
+  items.sort((a, b) => b[0] - a[0]);
+  for (const [, draw] of items) draw();
+  scnFx(o, C, S0.fx, dpr);
   o.restore();
-  // flares: every flash in the world blooms again on the lens, where the camera sees it
-  const toScreen = (wx, wy) => { const f = (cam.near - wy) / (cam.near - cam.far), z = 1 + f * (zf - 1); let y = yh + (OH - yh) / z, x = OW / 2 + (wx - cam.cx) / (cam.wn * z) * wide; const dx = x - OW / 2, dy = y - OH / 2, ca = Math.cos(-0.05), sa = Math.sin(-0.05); return [OW / 2 + dx * ca - dy * sa, OH / 2 + dx * sa + dy * ca, z]; };
+  // flares: every flash blooms again on the lens, where the camera sees it
+  const rotP = (x, y) => { const dx = x - OW / 2, dy = y - OH / 2, ca = Math.cos(C.roll), sa = Math.sin(C.roll); return [OW / 2 + dx * ca - dy * sa, OH / 2 + dx * sa + dy * ca]; };
   o.globalCompositeOperation = 'lighter';
   for (const q of S0.fx) {
     if (q.k !== 'glow') continue;
-    const l = Math.max(0, q.life / q.max), [x, y, z] = toScreen(q.x, q.y), rr = q.r * OW * 0.14 / z;
+    const l = Math.max(0, q.life / q.max), [px, py, z] = scnP(C, q.x, q.y, q.h ?? 0.3), [x, y] = rotP(px, py), rr = q.r * C.f / z * 0.9;
     o.globalAlpha = Math.min(0.6, (q.a ?? 0.9) * l * 0.5); o.drawImage(glowSpr(q.rgb || '255,220,180'), x - rr, y - rr, 2 * rr, 2 * rr);
     o.globalAlpha = Math.min(0.35, (q.a ?? 0.9) * l * 0.3); o.drawImage(glowSpr(q.rgb || '255,220,180'), x - rr * 3, y - rr * 0.25, rr * 6, rr * 0.5); // an anamorphic streak
   }
@@ -9053,7 +9295,7 @@ function scnDraw(S0, dt) {
   }
   o.globalAlpha = 1; o.globalCompositeOperation = 'source-over';
   // the grade: haze toward the horizon, teal shadows and amber light, a vignette, grain
-  let g = o.createLinearGradient(0, 0, 0, OH); g.addColorStop(0, 'rgba(14,20,28,0.85)'); g.addColorStop(0.22, 'rgba(14,20,28,0.3)'); g.addColorStop(0.45, 'rgba(14,20,28,0)'); o.fillStyle = g; o.fillRect(0, 0, OW, OH);
+  let g = o.createLinearGradient(0, 0, 0, OH); g.addColorStop(0, 'rgba(16,24,32,0.85)'); g.addColorStop(0.24, 'rgba(16,24,32,0.32)'); g.addColorStop(0.48, 'rgba(16,24,32,0)'); o.fillStyle = g; o.fillRect(0, 0, OW, OH);
   o.globalCompositeOperation = 'soft-light';
   g = o.createLinearGradient(0, 0, OW, OH); g.addColorStop(0, 'rgba(40,140,170,0.55)'); g.addColorStop(1, 'rgba(255,150,70,0.5)'); o.fillStyle = g; o.fillRect(0, 0, OW, OH);
   o.globalCompositeOperation = 'source-over';
