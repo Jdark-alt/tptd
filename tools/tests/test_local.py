@@ -10,6 +10,7 @@ OUT = os.path.join(BUILD, 'shots', 'local'); os.makedirs(OUT, exist_ok=True)
 HARNESS = write_build('local.html', game_html())
 
 COLS = 16
+WL = 30  # v33: the release window in seconds (RULES.waveLen; 20 in v17-v32)
 fails = []
 def check(cond, msg):
     print(('PASS ' if cond else 'FAIL ') + msg)
@@ -76,8 +77,8 @@ with sync_playwright() as p:
     check(S(page, 'S.terrain.every(v => !v) && S.grid.every(g => !g)'), 'terrain shares at 0: a map without rough ground or rock')
     tops = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow > *, #def-body .helprow > *')].map(b => (b.dataset.tool || b.dataset.act) + ':' + Math.round(b.getBoundingClientRect().top))")
     rows = [t.split(':')[1] for t in tops]
-    check([t.split(':')[0] for t in tops] == ['wall', 'tower', 'remove', 'shape', 'maze', 'tune', 'undo'] and len(set(rows[:4])) == 1 and len(set(rows[4:])) == 1 and int(rows[4]) > int(rows[0]),
-          f'v21.1: the tool row (Wall, Tower, Remove, Shapes), and Auto-maze, Auto-tune, Undo in a row of their own under it {tops}')
+    check([t.split(':')[0] for t in tops] == ['wall', 'tower', 'remove', 'shape', 'maze', 'tune', 'undo', 'weak'] and len(set(rows[:4])) == 1 and len(set(rows[4:])) == 1 and int(rows[4]) > int(rows[0]),
+          f'v21.1: the tool row (Wall, Tower, Remove, Shapes), and Auto-maze, Auto-tune, Undo (v33: and Weak walls, with sabotage) in a row of their own under it {tops}')
     check(route_len(page) == 15 and 'under fire' not in page.inner_text('#d-route').lower(), 'route length shown; time under fire hidden with hints off')
     for r in range(0, 10): click_cell(page, 7, r)
     g0 = S(page, 'S.dFree')
@@ -89,8 +90,8 @@ with sync_playwright() as p:
     page.click('.tool[data-tool=tower]')
     check(S(page, 'S.step') == 0 and S(page, 'S.tool') == 'tower', 'the Tower tool is on the same build step')
     check(page.inner_text('#d-tprice') == '40 coins', 'first tower costs 40')
-    click_cell(page, 9, 5)
-    check(S(page, f'S.grid[{idx(9,5)}].fee') == 0 and page.is_visible('#te-price'), 'first tower: no fee, editor opens')
+    f_t = S(page, 'S.dFree'); click_cell(page, 9, 5)
+    check('fee' not in S(page, f'S.grid[{idx(9,5)}]') and f_t - S(page, 'S.dFree') == 40 and page.is_visible('#te-price'), 'v33: a lone default tower costs 40 and carries no build fee; editor opens')
     # v19 (spec test 1): a Basic tower still costs 40, and at the 100% accuracy step 64; the labels give the per-shot chance
     # v21: each slider row shows a short value; the full label is its tooltip
     tt = lambda k: page.get_attribute(f'#te-{k}-row', 'data-tip') or ''
@@ -135,27 +136,26 @@ with sync_playwright() as p:
     set_slider(page, '#te-range', 2); set_slider(page, '#te-dps', 2)
     page.screenshot(path=f'{OUT}/d1_editor.png')
     page.click('[data-act=close]')
-    check(page.inner_text('#d-tprice') == '50 coins', 'second tower costs 40 + 10 fee')
-    click_cell(page, 13, 5); page.click('[data-act=close]')
-    check(page.inner_text('#d-tprice') == '60 coins', 'third tower costs 40 + 20 fee')
-    click_cell(page, 4, 3); page.click('[data-act=close]')
-    check(S(page, f'S.grid[{idx(4,3)}].fee') == 20, 'third tower fee recorded')
+    check(page.inner_text('#d-tprice') == '40 coins', 'v33: the build fee is gone: the second tower costs 40 too')
+    fr = S(page, 'S.dFree'); click_cell(page, 13, 5); page.click('[data-act=close]')
+    check(S(page, 'S.dFree') == fr - 40 and page.inner_text('#d-tprice') == '40 coins', 'v33: a second default tower far from the first costs 40')
+    fr = S(page, 'S.dFree'); click_cell(page, 4, 3); page.click('[data-act=close]')
+    check(S(page, 'S.dFree') == fr - 40 and page.evaluate('() => window.siegeline.crowd.coins()') == 0, 'v33: a third far away costs 40 too: no crowding between spread-out towers')
     fr = S(page, 'S.dFree')
     page.click('.tool[data-tool=remove]'); click_cell(page, 4, 3)
-    check(S(page, 'S.dFree') == fr + 60, 'removing refunds tuning + build fee')
+    check(S(page, 'S.dFree') == fr + 40, 'removing refunds its price (no crowding to give back)')
     page.click('.tool[data-tool=tower]'); click_cell(page, 4, 3); page.click('[data-act=close]')
     # moving the oldest tower (no fee, tuned) and rebuilding it with the same tuning leaves the coins where they were
     fr, cfg = S(page, 'S.dFree'), S(page, f'S.grid[{idx(9,5)}].cfg')
     tuned = page.evaluate(f'() => window.siegeline.towerCost(window.siegeline.state.grid[{idx(9,5)}].cfg)')
     page.click('.tool[data-tool=remove]'); click_cell(page, 9, 5)
-    check(S(page, 'S.dFree') == fr + tuned + 20 and S(page, f'S.grid[{idx(4,3)}].fee') == 0,
-          'removing the oldest tower refunds its tuning and the top fee (20); the newest takes over its fee')
+    check(S(page, 'S.dFree') == fr + tuned, 'v33: removing the oldest tower refunds its tuning, nothing more (no build fees to shuffle)')
     for src, dst in (((9, 5), (9, 4)), ((9, 4), (9, 5))):
         if src != (9, 5): page.click('.tool[data-tool=remove]'); click_cell(page, *src)
         page.click('.tool[data-tool=tower]'); click_cell(page, *dst)
         set_slider(page, '#te-range', 2); set_slider(page, '#te-dps', 2); page.click('[data-act=close]')
         check(S(page, f'S.grid[{idx(*dst)}].cfg') == cfg and S(page, 'S.dFree') == fr, f'tower moved to {dst} with the same tuning: coins unchanged ({S(page, "S.dFree")} vs {fr})')
-    check(sorted(S(page, 'S.grid.filter(g => g && g.t === "tower").map(g => g.fee)')) == [0, 10, 20], 'fees still 0, 10, 20 between the towers')
+    check(page.evaluate('() => window.siegeline.crowd.coins()') == 0 and S(page, 'S.grid.every(g => !g || g.t !== "tower" || !("fee" in g))'), 'v33: no build fees on any tower, and no crowding between these three')
     chips = page.evaluate("() => [...document.querySelectorAll('#d-tstrip .tchip')].map(c => c.textContent)")
     want = S(page, 'S.grid.filter(g => g && g.t === "tower").sort((a, b) => a.n - b.n).map(g => "T" + g.n + window.siegeline.towerValue(g))')
     check(chips == want, f'v21: the tower strip has a chip per tower, its number and price ({chips})')
@@ -196,7 +196,7 @@ with sync_playwright() as p:
     hb = page.locator(f'{row0} >> .bar .h.l').bounding_box(); tb = page.locator(f'{row0} >> .track').bounding_box()
     drag(page, hb['x'] + hb['width'] / 2, hb['y'] + hb['height'] / 2, tb['x'] + 1, hb['y'] + hb['height'] / 2)
     e0 = S(page, 'S.designs[0].tl.e')
-    check(e0 > 0.95 and S(page, 'S.designs[0].tl.s') == 0, f'dragging the bar’s left end stretches the group to 20 s, the first release kept ({e0:.2f})')
+    check(e0 > 0.95 and S(page, 'S.designs[0].tl.s') == 0, f'dragging the bar’s left end stretches the group to {WL} s, the first release kept ({e0:.2f})')
     # one dot of the swarm to the middle: only that unit's release changes
     p0 = S(page, 'S.designs[2].tl.pos.slice()')
     row2 = '#wv-rows .wv-grp[data-id] >> nth=2'
@@ -211,18 +211,18 @@ with sync_playwright() as p:
     page.evaluate("() => { const S = window.siegeline.state; S.designs[2].tl = { s: 0.4, e: 0.6, pos: null }; window.siegeline.refresh(); }")
     bb = page.locator(f'{row2} >> .bar').bounding_box(); y = bb['y'] + 2  # the bar's top edge, clear of the unit dots
     tb2 = page.locator(f'{row2} >> .track').bounding_box()
-    T = 11.0  # both still on the way: 3 s after the old first release, 8 s after the new one
+    T = 0.4 * WL + 3  # both still on the way: 3 s after the old first release, a quarter of the window more after the new one
     before = page.evaluate(f'() => window.siegeline.wave.at(2, 0, {T})')
     drag(page, bb['x'] + bb['width'] / 2, y, bb['x'] + bb['width'] / 2 + tb2['width'] * 0.25, y)
     s1, e1 = S(page, 'Math.min(...S.designs[2].tl.pos)'), S(page, 'Math.max(...S.designs[2].tl.pos)')
     after = page.evaluate(f'() => window.siegeline.wave.at(2, 0, {T})')
-    check(abs((0.4 - s1) * 20 - 5) < 0.3 and abs((e1 - s1) - 0.2) < 1e-6 and before and after and 'w' in before and 'w' in after and after['w'] > before['w'] + 4,
-          f'v22 test 2: a bar dragged toward the gate leaves sooner, its spread kept, and its units are further along the route at the same clock time ({0.4 * 20:.1f}s → {s1 * 20:.1f}s; walked {before} → {after})')
+    check(abs((0.4 - s1) * WL - WL / 4) < 0.3 and abs((e1 - s1) - 0.2) < 1e-6 and before and after and 'w' in before and 'w' in after and after['w'] > before['w'] + 4,
+          f'v22 test 2: a bar dragged toward the gate leaves sooner, its spread kept, and its units are further along the route at the same clock time ({0.4 * WL:.1f}s → {s1 * WL:.1f}s; walked {before} → {after})')
     bb = page.locator(f'{row2} >> .bar').bounding_box()
     drag(page, bb['x'] + bb['width'] / 2, y, tb2['x'] + tb2['width'] + 200, y)
     drag(page, page.locator(f'{row2} >> .bar').bounding_box()['x'] + 3, y, tb2['x'] - 300, y)
     check(S(page, 'Math.max(...S.designs[2].tl.pos) <= 1 && Math.min(...S.designs[2].tl.pos) >= 0 && Math.max(...S.designs[2].tl.pos) > 0.999'),
-          'v22 test 4: a group dragged past either end stops at 0 s or 20 s')
+          f'v22 test 4: a group dragged past either end stops at 0 s or {WL} s')
     page.screenshot(path=f'{OUT}/a1_wave.png')
     page.click('[data-wv=rush]')
     check(S(page, 'S.designs.every(d => !d.count || Math.max(...d.tl.pos) <= 0.12 + 1e-9)'), 'All at once bunches every track')
@@ -234,7 +234,7 @@ with sync_playwright() as p:
     army = S(page, 'S.designs.reduce((v,d)=>v+d.count*window.siegeline.unitCost(d),0)')
     page.click('#atk-lock'); hand(page)
     check(S(page, 'S.phase') == 'wave' and S(page, 'S.wave.x') == army, 'wave strength = army value')
-    check(S(page, 'Math.max(...S.spawnList.map(e=>e.t))') <= 0.12 * 20 + 0.1, 'spawn times follow the timeline (all within 2.4s)')
+    check(S(page, 'Math.max(...S.spawnList.map(e=>e.t))') <= 0.12 * WL + 0.1, f'spawn times follow the timeline (all within {0.12 * WL:.1f}s)')
     page.wait_for_timeout(2500)
     page.screenshot(path=f'{OUT}/w0_wave.png')
     page.evaluate('() => window.siegeline.advance(200)')
@@ -346,7 +346,7 @@ with sync_playwright() as p:
     db = page.locator(f'{sr} .dot').bounding_box(); lb = page.locator(f'{sr} .track').bounding_box()
     drag(page, db['x'] + db['width'] / 2, db['y'] + db['height'] / 2, lb['x'] + lb['width'] * 0.25, db['y'] + db['height'] / 2)
     t1 = S(page, f'S.charges.get({bw}).t')
-    check(abs(t1 - 0.75) < 0.03 and t1 != t0, f'dragging a sapper’s ◆ sets when it leaves: a quarter of the way from the 20 s end is 15 s ({t0:.3f} → {t1:.3f})')
+    check(abs(t1 - 0.75) < 0.03 and t1 != t0, f'dragging a sapper’s ◆ sets when it leaves: a quarter of the way from the {WL} s end is {0.75 * WL:g} s ({t0:.3f} → {t1:.3f})')
     page.evaluate(f'() => {{ const S = window.siegeline.state; S.charges.get({bw}).t = 0.02; S.charges.get({T95}).t = 0.02; window.siegeline.refresh(); }}')
     page.screenshot(path=f'{OUT}/a3_sapper_tracks.png')
     check(page.is_hidden('#atk-test'), 'v22: the attacker has no separate test run')
@@ -503,7 +503,7 @@ with sync_playwright() as p:
         cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (lb['x'] + lb['width'] * 0.1 - x0) * k / 8, 'y': y0}]}); page.wait_for_timeout(20)
     cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
     e0 = S(page, 'S.designs[0].tl.e')
-    check(e0 > 0.8, f'phone: touch-drag the bar’s left end (the last release) out toward 20 s ({e0:.2f})')
+    check(e0 > 0.8, f'phone: touch-drag the bar’s left end (the last release) out toward {WL} s ({e0:.2f})')
     page.screenshot(path=f'{OUT}/m3_wave.png')
     ov = page.evaluate('() => document.documentElement.scrollWidth > innerWidth')
     check(not ov, 'phone: no horizontal overflow')
@@ -821,13 +821,13 @@ with sync_playwright() as p:
           'Build screen: Auto-maze, Auto-tune (greyed until a tower stands) and Undo (greyed with nothing to undo) in the tool row')
     # round 1: a fixed 60 coins, walls only, the route longer, room left for four towers
     g0, f0, len0 = grid(), S(page, 'S.dFree'), route_len(page)
-    check(page.evaluate('() => window.siegeline.mazeBudget()') == 60, 'auto-maze budget in the first wave: 60 coins')
+    check(page.evaluate('() => window.siegeline.mazeBudget()') == 90, 'auto-maze budget in the first wave: 90 coins (v33; 60 before)')
     maze()
     g1, f1, len1 = grid(), S(page, 'S.dFree'), route_len(page)
     added = [i for i in range(len(g0)) if g0[i] != g1[i]]
-    check(added and all(g0[i] is None and g1[i] == ['wall', True] for i in added) and f0 - f1 == 5 * len(added) <= 60 and len1 > len0,
-          f'auto-maze: {len(added)} new walls for {f0 - f1} coins (at most 60), nothing else; route {len0} → {len1}')
-    check(f1 >= 40 + 50 + 60 + 70, f'after auto-maze four plain towers still fit ({f1} free)')
+    check(added and all(g0[i] is None and g1[i] == ['wall', True] for i in added) and f0 - f1 == 5 * len(added) <= 90 and len1 > len0,
+          f'auto-maze: {len(added)} new walls for {f0 - f1} coins (at most 90), nothing else; route {len0} → {len1}')
+    check(f1 >= 4 * 40, f'after auto-maze four plain towers still fit ({f1} free; v33: 40 each, no build fee)')
     check(f'{len0} → {len1}' in page.inner_text('#d-help') and f'{f0 - f1} coins' in page.inner_text('#d-help'), f'the helper row says what it built ({page.inner_text("#d-help")})')
     page.screenshot(path=f'{OUT}/q0_automaze.png')
     page.click('#def-body [data-act=undo]')
@@ -1290,7 +1290,7 @@ with sync_playwright() as p:
     # split groups are independent: drag B past A toward the gate and back; A never moves, each row's dots stay its own
     def dots_ok(gid):
         g = grp(gid); left = page.evaluate(f"() => [...document.querySelectorAll('#wv-rows .wv-grp[data-id=\"{gid}\"] .dot')].map(d => parseFloat(d.style.left)).sort((a, b) => a - b)")
-        want = sorted((1 - t / 20) * 100 for t in g['secs'])
+        want = sorted((1 - t / WL) * 100 for t in g['secs'])
         return len(left) == len(want) and all(abs(a - b) < 0.05 for a, b in zip(left, want))
     secsA = grp(A)['secs']
     tb = page.locator(f'{rowB} .track').bounding_box(); bb = page.locator(f'{rowB} .bar').bounding_box()
@@ -1569,7 +1569,7 @@ with sync_playwright() as p:
     f1 = S(page, 'S.dFree'); drag_cells((10, 3), (10, 6))
     check(S(page, 'S.dFree') == f1 - 6 and mt() == 2, 'v22 Part C test 1: the next relocation pays 15% (6)')
     # test 2: removing a seen tower refunds its value minus the fee (now 20%: 8)
-    click_cell(page, 12, 8); val = int(page.inner_text('#te-refund')); sv = page.evaluate(f'() => {{ const S = window.siegeline.state, g = S.grid[{idx(12, 8)}]; return window.siegeline.towerCost(g.cfg) + Math.max(...S.grid.filter(h => h && h.t === "tower").map(h => h.fee || 0)); }}')
+    click_cell(page, 12, 8); val = int(page.inner_text('#te-refund')); sv = page.evaluate(f'() => -window.siegeline.crowd.delta([[{idx(12, 8)}, null]])')  # v33: its price and the crowding it takes away
     f2 = S(page, 'S.dFree'); page.click('#def-ctx [data-act=remove]'); page.wait_for_timeout(60)
     check(val == sv - 8 and S(page, 'S.dFree') == f2 + sv - 8 and mt() == 3, f'v22 Part C test 2: removing a seen tower refunds its value minus the fee ({sv} − 8 = {val}; the card said so)')
     # test 5: back onto its seen cell refunds its fee (and takes the relocation back)
@@ -1624,8 +1624,11 @@ with sync_playwright() as p:
     page.evaluate(f'() => {{ const S = window.siegeline.state; S.totals.moveTries = 1; S.grid[{cell}].cfg.dps = 5; S.dFree = 2000; window.siegeline.refresh(); }}')
     tc = page.evaluate(f'() => window.siegeline.towerCost(window.siegeline.state.grid[{cell}].cfg)')
     dest = next(cr for cr in ((1, 1), (1, 9), (14, 1), (14, 9), (2, 1), (2, 9)) if not S(page, f'!!S.grid[{idx(*cr)}]'))
+    # v33: the fee is on the tuning the attacker saw (seenCfg), not the one it has now; the crowding change comes on top
+    sc = page.evaluate(f'() => window.siegeline.towerCost(window.siegeline.seenCfg(window.siegeline.state.grid[{cell}]))')
+    cw = page.evaluate(f'() => window.siegeline.crowd.delta([[{idx(*dest)}, window.siegeline.state.grid[{cell}]], [{cell}, null]])')
     f0 = S(page, 'S.dFree'); drag_cells((c0, r0), dest)
-    check(S(page, 'S.dFree') == f0 - round(0.11 * tc) and S(page, 'S.totals.moveTries') == 2, f'v27: the second relocation pays 11% of the tower’s tuning as it is now ({tc} → {round(0.11 * tc)}; {f0} → {S(page, "S.dFree")})')
+    check(sc < tc and S(page, 'S.dFree') == f0 - round(0.11 * sc) - cw and S(page, 'S.totals.moveTries') == 2, f'v27: the second relocation pays 11% (v33: of the tuning the attacker saw, {sc}, not the {tc} it has now: {round(0.11 * sc)}; crowding {cw}; {f0} → {S(page, "S.dFree")})')
     check(not errors, f'Part C: no errors {errors[:3]}')
     ctx.close()
 
@@ -1951,7 +1954,7 @@ with sync_playwright() as p:
     pots = page.evaluate('() => { const R = window.siegeline.rules, was = [R.potGrowth, R.swingStart, R.swingEnd]; Object.assign(R, ' + SPEC_PAY + '); const out = [1, 2, 4, 7].map(r => { const P = window.siegeline.potFor(r, 8); return [P.pot, Math.round(P.lo * 1000) / 10, Math.round(P.hi * 1000) / 10, Math.round(P.pot * 2 * (P.hi - 0.5))]; }); [R.potGrowth, R.swingStart, R.swingEnd] = was; return out; }')
     check(pots == [[200, 35, 65, 60], [220, 33.3, 66.7, 73], [260, 30, 70, 104], [320, 25, 75, 160]], f'payout: an 8-wave match’s pot, split range and biggest gap after waves 1, 2, 4 and 7 match the spec ({pots})')
     check(page.evaluate('() => [1, 2, 3, 4].map(r => window.siegeline.potFor(r, 4).p)') == [0, 0.5, 1, 1], 'payout: a 4-wave match reaches p = 1 after wave 3')
-    check(page.evaluate('() => window.siegeline.rules.planSecsFirst') == 300 and page.evaluate('() => window.siegeline.rules.starterPresses') == 3, 'the first round: 5:00 and a 3-press starter maze')
+    check(page.evaluate('() => window.siegeline.rules.planSecsFirst') == 300 and page.evaluate('() => window.siegeline.rules.starterPresses') == 5, 'the first round: 5:00 and a 5-press starter maze (v33; 3 before)')
     off = page.evaluate('''() => { const sl = window.siegeline, R = sl.rules, was = [R.potGrowth, R.swingStart, R.swingEnd];
       Object.assign(R, { potGrowth: 0, swingStart: 0.2, swingEnd: 0.2 });
       let bad = 0, n = 0;
@@ -2063,7 +2066,7 @@ with sync_playwright() as p:
     walls = lambda G='S.grid': S(page, f'{G}.map((g, i) => g && g.t === "wall" ? i : -1).filter(i => i >= 0)')
     seed, n0 = S(page, 'S.mapSeed'), S(page, 'S.starter')
     a1, a2 = page.evaluate(f'() => window.siegeline.starterAt({seed})'), page.evaluate(f'() => window.siegeline.starterAt({seed})')
-    check(20 <= n0 <= 36 and walls() == a1 == a2 and walls('S.seenGrid') == a1 and S(page, 'S.dFree') == 300 and S(page, 'S.terrain.some(v => v)'),
+    check(20 <= n0 <= 90 and walls() == a1 == a2 and walls('S.seenGrid') == a1 and S(page, 'S.dFree') == 300 and S(page, 'S.terrain.some(v => v)'),
           f'starter maze: {n0} walls at match start, the same twice for the same map seed, seen by the attacker, and the coins still 300')
     check(route_len(page) >= 25 and route_len(page) > 15 + 10, f'starter maze: the route is clearly longer than the empty board’s ({route_len(page)} steps)')
     page.click('.tool[data-tool=remove]')
@@ -2151,9 +2154,8 @@ with sync_playwright() as p:
     set_slider(page, '#te-range', 4); cfg = S(page, f'S.grid[{idx(6, 5)}].cfg')
     page.click('#def-ctx [data-act=copy]')
     check(S(page, 'S.tool') == 'tower' and 'T1 tuning' in page.inner_text('.tool[data-tool=tower]'), f'Copy tuning: the Tower tool reads “Tower · T1 tuning ×” ({page.inner_text(".tool[data-tool=tower]")})')
-    f0 = S(page, 'S.dFree'); click_cell(page, 9, 3)
-    price = page.evaluate(f'() => window.siegeline.towerCost({json.dumps(cfg)})')
-    check(S(page, f'S.grid[{idx(9, 3)}].cfg') == cfg and S(page, 'S.dFree') == f0 - price - 10, f'the next tower is placed with that tuning, priced as usual ({price} + 10 fee)')
+    f0 = S(page, 'S.dFree'); price = page.evaluate(f'() => window.siegeline.crowd.delta([[{idx(9, 3)}, {{ t: "tower", cfg: {json.dumps(cfg)} }}]])'); click_cell(page, 9, 3)
+    check(S(page, f'S.grid[{idx(9, 3)}].cfg') == cfg and S(page, 'S.dFree') == f0 - price, f'the next tower is placed with that tuning, priced as usual (v33: its price and any crowding, {price})')
     page.click('.tool[data-tool=tower] [data-act=brush-x]'); click_cell(page, 9, 7)
     check(S(page, f'S.grid[{idx(9, 7)}].cfg.range') == 2, 'its × clears the brush: the next tower is a Basic again')
     if page.is_visible('#def-ctx [data-act=close]'): page.click('#def-ctx [data-act=close]')
@@ -2420,7 +2422,7 @@ with sync_playwright() as p:
     # v28: with sabotage off there's no move fee: a tower the attacker saw moves and sells free, and the card says nothing of a fee
     check(S(page, f'S.round === 2 && S.seenGrid[{idx(9, 5)}].n === S.grid[{idx(9, 5)}].n'), 'v28: round 2, the tower stands where the attacker saw it')
     page.click('.tool[data-tool=tower]'); click_cell(page, 9, 5); page.wait_for_timeout(80)
-    sv = page.evaluate(f'() => {{ const S = window.siegeline.state, g = S.grid[{idx(9, 5)}]; return window.siegeline.towerCost(g.cfg) + Math.max(...S.grid.filter(h => h && h.t === "tower").map(h => h.fee || 0)); }}')
+    sv = page.evaluate(f'() => -window.siegeline.crowd.delta([[{idx(9, 5)}, null]])')  # v33: its price and the crowding it takes away
     mvt = page.inner_text('#te-move'); ref = int(page.inner_text('#te-refund'))
     check(mvt == '' and ref == sv, f'v28: with sabotage off a seen tower’s card shows no move fee and its full refund (“{mvt}”, refund {ref} of {sv})')
     page.evaluate('() => { window.siegeline.rules.noSabMoveFee = true; window.siegeline.refresh(); }'); page.wait_for_timeout(60)
@@ -2563,6 +2565,183 @@ with sync_playwright() as p:
         page.click('#roster .urow >> nth=0 >> .rpick'); page.wait_for_timeout(300)
         check(page.is_visible('#ue') and not errors, f'v32 {vp["width"]}: the design editor opens under its row, no errors {errors[:2]}')
         ctx.close()
+
+    # ---------- v33: the layout pass (the spec's tests 1-6 and 8-10; 7 is in test_online.py)
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
+    xy = lambda c, r: page.evaluate(f'() => window.siegeline.cellToClient({idx(c, r)})')
+    def drag_cells(a, z):
+        (x0, y0), (x1, y1) = xy(*a), xy(*z)
+        page.mouse.move(x0, y0); page.mouse.down()
+        for k in range(1, 9): page.mouse.move(x0 + (x1 - x0) * k / 8, y0 + (y1 - y0) * k / 8)
+        page.mouse.up(); page.wait_for_timeout(60)
+    def hover_cell(c, r): x, y = xy(c, r); page.mouse.move(x, y); page.wait_for_timeout(60)
+    sig = lambda: E('JSON.stringify(S.grid.map((g, i) => g && g.t === "tower" ? [i, g.cfg] : g ? [i, g.t] : null).filter(Boolean))')
+    def undo_all():
+        while E('sl.undoDepth()') > 0: page.keyboard.press('Control+z'); page.wait_for_timeout(30)
+    check(E('sl.rules.towerFee') is None and E('[sl.rules.crowdInner, sl.rules.crowdOuter]') == [0.1, 0.05], 'v33: the build fee is gone from the rules; crowding is 10% touching, 5% a ring further out')
+    # test 1: a lone default tower costs 40, a second far away 40 too
+    page.click('.tool[data-tool=tower]')
+    f0 = S(page, 'S.dFree'); click_cell(page, 2, 2); page.keyboard.press('Escape')
+    f1 = S(page, 'S.dFree'); click_cell(page, 12, 8); page.keyboard.press('Escape')
+    check(f0 - f1 == 40 and f1 - S(page, 'S.dFree') == 40, f'v33 test 1: a lone default tower costs 40, and a second far away costs 40 ({f0 - f1}, {f1 - S(page, "S.dFree")})')
+    page.click('.tool[data-tool=remove]'); click_cell(page, 12, 8); page.click('.tool[data-tool=tower]')
+    # test 2: the worked example. Tower (2,2) tuned to 100 (2.5 cells, 24 a second, 87%, poison)
+    click_cell(page, 2, 2); set_slider(page, '#te-dps', 3); set_slider(page, '#te-accuracy', 1); page.click('#def-ctx [data-fx=poison]'); page.wait_for_timeout(60)
+    check(page.inner_text('#te-price') == '100', f'v33 test 2: the first tower is worth 100 ({page.inner_text("#te-price")})')
+    page.keyboard.press('Escape'); hover_cell(3, 2)
+    gh = E('sl.crowd.ghost')
+    check(gh and gh['cost'] == 54 and gh['text'] == '54 · 40 + 14 CROWDING', f'v33: the ghost beside it reads “54 · 40 + 14 crowding” ({gh})')
+    f0 = S(page, 'S.dFree'); click_cell(page, 3, 2); page.keyboard.press('Escape')
+    check(f0 - S(page, 'S.dFree') == 54, f'v33 test 2: a default tower touching it costs 40 + 0.10 × 140 = 54 ({f0 - S(page, "S.dFree")})')
+    hover_cell(2, 3); gh = E('sl.crowd.ghost')
+    f0 = S(page, 'S.dFree'); click_cell(page, 2, 3); page.keyboard.press('Escape')
+    check(f0 - S(page, 'S.dFree') == 62 and gh['cost'] == 62, f'v33 test 2: a third touching both costs 40 + 14 + 8 = 62 (ghost {gh and gh["cost"]}, paid {f0 - S(page, "S.dFree")})')
+    click_cell(page, 3, 2); cl = page.inner_text('#te-crowd'); page.keyboard.press('Escape')
+    check(cl == 'Crowding +8 · 2 nearby', f'v33: the card shows a tower’s share of the crowding (its price × its pairs’ rates: 40 × 0.2 = 8: “{cl}”)')
+    f0 = S(page, 'S.dFree'); page.click('.tool[data-tool=remove]'); click_cell(page, 2, 3)
+    check(S(page, 'S.dFree') - f0 == 62, f'v33 test 2: removing the third refunds 62 ({S(page, "S.dFree") - f0})')
+    # an upgrade on a crowded tower: its price change × (1 + its pairs' rates), as the card says and the click charges
+    page.click('.tool[data-tool=tower]'); click_cell(page, 2, 3); page.keyboard.press('Escape')
+    click_cell(page, 3, 2)
+    nxt = int(page.inner_text('#te-dps-n').lstrip('+')); raw = E(f'sl.towerCost({{...S.grid[{idx(3, 2)}].cfg, dps: 3}}) - sl.towerCost(S.grid[{idx(3, 2)}].cfg)')
+    f0 = S(page, 'S.dFree'); set_slider(page, '#te-dps', 3)
+    check(f0 - S(page, 'S.dFree') == nxt and abs(nxt - raw * 1.2) <= 1, f'v33: an upgrade on a tower touching two others costs about 1.2 × its price change, as the slider says ({raw} → {nxt}, paid {f0 - S(page, "S.dFree")})')
+    page.keyboard.press('Escape')
+    # crowding squares and every range ring while the Tower tool is picked or a tower is dragged; the ghost labels its price
+    hover_cell(9, 8); gh = E('sl.crowd.ghost')
+    check(gh and gh['cost'] == 40 and gh['text'] == '40', f'v33: far from every tower the ghost reads “40” ({gh})')
+    page.screenshot(path=f'{OUT}/v33_crowd.png')
+    # test 4: Undo through a crowded sequence restores the coins exactly
+    undo_all(); fz, gz = S(page, 'S.dFree'), sig()
+    check(fz == 300 and gz == '[]', f'v33 test 4: Undo back through the crowded sequence restores the coins exactly ({fz})')
+    # test 3: path independence
+    page.click('.tool[data-tool=tower]')
+    for c, r in ((5, 5), (6, 5), (9, 5)): click_cell(page, c, r); page.keyboard.press('Escape')
+    base_f, base_g = S(page, 'S.dFree'), sig(); d0 = E('sl.undoDepth()')
+    def back(): 
+        while E('sl.undoDepth()') > d0: page.keyboard.press('Control+z'); page.wait_for_timeout(30)
+    # place at (6,6) directly vs place far (12,2) then drag to (6,6)
+    click_cell(page, 6, 6); page.keyboard.press('Escape'); a = (S(page, 'S.dFree'), sig()); back()
+    click_cell(page, 12, 2); page.keyboard.press('Escape'); drag_cells((12, 2), (6, 6)); b2 = (S(page, 'S.dFree'), sig()); back()
+    check(a == b2 and S(page, 'S.dFree') == base_f, f'v33 test 3: placing beside the others or placing far and dragging it there leave the same coins ({a[0]} vs {b2[0]})')
+    # retune: tune (6,5) up, move it next to (5,5)'s other side vs move then tune
+    click_cell(page, 6, 5); set_slider(page, '#te-range', 5); page.keyboard.press('Escape'); drag_cells((6, 5), (4, 5)); a = (S(page, 'S.dFree'), sig()); back()
+    drag_cells((6, 5), (4, 5)); click_cell(page, 4, 5); set_slider(page, '#te-range', 5); page.keyboard.press('Escape'); b2 = (S(page, 'S.dFree'), sig()); back()
+    check(a == b2, f'v33 test 3: tune then move or move then tune: the same coins ({a[0]} vs {b2[0]})')
+    # swap vs remove-and-rebuild: (9,5) onto a wall at (5,6), against removing both and rebuilding them swapped
+    page.click('.tool[data-tool=wall]'); click_cell(page, 5, 6); d0 = E('sl.undoDepth()'); w_f = S(page, 'S.dFree')
+    drag_cells((9, 5), (5, 6)); a = (S(page, 'S.dFree'), sig()); back()
+    page.click('.tool[data-tool=remove]'); click_cell(page, 9, 5); click_cell(page, 5, 6)
+    page.click('.tool[data-tool=wall]'); click_cell(page, 9, 5); page.click('.tool[data-tool=tower]'); click_cell(page, 5, 6); page.keyboard.press('Escape')
+    b2 = (S(page, 'S.dFree'), sig()); back()
+    check(a == b2 and S(page, 'S.dFree') == w_f, f'v33 test 3: swapping a tower with a wall or removing both and rebuilding them swapped: the same coins ({a[0]} vs {b2[0]})')
+    # test 5: the ghost's price matches what placing there charges, on many cells
+    bad = []
+    page.click('.tool[data-tool=tower]')
+    for c, r in [(4, 4), (5, 4), (6, 4), (7, 4), (7, 5), (7, 6), (4, 6), (6, 7), (8, 5), (8, 7), (3, 3), (10, 5), (11, 4), (9, 7), (13, 9), (1, 8)]:
+        if E(f'S.grid[{idx(c, r)}] && S.grid[{idx(c, r)}].t !== "wall"'): continue
+        hover_cell(c, r); gh = E('sl.crowd.ghost'); f0 = S(page, 'S.dFree')
+        click_cell(page, c, r); page.keyboard.press('Escape'); paid = f0 - S(page, 'S.dFree')
+        if not gh or gh['cost'] - gh.get('back', 0) != paid: bad.append(((c, r), gh and gh['cost'], paid))
+        back()
+    check(not bad, f'v33 test 5: on every sampled cell the ghost’s price is what placing there charges {bad}')
+    # the info overlay's worked example
+    check('40 + 14 = 54' in page.inner_text('#info-crowdex') and '40 + 22 = 62' in page.inner_text('#info-crowdex'), f'v33: the rules sheet carries the worked example ({page.inner_text("#info-crowdex")})')
+    # test 8: the starter maze: 5 presses, the same twice on one seed, the same with sabotage on or off
+    # (this page's scenario turned the starter off with starterPresses 0, so the 5 presses are asked for by name)
+    st = page.evaluate('() => { const sl = window.siegeline, a = sl.starterAt(1234, 5), b = sl.starterAt(1234, 5); sl.state.sabo = false; const c = sl.starterAt(1234, 5); sl.state.sabo = true; return [a, b, c]; }')
+    check(E('sl.rules.autoMazeFirst') == 90 and st[0] == st[1] == st[2] and len(st[0]) >= 30,
+          f'v33 test 8: the starter maze is 5 presses of 90, the same twice on one seed and in Sabotage and Simple modes ({len(st[0])} walls)')
+    # test 10: the release window is 30 s
+    check(E('sl.rules.waveLen') == 30, 'v33 test 10: the release window is 30 s')
+    ctx.close()
+
+    # test 6: the move fee is on the tuning the attacker saw; tests 9 and 10 in a match
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    for r in range(0, 10): click_cell(page, 7, r)  # one long column: a bridge in its middle skips about 40% of the route
+    page.click('.tool[data-tool=tower]'); click_cell(page, 14, 9)
+    set_slider(page, '#te-dps', 5); page.wait_for_timeout(60)
+    seen_price = int(page.inner_text('#te-price')); page.keyboard.press('Escape')
+    page.click('#def-lock'); hand(page)
+    page.click('.urow .step.max'); page.wait_for_timeout(60)
+    page.click('#atk-next'); page.click('#atk-next'); page.wait_for_timeout(200)
+    axis = page.evaluate('() => [...document.querySelectorAll(".wv-axis > span")].map(s => s.textContent)')
+    check(axis[:3] == ['30 s', '20 s', '10 s'], f'v33 test 10: the release track runs 30 s to the gate ({axis})')
+    page.click('[data-wv=seq]'); page.wait_for_timeout(150)
+    secs = page.evaluate('() => window.siegeline.wave.groups().flatMap(g => g.secs)')
+    check(secs and max(secs) <= 30 + 1e-6 and max(secs) > 20, f'v33 test 10: “One after another” spreads the groups over the whole 30 s ({min(secs):.1f}–{max(secs):.1f} s)')
+    page.click('#atk-lock'); hand(page)
+    spawn = E('Math.max(...S.spawnList.map(x => x.t))')
+    check(spawn <= 30.05 and spawn > 20, f'v33 test 10: nothing leaves after 30 s ({spawn:.2f})')
+    page.evaluate('() => window.siegeline.advance(240)'); page.wait_for_timeout(60)
+    if page.is_visible('#ov-sum'): page.click('#sum-next')
+    hand(page)
+    check(E('S.round') == 2 and E(f'S.seenGrid[{idx(14, 9)}] && S.seenGrid[{idx(14, 9)}].t') == 'tower', 'v33: round 2, the tower stood where the attacker saw it')
+    # test 9: weak walls on from round 2 in Sabotage, exactly on the walls a bridge could use to skip 30% or more
+    page.click('.tool[data-tool=wall]')
+    check(E('sl.weak.on') and page.get_attribute('[data-act=weak]', 'aria-pressed') == 'true', 'v33 test 9: Weak walls is on from round 2 in Sabotage')
+    weak = dict((w, c) for w, c in E('sl.weak.cells()'))
+    route = set(E('S.path')); walls = E('S.grid.map((g, i) => g && g.t === "wall" ? i : -1).filter(i => i >= 0)')
+    touching = [w for w in walls if any(n in route for n in (w - 1, w + 1, w - COLS, w + COLS) if 0 <= n < 176 and (abs(n % COLS - w % COLS) <= 1))]
+    page.click('.tool[data-tool=remove]'); wrong = []
+    for w in touching:
+        hover_cell(w % COLS, w // COLS); m = None
+        for _ in range(12):  # the readout follows the pointer a frame later (slow under load)
+            m = re.search(r'Path\s+(\d+)\s*→\s*(\d+)', page.inner_text('#d-route'), re.I)
+            if m: break
+            page.wait_for_timeout(80)
+        cut = (int(m.group(1)) - int(m.group(2))) / int(m.group(1)) if m else 0
+        if (cut >= 0.3 - 1e-9) != (w in weak): wrong.append((w, round(cut, 3), w in weak))
+    check(not wrong and len(weak) >= 1, f'v33 test 9: the dots sit exactly on the walls whose bridge (Remove & Inspect’s route) skips 30%+ of the route ({len(weak)} weak of {len(touching)} beside the route; wrong {wrong})')
+    if weak:
+        w = max(weak, key=weak.get); page.click('.tool[data-tool=wall]'); hover_cell(w % COLS, w // COLS); page.wait_for_timeout(100)
+        page.screenshot(path=f'{OUT}/v33_weak.png')
+        check(E('sl.weak.drawn') == len(weak), f'v33 test 9: a dot drawn on each ({E("sl.weak.drawn")})')
+    page.click('[data-act=weak]'); page.wait_for_timeout(100)
+    check(not E('sl.weak.on') and E('sl.weak.drawn') == 0 and E('S.grid.filter(g => g).length') > 0, 'v33: switched off, no dots; it never changes the build')
+    page.click('[data-act=weak]')
+    # test 6: a seen tower worth this much, tuned down, moved, tuned back pays the fee on the tuning the attacker saw
+    page.click('.tool[data-tool=wall]'); d0 = E('sl.undoDepth()')
+    def back():
+        while E('sl.undoDepth()') > d0: page.keyboard.press('Control+z'); page.wait_for_timeout(30)
+    drag_cells((14, 9), (13, 3)); direct = (S(page, 'S.dFree'), E('S.mvFee'), E('S.totals.moveTries'), sig()); back()
+    click_cell(page, 14, 9); set_slider(page, '#te-dps', 2); page.keyboard.press('Escape')
+    low = S(page, 'S.dFree')
+    drag_cells((14, 9), (13, 3)); fee_low = low - S(page, 'S.dFree')
+    click_cell(page, 13, 3); set_slider(page, '#te-dps', 5); page.keyboard.press('Escape')
+    detour = (S(page, 'S.dFree'), E('S.mvFee'), E('S.totals.moveTries'), sig()); back()
+    want = round(0.1 * seen_price)
+    check(direct == detour and direct[1] == want and fee_low == want, f'v33 test 6: tuned down, moved and tuned back up pays the same fee as moving it directly, 10% of the {seen_price} the attacker saw ({want}; direct {direct[:3]}, detour {detour[:3]}, the move alone {fee_low})')
+    click_cell(page, 14, 9); page.wait_for_timeout(60); set_slider(page, '#te-dps', 2)
+    mv = page.inner_text('#te-move')
+    check(mv.startswith(f'Next move: 10% · {want} coins'), f'v33: the card’s move fee stays on the seen tuning after a retune (“{mv}”)')
+    page.keyboard.press('Escape'); back()
+    # never on the attacker's screen
+    page.click('#def-lock'); hand(page); page.wait_for_timeout(100)
+    check(E('S.phase') == 'attack' and E('sl.weak.drawn') == 0, 'v33 test 9: no weak-wall dots on the attacker’s screen')
+    check(not errors, f'v33: no errors {errors[:3]}')
+    ctx.close()
+    # test 9: none in Simple mode (sabotage off)
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    page.click('#info-go'); page.click('#mode-sabo [data-sabo="0"]'); page.click('#mode-local'); hand(page); hints_off(page)
+    for r in range(0, 10): click_cell(page, 7, r)
+    page.click('#def-lock'); hand(page); page.click('#atk-lock')
+    if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    page.click('#sum-next'); hand(page)
+    check(E('S.sabo') is False and E('S.round') == 2 and not E('sl.weak.on') and page.locator('[data-act=weak]').count() == 0 and E('sl.weak.drawn') == 0,
+          'v33 test 9: with sabotage off there is no Weak walls button and no dots')
+    check(not errors, f'v33 Simple: no errors {errors[:3]}')
+    ctx.close()
     b.close()
 
 print('\nFAILURES:', len(fails))

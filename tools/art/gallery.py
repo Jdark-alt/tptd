@@ -37,7 +37,7 @@ def match(pg, per):
     pg.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0.05; R.rockShare = 0.05; R.planSecs = 0; R.starterPresses = 0; R.fixedGates = true; }')
     pg.click('#info-go'); pg.click('#mode-local'); pg.wait_for_timeout(500); pg.click('#ov-hand'); pg.wait_for_timeout(100)
     pg.evaluate('''() => { const sl = window.siegeline, S = sl.state; S.dFree = 99999; const T = ''' + TOWERS + ''';
-      let n = 0; for (const [c, r, o] of T) { const i = r * 16 + c; S.terrain[i] = 0; S.grid[i] = { t: 'tower', cfg: { range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: 0, ...o }, n: ++n, fee: 0, fresh: true, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; }
+      let n = 0; for (const [c, r, o] of T) { const i = r * 16 + c; S.terrain[i] = 0; S.grid[i] = { t: 'tower', cfg: { range: 2, dps: 2, accuracy: 0, rate: 3, splash: 0, slow: false, poison: false, chain: 0, ...o }, n: ++n, fresh: true, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; }
       for (const r of [0,1,3,5,7,9,10]) { const i = r * 16 + 11; if (!S.grid[i] && !S.terrain[i]) S.grid[i] = { t: 'wall', fresh: true }; }
       S.towerSeq = n; S.gridVer++; sl.refresh(); }''')
     pg.wait_for_timeout(700)
@@ -53,6 +53,7 @@ def wave(pg, per):
     pg.wait_for_selector('#ov-hand', state='visible'); pg.wait_for_timeout(500)
 
 ap = argparse.ArgumentParser(); ap.add_argument('--perf', type=float, default=0, help='also time a busy wave, the CPU slowed this many times (1 = not slowed)')
+ap.add_argument('--per', type=int, default=40, help='v33: the perf wave\'s size: per Darts and Bugs, half as many Tanks, twice as many Swarm (40: about 180 units; 45: about 200)')
 ap.add_argument('--seed', type=int, default=0, help='seed Math.random (v32), so two builds play the same match code, map and wave: compare builds run for run')
 args = ap.parse_args()
 with sync_playwright() as p:
@@ -70,7 +71,7 @@ with sync_playwright() as p:
         pg.screenshot(path=f'{OUT}/wave{k}.png'); pg.screenshot(path=f'{OUT}/wave{k}_zoom.png', clip={'x': x, 'y': y + 60, 'width': 640, 'height': 520})
     print(f'screenshots in {OUT}; errors: {errs[:6]}')
     if args.perf:
-        match(pg, 40); wave(pg, 40)
+        match(pg, args.per); wave(pg, args.per)
         if args.perf > 1: ctx.new_cdp_session(pg).send('Emulation.setCPUThrottlingRate', {'rate': args.perf})
         pg.click('#ov-hand'); pg.wait_for_timeout(3000)
         ts = pg.evaluate('''() => new Promise(res => { const ts = []; const t0 = performance.now(); const f = t => { ts.push(t); if (t - t0 < 6000) requestAnimationFrame(f); else res(ts); }; requestAnimationFrame(f); })''')

@@ -936,6 +936,11 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .helprow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .helprow .hbtn{display:flex;align-items:center;justify-content:center;gap:7px;height:34px;font:500 10.5px/1 var(--f-ui);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .helprow .hbtn svg{width:15px;height:15px}
+/* v33: Weak walls, a fourth helper in Sabotage: a toggle, red when on */
+.helprow.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.helprow.four .hbtn{gap:5px;letter-spacing:.05em}
+.helprow .weakbtn[aria-pressed=true]{color:#ffb4b4;border-color:rgba(255,93,93,.55)}
+@media (max-width:560px){.helprow.four .hbtn svg{display:none}.helprow.four .hbtn{letter-spacing:.02em;font-size:10px}}
 .toolrow .tool{flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:6px 2px;min-height:56px;text-align:center;min-width:0}
 .toolrow .tool .ico{width:18px;height:18px}
 .toolrow .tname{font-size:12px;white-space:nowrap}
@@ -1415,7 +1420,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v32.6</p>
+        <p class="tagline">Two Player Tower Defence · v33</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1452,9 +1457,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <h2>Build</h2>
         <p><strong>Tools.</strong> Wall (<b>W</b>), Tower (<b>T</b>), Remove &amp; Inspect (<b>R</b>), Shapes (<b>S</b>). Tap to build and drag to draw walls; on touch screens a tower takes a second tap to place. A tower placed on a wall replaces it, and the wall’s 5 coins come back. Drag a tower to move it, or onto a wall or another tower to swap them. The chips above the tools are your towers: tap one to open its card.</p>
         <p><strong>Shortcuts.</strong> W, T, R and S pick the tools; with Shapes picked, R turns the piece and F flips it. Delete or Backspace removes the selected tower (Undo brings it back) or deletes the open design. Escape is Done. Ctrl+Z (⌘Z) undoes. M turns the sound on or off (the speaker in the top bar too). On the Wave step the space bar plays the forecast and Ctrl+Z undoes its last change. Hold Shift to see every tower’s range. During a wave 1, 2 and 3 set the speed (1×, 5×, 10×). None of them work while you type in a field.</p>
-        <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">60</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built, and, when it can, on a <strong>hairpin</strong> in the corner by a gate: a short wall the route has to pass on both sides, there and back, so one tower on it covers the route twice. <strong>Auto-tune</strong> spends your free coins on upgrades to the towers you’ve placed. <strong>Undo</strong> takes back your last change this round, coins and tuning included, until the wave starts; the starter maze is where a round begins, so Undo never takes it away.</p>
+        <p><strong>Auto-maze</strong> spends up to <span data-rule="autoMazeFirst">90</span> coins in the first wave (<span data-rule="autoMazeShare%">40</span>% of your free coins after that) on walls that make the route longer, around whatever you’ve built, and, when it can, on a <strong>hairpin</strong> in the corner by a gate: a short wall the route has to pass on both sides, there and back, so one tower on it covers the route twice. Up to <span data-rule="thickenShare%">25</span>% of each press goes on <strong>thickening</strong>: a second wall beside a wall a bridge could use to skip <span data-rule="weakWallCut%">30</span>% or more of the route, as long as the route stays as long. The starter maze is <span data-rule="starterPresses">5</span> presses on the empty board. <strong>Auto-tune</strong> spends your free coins on upgrades to the towers you’ve placed. <strong>Undo</strong> takes back your last change this round, coins and tuning included, until the wave starts; the starter maze is where a round begins, so Undo never takes it away.</p>
         <p><strong>Remove &amp; Inspect:</strong> hover a wall (on touch, hold it) and a red line shows where units would go if it were bridged. A click or tap takes a wall or tower back.</p>
-        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning as it is now for your first relocation in the match, then <span data-rule="moveFeeRise:pt">1</span>% more for each one after, whichever tower it is (10%, 11%, 12%…), at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 11%”), and the drag label its price. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends. With sabotage off there is no move fee: towers move free all match.</p>
+        <p><strong>Move fee.</strong> Moving a tower the attacker saw costs a fee: <span data-rule="moveFeeBase%">10</span>% of its tuning as the attacker saw it (tuning it down first changes nothing) for your first relocation in the match, then <span data-rule="moveFeeRise:pt">1</span>% more for each one after, whichever tower it is (10%, 11%, 12%…), at most <span data-rule="moveFeeMax%">40</span>%. Removing a seen tower refunds its value minus the same fee, so dragging and rebuilding cost the same; swapping two seen towers is two relocations. Free: round 1, towers placed this round, putting a tower back on its seen cell this round (its fee comes back), and the round after a sabotage lands: every tower after a bridge went down, the knocked-out towers after a knock-out. The tower card shows the next one (“Next move: 11%”), and the drag label its price, with the crowding change at the new cell on top. <strong>The fees go to the attacker</strong>: what you paid this round, less what came back, is theirs when the wave ends. With sabotage off there is no move fee: towers move free all match.</p>
         <p><strong>Copy tuning</strong> on a tower’s card: new towers you place get that tuning (priced as usual) until you clear it with × on the Tower tool.</p>
         <p><strong>Hints</strong> (the switch beside the title): glowing tiles mark the walls that would lengthen the route most, and a tap on one places the whole set; the readout shows how long the average unit spends under fire. Early in a round, while you can afford a tower, a faint outline may mark the one spot where a tower would cover the most route (each pass counts); it fades by itself, and goes once you place a tower.</p>
         <p><strong>On the board.</strong> Units come in at the orange gate on the left and head for the gold keep on the right; each match puts them on rows of their own, one in each half of the board. Bright walls are new this round: the attacker hasn’t seen them and can’t bridge them. Dotted ground is rough: units cross it, nothing can be built on it. Hatched slabs are rock: a free wall. An orange bridge stays open for good: wall off an end, or cover it with towers. Small dots on a tower are its effects: frost, poison, chain.</p>
@@ -1464,8 +1469,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       <section id="info-tower">
         <h2>Towers</h2>
         <p>Tap a tower to open its card under your tools: Wall, Remove and the rest stay a click away, no Done needed.</p>
-        <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Each tower also pays a build fee of 10 for every tower you already own. Removing a tower refunds its tuning and the top fee. Each slider shows a short value and what one more step costs; hold or hover it for the detail.</p>
-        <div class="callout"><p><code>40 × (range ÷ 2.5) × (damage ÷ 18)^<span data-rule="dpsPow">1.4</span> × accuracy × splash × frost × poison × chain + fee</code></p><p>The default tower (2.5 cells, 18 a second) is ×1 on both, so it still costs 40. A 1.5-cell tower is ×0.6; 75 damage a second is ×7.4. Splash is priced by its blast (×1.5 / ×1.9 / ×2.4) and Chain by its jumps (×1.2 / ×1.35 / ×1.5).</p></div>
+        <p>One tower type. Its tuning starts at 40 coins and every slider multiplies the price, so stacking upgrades on one tower costs more than spreading them. Fire rate is free. Towers close together pay a <strong>crowding fee</strong> (below). Removing a tower refunds its price and the crowding it took away. Each slider shows a short value and what one more step costs; hold or hover it for the detail.</p>
+        <div class="callout"><p><code>40 × (range ÷ 2.5) × (damage ÷ 18)^<span data-rule="dpsPow">1.4</span> × accuracy × splash × frost × poison × chain</code>, plus crowding</p><p>The default tower (2.5 cells, 18 a second) is ×1 on both, so it costs 40, and a tower on its own pays no crowding. A 1.5-cell tower is ×0.6; 75 damage a second is ×7.4. Splash is priced by its blast (×1.5 / ×1.9 / ×2.4) and Chain by its jumps (×1.2 / ×1.35 / ×1.5).</p></div>
+        <p id="info-crowd"><strong>Crowding.</strong> Two towers within 2 cells of each other crowd each other: touching, the pair costs <span data-rule="crowdInner%">10</span>% of both their prices; with one cell between them, <span data-rule="crowdOuter%">5</span>%; farther apart, nothing. Prices are each tower’s whole tuning, effects included; a knocked-out tower still counts. Placing, moving, retuning or removing a tower pays the change (or gets it back), so your coins depend only on where your towers end up, not the order you built them in. <span id="info-crowdex"></span> An upgrade on a crowded tower costs its price change and its share of the crowding with it. With the Tower tool picked or a tower in your hand, every tower shows its square in red (deeper where squares overlap) and the ghost shows the price at each cell; the card shows a tower’s share (“Crowding +14 · 1 nearby”).</p>
         <ul>
           <li><strong>Range</strong>: priced in proportion to its reach: 5 cells costs twice what 2.5 does, 1.5 cells 0.6 of it. A short-range tower is cheaper, but not by much more than its reach.</li>
           <li><strong>Damage</strong>: total damage per second; fire rate decides how it’s split into shots. Each step costs more than the last, so piling damage on one tower costs more than spreading it over several.</li>
@@ -1499,7 +1505,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       <section id="info-wave">
         <h2>Wave plan</h2>
         <p><strong>Play.</strong> ▶ PLAY WAVE runs a forecast of your wave on the defense you saw, towers firing, misses, frost, chain, knock-outs and bridges included, at 3× (the space bar too). Units fade as they’re hurt; a ✕ marks where one fell. Each press saves a run; tap a run to see its losses and restore it. The forecast is your plan against the defense you saw: the defender may have changed it since.</p>
-        <p><strong>Releases.</strong> A row per group on a 20-second track, the gate on the right: a bar nearer the gate leaves sooner. Drag the bar to move the group, its ends to stretch or squeeze it, a dot to move one unit. A sapper is a single ◆. Split a group (pick how many leave first; hovering Split marks the cut) and each part, A and B, moves on its own; Merge joins them again; Link ties groups of different designs at the same speed so they move as one. Meet lines a group (or a sapper) up with another in a zone, or at cells you pick on the map (⌖: tap a cell, or drag along the route for a stretch of it). Adding or selling units on the Army step keeps your timing: new ones join the group that leaves last.</p>
+        <p><strong>Releases.</strong> A row per group on a <span data-rule="waveLen">30</span>-second track, the gate on the right: a bar nearer the gate leaves sooner. Drag the bar to move the group, its ends to stretch or squeeze it, a dot to move one unit. A sapper is a single ◆. Split a group (pick how many leave first; hovering Split marks the cut) and each part, A and B, moves on its own; Merge joins them again; Link ties groups of different designs at the same speed so they move as one. Meet lines a group (or a sapper) up with another in a zone, or at cells you pick on the map (⌖: tap a cell, or drag along the route for a stretch of it). Adding or selling units on the Army step keeps your timing: new ones join the group that leaves last.</p>
         <p><strong>Zones</strong> are where the danger is: towers whose ranges overlap on the route. Each shows what it does, how to beat it, its stars (how few you lose there) and what died there last run. Optimize works on one zone; Lock keeps a zone’s losses from going up when Auto-sequence or Optimize work on another. <strong>Auto-sequence</strong> tries one small change at a time and keeps the best, up to four; a careful plan can beat it.</p>
       </section>
 
@@ -1532,6 +1538,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 
       <section id="info-sabotage">
         <h2>Sabotage</h2>
+        <p><strong>Weak walls</strong> (for the defender, beside Auto-maze; on from round 2): a red dot on every wall a bridge could use to skip <span data-rule="weakWallCut%">30</span>% or more of your route, brighter the more it skips. Hover one (or hold it with Remove &amp; Inspect) to see where units would go. A second wall beside it, or a tower on it, takes the dot away. The attacker never sees them.</p>
         <p>Each target gets a <strong>sapper</strong> that marches with the army. It walks the route like any unit, towers shoot it like any unit, and it only does its job if it gets there. It does nothing at the keep. Time each sapper on the wave plan; units walking ahead of it draw the fire.</p>
         <p><strong>Sappers</strong> have <span id="info-saphp">112</span> HP and light armor: every hit loses <span id="info-saparm">3</span> (at least 20% still lands), so a weak tower at the front can’t pick them off cheaply. <strong>Shot down</strong>, its coins are lost and <span data-rule="sapKillShare%">50</span>% of its price goes to the defender when the wave ends. <strong>If its target has moved</strong> (the tower to another cell, or the route off the bridge’s tile), it misses and its coins are spent: nobody gets them, since the defender already paid you the move fee.</p>
         <p><strong>Bridge.</strong> Goes on a wall you’ve seen beside the route you saw, or beside one of your bridges. Its sapper lays it on reaching the marked tile beside the wall: the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. If the route no longer passes that tile, or a tower stands where the wall was, it misses. When it lands everyone, sappers included, takes the cheapest route counting only the towers firing then, so a tower you’ve already knocked out doesn’t keep units off it; if the route over it is still under more fire, units won’t take it, and the Sabotage step warns you. From <span data-rule="bridgeBase">25</span> coins, at most <span data-rule="bridgesPerWave">1</span> a wave.</p>
@@ -1554,8 +1561,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
               <tr><td>Waves</td><td class="n"><span data-rule="roundChoices:range">4–12</span></td><td>Picked at the start, <span data-rule="rounds">8</span> by default. The defender wins by surviving them</td></tr>
               <tr><td>Planning</td><td class="n"><span data-rule="planSecs:min">5</span> min</td><td>Each side, every round, then the plan goes as it stands; or untimed, picked at the start</td></tr>
               <tr><td class="d">Wall</td><td class="n">5</td><td>Fully refundable, also when bridged</td></tr>
-              <tr><td class="d">Tower</td><td class="n">40 × … + fee</td><td>Range priced in proportion, damage <code>^<span data-rule="dpsPow">1.4</span></code>; fee rises by 10 per tower</td></tr>
-              <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw, on its tuning now; +<span data-rule="moveFeeRise:pt">1</span>% a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave; none with sabotage off</td></tr>
+              <tr><td class="d">Tower</td><td class="n">40 × … + crowding</td><td>Range priced in proportion, damage <code>^<span data-rule="dpsPow">1.4</span></code>; towers within 2 cells pay <span data-rule="crowdInner%">10</span>% (touching) or <span data-rule="crowdOuter%">5</span>% of both prices</td></tr>
+              <tr><td class="d">Move fee</td><td class="n"><span data-rule="moveFeeBase%">10</span>% → <span data-rule="moveFeeMax%">40</span>%</td><td>Moving or removing a tower the attacker saw, on its tuning as the attacker saw it; +<span data-rule="moveFeeRise:pt">1</span>% a relocation. Paid to the attacker when the wave ends. None the round after a bridge lands; none on a tower knocked out last wave; none with sabotage off</td></tr>
               <tr><td class="d">Accuracy</td><td class="n">80% → 100%</td><td>Slider ×1.15 / ×1.35 / ×1.6; fire rate shifts each shot, <span id="acc-span"></span></td></tr>
               <tr><td class="d">Frost</td><td class="n">×1.35</td><td>Slows <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s; slowed units take <span data-rule="brittle%">20</span>% more</td></tr>
               <tr><td class="d">Chain</td><td class="n">×1.2 / ×1.35 / ×1.5</td><td>1, 2 or <span data-rule="chainJumps">3</span> jumps of <span data-rule="chainReach">2.5</span> cells, 70 / 50 / 35%, through armor; not with Splash</td></tr>
@@ -1568,7 +1575,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v32.6</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v33</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1721,14 +1728,25 @@ const RULES = {
   // the pot after wave r of R grows from pot (wave 1) to pot × (1 + potGrowth) (the second-to-last wave and the last),
   // and the swing between the shares with it: the defender's share runs from 0.5 − w at no breach to 0.5 + w at
   // breachCap or more, w going from swingStart to swingEnd (potGrowth 0 and both swings 0.2 give v20's flat 200 at 30-70%)
-  pot: 200, potGrowth: 0.6, swingStart: 0.15, swingEnd: 0.25, breachCap: 0.5,
+  // v33: potGrowth 1.75 (v21-v32 0.6, 200 → 320), so the pot runs from 200 after wave 1 to 550 after the second-to-last:
+  // coins for many more towers and units on the map (see CLAUDE.md, "Measured on v33")
+  pot: 200, potGrowth: 1.75, swingStart: 0.15, swingEnd: 0.25, breachCap: 0.5,
   // every match starts with a free starter maze: the walls this many presses of Auto-maze (each with the first-wave
-  // budget, autoMazeFirst) would build on the empty board. Ordinary walls, seen by the attacker from round 1.
-  starterPresses: 3,
+  // budget, autoMazeFirst) would build on the empty board. Ordinary walls, seen by the attacker from round 1. v33: 5
+  // presses of 90 (v21-v32: 3 of 60), up to about 90 walls, so the starter fills most of the board.
+  starterPresses: 5,
   // the gates (v32): each match puts the entry and the keep on rows of their own, in opposite halves of the board, at
   // least gateMargin rows from a corner, picked from the map seed (gatesFor). fixedGates keeps v31's middle row for both.
   fixedGates: false, gateMargin: 2,
-  wall: 5, towerBase: 40, towerFee: 10, unitBase: 15, maxDesigns: 4, waveLen: 20,
+  // waveLen: the release window, in seconds: every unit and sapper leaves within it (a plan's times are shares of it).
+  // v33: 30 (v17-v32: 20), so the first groups are still in a long maze while new ones leave, and spread-out towers keep
+  // firing all wave.
+  wall: 5, towerBase: 40, unitBase: 15, maxDesigns: 4, waveLen: 30,
+  // Crowding (v33; it replaced v3-v32's build fee of towerFee 10 × towers owned): two towers within 2 cells of each other
+  // (the 5×5 square round a tower) are a pair, and a pair costs crowdInner × (both towers' prices) when they touch
+  // (distance 1), crowdOuter × the same a ring further out (distance 2), nothing farther apart. Packing maxed towers at a
+  // choke point costs more; a default tower placed on its own still costs 40 (see crowdMilli).
+  crowdInner: 0.1, crowdOuter: 0.05,
   // Sabotage marches with the army: each bridge or tower knock-out is carried by a sapper (fixed stats, slider indexes
   // like a unit design) and only happens if the sapper gets there. A bridge turns a wall the attacker saw into open
   // ground for the rest of the match: bridgeBase, plus bridgeRise of that for every bridge attempt in earlier waves; at
@@ -1795,7 +1813,12 @@ const RULES = {
   hintSetSize: 3, hintSliceMs: 8, testSpeed: 5,
   // auto-maze: each press spends up to autoMazeFirst coins on walls in the first wave (the 240 left buy four towers and
   // a few upgrades), autoMazeShare of the free coins after that (a column that turns the route takes about 50)
-  autoMazeFirst: 60, autoMazeShare: 0.4,
+  autoMazeFirst: 90, autoMazeShare: 0.4,
+  // weak walls (v33): a wall a bridge could use (it touches the route) that would cut the route by weakWallCut or more,
+  // (route length − route length with the wall open) ÷ route length. Each Auto-maze press (the starter maze's too, and the
+  // computer defender's maze) spends up to thickenShare of its budget on walls beside the worst of them, each one only if
+  // it brings that wall's cut under weakWallCut without shortening the route; Sabotage marks them for the defender.
+  weakWallCut: 0.3, thickenShare: 0.25,
   // a run of walls that leans on something must lean on the board's edge or on solid cells joined to it (v21): leaning on
   // a lone rock left a column open at both ends, and nothing after it could lengthen the route (false: v20's rule)
   mazeHold: true,
@@ -1891,7 +1914,44 @@ function towerParts(c) {
   return p;
 }
 const towerCost = c => Math.round(RULES.towerBase * towerParts(c).reduce((a, x) => a * x.m, 1));
-const towerValue = g => towerCost(g.cfg) + (g.fee || 0);
+const towerValue = g => towerCost(g.cfg); // a tower's own price (v3-v32 added its build fee)
+/* ---------- crowding (v33) ----------
+   Replaces the build fee. Two towers within 2 cells of each other (Chebyshev distance: the 5×5 square centred on a
+   tower) form a pair: touching (distance 1) the pair costs RULES.crowdInner × (A's price + B's price), a ring further
+   out (distance 2) RULES.crowdOuter × the same, farther apart nothing. A price is the tower's whole slider price
+   (towerCost, effects included); knocked-out towers count, since they stand on the board. The layout cost is every
+   tower's price plus every pair's charge. The charges are summed exactly, in whole thousandths of a coin, and only the
+   total is rounded, so repeated moves can't drift. Every action (placing, moving, swapping, retuning, removing, Undo)
+   pays the change in layout cost or gets it back, so the defender's coins depend only on the final layout, never on
+   the order it was built in. Both online devices compute it from the grid, so nothing about it travels. */
+const cheb = (a, b) => Math.max(Math.abs(a % COLS - b % COLS), Math.abs(((a / COLS) | 0) - ((b / COLS) | 0)));
+const crowdPm = d => Math.round(1000 * (d === 1 ? RULES.crowdInner : d === 2 ? RULES.crowdOuter : 0)); // a pair's rate, per mille
+// The exact crowding total of grid G, in thousandths of a coin (an integer).
+function crowdMilli(G) {
+  const P = [];
+  for (let i = 0; i < N; i++) { const g = G[i]; if (g && g.t === 'tower') P.push(i, towerCost(g.cfg)); }
+  let t = 0;
+  for (let a = 0; a < P.length; a += 2) for (let b = a + 2; b < P.length; b += 2) {
+    const r = crowdPm(cheb(P[a], P[b]));
+    if (r) t += r * (P[a + 1] + P[b + 1]);
+  }
+  return t;
+}
+const crowdCoins = G => Math.round(crowdMilli(G) / 1000);
+// A tower's share of the crowding: its price × the sum of its pairs' rates (the shares add up to the total), the rates'
+// sum (what an upgrade costs on top of its price change) and how many towers it pairs with.
+function crowdShare(G, i) {
+  const g = G[i];
+  if (!g || g.t !== 'tower') return { coins: 0, rate: 0, n: 0 };
+  const q = i % COLS, r = (i / COLS) | 0;
+  let pm = 0, n = 0;
+  for (let rr = Math.max(0, r - 2); rr <= Math.min(ROWS - 1, r + 2); rr++) for (let qq = Math.max(0, q - 2); qq <= Math.min(COLS - 1, q + 2); qq++) {
+    const j = rr * COLS + qq, h = G[j];
+    if (j === i || !h || h.t !== 'tower') continue;
+    const k = crowdPm(cheb(i, j)); if (k) { pm += k; n++; }
+  }
+  return { coins: towerCost(g.cfg) * pm / 1000, rate: pm / 1000, n };
+}
 const sameCfg = (a, b) => TKEYS.every(k => (k === 'chain' ? chainOf(a) === chainOf(b) : a[k] === b[k])) && FXK.every(k => !!a[k] === !!b[k]);
 
 /* ---------- units: designs tuned with sliders ---------- */
@@ -1988,6 +2048,7 @@ const ICON = {
   play: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5l8 4.5-8 4.5z" fill="currentColor"/></svg>',
   pause: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5h2.5v9H2.5zM7 1.5h2.5v9H7z" fill="currentColor"/></svg>',
   maze: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 5v19h7V9h6v19M25 5v17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/><path d="M27.5 3.5l1 2.2 2.2 1-2.2 1-1 2.2-1-2.2-2.2-1 2.2-1z" fill="currentColor"/></svg>',
+  weak: '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="6" width="24" height="20" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4" opacity=".6"/><circle cx="16" cy="16" r="5" fill="#ff5d5d"/></svg>',
   tune: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9h22M5 16h22M5 23h22" stroke="currentColor" stroke-width="2" opacity=".45"/><circle cx="20" cy="9" r="3.2" fill="currentColor"/><circle cx="11" cy="16" r="3.2" fill="currentColor"/><circle cx="23" cy="23" r="3.2" fill="currentColor"/></svg>',
   undo: '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 12h11a7 7 0 0 1 0 14h-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M13 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   hp: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14S2 10 2 5.8A3 3 0 0 1 8 4.2a3 3 0 0 1 6 1.6C14 10 8 14 8 14z" fill="currentColor"/></svg>',
@@ -2079,33 +2140,33 @@ function newState(rounds = RULES.rounds) {
   };
 }
 // mfee: the move fee this tower paid this round, refunded if it goes back onto its seen cell (v22)
-const cloneTower = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, n: g.n, fresh: false, cd: 0, ang: g.ang ?? Math.PI, kick: 0, dealt: 0, mfee: g.mfee || 0 });
+const cloneTower = g => ({ t: 'tower', cfg: { ...g.cfg }, off: g.off || 0, n: g.n, fresh: false, cd: 0, ang: g.ang ?? Math.PI, kick: 0, dealt: 0, mfee: g.mfee || 0 });
 const cloneGrid = G => G.map(g => (g ? (g.t === 'tower' ? cloneTower(g) : { t: g.t, fresh: false }) : null));
-const towersValue = G => G.reduce((v, g) => v + (g && g.t === 'tower' ? towerValue(g) : 0), 0);
+// What the towers on grid G are worth (v33): every tower's price plus the crowding fee, its layout cost.
+const towersValue = G => G.reduce((v, g) => v + (g && g.t === 'tower' ? towerCost(g.cfg) : 0), 0) + crowdCoins(G);
+// What the layout cost would change by if some cells took new contents ([cell, thing] pairs; null clears one): what an
+// action pays (positive) or gets back (negative), crowding included.
+function layoutDelta(changes, G = S.grid) { const H = G.slice(); for (const [i, v] of changes) H[i] = v; return towersValue(H) - towersValue(G); }
+const pricedTower = cfg => ({ t: 'tower', cfg }); // a tower for pricing (layoutDelta)
 const wallCount = G => G.reduce((n, g) => n + (g && g.t === 'wall' ? 1 : 0), 0);
 const towerCount = G => G.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0);
-const nextFee = () => RULES.towerFee * towerCount(S.grid);
-// Build fees count towers, not which one goes: towers have paid 0, 10, 20 … between them, in whatever order. Selling
-// one gives back its tuning plus the biggest fee paid, and the tower that paid that takes over the smaller fee, so a
-// tower moved and rebuilt with the same tuning leaves the coins where they were.
-const topFee = G => G.reduce((m, g) => (g && g.t === 'tower' ? Math.max(m, g.fee || 0) : m), 0);
-const sellValue = (G, i) => towerCost(G[i].cfg) + topFee(G);
-function sellTower(G, i) {
-  const g = G[i], top = topFee(G), fee = g.fee || 0;
-  const holder = fee < top ? G.find(h => h && h.t === 'tower' && h !== g && (h.fee || 0) === top) : null;
-  if (holder) holder.fee = fee;
-  G[i] = null;
-  return towerCost(g.cfg) + top;
-}
+// What selling the tower on cell i gives back before any move fee (v33): its price plus the crowding it takes away.
+const sellValue = (G, i) => -layoutDelta([[i, null]], G);
 /* The move fee (v22). A tower is on its seen cell when the attacker saw this same tower (its number) standing there; a
    tower placed this round has a new number, so it moves and sells free. Every drag of a seen tower off its seen cell is
    one relocation, every removal of one another, a swap of two seen towers two; each costs round(rate × its slider
-   price), the rate 10% for the defender's first relocation in the match and a point more for each one after (since v27;
-   moveFeeRise), at most 40%. Moving one back onto its seen cell in the same round refunds its fee and takes the
-   relocation back. Round 1 is free (nothing seen yet), and since v28 so is every round with sabotage off (feeOn).
-   Undo puts the coins and the count back exactly. */
+   price as the attacker saw it), the rate 10% for the defender's first relocation in the match and a point more for
+   each one after (since v27; moveFeeRise), at most 40%. Moving one back onto its seen cell in the same round refunds its
+   fee and takes the relocation back. Round 1 is free (nothing seen yet), and since v28 so is every round with sabotage
+   off (feeOn). Undo puts the coins and the count back exactly.
+   v33: the fee is on the tower's tuning as the attacker saw it (seenCfg), not as it is now: v22-v32 let a defender tune a
+   seen tower down to the bottom (refunded in full), move it for a tiny fee and tune it back up. Retuning in place stays
+   free of fees, before or after a move. The crowding change (towersValue) is paid on top, the same either way. */
 const moveRate = (n = S.totals.moveTries || 0) => Math.min(RULES.moveFeeMax, RULES.moveFeeBase + RULES.moveFeeRise * n);
 const moveFeeOf = (cfg, n) => Math.round(moveRate(n) * towerCost(cfg));
+// The tuning of tower g as the attacker saw it: the same tower (its number) in the seen grid, at its seen home. A tower
+// placed this round has none (it moves free); its own tuning then.
+const seenCfg = (g, SG = S.seenGrid) => { const h = SG.find(x => x && x.t === 'tower' && x.n === g.n); return h ? h.cfg : g.cfg; };
 const ratePct = v => String(Math.round(v * 1000) / 10); // a fee rate as the player reads it: "10.5"
 const seenHome = (g, cell) => { const h = S.seenGrid[cell]; return S.round > 1 && !!(g && g.t === 'tower' && h && h.t === 'tower' && h.n === g.n); };
 // v23: no fee the round after a sabotage landed: on any tower after a bridge went down, else on the towers knocked out
@@ -2121,14 +2182,14 @@ function movePlan(from, to) {
   let n = S.totals.moveTries || 0;
   const step = (t, a, b) => {
     if (!t || t.t !== 'tower') return;
-    if (paysFee(t, a)) out.push({ t, fee: moveFeeOf(t.cfg, n++) });
+    if (paysFee(t, a)) out.push({ t, fee: moveFeeOf(seenCfg(t), n++) });
     else if (seenHome(t, b) && t.mfee > 0) { n--; out.push({ t, fee: -t.mfee }); }
   };
   step(g, from, to); step(h, to, from);
   return { list: out, coins: out.reduce((v, x) => v + x.fee, 0), n };
 }
 // The fee removing the tower on cell takes off its refund (0 unless it stands on its seen cell).
-const removeFee = cell => (paysFee(S.grid[cell], cell) ? moveFeeOf(S.grid[cell].cfg, S.totals.moveTries || 0) : 0);
+const removeFee = cell => (paysFee(S.grid[cell], cell) ? moveFeeOf(seenCfg(S.grid[cell]), S.totals.moveTries || 0) : 0);
 const refundOf = cell => sellValue(S.grid, cell) - removeFee(cell);
 // The computer defender sells and rebuilds rather than dragging (v22): every seen tower whose cell has no tower in its
 // new build G was relocated or removed, and pays the fee (in cell order, the rate rising with each).
@@ -2137,23 +2198,19 @@ function relocFees(K, G) {
   if (K.round > 1 && feeOn(K.sabo)) K.grid.forEach((g, i) => {
     const h = K.seenGrid[i];
     if (!g || g.t !== 'tower' || g.off > 0 || !(h && h.t === 'tower' && h.n === g.n) || (G[i] && G[i].t === 'tower') || feeFree(g, K.freeMv)) return;
-    coins += moveFeeOf(g.cfg, n++); moved++;
+    coins += moveFeeOf(h.cfg, n++); moved++; // on the tuning it saw (v33)
   });
   return { coins, moved, mt: n };
 }
-// Selling every tower that isn't offline, one after another: each sale takes the biggest fee left, so the offline
-// towers end up with the smallest ones (keep, smallest first, for the offline towers in order of n).
+// Selling every tower that isn't offline (the computer defender rebuilds every round): what the layout is worth less
+// what the offline towers left standing are worth, crowding included (v33; v32 shuffled build fees, sellOff/keepFees).
 function sellOff(G) {
-  const fees = [];
-  let back = 0;
-  for (const g of G) if (g && g.t === 'tower') { fees.push(g.fee || 0); if (!(g.off > 0)) back += towerCost(g.cfg); }
-  fees.sort((a, b) => a - b);
-  const keep = fees.slice(0, G.filter(g => g && g.t === 'tower' && g.off > 0).length);
-  for (let k = keep.length; k < fees.length; k++) back += fees[k];
-  return { back, keep };
+  const left = G.map(g => (g && g.t === 'tower' && !(g.off > 0) ? null : g));
+  return { back: towersValue(G) - towersValue(left) };
 }
-const keepFees = (G, keep) => G.filter(g => g && g.t === 'tower').sort((a, b) => a.n - b.n).forEach((g, k) => { g.fee = keep[k]; });
-const newTowerPrice = () => towerCost(placeCfg()) + nextFee(); // the Tower tool's next tower: the copied tuning (placeCfg) or the default
+// The Tower tool's next tower (the copied tuning, placeCfg, or the default): on cell, what placing it there costs,
+// crowding included (v33); without a cell, its price alone.
+const newTowerPrice = (cell = -1) => (cell < 0 ? towerCost(placeCfg()) : layoutDelta([[cell, pricedTower(placeCfg())]]));
 const armyValue = ds => ds.reduce((v, d) => v + d.count * unitCost(d), 0);
 const armyCount = ds => ds.reduce((n, d) => n + d.count, 0);
 const chargesValue = () => { let v = 0; for (const c of S.charges.values()) v += c.cost; return v; };
@@ -2433,7 +2490,7 @@ function starterWalls(G0, T, presses) {
 }
 const starterCache = new Map();
 function buildStarter() {
-  const n = Math.max(0, RULES.starterPresses | 0), key = [terrainKey(S.terrain), ENTRY, EXIT, n, RULES.autoMazeFirst, RULES.wall, RULES.danger, RULES.mazeHold, RULES.mazeTwin, RULES.mazeHairpin].join('|');
+  const n = Math.max(0, RULES.starterPresses | 0), key = [terrainKey(S.terrain), ENTRY, EXIT, n, RULES.autoMazeFirst, RULES.wall, RULES.danger, RULES.mazeHold, RULES.mazeTwin, RULES.mazeHairpin, RULES.weakWallCut, RULES.thickenShare].join('|');
   if (!starterCache.has(key)) { if (starterCache.size > 20) starterCache.clear(); starterCache.set(key, n ? starterWalls(S.grid, S.terrain, n) : []); }
   const cells = starterCache.get(key);
   for (const i of cells) { S.grid[i] = { t: 'wall', fresh: false }; S.seenGrid[i] = { t: 'wall', fresh: false }; }
@@ -2496,10 +2553,12 @@ function canBuild(cell, kind) {
   // a tower on a wall replaces it: the wall's coins come back, and the cell stays blocked, so the route stays open
   const onWall = kind === 'tower' && S.grid[cell] && S.grid[cell].t === 'wall';
   if (S.grid[cell] && !onWall) return { ok: false, quiet: true };
-  const cost = kind === 'wall' ? RULES.wall : newTowerPrice(), back = onWall ? RULES.wall : 0;
-  if (S.dFree + back < cost) return { ok: false, reason: `Not enough coins. A ${kind} costs ${cost} and you have ${S.dFree} free${back ? ` (${S.dFree + back} with the wall’s ${back} back)` : ''}.`, gold: true };
-  if (!onWall && !routeOpenWithout(cell)) return { ok: false, reason: 'Path must stay open', block: true };
-  return { ok: true, onWall };
+  // v33: a tower's cost here is its price plus the crowding it adds (crowd), which depends on the cell
+  const cost = kind === 'wall' ? RULES.wall : newTowerPrice(cell), back = onWall ? RULES.wall : 0, crowd = kind === 'wall' ? 0 : cost - newTowerPrice();
+  const what = kind === 'wall' ? 'A wall costs ' + cost : crowd ? `This tower costs ${cost} here (${cost - crowd} + ${crowd} crowding)` : `A tower costs ${cost}`;
+  if (S.dFree + back < cost) return { ok: false, reason: `Not enough coins. ${what} and you have ${S.dFree} free${back ? ` (${S.dFree + back} with the wall’s ${back} back)` : ''}.`, gold: true, cost, crowd };
+  if (!onWall && !routeOpenWithout(cell)) return { ok: false, reason: 'Path must stay open', block: true, cost, crowd };
+  return { ok: true, onWall, cost, crowd };
 }
 function tryBuild(cell, kind, loud) {
   const v = canBuild(cell, kind);
@@ -2510,10 +2569,11 @@ function tryBuild(cell, kind, loud) {
     S.grid[cell] = { t: 'wall', fresh: !seenAs(cell, 'wall') };
     puff(x, y, '#8fd3ef');
   } else {
-    const cfg = placeCfg(), fee = nextFee();
+    const cfg = placeCfg();
     if (v.onWall) { S.dFree += RULES.wall; floatText(x, y - 0.35, '+' + RULES.wall, '#8fd3ef', 13); } // the wall it replaces
-    S.dFree -= towerCost(cfg) + fee;
-    S.grid[cell] = { t: 'tower', cfg, fee, off: 0, fresh: !seenAs(cell, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
+    S.dFree -= v.cost; // its price and the crowding it adds (v33)
+    S.grid[cell] = { t: 'tower', cfg, off: 0, fresh: !seenAs(cell, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
+    if (v.crowd) floatText(x, y + 0.3, `crowding −${v.crowd}`, '#ff9b9b', 11);
     if (!brushNow()) S.sel = { k: 'tower', cell }; // with a copied tuning there's nothing to tune: keep placing
     puff(x, y, '#4fd6ee');
   }
@@ -2528,7 +2588,7 @@ function removeAt(cell) {
   if (g.t === 'tower' && g.off > 0) { toast('This tower is offline. It can’t be removed until it comes back.', 'bad'); return; }
   const fee = g.t === 'tower' ? removeFee(cell) : 0; // a tower the attacker saw here: its refund loses the move fee
   if (fee) { S.totals.moveTries = (S.totals.moveTries || 0) + 1; S.mvFee = (S.mvFee || 0) + fee; }
-  const val = g.t === 'wall' ? RULES.wall : sellTower(S.grid, cell) - fee;
+  const val = g.t === 'wall' ? RULES.wall : sellValue(S.grid, cell) - fee; // a tower: its price and the crowding it took away (v33)
   S.dFree += val;
   S.grid[cell] = null;
   S.gridVer++; recompute();
@@ -2538,32 +2598,35 @@ function removeAt(cell) {
   if (S.sel && S.sel.k === 'tower' && S.sel.cell === cell) S.sel = null;
   refreshUI();
 }
-/* Moving a tower: drag it onto an open cell, or onto a wall or another tower to swap the two. It keeps its tuning,
-   fee and number, so no coins move (the same as removing it and rebuilding it with the same tuning, which fees made
-   free in v12). Like a rebuilt tower it's new where the attacker didn't see a tower, so a knock-out planned on its old
-   spot finds nothing; a wall or tower it swaps with is new where the attacker didn't see one of its kind. */
+/* Moving a tower: drag it onto an open cell, or onto a wall or another tower to swap the two. It keeps its tuning and
+   number. It costs the move fee if the attacker saw it (v22) and, since v33, the change in crowding: the same as
+   removing it and rebuilding it with the same tuning. Like a rebuilt tower it's new where the attacker didn't see a
+   tower, so a knock-out planned on its old spot finds nothing; a wall or tower it swaps with is new where the attacker
+   didn't see one of its kind. */
+// The crowding change of a move or swap from `from` to `to` (the towers' prices don't change).
+const moveCrowd = (from, to) => layoutDelta([[to, S.grid[from]], [from, S.grid[to]]]);
 function canMove(from, to) {
   const g = S.grid[from], h = to >= 0 ? S.grid[to] : null;
   if (!g || g.t !== 'tower' || to < 0 || to === from) return { ok: false, quiet: true };
   if (g.off > 0) return { ok: false, reason: 'This tower is offline. It can’t be moved until it comes back.' };
   if (h && h.t === 'tower' && h.off > 0) return { ok: false, reason: 'That tower is offline. It can’t be moved until it comes back.' };
   if (h && h.t === 'rock') return siteBlock(to);
-  const mp = movePlan(from, to);
-  if (mp.coins > S.dFree) return { ok: false, reason: `Not enough coins. Moving this tower costs ${mp.coins} and you have ${S.dFree} free.`, gold: true };
-  if (h) return { ok: true, swap: h.t, fee: mp.coins }; // the same cells stay blocked, so the route stays open
+  const mp = movePlan(from, to), crowd = moveCrowd(from, to), cost = mp.coins + crowd; // v33: the fee and the crowding change
+  if (cost > S.dFree) return { ok: false, reason: `Not enough coins. Moving this tower costs ${cost}${crowd && mp.coins ? ` (fee ${mp.coins}, crowding ${crowd > 0 ? '+' : '−'}${Math.abs(crowd)})` : ''} and you have ${S.dFree} free.`, gold: true, fee: mp.coins, crowd, cost };
+  if (h) return { ok: true, swap: h.t, fee: mp.coins, crowd, cost }; // the same cells stay blocked, so the route stays open
   const site = siteBlock(to);
   if (site) return site;
   bfs(tmpA, i => i !== to && (i === from || !S.grid[i]));
   if (tmpA[ENTRY] < 0) return { ok: false, reason: 'Path must stay open', block: true };
-  return { ok: true, swap: '', fee: mp.coins };
+  return { ok: true, swap: '', fee: mp.coins, crowd, cost };
 }
 function moveTower(from, to) {
   const v = canMove(from, to);
   if (!v.ok) { if (!v.quiet) explain(v, to); return false; }
-  const g = S.grid[from], h = S.grid[to], mp = movePlan(from, to);
+  const g = S.grid[from], h = S.grid[to], mp = movePlan(from, to), cost = v.cost;
   for (const x of mp.list) x.t.mfee = x.fee > 0 ? x.fee : 0;
-  S.dFree -= mp.coins; S.totals.moveTries = mp.n; S.mvFee = (S.mvFee || 0) + mp.coins;
-  if (mp.coins) floatText(...center(to), mp.coins > 0 ? '−' + mp.coins : '+' + -mp.coins, mp.coins > 0 ? '#ffd27a' : '#4fd6ee', 13);
+  S.dFree -= cost; S.totals.moveTries = mp.n; S.mvFee = (S.mvFee || 0) + mp.coins; // the fee goes to the attacker, the crowding to no one
+  if (cost) floatText(...center(to), cost > 0 ? '−' + cost : '+' + -cost, cost > 0 ? '#ffd27a' : '#4fd6ee', 13);
   S.grid[to] = g; g.fresh = !seenAs(to, 'tower');
   S.grid[from] = h; if (h) h.fresh = !seenAs(from, h.t);
   if (S.sel && S.sel.k === 'tower') S.sel = { k: 'tower', cell: S.sel.cell === from ? to : S.sel.cell === to ? from : S.sel.cell };
@@ -2591,13 +2654,28 @@ function setTowerCfg(cell, patch) {
   if (!g || g.t !== 'tower') return false;
   if (g.off > 0) { toast('Offline towers can’t be retuned.', 'bad'); return false; }
   const next = { ...g.cfg, ...patch }, note = exclusive(next, patch);
-  const delta = towerCost(next) - towerCost(g.cfg);
+  const delta = tuneDelta(cell, next); // the price change and the crowding change with it (v33)
   if (delta > S.dFree) { toast(`That costs ${delta} more and you have ${S.dFree} free.`, 'bad'); return false; }
   S.dFree -= delta; g.cfg = next;
   if ('range' in patch) { S.gridVer++; recompute(); }
   if (note) toast(note, 'def');
   refreshUI();
   return true;
+}
+// What retuning the tower on cell to cfg costs (negative: gives back): its price change, and the crowding change with it,
+// about its price change × the sum of its pairs' rates (v33; rounded on the whole layout).
+// Worked out from the tower's own pairs: each pair's charge moves by its rate × the price change, so the new total is the
+// old plus (the sum of its pairs' rates) × the price change, exactly, in thousandths (T: the grid's crowdMilli, when the
+// caller has it, as Auto-tune and the computer do for many steps on one grid).
+function tuneDelta(cell, cfg, G = S.grid, T = crowdMilli(G)) {
+  const g = G[cell], d = towerCost(cfg) - towerCost(g.cfg);
+  const q = cell % COLS, r = (cell / COLS) | 0;
+  let pm = 0;
+  for (let rr = Math.max(0, r - 2); rr <= Math.min(ROWS - 1, r + 2); rr++) for (let qq = Math.max(0, q - 2); qq <= Math.min(COLS - 1, q + 2); qq++) {
+    const j = rr * COLS + qq, h = G[j];
+    if (j !== cell && h && h.t === 'tower') pm += crowdPm(cheb(cell, j));
+  }
+  return d + Math.round((T + pm * d) / 1000) - Math.round(T / 1000);
 }
 // Chain and Splash don't combine: whichever the patch just turned on stays, the other goes (both at once: Splash
 // stays). Fixes cfg in place; returns the toast's line, or ''.
@@ -2615,7 +2693,7 @@ function exclusive(cfg, patch = {}) {
    while a plan is locked in or a test run or replay is open, and once the wave starts it's gone. */
 const undo = { S: null, round: 0, list: [], open: null };
 const UNDO_MAX = 100;
-const buildSig = () => JSON.stringify([S.dFree, S.towerSeq, S.totals.moveTries || 0, S.mvFee || 0, S.grid.map(g => (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? (g.fresh ? 2 : 1) : [g.n, g.fee, g.fresh ? 1 : 0, g.mfee || 0, g.cfg]))]);
+const buildSig = () => JSON.stringify([S.dFree, S.towerSeq, S.totals.moveTries || 0, S.mvFee || 0, S.grid.map(g => (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? (g.fresh ? 2 : 1) : [g.n, g.fresh ? 1 : 0, g.mfee || 0, g.cfg]))]);
 const undoHere = () => !!S && S.phase === 'defend' && !replay && !planLocked();
 function undoList() {
   if (undo.S !== S || undo.round !== S.round) Object.assign(undo, { S, round: S.round, list: [] });
@@ -2717,10 +2795,11 @@ function autoTune() {
   const free0 = S.dFree;
   const pick = useful => {
     let best = null;
+    const T = crowdMilli(S.grid);
     for (const i of towers) {
-      const g = S.grid[i], c0 = towerCost(g.cfg), s0 = useful ? tuneScore(i, g.cfg, onRoute) : 0;
+      const g = S.grid[i], s0 = useful ? tuneScore(i, g.cfg, onRoute) : 0;
       for (const cfg of tuneSteps(g.cfg)) {
-        const cost = towerCost(cfg) - c0;
+        const cost = tuneDelta(i, cfg, S.grid, T); // the crowding change included (v33)
         if (cost > S.dFree) continue;
         if (!useful) { if (!best || cost < best.cost) best = { i, cfg, cost }; continue; }
         const gain = tuneScore(i, cfg, onRoute) - s0, r = gain / Math.max(cost, 1e-9);
@@ -2794,6 +2873,78 @@ function hairpins() {
   hairCache.set(key, out);
   return out;
 }
+/* ---------- weak walls (v33) ----------
+   With a long maze one bridged wall can skip a large part of the route. A weak wall is one a bridge could go on (it
+   touches the route, or a bridge joined to it: anchorOf, the bridge rule) whose bridge would cut the route by
+   RULES.weakWallCut or more: (length − length with the wall open, the bridge tie-break included) ÷ length, the same
+   route Remove & Inspect's hover draws. Auto-maze thickens them (thicken), and in Sabotage the defender sees them as red
+   dots (weakNow). Pure reads of the grid: they use their own buffer and never touch a wave. */
+const tmpW = new Int32Array(N);
+// Sabotage's overlay: on in a match with sabotage from round 2 (sabotage starts then), unless the player switched it
+// (S.weakPick, for the match); never in Simple mode. Cached on the build (gridVer), the bridges and the state.
+const weakOn = () => !!S && S.sabo !== false && (S.weakPick != null ? !!S.weakPick : S.round > 1);
+let weakCache = { S: null, key: '', map: new Map() };
+function weakNow() {
+  const key = S.gridVer + ':' + S.bridges.size + ':' + RULES.weakWallCut;
+  if (weakCache.S !== S || weakCache.key !== key) weakCache = { S, key, map: new Map(S.path ? weakWalls(S.grid, S.bridges, dangerField(S.grid), S.path) : []) };
+  return weakCache.map;
+}
+let weakRouteCache = { key: '', path: null };
+const weakRoute = cell => { const key = S.gridVer + ':' + cell; if (weakRouteCache.key !== key) weakRouteCache = { key, path: routeBridged(cell).path }; return weakRouteCache.path; };
+// The weak wall the defender points at (a mouse over it, or Remove & Inspect's hold on touch), or -1.
+const weakHover = () => (weakOn() && S.phase === 'defend' && S.step === 0 && !replay && !towerDrag() ? (S.tool === 'remove' ? inspectCell() : hoverType === 'mouse' ? hover : -1) : -1);
+// The share of the route a bridge on wall w would skip (len: the route's length now).
+function bridgeCut(G, w, br, dz, len) {
+  flow(tmpW, i => i === w || !G[i], dz, new Set(br).add(w));
+  const p = tracePath(tmpW);
+  return p ? (len - pathLen(p)) / len : 0;
+}
+// Every weak wall on grid G with route `path`, worst first: [[cell, cut], ...].
+function weakWalls(G, br, dz, path) {
+  const len = pathLen(path), out = [];
+  if (!len) return out;
+  for (let w = 0; w < N; w++) {
+    const g = G[w];
+    if (!g || g.t !== 'wall' || br.has(w) || anchorOf(w, path, br) < 0) continue;
+    const c = bridgeCut(G, w, br, dz, len);
+    if (c >= RULES.weakWallCut - 1e-9) out.push([w, c]);
+  }
+  return out.sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+}
+/* Thickening: up to `limit` walls beside weak walls, worst first. For each weak wall it tries the empty cells beside it
+   and keeps the one that brings its cut under the threshold without shortening the route (the longest route, then the
+   smallest cut, then the lower cell); if none does, the next weak wall. New walls can make new weak walls, so it looks
+   again after every wall. Stops at `limit`, or when no weak wall is left or none can be fixed. place(i) puts the wall
+   (it may refuse: false, e.g. no coins). Yields between tries, so Auto-maze can slice it between frames. */
+function* thicken(G, limit, br, T, dz, place) {
+  const open = i => !G[i], hole = i => i === ENTRY || i === EXIT || br.has(i) || T[i] === ROUGH;
+  const route = () => { flow(tmpA, open, dz, br); return tracePath(tmpA); };
+  let n = 0;
+  while (n < limit) {
+    const p0 = route(), len = pathLen(p0);
+    if (!len) break;
+    const weak = weakWalls(G, br, dz, p0);
+    yield;
+    let done = false;
+    for (const [w] of weak) {
+      let best = null;
+      for (const x of nbrs(w)) {
+        if (G[x] || hole(x)) continue;
+        G[x] = WALL_MARK;
+        bfs(tmpB, open);
+        const p = tmpB[ENTRY] < 0 ? null : route(), L = pathLen(p);
+        const cut = p && L >= len ? bridgeCut(G, w, br, dz, L) : 1;
+        G[x] = null;
+        yield;
+        if (!p || L < len || cut >= RULES.weakWallCut - 1e-9) continue;
+        if (!best || L > best.L || (L === best.L && cut < best.cut - 1e-9)) best = { x, L, cut };
+      }
+      if (best && place(best.x) !== false) { n++; done = true; break; }
+    }
+    if (!done) break;
+  }
+  return n;
+}
 function* mazeSearch(G, walls, br, T) {
   const dz = Int16Array.from(dangerField(G)), open = i => !G[i], hole = i => i === ENTRY || i === EXIT || br.has(i) || T[i] === ROUGH;
   const route = () => { flow(tmpA, open, dz, br); return tracePath(tmpA); };
@@ -2825,8 +2976,19 @@ function* mazeSearch(G, walls, br, T) {
     return n;
   };
   let path = route();
-  while (path && out.length < walls) {
-    const len = pathLen(path), on = new Set(path), left = walls - out.length, tw0 = twins(path);
+  // v33: up to thickenShare of the walls go on thickening weak walls, after the maze is laid; what that doesn't use goes
+  // back into the maze
+  const thick = Math.floor(walls * (RULES.thickenShare || 0));
+  yield* grow(walls - thick);
+  if (thick && path) {
+    yield* thicken(G, thick, br, T, dz, i => { G[i] = WALL_MARK; out.push(i); });
+    path = route();
+  }
+  yield* grow(walls);
+  return out;
+  function* grow(limit) {
+  while (path && out.length < limit) {
+    const len = pathLen(path), on = new Set(path), left = limit - out.length, tw0 = twins(path);
     let best = null;
     if (RULES.mazeHold) markEdge();
     for (const line of LINES) for (let a = 0; a < line.length; a++) {
@@ -2879,7 +3041,7 @@ function* mazeSearch(G, walls, br, T) {
     for (const j of best.cells) { G[j] = WALL_MARK; out.push(j); }
     path = best.p;
   }
-  return out;
+  }
 }
 const amaze = { gen: null, S: null, sig: '', budget: 0, timer: 0 };
 function autoMaze() {
@@ -2914,12 +3076,11 @@ function placeMaze(cells) {
   refreshUI();
 }
 // Several cells at once (a shape, or the hint's wall set), all or nothing: cells are [cell, 'wall' | 'tower'] pairs
-// on empty, buildable cells. Walls cost RULES.wall, towers the usual new-tower price (defaultTower, the fee rising
-// with each one), with no discount; afterwards they're ordinary walls and towers.
+// on empty, buildable cells. Walls cost RULES.wall, towers (defaultTower) their price and the crowding they add
+// (v33), with no discount; afterwards they're ordinary walls and towers.
 function cellsCost(cells) {
-  let n = towerCount(S.grid), cost = 0;
-  for (const [, k] of cells) cost += k === 'wall' ? RULES.wall : towerCost(defaultTower()) + RULES.towerFee * n++;
-  return cost;
+  const tw = cells.filter(([, k]) => k === 'tower').map(([i]) => [i, pricedTower(defaultTower())]);
+  return (cells.length - tw.length) * RULES.wall + (tw.length ? layoutDelta(tw) : 0);
 }
 function checkCells(cells) {
   if (!cells.length) return { ok: false, reason: 'Nothing to build there: every cell is taken or can’t be built on.' };
@@ -2936,9 +3097,9 @@ function placeCells(cells) {
   for (const [i, k] of cells) {
     const [x, y] = center(i);
     if (k === 'wall') { S.dFree -= RULES.wall; S.grid[i] = { t: 'wall', fresh: !seenAs(i, 'wall') }; puff(x, y, '#8fd3ef'); continue; }
-    const cfg = defaultTower(), fee = nextFee();
-    S.dFree -= towerCost(cfg) + fee;
-    S.grid[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seenAs(i, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
+    const cfg = defaultTower(), cost = layoutDelta([[i, pricedTower(cfg)]]); // its price and the crowding it adds (v33)
+    S.dFree -= cost;
+    S.grid[i] = { t: 'tower', cfg, off: 0, fresh: !seenAs(i, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
     puff(x, y, '#4fd6ee');
   }
   S.gridVer++; recompute();
@@ -3558,6 +3719,7 @@ function layBridge(i) {
   const before = S.path;
   S.gridVer++; recompute(); S.pathFlash = 1.6;
   if (S.ghost) S.ghost.bridges.push({ cell: i, t: S.waveT, before, after: S.path }); // the forecast notes how the route changed
+  if (before && S.path) (S.wave.cuts || (S.wave.cuts = [])).push((pathLen(before) - pathLen(S.path)) / pathLen(before)); // v33: the share of the route it skipped (the sims read it)
   bridgeFx(cx, cy);
   floatText(cx, cy - 0.6, 'BRIDGE', '#ffd27a', 14);
   if (g) floatText(cx, cy + 0.55, `wall refunded +${RULES.wall}`, '#a9dcf0', 11);
@@ -4090,7 +4252,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 21; // 21: v32 (the gates' rows come from the map seed, so a v31 device would play another board); 20: v31 (Chain is a jump count, 0-3, sent as a number in the grid); 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 22; // 22: v33 (the crowding fee replaced the build fee, so the grid sends no fee; prices, the starter maze and the 30 s release window differ); 21: v32 (the gates' rows come from the map seed, so a v31 device would play another board); 20: v31 (Chain is a jump count, 0-3, sent as a number in the grid); 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
@@ -4116,7 +4278,7 @@ function encodeGrid(G) {
     if (g.t === 'wall') (g.fresh ? f : w).push(i);
     else {
       const c = g.cfg;
-      t.push([i, g.n | 0, g.fee | 0, g.off | 0, g.fresh ? 1 : 0, c.range, c.dps, c.rate, c.splash, (c.slow ? 1 : 0) | (c.poison ? 2 : 0), c.accuracy | 0, chainOf(c)]); // v31: chain's jump count last
+      t.push([i, g.n | 0, g.off | 0, g.fresh ? 1 : 0, c.range, c.dps, c.rate, c.splash, (c.slow ? 1 : 0) | (c.poison ? 2 : 0), c.accuracy | 0, chainOf(c)]); // v31: chain's jump count last; v33: no build fee
     }
   });
   return { w, f, t };
@@ -4128,10 +4290,10 @@ function decodeGrid(o) {
   if (Array.isArray(o.t)) for (const a of o.t) {
     if (!Array.isArray(a)) continue;
     const i = cell(a[0]); if (i < 0) continue;
-    const fl = int(a[9], 0, 3), ac = Number.isInteger(a[10]) && a[10] >= 0 && a[10] < TS.accuracy.steps.length ? a[10] : 0; // accuracy: missing or invalid is 80%
+    const fl = int(a[8], 0, 3), ac = Number.isInteger(a[9]) && a[9] >= 0 && a[9] < TS.accuracy.steps.length ? a[9] : 0; // accuracy: missing or invalid is 80%
     G[i] = {
-      t: 'tower', n: int(a[1], 0, 999), fee: int(a[2], 0, 9999), off: int(a[3], 0, 9), fresh: !!a[4],
-      cfg: { range: int(a[5], 0, TS.range.steps.length - 1), dps: int(a[6], 0, TS.dps.steps.length - 1), accuracy: ac, rate: int(a[7], 0, TS.rate.steps.length - 1), splash: int(a[8], 0, TS.splash.steps.length - 1), slow: !!(fl & 1), poison: !!(fl & 2), chain: int(a[11], 0, TS.chain.steps.length - 1, 0) },
+      t: 'tower', n: int(a[1], 0, 999), off: int(a[2], 0, 9), fresh: !!a[3],
+      cfg: { range: int(a[4], 0, TS.range.steps.length - 1), dps: int(a[5], 0, TS.dps.steps.length - 1), accuracy: ac, rate: int(a[6], 0, TS.rate.steps.length - 1), splash: int(a[7], 0, TS.splash.steps.length - 1), slow: !!(fl & 1), poison: !!(fl & 2), chain: int(a[10], 0, TS.chain.steps.length - 1, 0) },
       cd: 0, ang: Math.PI, kick: 0, dealt: 0,
     };
     exclusive(G[i].cfg); // a tower that arrives with both keeps Splash, on both devices
@@ -5358,6 +5520,21 @@ function mazeInfo(K, maze) {
   mazeCache.set(key, info);
   return info;
 }
+// v33: the walls thickening adds to a maze (Auto-maze's rule, thicken): up to thickenShare of its walls, beside the walls
+// a bridge could use to cut its route by weakWallCut or more. Worked out once per maze, map, bridge set and blocking walls
+// on the maze's walls (its towers stand in its columns, solid like the walls), so the computer's many builds share it.
+const thickCache = new Map();
+function mazeThick(K, maze, blocks) {
+  const key = maze + '|' + K.mapKey + '|' + K.bridges.slice().sort((a, b) => a - b).join(',') + '|' + blocks.join(',') + '|' + RULES.weakWallCut + '|' + RULES.thickenShare;
+  if (thickCache.has(key)) return thickCache.get(key);
+  const H = mazeInfo(K, maze).G.slice(), out = [];
+  for (const j of blocks) H[j] = { t: 'wall' };
+  const limit = Math.floor(wallCount(H) * (RULES.thickenShare || 0));
+  if (limit > 0) { const gen = thicken(H, limit, K.bridgeSet, K.terrain, new Int16Array(N), i => { H[i] = WALL_MARK; out.push(i); }); while (!gen.next().done); }
+  if (thickCache.size > 400) thickCache.clear();
+  thickCache.set(key, out);
+  return out;
+}
 // The shift of each maze family that forces the longest route on this map (ties: unshifted, then more rock).
 function pickMazes(K) {
   return Object.keys(AI_MAZES).map(f => MAZE_KEYS.filter(k => k.replace(/[+-]\d$/, '') === f)
@@ -5412,17 +5589,16 @@ function buildOnce(K, worth0, maze, mix, spend, guard, mode, avoid) {
   const holes = K.holes, M = mazeInfo(K, maze);
   if (!M.room) return null;
   const G = withRocks(K.grid.map(g => (g && g.t === 'tower' && g.off > 0 ? cloneCell(g) : null)), K.terrain);
-  keepFees(G, K.offFees);
   let worth = worth0, seq = K.towerSeq, placed = 0, cols = 0;
   const seen = (i, t) => !!(K.seenGrid[i] && K.seenGrid[i].t === t);
   const addWall = i => { if (G[i] || holes.has(i) || worth < RULES.wall) return; G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= RULES.wall; };
   const addTower = (i, cfg) => {
     if (G[i] && G[i].t === 'tower') return true; // a locked offline tower already sits here
     if (holes.has(i) || (G[i] && G[i].t === 'rock')) return 'skip'; // nothing stands on a bridge, rough ground or rock
-    const fee = RULES.towerFee * towerCount(G), cost = towerCost(cfg) + fee;
+    const cost = layoutDelta([[i, pricedTower(cfg)]], G); // its price and the crowding it adds (v33), as a player pays
     if (worth < cost) return false;
     if (G[i]) { worth += RULES.wall; G[i] = null; } // the tower replaces a wall in its column
-    G[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seen(i, 'tower'), n: ++seq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
+    G[i] = { t: 'tower', cfg, off: 0, fresh: !seen(i, 'tower'), n: ++seq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
     worth -= cost; return true;
   };
   const C = mazeCols(maze);
@@ -5457,10 +5633,19 @@ function buildOnce(K, worth0, maze, mix, spend, guard, mode, avoid) {
       placed++;
     }
   }
+  // v33: the same rule as Auto-maze: walls beside the maze's weak walls, before the rest goes on upgrades
+  let thick = 0;
+  if (cols) for (const i of mazeThick(K, maze, blocks)) {
+    if (worth < RULES.wall) break;
+    if (G[i] || holes.has(i)) continue;
+    G[i] = WALL_MARK; bfs(tmpA, j => !G[j]);
+    if (tmpA[ENTRY] < 0) { G[i] = null; continue; }
+    G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= RULES.wall; thick++;
+  }
   for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
   bfs(tmpA, i => !G[i]);
   if (tmpA[ENTRY] < 0) return null;
-  return { G, left: worth, seq, maze, mix, spend, guard, mode, hit: M.bridgeCut, holes: M.cut, rocks: M.rocks, rough: M.rough, cols, towers: towerCount(G),
+  return { G, left: worth, seq, maze, mix, spend, guard, mode, hit: M.bridgeCut, holes: M.cut, rocks: M.rocks, rough: M.rough, cols, thick, towers: towerCount(G),
     blocks: blocks.filter(j => G[j] && G[j].t === 'wall').length, kill: kill.filter(j => G[j] && G[j].t === 'tower').length,
     dodged: avoid.filter(j => !(G[j] && G[j].t === 'tower' && !G[j].fresh)).length }; // expected charge targets no longer holding a seen tower
 }
@@ -5473,15 +5658,15 @@ function aiUpgrade(G, worth, force) {
   const up = c => c.dps < TS.dps.steps.length - 1 || c.accuracy < TS.accuracy.steps.length - 1;
   for (const g of G) if (g && g.t === 'tower' && !(g.off > 0) && up(g.cfg) && (!best || g.cfg.dps < best.cfg.dps)) best = g;
   if (!best) return 0;
-  const c = best.cfg, cost = towerCost(c);
+  const c = best.cfg, cell = G.indexOf(best), T = crowdMilli(G);
   let pick = null;
   for (const k of ['dps', 'accuracy']) {
     if (c[k] >= TS[k].steps.length - 1) continue;
-    const next = { ...c, [k]: c[k] + 1 }, delta = towerCost(next) - cost, r = (expDps(next) - expDps(c)) / delta;
+    const next = { ...c, [k]: c[k] + 1 }, delta = tuneDelta(cell, next, G, T), r = (expDps(next) - expDps(c)) / delta; // crowding included (v33)
     if (delta <= worth && (!pick || r > pick.r)) pick = { next, delta, r };
   }
   if (!pick) return 0;
-  if (!force && pick.r < expDps(defaultTower()) * 1.5 / (RULES.towerBase + RULES.towerFee * towerCount(G))) return 0;
+  if (!force && pick.r < expDps(defaultTower()) * 1.5 / RULES.towerBase) return 0; // v33: a new tower costs its price (no build fee)
   best.cfg = pick.next;
   return pick.delta;
 }
@@ -5500,9 +5685,9 @@ function threatsFor(K) {
 function* thinkDefend(K, L, rng, mem) {
   K.bridgeSet = new Set(K.bridges);
   K.holes = new Set(K.bridges); K.terrain.forEach((v, i) => { if (v === ROUGH) K.holes.add(i); });
-  // It sells all it can and builds again; the offline towers keep the smallest fees (sellOff).
+  // It sells all it can and builds again (sellOff: the towers' prices and their crowding, v33).
   const sold = sellOff(K.grid);
-  K.worth = K.dFree + sold.back + wallCount(K.grid) * RULES.wall; K.offFees = sold.keep;
+  K.worth = K.dFree + sold.back + wallCount(K.grid) * RULES.wall;
   const fallback = { plan: { dFree: K.dFree, ts: K.towerSeq, mt: K.moveTries, g: encodeGrid(K.grid) }, note: '' };
   const threats = threatsFor(K), seed = k => seedFor('trial', K.round, k);
   let tried = 0;
@@ -6225,6 +6410,7 @@ function buildPanels() {
     if (e.target.closest('[data-act=tune]')) { autoTune(); return; }
     if (e.target.closest('[data-act=maze]')) { autoMaze(); return; }
     if (e.target.closest('[data-act=undo]')) { undoLast(); return; }
+    if (e.target.closest('[data-act=weak]')) { S.weakPick = !weakOn(); refreshUI(); return; } // v33: the player's pick holds for the match
     if (e.target.closest('[data-act=intel]')) { intelOpen = !intelOpen; refreshUI(); return; }
     const t = e.target.closest('.tool');
     if (t) { pickTool(t.dataset.tool, t); return; }
@@ -6421,7 +6607,7 @@ function defBodyHTML() {
   return `<div class="tstrip" id="d-tstrip" hidden></div>
     <div class="toolwrap"><div class="toolrow">${toolBtn('wall', 'Wall', `${RULES.wall} coins`, 'Wall (W)')}${toolBtn('tower', 'Tower', '<span id="d-tprice">40</span>', 'Tower (T)')}${toolBtn('remove', 'Remove', '&amp; inspect', 'Remove &amp; Inspect (R)')}${toolBtn('shape', 'Shapes', '<span id="d-shname"></span>', 'Shapes (S)')}</div>
     <div class="shapepop" id="d-shapes" hidden></div></div>
-    <div class="helprow"><button class="hbtn" data-act="maze" aria-label="Auto-maze">${ICON.maze}<span>Auto-maze</span></button><button class="hbtn" data-act="tune" aria-label="Auto-tune towers">${ICON.tune}<span>Auto-tune</span></button><button class="hbtn" data-act="undo" aria-label="Undo">${ICON.undo}<span>Undo</span></button></div>
+    <div class="helprow${S.sabo !== false ? ' four' : ''}"><button class="hbtn" data-act="maze" aria-label="Auto-maze">${ICON.maze}<span>Auto-maze</span></button><button class="hbtn" data-act="tune" aria-label="Auto-tune towers">${ICON.tune}<span>Auto-tune</span></button><button class="hbtn" data-act="undo" aria-label="Undo">${ICON.undo}<span>Undo</span></button>${S.sabo !== false ? `<button class="hbtn weakbtn" data-act="weak" aria-pressed="false" aria-label="Weak walls">${ICON.weak}<span>Weak walls</span></button>` : ''}</div>
     <div class="routebar" id="d-route"></div>
     <div class="intel" id="d-intel" hidden></div>
     <p class="tunemsg" id="d-help" hidden></p>
@@ -6445,6 +6631,8 @@ function syncHelpers() {
   t.disabled = !towerCount(S.grid);
   t.dataset.tip = 'Auto-tune towers: spends your free coins on upgrades to the towers you’ve placed. Never lowers a slider or changes fire rate.';
   u.disabled = !top; u.dataset.tip = top ? `Undo: ${top.label} (Ctrl+Z)` : 'Nothing to undo yet';
+  const w = root.querySelector('[data-act=weak]');
+  if (w) { const on = weakOn(), n = on ? weakNow().size : 0; w.setAttribute('aria-pressed', on); w.dataset.tip = `Weak walls: a red dot on every wall a bridge could use to skip ${Math.round(RULES.weakWallCut * 100)}% or more of the route, brighter for more. Hover or hold one to see where units would go.${on ? ` ${n ? plural(n, 'weak wall') + ' now.' : 'None now.'}` : ' Off.'}`; }
   const h = lastHelp(), msg = !h ? '' : h.kind === 'tune' ? `Spent <b>${h.spent}</b> coins on ${plural(h.n, 'upgrade')}, <b>${S.dFree}</b> left`
     : `Auto-maze built <b>${plural(h.walls, 'wall')}</b> for ${h.spent} coins · path <b>${h.from} → ${h.to}</b>`;
   const hp = $('#d-help'); hp.hidden = !msg; if (msg && hp.innerHTML !== msg) hp.innerHTML = msg;
@@ -6572,6 +6760,7 @@ function towerEditorHTML(cell) {
     <div class="fxchips">${TCHIP_KEYS.map(k => `<button class="fxchip fx-${k}" data-fx="${k}" aria-pressed="false"><i class="box"></i><span class="fxt"><span class="fxn">${TCHIPS[k].name}</span><span class="fxm"></span></span></button>`).join('')}</div>
     <div class="sliders chipsl">${['splash', 'chain'].map(k => sliderHTML('te', k, chipSl(k), Math.max(1, k === 'chain' ? chainOf(c) : c[k]))).join('')}</div>
     <p class="statline" id="te-stat"></p>
+    <p class="statline crowdline" id="te-crowd"></p>
     <p class="statline mvline" id="te-move"></p>
     <div class="card-foot"><button class="ed-remove" data-act="remove">Remove +<span id="te-refund2"></span></button><button class="mini" data-act="copy" data-tip="New towers you place get this tuning, until you clear it on the Tower tool.">Copy tuning</button><button class="ed-done" data-act="close">Done</button></div>
   </div>`;
@@ -6588,8 +6777,9 @@ function towerStat(cell, cfg) {
 function updateTowerEditor(cell) {
   const g = S.grid[cell], root = el.defCtx;
   if (!g || g.t !== 'tower' || !root.querySelector('#te-price')) return;
-  const c = g.cfg, cost = towerCost(c);
-  const up = patch => { const n = { ...c, ...patch }; exclusive(n, patch); const v = towerCost(n) - cost; return { text: '+' + v, poor: v > S.dFree, v }; };
+  const c = g.cfg;
+  // what one more step costs: the price change and, on a crowded tower, the crowding change with it (v33)
+  const up = patch => { const n = { ...c, ...patch }; exclusive(n, patch); const v = tuneDelta(cell, n); return { text: '+' + v, poor: v > S.dFree, v }; };
   for (const k of CORE_TKEYS) setSlider(root, 'te', k, TS[k], c[k], towerShort(k, c), c[k] < TS[k].steps.length - 1 ? up({ [k]: c[k] + 1 }) : null, `${TS[k].val(TS[k].steps[c[k]], c)}. ${TS[k].hint}`);
   for (const k of ['splash', 'chain']) { // a slider only while its chip is checked
     const v = chipOn(c, k), row = root.querySelector(`#te-${k}-row`);
@@ -6606,25 +6796,29 @@ function updateTowerEditor(cell) {
   for (const b of root.querySelectorAll('[data-pre]')) {
     const p = presetTower(b.dataset.pre);
     b.setAttribute('aria-pressed', sameCfg(c, p));
-    b.classList.toggle('poor', towerCost(p) - cost > S.dFree);
+    b.classList.toggle('poor', tuneDelta(cell, p) > S.dFree);
   }
   putText(root.querySelector('#te-price'), String(towerValue(g)));
   const ic = root.querySelector('#te-icon'), src = towerIconURL(c, g.off > 0); if (ic && ic.getAttribute('src') !== src) ic.setAttribute('src', src);
   const kn = root.querySelector('#te-kind'); if (kn) putText(kn, towerName(c));
-  root.querySelector('#te-pbox').dataset.tip = formulaText(RULES.towerBase, towerParts(c), towerValue(g), g.fee);
+  root.querySelector('#te-pbox').dataset.tip = formulaText(RULES.towerBase, towerParts(c), towerValue(g));
+  // v33: its share of the crowding fee (its price × its pairs' rates; the shares add up to the total)
+  const cw = crowdShare(S.grid, cell), cl = root.querySelector('#te-crowd');
+  putText(cl, cw.n ? `Crowding +${Math.round(cw.coins)} · ${cw.n} nearby` : '');
+  cl.dataset.tip = cw.n ? `Towers within 2 cells crowd each other: touching, ${Math.round(RULES.crowdInner * 100)}% of both prices; one cell between them, ${Math.round(RULES.crowdOuter * 100)}%. This tower's share is ${Math.round(cw.coins)} coins, and an upgrade here costs ${fmtNum(1 + cw.rate)}× its price change. Spread out to save it.` : '';
   const back = String(refundOf(cell)), mf = removeFee(cell);
   putText(root.querySelector('#te-refund'), back); putText(root.querySelector('#te-refund2'), back);
   putText(root.querySelector('#te-stat'), towerStat(cell, c));
   // v22: what moving or removing it costs, for a tower the attacker saw here
   const mv = root.querySelector('#te-move');
   putText(mv, mf ? `Next move: ${ratePct(moveRate())}% · ${mf} coins` : S.round > 1 && feeOn() ? (g.mfee > 0 ? `Moved · put it back for +${g.mfee}` : freeWhy(g) || 'New this round · moves free') : '');
-  mv.dataset.tip = mf ? `The attacker saw this tower here. Moving or removing it costs ${ratePct(moveRate())}% of its tuning as it is now (${mf} coins); each relocation this match, of any tower, adds ${ratePct(RULES.moveFeeRise)}%, up to ${ratePct(RULES.moveFeeMax)}%. Moving it back this round refunds the fee. Fees paid go to the attacker when the wave ends.` : '';
+  mv.dataset.tip = mf ? `The attacker saw this tower here. Moving or removing it costs ${ratePct(moveRate())}% of its tuning as the attacker saw it (${mf} coins), however you tune it now; each relocation this match, of any tower, adds ${ratePct(RULES.moveFeeRise)}%, up to ${ratePct(RULES.moveFeeMax)}%. Moving it back this round refunds the fee. Fees paid go to the attacker when the wave ends.` : '';
 }
 // A tower as the attacker saw it, or in a wave: a card with its numbers (dealt: the damage it has dealt this wave).
 function towerCardHTML(g, opts) {
   const cfg = g.cfg;
   return `<div class="card">
-    <div class="card-head"><img class="art thead" src="${towerIconURL(cfg, g.off > 0)}" alt="" aria-hidden="true" draggable="false"><span class="ed-title">Tower${g.n ? ' ' + g.n : ''}</span><span class="ed-kind">${towerName(cfg)}</span>${fxDots(cfg)}<span class="ed-price" data-tip="${formulaText(RULES.towerBase, towerParts(cfg), towerValue(g), g.fee)}"><b>${towerValue(g)}</b><small>${opts.tag || 'coins'}</small></span></div>
+    <div class="card-head"><img class="art thead" src="${towerIconURL(cfg, g.off > 0)}" alt="" aria-hidden="true" draggable="false"><span class="ed-title">Tower${g.n ? ' ' + g.n : ''}</span><span class="ed-kind">${towerName(cfg)}</span>${fxDots(cfg)}<span class="ed-price" data-tip="${formulaText(RULES.towerBase, towerParts(cfg), towerValue(g))}"><b>${towerValue(g)}</b><small>${opts.tag || 'coins'}</small></span></div>
     <p class="cline">${towerStatsLine(cfg)} · ${shotAcc(cfg)}% per shot · expected ${fmtNum(expDps(cfg))}/s</p>
     ${opts.dealt != null ? `<p class="cline"><b class="live-dealt">${Math.round(opts.dealt)} damage dealt</b></p>` : ''}
     ${opts.extra || ''}
@@ -7062,8 +7256,8 @@ function waveBodyHTML() {
       <p class="wv-how" id="wv-how" hidden>${AUTO_HOW}</p>
     </section>
     <section class="wv-rel">
-      <div class="wv-rh"><span class="lbl">Releases</span><span class="wv-pre" role="group" aria-label="Every group at once"><button class="wvb" data-wv="even" data-tip="Every group: spread evenly over the 20 s">Even</button><button class="wvb" data-wv="seq" data-tip="Every group: one design after another">One after another</button><button class="wvb" data-wv="rush" data-tip="Every group: all out in the first seconds">All at once</button></span><button class="wvb wv-undo" data-wv="undo" aria-label="Undo the last change on this step">↶ Undo</button></div>
-      <div class="wv-axis">${[W, W * 0.75, W / 2, W / 4].map(k => `<span style="left:${wvX(k)}%">${fmtNum(k)} s</span>`).join('')}<span class="gate" style="left:100%"><i>0 s</i><b>▶ Gate</b></span></div>
+      <div class="wv-rh"><span class="lbl">Releases</span><span class="wv-pre" role="group" aria-label="Every group at once"><button class="wvb" data-wv="even" data-tip="Every group: spread evenly over the ${W} s">Even</button><button class="wvb" data-wv="seq" data-tip="Every group: one design after another">One after another</button><button class="wvb" data-wv="rush" data-tip="Every group: all out in the first seconds">All at once</button></span><button class="wvb wv-undo" data-wv="undo" aria-label="Undo the last change on this step">↶ Undo</button></div>
+      <div class="wv-axis">${(W % 4 ? [W, W * 2 / 3, W / 3] : [W, W * 0.75, W / 2, W / 4]).map(k => `<span style="left:${wvX(k)}%">${fmtNum(k)} s</span>`).join('')}<span class="gate" style="left:100%"><i>0 s</i><b>▶ Gate</b></span></div>
       <div class="wv-rows" id="wv-rows"></div>
       <div class="wv-tools" id="wv-tools"></div>
     </section>
@@ -10357,7 +10551,12 @@ function drawPaths(c, t) {
     strokePath(c, S.path, f > 0 ? `rgba(255,170,100,${0.2 + 0.7 * f})` : 'rgba(200,228,242,0.16)', 0.05 + 0.04 * f, t);
     return;
   }
-  const pv = buildPreview(), hyp = pv && pv.r ? pv.r.path : null;
+  const pv = buildPreview(), hyp = pv && pv.r ? pv.r.path : null, wh = weakHover();
+  if (!pv && wh >= 0 && weakOn() && weakNow().has(wh)) { // v33: a weak wall under the pointer: where a bridge there would send units
+    strokePath(c, S.path, 'rgba(200,228,242,0.5)', 0.06, t);
+    strokePath(c, weakRoute(wh), 'rgba(255,93,93,0.95)', 0.075, t, [0.22, 0.12]);
+    return;
+  }
   if (pv && pv.kind === 'inspect') { // Remove & Inspect: the route keeps its colour, the bridged one shows in red
     strokePath(c, S.path, 'rgba(200,228,242,0.5)', 0.06, t);
     if (!pv.same) strokePath(c, hyp, 'rgba(255,93,93,0.95)', 0.075, t, [0.22, 0.12]);
@@ -10429,14 +10628,17 @@ function suggestCell() {
   const key = S.gridVer + ':' + (S.path ? S.path.length : 0);
   if (TSUG.key === key) return TSUG.cell;
   const on = new Set(S.path || []), cfg = defaultTower();
-  let best = -1, bv = 0, bw = false;
+  let best = -1, bv = 0, bw = false, bn = 0;
   for (let i = 0; i < N; i++) {
     const g = S.grid[i], wall = !!(g && g.t === 'wall');
     if ((g && !wall) || siteBlock(i) || (!g && on.has(i))) continue; // a wall (a tower replaces it) or a free cell off the route
     let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; });
-    if (n > bv || (n === bv && wall && !bw)) { best = i; bv = n; bw = wall; }
+    if (n < 6) continue;
+    // v33: route covered per coin, the crowding a tower there adds included, so open spots win over crowded ones
+    const v = n / layoutDelta([[i, pricedTower(cfg)]]);
+    if (v > bv + 1e-9 || (v > bv - 1e-9 && (n > bn || (n === bn && wall && !bw)))) { best = i; bv = v; bw = wall; bn = n; }
   }
-  TSUG.key = key; TSUG.cell = bv >= 6 ? best : -1;
+  TSUG.key = key; TSUG.cell = best;
   return TSUG.cell;
 }
 function drawSuggest(c, t) {
@@ -10447,7 +10649,7 @@ function drawSuggest(c, t) {
   if (S.towerSeq !== TSUG.seq) { TSUG.gone = true; return; } // a tower went up: gone for the round
   const k = t - TSUG.t0;
   if (k > TSUG_TO) { TSUG.gone = true; return; }
-  if (k < TSUG_FROM || drag || S.dFree < towerCost(defaultTower()) + nextFee()) return; // a default tower affordable
+  if (k < TSUG_FROM || drag || S.dFree < towerCost(defaultTower())) return; // a default tower affordable
   const i = suggestCell(); if (i < 0) return;
   const env = Math.min(1, (k - TSUG_FROM) / 1.5) * Math.min(1, (TSUG_TO - k) / 4), a = env * (reduceMotion ? 0.32 : 0.2 + 0.14 * (0.5 + 0.5 * Math.sin(t * 1.6)));
   TSUG.vis = i;
@@ -10482,6 +10684,40 @@ function drawMoveGhost(c, pv) {
   drawRange(c, x, y, TS.range.steps[g.cfg.range], v.ok);
   if (!v.ok) drawX(c, pv.cell);
 }
+/* The weak-wall overlay (v33, Sabotage only, the defender's own board): a red dot on each wall a bridge could use to
+   skip RULES.weakWallCut or more of the route, bigger and brighter for a bigger cut. Display only. */
+let weakLabel = null, weakDrawn = 0; // the dots drawn last frame (the tests read it)
+function drawWeak(c, t) {
+  const W = weakNow(), hv = weakHover(), pulse = reduceMotion ? 1 : 0.85 + 0.15 * Math.sin(t * 2.4);
+  weakDrawn = W.size;
+  for (const [i, cut] of W) {
+    const [x, y] = center(i), k = clamp((cut - RULES.weakWallCut) / 0.4, 0, 1);
+    c.beginPath(); c.arc(x, y, 0.1 + 0.06 * k, 0, TAU);
+    c.fillStyle = `rgba(255,${Math.round(110 - 40 * k)},${Math.round(110 - 40 * k)},${(0.55 + 0.45 * k) * pulse})`; c.fill();
+    c.lineWidth = 0.035; c.strokeStyle = 'rgba(20,6,6,0.8)'; c.stroke();
+  }
+  if (hv >= 0 && W.has(hv) && S.tool !== 'remove') weakLabel = { cell: hv, cut: W.get(hv) };
+}
+/* Crowding squares (v33): while the Tower tool is picked or a tower is being dragged, every tower shows its 5×5 square,
+   the touching ring a faint red and the ring beyond it fainter, so a crowded spot shows red before anything is placed;
+   squares that overlap deepen. Each tower's range ring shows too. skip: the tower being dragged (its square moves with it). */
+function drawCrowd(c, skip = -1) {
+  for (let i = 0; i < N; i++) {
+    const g = S.grid[i]; if (!g || g.t !== 'tower' || i === skip) continue;
+    const q = i % COLS, r = (i / COLS) | 0;
+    for (let rr2 = Math.max(0, r - 2); rr2 <= Math.min(ROWS - 1, r + 2); rr2++) for (let qq = Math.max(0, q - 2); qq <= Math.min(COLS - 1, q + 2); qq++) {
+      const d = Math.max(Math.abs(qq - q), Math.abs(rr2 - r)); if (!d) continue;
+      c.fillStyle = d === 1 ? 'rgba(255,93,93,0.11)' : 'rgba(255,93,93,0.05)';
+      c.fillRect(qq + 0.04, rr2 + 0.04, 0.92, 0.92);
+    }
+  }
+  for (let i = 0; i < N; i++) {
+    const g = S.grid[i]; if (!g || g.t !== 'tower' || i === skip || g.off) continue;
+    const [x, y] = center(i); drawRange(c, x, y, TS.range.steps[g.cfg.range], true, 0.45);
+  }
+}
+// What the ghost tower would cost, as the board label shows it (v33): "40", or "54 · 40 + 14 CROWDING". The handle reads it.
+let ghostPrice = null;
 function drawWallGhost(c, i, ok) {
   const [x, y] = center(i);
   if (ok) { c.globalAlpha = 0.6; blit(c, wallSprite(0, true), x, y, 1); c.globalAlpha = 1; return; }
@@ -10527,6 +10763,8 @@ function drawInteraction(c, t, G) {
     if (!G[i].off) drawRange(c, x, y, TS.range.steps[G[i].cfg.range]);
     if (S.sel && S.sel.cell === i) { const q = i % COLS, r = (i / COLS) | 0; c.beginPath(); rr(c, q + 0.02, r + 0.02, 0.96, 0.96, 0.17); c.lineWidth = 0.05; c.strokeStyle = '#e2e9ee'; c.stroke(); }
   }
+  weakLabel = null; weakDrawn = 0;
+  if (S.phase === 'defend' && S.step === 0 && !replay && weakOn()) drawWeak(c, t);
   if (S.phase === 'defend') {
     if (S.tool === 'remove' && !towerDrag()) {
       const sc = inspectCell(), pv = buildPreview();
@@ -10534,10 +10772,11 @@ function drawInteraction(c, t, G) {
         const q = sc % COLS, r = (sc / COLS) | 0;
         c.beginPath(); rr(c, q + 0.03, r + 0.03, 0.94, 0.94, 0.15);
         c.lineWidth = 0.06; c.strokeStyle = 'rgba(255,93,93,0.95)'; c.stroke();
-        removeLabel = { cell: sc, val: S.grid[sc].t === 'wall' ? RULES.wall : refundOf(sc), delta: pv && pv.kind === 'inspect' ? pv.r.len - pathLen(S.path) : null };
+        removeLabel = { cell: sc, val: S.grid[sc].t === 'wall' ? RULES.wall : refundOf(sc), delta: pv && pv.kind === 'inspect' ? pv.r.len - pathLen(S.path) : null, weak: weakOn() ? weakNow().get(sc) : null };
       }
     } else {
-      const set = hotNow(), pv = buildPreview();
+      const set = hotNow(), pv = buildPreview(), td = towerDrag();
+      if (td || (S.tool === 'tower' && S.step === 0)) drawCrowd(c, td ? td.from : -1); // v33: where crowding costs
       drawSuggest(c, t);
       if (set && set.length) drawHot(c, t, set, pv && pv.kind === 'hot');
       if (pv && pv.kind === 'move') drawMoveGhost(c, pv);
@@ -10612,17 +10851,31 @@ function drawLabels(c, G) {
     const [x, y] = center(removeLabel.cell), [sx, sy0] = w2s(x, y), sy = sy0 - view.cs * 0.66 - 14;
     const d = removeLabel.delta, tiles = d == null ? '' : d ? `${d < 0 ? '\u2212' : '+'}${Math.abs(d)} TILE${Math.abs(d) === 1 ? '' : 'S'} \u00b7 ` : 'SAME ROUTE \u00b7 ';
     pill(c, sx, sy, `${tiles}REMOVE +${removeLabel.val}`, '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
+    if (removeLabel.weak != null) pill(c, sx, sy + view.cs * 1.32 + 10, `BRIDGE HERE SKIPS ${Math.round(removeLabel.weak * 100)}% OF THE ROUTE`, '#ffb4b4', 'rgba(40,8,8,0.92)', 'center');
+  }
+  if (weakLabel) { // v33: a weak wall hovered with another tool
+    const [x, y] = center(weakLabel.cell), [sx, sy0] = w2s(x, y);
+    pill(c, sx, sy0 - view.cs * 0.66 - 14, `BRIDGE HERE SKIPS ${Math.round(weakLabel.cut * 100)}% OF THE ROUTE`, '#ffb4b4', 'rgba(40,8,8,0.92)', 'center');
   }
   const pv = S.phase === 'defend' ? buildPreview() : null;
+  ghostPrice = null;
   if (pv && pv.kind === 'move') {
     const v = pv.v, [x, y] = center(pv.cell), [sx, sy] = w2s(x, y);
-    const fee = v.fee > 0 ? `${v.fee} COINS` : v.fee < 0 ? `+${-v.fee} BACK` : 'FREE'; // v22: a tower the attacker saw pays to move
-    const txt = v.ok ? (v.swap ? `SWAP WITH ${v.swap === 'tower' ? 'TOWER' : 'WALL'} \u00b7 ${fee}` : `MOVE TOWER \u00b7 ${fee}`) : v.block ? 'PATH MUST STAY OPEN' : v.gold ? 'NOT ENOUGH COINS' : 'CAN\u2019T GO HERE';
+    // v22: a tower the attacker saw pays to move; v33: plus the crowding change at that cell, or minus what it frees
+    const k = v.cost || 0, cw = v.crowd || 0;
+    const parts = cw ? ` (${v.fee ? `FEE ${v.fee}, ` : ''}CROWDING ${cw > 0 ? '+' : '\u2212'}${Math.abs(cw)})` : '';
+    const fee = (k > 0 ? `${k} COINS` : k < 0 ? `+${-k} BACK` : 'FREE') + parts;
+    const txt = v.ok ? (v.swap ? `SWAP WITH ${v.swap === 'tower' ? 'TOWER' : 'WALL'} \u00b7 ${fee}` : `MOVE TOWER \u00b7 ${fee}`) : v.block ? 'PATH MUST STAY OPEN' : v.gold ? `NOT ENOUGH COINS \u00b7 ${fee}` : 'CAN\u2019T GO HERE';
+    if (v.cost != null) ghostPrice = { kind: 'move', cell: pv.cell, from: pv.from, cost: k, crowd: cw, fee: v.fee || 0, text: txt };
     pill(c, sx, Math.max(4, sy - view.cs * 0.5 - 24), txt, v.ok ? '#d9f6ff' : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
   }
-  if (pv && pv.kind === 'tower' && pv.v.onWall) { // a tower on a wall: the wall goes, its coins back
-    const [x, y] = center(pv.cell), [sx, sy] = w2s(x, y);
-    pill(c, sx, Math.max(4, sy - view.cs * 0.5 - 24), pv.v.ok ? `REPLACE WALL · TOWER ${newTowerPrice()} − ${RULES.wall}` : 'NOT ENOUGH COINS', pv.v.ok ? '#d9f6ff' : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
+  if (pv && pv.kind === 'tower' && pv.v.cost != null) { // v33: the ghost's price at this cell, crowding included
+    const v = pv.v, [x, y] = center(pv.cell), [sx, sy] = w2s(x, y);
+    const price = v.crowd ? `${v.cost} \u00b7 ${v.cost - v.crowd} + ${v.crowd} CROWDING` : String(v.cost);
+    // a tower on a wall: the wall goes, its coins back
+    const txt = v.onWall ? `REPLACE WALL \u00b7 TOWER ${v.crowd ? `${v.cost - v.crowd} + ${v.crowd} CROWDING` : v.cost} \u2212 ${RULES.wall}` : price;
+    ghostPrice = { kind: 'tower', cell: pv.cell, cost: v.cost, crowd: v.crowd, back: v.onWall ? RULES.wall : 0, text: txt };
+    if (v.ok || v.gold) pill(c, sx, Math.max(4, sy - view.cs * 0.5 - 24), v.ok ? txt : `NOT ENOUGH COINS \u00b7 ${price}`, v.ok ? (v.crowd ? '#ffd0c8' : '#d9f6ff') : '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
   }
   if (pv && (pv.kind === 'shape' || pv.kind === 'hot')) {
     const v = pv.v, name = pv.kind === 'hot' ? `PLACE ${pv.cells.length} WALL${pv.cells.length === 1 ? '' : 'S'}` : SEGMENTS[shapeSel.k].name.toUpperCase();
@@ -10689,7 +10942,7 @@ function pressDefend(cell, pt) {
     if (pt !== 'mouse' && pending !== cell) {
       const v = canBuild(cell, 'tower');
       if (!v.ok) { pending = -1; explain(v, cell); return null; }
-      pending = cell; toast(`Tap again to put a tower on this wall · ${newTowerPrice()} coins, the wall’s ${RULES.wall} back`, 'def');
+      pending = cell; toast(`Tap again to put a tower on this wall · ${newTowerPrice(cell)} coins, the wall’s ${RULES.wall} back`, 'def');
       return null;
     }
     pending = -1; tryBuild(cell, 'tower', true);
@@ -10715,7 +10968,7 @@ function pressDefend(cell, pt) {
   if (pt !== 'mouse' && pending !== cell) {
     const v = canBuild(cell, 'tower');
     if (!v.ok) { pending = -1; explain(v, cell); return null; }
-    pending = cell; toast(`Tap again to place a tower · ${newTowerPrice()} coins`, 'def');
+    pending = cell; toast(`Tap again to place a tower · ${newTowerPrice(cell)} coins`, 'def');
     return null;
   }
   pending = -1; tryBuild(cell, 'tower', true);
@@ -10970,7 +11223,7 @@ function frame(now) {
    Live-update support: keep the match if the page is republished.
    ===================================================================== */
 function coreSnapshot(phase) {
-  const tw = g => ({ t: 'tower', cfg: { ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n });
+  const tw = g => ({ t: 'tower', cfg: { ...g.cfg }, off: g.off || 0, fresh: !!g.fresh, n: g.n });
   return {
     v: 6, round: S.round, rounds: S.rounds, keep: S.keep, dFree: S.dFree, aFree: S.aFree, phase, towerSeq: S.towerSeq, mapSeed: S.mapSeed, gates: (S.gates || [MID, MID]).slice(), terrain: [...S.terrain], starter: S.starter || 0,
     grid: S.grid.map(g => (g ? (g.t === 'tower' ? tw(g) : { t: g.t, fresh: g.fresh }) : null)),
@@ -10996,7 +11249,7 @@ function stateFrom(d) {
   Object.assign(R, { round: d.round, keep: d.keep, dFree: d.dFree, aFree: d.aFree, seenRound: d.seenRound, starter: d.starter || 0, towerSeq: d.towerSeq || 0, bridges: new Set(d.bridges || []), totals: { ...R.totals, ...d.totals }, mvFee: d.mvFee || 0, freeMv: d.freeMv || null, sabo: d.sabo !== false });
   R.mapSeed = d.mapSeed >>> 0; R.terrain = Uint8Array.from(d.terrain || []); if (R.terrain.length !== N) R.terrain = new Uint8Array(N);
   R.gates = Array.isArray(d.gates) && d.gates.length === 2 ? d.gates.slice() : gatesFor(R.mapSeed); // v32; a snapshot from before has the map's own
-  const tw = g => ({ t: 'tower', cfg: { ...defaultTower(), ...g.cfg }, fee: g.fee || 0, off: g.off || 0, fresh: !!g.fresh, n: g.n, cd: 0, ang: Math.PI, kick: 0, dealt: 0 });
+  const tw = g => ({ t: 'tower', cfg: { ...defaultTower(), ...g.cfg }, off: g.off || 0, fresh: !!g.fresh, n: g.n, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }); // a v32 snapshot's build fees are dropped
   const unit = ({ dodge, ...x }) => x; // a design saved before v19 may still carry dodge: it's ignored
   R.grid = withRocks(d.grid.map(g => (g ? (g.t === 'tower' ? tw(g) : { t: g.t, fresh: !!g.fresh }) : null)), R.terrain);
   R.seenGrid = withRocks(d.seenGrid.map(g => (g ? (g.t === 'tower' ? { ...tw(g), fresh: false } : { t: g.t, fresh: false }) : null)), R.terrain);
@@ -11023,6 +11276,10 @@ function start(data) {
     n.textContent = pct ? Math.round(v * 100) : f === 'pt' ? ratePct(v) : f === 'min' ? fmtNum(v / 60) : f === 'range' ? `${Math.min(...v)}–${Math.max(...v)}` : v;
   }
   fillLegends();
+  { // v33: the crowding fee's worked example, from the rules
+    const a = Math.round(RULES.crowdInner * 140), b = Math.round(RULES.crowdInner * 140 * 2 + RULES.crowdInner * 80) - a;
+    $('#info-crowdex').textContent = `Beside a tower worth 100, a default tower costs 40 + ${a} = ${40 + a}; a third touching both costs 40 + ${b} = ${40 + b}, and removing it gives back ${40 + b}.`;
+  }
   $('#info-keepn').textContent = `${fmtK(keepFor(RULES.rounds))} points in ${[8, 11].includes(RULES.rounds) ? 'an' : 'a'} ${RULES.rounds}-wave match`; $('#info-intmax').textContent = $('#info-intmax2').textContent = fmtK(intFull());
   { const up = Math.round((RULES.noSabHp - 1) * 100); for (const [id, t] of [['#info-nosab', up > 0 ? `${up}% more health` : 'no extra health'], ['#info-nosab2', up > 0 ? `${up}% more health` : 'no extra health'], ['#info-nosab3', up > 0 ? `+${up}% health` : 'as usual']]) $(id).textContent = t; }
   for (const k of ['', '2']) { $('#info-saphp' + k).textContent = US.hp.steps[RULES.sapper.hp]; $('#info-saparm' + k).textContent = US.armor.steps[RULES.sapper.armor || 0]; }
@@ -11054,6 +11311,11 @@ try { window.claude?.hot?.snapshot?.(() => ({ siege: snapshotData() })); } catch
 let streamIds = 0;
 window.siegeline = {
   get state() { return S; }, get net() { return NET; }, get solo() { return SOLO; }, trial, rules: RULES, TS, US, towerCost, towerValue, unitCost, splitFor, tlPositions,
+  // v33: the crowding fee: the layout cost of the live grid (or any grid), its crowding (exact, in thousandths, and as
+  // paid), a tower's share, what a change would cost (layoutDelta), and the ghost's price as the board label shows it
+  crowd: { layout: G => towersValue(G || S.grid), milli: G => crowdMilli(G || S.grid), coins: G => crowdCoins(G || S.grid), share: i => crowdShare(S.grid, i), delta: ch => layoutDelta(ch), get ghost() { return ghostPrice; } },
+  seenCfg: g => seenCfg(g), moveFee: cell => removeFee(cell),
+  weak: { get on() { return weakOn(); }, get drawn() { return weakDrawn; }, cells: () => [...weakNow()], all: G => weakWalls(G || S.grid, S.bridges, dangerField(G || S.grid), S.path), cut: w => bridgeCut(S.grid, w, S.bridges, dangerField(S.grid), pathLen(S.path)) }, // v33: the weak-wall overlay // v33: a seen tower's tuning as the attacker saw it, and the fee to move or remove the tower on cell
   cellToClient(i) { const [x, y] = center(i), [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   unitToClient(u) { const [sx, sy] = w2s(u.x + u.ox, u.y + u.oy), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },
   get speed() { return waveSpeed; },

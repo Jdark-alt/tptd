@@ -208,17 +208,32 @@ try:
             check('v23: after a bridge landed, the defender moves towers free this round', ev(A, 'S.freeMv && S.freeMv.all') is True and ev(A, f'window.siegeline.state.grid[{idx(9, 6)}] && 1') == 1, ev(A, 'S.freeMv'))
             A.evaluate('()=>{window.siegeline.state.freeMv=null;}')
             # v22 Part C: the defender drags a tower the attacker saw (the splash tower) onto a wall: it pays the move fee
-            fee_want = int(0.1 * ev(A, f"window.siegeline.towerCost(S.grid[{idx(9, 6)}].cfg)") + 0.5); d_before = ev(A, 'S.dFree')
+            # v33 test 7: crowded builds, a move and a retune: the defender first places two towers touching each other
+            # (crowding), retunes one, and both devices must agree on the layout's cost from the grid alone
+            CF = '{range:2,dps:2,accuracy:0,rate:3,splash:0,slow:false,poison:false,chain:0}'
+            free2 = A.evaluate('()=>{const S=window.siegeline.state; const out=[]; for (let i=0;i<176;i++){ if (!S.grid[i] && i%16>0 && i%16<14 && !S.grid[i+1] && !S.bridges.has(i) && !S.bridges.has(i+1) && !S.path.includes(i) && !S.path.includes(i+1)) out.push(i); } return out;}')
+            pair = next((i for i in free2 if A.evaluate(f'()=>{{const S=window.siegeline.state; return !S.grid[{i}] && !S.grid[{i}+1];}}')), None)
+            for ci in ((pair, pair + 1) if pair is not None else ()):
+                A.evaluate(f'()=>{{const sl=window.siegeline,S=sl.state; const c=sl.crowd.delta([[{ci},{{t:"tower",cfg:{CF}}}]]); S.grid[{ci}]={{t:"tower",cfg:{CF},off:0,fresh:true,n:++S.towerSeq,cd:0,ang:Math.PI,kick:0,dealt:0}}; S.dFree-=c; S.gridVer++; sl.refresh();}}')
+            if pair is not None:  # and a retune of one of them, priced through the layout (its share of the crowding with it)
+                A.evaluate(f'()=>{{const sl=window.siegeline,S=sl.state,g=S.grid[{pair}]; const n={{...g.cfg,dps:3}}; S.dFree-=sl.crowd.delta([[{pair},{{...g,cfg:n}}]]); g.cfg=n; S.gridVer++; sl.refresh();}}')
+            crowd_a = ev(A, 'window.siegeline.crowd.coins()')
+            fee_want = int(0.1 * ev(A, f"window.siegeline.seenCfg(S.grid[{idx(9, 6)}]) && window.siegeline.towerCost(window.siegeline.seenCfg(S.grid[{idx(9, 6)}]))") + 0.5); d_before = ev(A, 'S.dFree')
+            # v33: a move also pays the change in crowding at the new cell (the move fee alone goes to the attacker)
+            crowd_mv = ev(A, f'window.siegeline.crowd.delta([[{idx(7, 5)}, S.grid[{idx(9, 6)}]], [{idx(9, 6)}, S.grid[{idx(7, 5)}]]])')
             (x0, y0), (x1, y1) = [A.evaluate(f'()=>window.siegeline.cellToClient({i})') for i in (idx(9, 6), idx(7, 5))]
             A.mouse.move(x0, y0); A.mouse.down()
             for k in range(1, 9): A.mouse.move(x0 + (x1 - x0) * k / 8, y0 + (y1 - y0) * k / 8)
             A.mouse.up(); A.wait_for_timeout(100)
-            check('v22 Part C: dragging a seen tower costs the defender the move fee', ev(A, 'S.dFree') == d_before - fee_want and ev(A, 'S.totals.moveTries') == 1, f"{d_before} → {ev(A, 'S.dFree')} (fee {fee_want})")
+            check('v22 Part C: dragging a seen tower costs the defender the move fee (v33: and the crowding change)', ev(A, 'S.dFree') == d_before - fee_want - crowd_mv and ev(A, 'S.totals.moveTries') == 1, f"{d_before} → {ev(A, 'S.dFree')} (fee {fee_want}, crowding {crowd_mv})")
+            d_after = ev(A, 'S.dFree')
             A.evaluate("()=>document.querySelector('#def-lock').click()"); B.evaluate("()=>document.querySelector('#atk-lock').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
-            check('v22 Part C test 7: both devices have the same coins and relocation count after the fee', ev(A, '[S.dFree, S.totals.moveTries]') == ev(B, '[S.dFree, S.totals.moveTries]') == [d_before - fee_want, 1],
+            check('v22 Part C test 7: both devices have the same coins and relocation count after the fee', ev(A, '[S.dFree, S.totals.moveTries]') == ev(B, '[S.dFree, S.totals.moveTries]') == [d_after, 1],
                   f"{ev(A, '[S.dFree, S.totals.moveTries]')} / {ev(B, '[S.dFree, S.totals.moveTries]')}")
+            LC = '[S.dFree, window.siegeline.crowd.coins(), window.siegeline.crowd.layout()]'
+            check('v33 test 7: both devices agree on the crowded layout’s cost and the coins after crowded builds, a move and a retune', crowd_a > 0 and ev(A, LC)[1] > 0 and ev(A, LC) == ev(B, LC), f'{ev(A, LC)} / {ev(B, LC)} (crowding before the move {crowd_a})')
             # v23: the fee goes to the attacker when the wave ends; both devices read it from the defender's plan
             check('v23: both devices carry the move fee into the wave, to be credited to the attacker', ev(A, '[S.wave.mf, S.mvFee]') == ev(B, '[S.wave.mf, S.mvFee]') == [fee_want, fee_want],
                   f"{ev(A, '[S.wave.mf, S.mvFee]')} / {ev(B, '[S.wave.mf, S.mvFee]')}")

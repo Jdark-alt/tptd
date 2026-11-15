@@ -58,10 +58,19 @@ JS = r'''([seed0, n, rules]) => {
     for (const w of starter) { const wx = w % COLS, wy = (w / COLS) | 0; let k = 0;
       for (const p of P) { const dx = (p % COLS) - wx, dy = ((p / COLS) | 0) - wy; if (dx * dx + dy * dy <= r2) k++; }
       cover = Math.max(cover, k); }
+    // v33: weak walls left: walls touching the route whose opening (a bridge) cuts the route by weakWallCut (0.3) or more;
+    // lengths by breadth-first search, so it reads any build (a starter has no towers, so the route is a shortest one)
+    const bfsLen = open => { const d = new Int16Array(N).fill(-1), q = [E]; d[E] = 0;
+      for (let h = 0; h < q.length; h++) { const i = q[h], c = i % COLS; if (i === K) return d[i];
+        for (const j of [c > 0 ? i - 1 : -1, c < COLS - 1 ? i + 1 : -1, i >= COLS ? i - COLS : -1, i < N - COLS ? i + COLS : -1]) if (j >= 0 && d[j] < 0 && open(j)) { d[j] = d[i] + 1; q.push(j); } }
+      return -1; };
+    const L0 = I.pathLen(S.path), cutT = rules.weakWallCut != null ? rules.weakWallCut : 0.3, nb = i => { const c = i % COLS; return [c > 0 ? i - 1 : -1, c < COLS - 1 ? i + 1 : -1, i - COLS, i + COLS].filter(j => j >= 0 && j < N); };
+    let weak = 0, worstCut = 0;
+    for (const w of starter) { if (!nb(w).some(j => on.has(j))) continue; const L = bfsLen(i => i === w || !S.grid[i]); const cut = L >= 0 ? (L0 - L) / L0 : 0; worstCut = Math.max(worstCut, cut); if (cut >= cutT - 1e-9) weak++; }
     const hair = I.hairpins ? I.hairpins().filter(tp => tp.every(i => S.grid[i])).length : 0; // corner hairpins built whole (v32)
     const room = I.mazeRoom(S.terrain), empty = I.mazeRoom(new Uint8Array(N));
     out.push({ seed: s, entry: (E / COLS) | 0, exit: (K / COLS) | 0, walls: S.starter, len: I.pathLen(S.path), room: room / empty, roomSteps: room, emptyRoom: empty,
-      dp: dp.size, spine, short, hair, cover, ms: Math.round(ms), T: [...S.terrain], G: S.grid.map(c => (c ? (c.t === 'wall' ? 1 : c.t === 'rock' ? 2 : 3) : 0)), P });
+      dp: dp.size, spine, short, hair, cover, weak, worstCut, ms: Math.round(ms), T: [...S.terrain], G: S.grid.map(c => (c ? (c.t === 'wall' ? 1 : c.t === 'rock' ? 2 : 3) : 0)), P });
   }
   return out;
 }'''
@@ -100,6 +109,7 @@ print('  gate rows (entry, exit): ' + ', '.join(f'{e}/{x} {c}' for (e, x), c in 
 line('starter walls', 'walls'); line('starter route length', 'len')
 line('room (share of empty board)', 'room', '{:.2f}'); line('empty-board room (steps)', 'emptyRoom')
 line('walls passed on both sides', 'dp'); line('longest double-passed spine', 'spine'); line('double-passed spines of 3-6', 'short'); line('best tower cover from a wall', 'cover')
+line('weak walls left (cut 30%+)', 'weak'); line('worst bridge cut', 'worstCut', '{:.2f}')
 line('build time (ms)', 'ms')
 print(f'  starter under 25 walls: {sum(m["walls"] < 25 for m in res)}; route under 35: {sum(m["len"] < 35 for m in res)}; '
       f'room under 80%: {sum(m["room"] < 0.8 for m in res)}; a spine of 4+: {sum(m["spine"] >= 4 for m in res)}; a 3-6 spine: {sum(m["short"] >= 1 for m in res)}; a corner hairpin: {sum(m.get("hair", 0) >= 1 for m in res)}')

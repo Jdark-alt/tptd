@@ -38,11 +38,17 @@ DEFENSES = {  # six towers each in a 4-column maze; all land near 750 coins
     'concentrated': {'towers': [{'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'chain': 3},
                                 {'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'splash': 2},
                                 {'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'poison': True}], 'layout': 'tight'},
+    # v33: the same three towers packed at one choke point, touching each other in one wall column (rows 1-3 of
+    # column 4, the route wrapping its tip), which the crowding fee charges for (v23's 'concentrated' has them apart)
+    'packed': {'towers': [{'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'chain': 3},
+                          {'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'splash': 2},
+                          {'range': 0, 'dps': 8, 'accuracy': 3, 'rate': 3, 'poison': True}], 'layout': 'tightpack'},
 }
 # v23: a serpentine of one-cell lanes: wall columns 2, 4, … 12 with gaps at alternate ends (2 at the bottom, 4 at the
 # top, …), so the route runs down, up, down … about 85 cells; slots at the tips of columns 4, 6 and 8
 LAYOUTS = {'tight': {'walls': [[c, r] for k, c in enumerate(range(2, 13, 2)) for r in range(11) if r != (10 if k % 2 == 0 else 0)],
                      'slots': [[4, 1], [6, 9], [8, 1]]}}
+LAYOUTS['tightpack'] = {'walls': LAYOUTS['tight']['walls'], 'slots': [[4, 1], [4, 2], [4, 3]]}  # v33
 towers_of = lambda d: d['towers'] if isinstance(d, dict) else d
 layout_of = lambda d: LAYOUTS[d['layout']] if isinstance(d, dict) and d.get('layout') else None
 ints = lambda s: [int(x) for x in s.split(',')]

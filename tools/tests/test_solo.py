@@ -34,7 +34,8 @@ def run_wave(page):
 def text(page, sel): return page.evaluate(f'() => document.querySelector("{sel}").textContent')
 PLAN = 'JSON.stringify(SOLO.plan)'
 LIVE = 'JSON.stringify([S.grid.map(g => g && [g.t, g.cfg, g.off, g.fresh]), S.designs, S.dFree, S.aFree, S.charges.size, S.path && S.path.length, S.keep, S.round, S.phase])'
-DWORTH = 'S.dFree + S.grid.reduce((v, g) => v + (!g || g.t === "rock" ? 0 : g.t === "wall" ? 5 : window.siegeline.towerValue(g)), 0)'
+# v33: the towers are worth their layout cost (their prices and the crowding between them)
+DWORTH = 'S.dFree + S.grid.reduce((v, g) => v + (g && g.t === "wall" ? 5 : 0), 0) + window.siegeline.crowd.layout()'
 AWORTH = 'S.aFree + S.designs.reduce((v, d) => v + d.count * window.siegeline.unitCost(d), 0) + [...S.charges.values()].reduce((v, c) => v + c.cost, 0)'
 # sabotage on the live wave: all on cells the attacker saw (bridges on walls, knock-outs on towers), within the bridge
 # cap and the tower value cap (one tower always fits), each sapper leaving within the wave and each bridge with its tile

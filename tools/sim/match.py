@@ -88,9 +88,13 @@ def main():
                     for x in r['log']:
                         if x.get('response'): resp[x['response']] = resp.get(x['response'], 0) + 1
                 rs = ' '.join(f'{k} {v}' for k, v in sorted(resp.items()))
+                # v33: spread in the last round each match played (towers, mean distance between towers, fill rate)
+                sp = [r['log'][-1]['spread'] for r in res if r['log'] and r['log'][-1].get('spread')]
+                spr = (f"  last round: {sum(x['towers'] for x in sp) / len(sp):.1f} towers, {sum(x['dist'] for x in sp) / len(sp):.2f} apart"
+                       f" (nearest {sum(x['near'] for x in sp) / len(sp):.2f}), fill {100 * sum(x['fill'] for x in sp) / len(sp):.0f}%") if sp else ''
                 print(f'  defender {dn:11s} vs {an:28s} attacker wins {w}/{len(res)}  keep left {sum(r["keep"] for r in res)/len(res):5.0f}'
                       f'  avg breach {sum(br)/max(1, len(br)):4.1f}%  bridges/match {bridges:3.1f}  towers out/match {jams:3.1f}'
-                      + saps + (f'  fell in rounds {fell}' if fell else '') + (f'  defender vs bridges: {rs}' if rs else ''), flush=True)
+                      + saps + (f'  fell in rounds {fell}' if fell else '') + (f'  defender vs bridges: {rs}' if rs else '') + spr, flush=True)
                 sent_all += sent; landed_all += landed
                 if a.log:
                     for x in res[0]['log']: print('      ', x)

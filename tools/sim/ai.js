@@ -11,6 +11,30 @@
   const saboFor = rules => { if (I.S) I.S.sabo = !(rules && rules.sabotage === false); };
   // Lets a run patch slider tables (e.g. { armor: { steps: [0, 2, 4, 7] } }) and restores them before the next run.
   const US0 = JSON.parse(JSON.stringify(Object.fromEntries(Object.entries(I.US).map(([k, v]) => [k, { steps: v.steps, m: v.m }]))));
+  // The layout's price: every tower's price plus, since v33, the crowding fee (towersValue); v32 and earlier stored a
+  // build fee on each tower instead (towerValue = tuning + fee), so the same difference prices both builds.
+  const layoutCost = G => (I.towersValue ? I.towersValue(G) : G.reduce((v, g) => v + (g && g.t === 'tower' ? I.towerValue(g) : 0), 0));
+  const wallsOf = G => G.reduce((n, g) => n + (g && g.t === 'wall' ? 1 : 0), 0);
+  const feeNow = G => (I.RULES.towerFee || 0) * G.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0); // v32's build fee; 0 since v33
+  // spread metrics (v33): towers owned, mean distance between towers (every pair, and each one's nearest), and the share
+  // of buildable cells holding a wall or a tower
+  function spread(S) {
+    const T = [], [E, K] = I.gates();
+    let build = 0, used = 0;
+    for (let i = 0; i < N; i++) {
+      const g = S.grid[i];
+      if (g && g.t === 'tower') T.push(i);
+      if (i === E || i === K || S.terrain[i] || S.bridges.has(i)) continue;
+      build++; if (g && (g.t === 'wall' || g.t === 'tower')) used++;
+    }
+    let pair = 0, np = 0, nn = 0;
+    for (const a of T) {
+      let best = Infinity;
+      for (const b of T) { if (a === b) continue; const d = Math.hypot(a % COLS - b % COLS, ((a / COLS) | 0) - ((b / COLS) | 0)); best = Math.min(best, d); if (a < b) { pair += d; np++; } }
+      if (best < Infinity) nn += best;
+    }
+    return { towers: T.length, dist: np ? +(pair / np).toFixed(2) : 0, near: T.length > 1 ? +(nn / T.length).toFixed(2) : 0, fill: build ? +(used / build).toFixed(3) : 0 };
+  }
   const resetUS = () => { for (const [k, v] of Object.entries(US0)) { I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); } };
 
   /* ---------------- defender ----------------
@@ -48,15 +72,17 @@
       if (!best || g.cfg.dps < best.cfg.dps) best = g;
     }
     if (!best) return false;
-    const c = best.cfg, cost = I.towerCost(c);
+    const c = best.cfg, cost = layoutCost(S.grid);
     let pick = null;
     for (const k of ['dps', 'accuracy']) {
       if (c[k] >= top(k)) continue;
-      const next = { ...c, [k]: c[k] + 1 }, delta = I.towerCost(next) - cost, r = (expDps(next) - expDps(c)) / delta;
+      const next = { ...c, [k]: c[k] + 1 };
+      best.cfg = next; const delta = layoutCost(S.grid) - cost; best.cfg = c; // the price change, crowding included (v33)
+      const r = (expDps(next) - expDps(c)) / delta;
       if (delta <= getW() && (!pick || r > pick.r)) pick = { next, delta, r };
     }
     if (!pick) return false;
-    if (!force && pick.r < expDps(I.defaultTower()) * 1.5 / (I.RULES.towerBase + I.RULES.towerFee * towers())) return false;
+    if (!force && pick.r < expDps(I.defaultTower()) * 1.5 / (I.RULES.towerBase + feeNow(S.grid))) return false;
     best.cfg = pick.next; spend(pick.delta); return true;
   }
   // returns how it dealt with the bridges on the map ('' when there are none)
@@ -69,16 +95,17 @@
       if (!S.path) throw new Error('game defender blocked the path');
       return r.info ? r.info.response : '';
     }
-    // sells all it can, like the game's defender: the offline towers keep the smallest build fees (sellOff)
-    const sold = I.sellOff(S.grid);
-    let worth = S.dFree + sold.back;
+    // sells all it can, like the game's defender: what the layout is worth less what the offline towers left standing
+    // are (v33: crowding included; v32 and earlier: the offline towers keep the smallest build fees, sellOff)
+    const sold = I.keepFees ? I.sellOff(S.grid) : null, before = layoutCost(S.grid); // keepFees: a build from before v33
+    let worth = S.dFree + (sold ? sold.back : 0);
     for (let i = 0; i < N; i++) {
       const g = S.grid[i]; if (!g || g.t === 'rock') continue;
       if (g.t === 'tower' && g.off > 0) continue;
       if (g.t === 'wall') worth += I.RULES.wall;
       S.grid[i] = null;
     }
-    I.keepFees(S.grid, sold.keep);
+    if (sold) I.keepFees(S.grid, sold.keep); else worth += before - layoutCost(S.grid);
     // same rule as the game: rebuilding on a cell the attacker saw doesn't make it "new"
     const seen = (i, t) => !!(S.seenGrid[i] && S.seenGrid[i].t === t);
     const towers = () => S.grid.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0);
@@ -97,11 +124,12 @@
     const addTower = (i, cfg) => {
       if (S.grid[i] && S.grid[i].t === 'tower') return true; // a locked offline tower already sits here
       if (S.bridges.has(i) || S.terrain[i]) return 'skip'; // nothing stands on a bridge, rough ground or rock
-      const fee = I.RULES.towerFee * towers(), cost = I.towerCost(cfg) + fee;
-      if (worth < cost) return false;
-      if (S.grid[i]) { worth += I.RULES.wall; S.grid[i] = null; } // the tower replaces a wall in its column
-      S.grid[i] = { t: 'tower', cfg, fee, off: 0, fresh: !seen(i, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
-      worth -= cost; return true;
+      // what the layout costs with it (v33: crowding included; v32: plus the build fee)
+      const fee = feeNow(S.grid), was = S.grid[i], before = layoutCost(S.grid), back = was ? I.RULES.wall : 0;
+      const g = { t: 'tower', cfg, fee, off: 0, fresh: !seen(i, 'tower'), n: S.towerSeq + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
+      S.grid[i] = g; const cost = layoutCost(S.grid) - before;
+      if (worth < cost) { S.grid[i] = was; return false; }
+      S.towerSeq++; worth += back - cost; return true; // the tower replaces a wall in its column
     };
     const cols = opt.maxCols == null ? 4 : opt.maxCols;
     const plan = [];
@@ -246,15 +274,16 @@
       const army = attack(S, aOpt, seed * 104729 + S.round);
       I.startWave(seed * 101 + S.round);
       window.siegeline.advance(900);
-      const W = S.wave, saps = { sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed, mf: W.mf || 0, dLeft: W.dLeft || 0, aLeft: W.aLeft || 0 };
+      const W = S.wave, saps = { sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed, mf: W.mf || 0, dLeft: W.dLeft || 0, aLeft: W.aLeft || 0, cuts: W.cuts || [] }; // cuts (v33): each landed bridge's share of the route skipped
       // v23: what the wave paid besides the pot (S.last has it once the wave ended without the keep falling)
       if (S.last && S.last.dTot != null && !(S.over && S.winner === 'attacker')) Object.assign(saps, { aMove: S.last.aMove, dKill: S.last.dKill, dInt: S.last.dInt, aInt: S.last.aInt, dGain: S.last.dGain, aGain: S.last.aGain });
       // the towers of this wave's defense and their effects, for "how often did towers take Frost, Chain, Splash"
+      saps.spread = spread(S);
       const TW = S.grid.filter(g => g && g.t === 'tower'); saps.fx = { towers: TW.length, slow: TW.filter(g => g.cfg.slow).length, chain: TW.filter(g => g.cfg.chain).length, splash: TW.filter(g => g.cfg.splash > 0).length, poison: TW.filter(g => g.cfg.poison).length };
       if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: W.x, Y: Math.round(W.y), keep: 0, bridges: W.bridges, jammed: W.jammed, ...saps, response }); return { winner: 'attacker', round: S.round, keep: 0, log, starter }; }
       const L = S.last;
       log.push({ r: S.round, army, X: L.X, Y: Math.round(L.Y), breach: Math.round(L.breach * 100), keep: Math.round(S.keep),
-        defWorth: Math.round(S.dFree + S.grid.reduce((v, g) => v + (!g || g.t === 'rock' ? 0 : g.t === 'wall' ? I.RULES.wall : I.towerValue(g)), 0)),
+        defWorth: Math.round(S.dFree + wallsOf(S.grid) * I.RULES.wall + layoutCost(S.grid)),
         atkWorth: S.aFree + S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0), charges: L.charges, bridges: L.bridges, missed: L.missed, jammed: L.jammed,
         onMap: S.bridges.size, ...saps, response });
       if (S.over) return { winner: S.winner, round: S.round, keep: Math.round(S.keep), log, starter };
@@ -268,12 +297,13 @@
     const { US, ...plain } = rules;
     Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     const walls = new Set(layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: cols }, (_, k) => colCells(k)).flat());
-    let cost = walls.size * I.RULES.wall, fee = 0;
+    const G = new Array(N).fill(null);
+    for (const i of walls) G[i] = { t: 'wall' };
     towers.forEach((cfg, k) => {
       const [c, r] = (layout ? layout.slots : SLOTS)[k];
-      if (walls.has(at(c, r))) cost -= I.RULES.wall;
-      cost += I.towerCost({ ...I.defaultTower(), ...cfg }) + fee; fee += I.RULES.towerFee;
+      G[at(c, r)] = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee: (I.RULES.towerFee || 0) * k }; // v32's build fee; crowding since v33
     });
+    const cost = G.reduce((n, g) => n + (g && g.t === 'wall' ? 1 : 0), 0) * I.RULES.wall + layoutCost(G);
     return cost;
   };
   // A sim strategy's army (ARMIES above, shares of the budget) as runWave's [[design, count, start, end], ...]. v23.
@@ -299,7 +329,7 @@
     I.S = I.newState(); const S = I.S; saboFor(rules);
     const walls = layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: 4 }, (_, k) => colCells(k)).flat();
     for (const i of walls) S.grid[i] = { t: 'wall', fresh: false };
-    towers.forEach((cfg, k) => { const [c, r] = (layout ? layout.slots : SLOTS)[k]; S.grid[at(c, r)] = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee: 10 * k, off: 0, fresh: false, n: k + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; });
+    towers.forEach((cfg, k) => { const [c, r] = (layout ? layout.slots : SLOTS)[k]; S.grid[at(c, r)] = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee: (I.RULES.towerFee || 0) * k, off: 0, fresh: false, n: k + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 }; });
     S.seenGrid = S.grid.map(g => (g ? (g.t === 'tower' ? { ...g, cfg: { ...g.cfg } } : { ...g }) : null));
     S.seenVer++; S.seenRound = 1; S.aFree = budget; S.towerSeq = towers.length; I.recompute();
     if (kind === 'auto') {
@@ -325,15 +355,13 @@
     Object.assign(I.RULES, window.__baseRules, { dmgScale: 1, spdScale: 1, hpScale: 1, armorFloor: 0.2 }, plain); saboFor(rules);
     if (US) for (const [k, v] of Object.entries(US)) { if (v.steps) I.US[k].steps.splice(0, Infinity, ...v.steps); if (v.m) I.US[k].m.splice(0, Infinity, ...v.m); }
     I.S = I.newState(); const S = I.S; saboFor(rules);
-    let cost = 0, fee = 0;
     const walls = layout ? layout.walls.map(([c, r]) => at(c, r)) : Array.from({ length: cols }, (_, k) => colCells(k)).flat();
-    for (const i of walls) { S.grid[i] = { t: 'wall', fresh: false }; cost += I.RULES.wall; }
+    for (const i of walls) S.grid[i] = { t: 'wall', fresh: false };
     towers.forEach((cfg, k) => {
       const [c, r] = (layout ? layout.slots : SLOTS)[k], i = at(c, r);
-      if (S.grid[i]) cost -= I.RULES.wall;
-      const g = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee, off: 0, fresh: false, n: k + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
-      S.grid[i] = g; cost += I.towerCost(g.cfg) + fee; fee += I.RULES.towerFee;
+      S.grid[i] = { t: 'tower', cfg: { ...I.defaultTower(), ...cfg }, fee: (I.RULES.towerFee || 0) * k, off: 0, fresh: false, n: k + 1, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
     });
+    const cost = wallsOf(S.grid) * I.RULES.wall + layoutCost(S.grid); // v33: crowding included
     I.recompute();
     if (!S.path) throw new Error('blocked');
     S.designs = army.map(([p, n, s, e], k) => { const d = makeDesign(p, k); d.count = n; d.tl = { s, e, pos: null }; return d; });
