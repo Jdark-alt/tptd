@@ -261,3 +261,39 @@ only); `startDef`/`startAtk` stay 300.
 - **Weak walls** (`weakWalls`, one route search per wall beside the route): 6-8 ms on a starter maze, 7-12 ms with 80-90
   walls, once per change of the build (cached on `gridVer`).
 - **The starter maze** at match start: see section 5 (108 ms median, unthrottled).
+
+## 11. v33.1: a boost for the attacker's units
+
+After playing v33 the user asked for units "slightly cheaper and slightly stronger" in both modes, or whatever lever
+fits. Two multipliers went into `RULES`: `unitHp` (every army unit's health, on top of `noSabHp`; sappers never) and
+`unitPrice` (a unit's price after the surcharges, before the one rounding). 1 and 1 play v33. Each variant ran the
+18 strategies against the `counter` bot (10 seeds) and the computer's Hard defender (3 seeds), both modes, the same
+seeds and maps as v33's runs (`all_*`); the shipped one also the computer attacker (4 seeds a level).
+
+| Variant | Attacker wins, sabotage on (of 234) | Sabotage off (of 234) | Mean breach on / off |
+|---|---|---|---|
+| v32 | 109 | 135 | 25.6% / 27.2% |
+| v33 | 63 | 72 | 12.3% / 13.8% |
+| +15% health | 76 (+6) | 80 (+3) | 15.2% / 17.0% |
+| +20% health | 77 (+6) | 85 (+6) | 16.0% / 18.0% |
+| +30% health | 83 (+9) | 96 (+10) | 17.8% / 19.9% |
+| 10% cheaper, +15% health | 79 (+7) | 80 (+3) | 16.0% / 17.9% |
+| **15% cheaper, +20% health (v33.1)** | **87 (+10)** | **88 (+7)** | **17.7% / 19.6%** |
+
+- Health alone stops paying quickly: the bots' defenders field about 13 towers, so tougher units mostly add breach in
+  rounds that don't threaten the keep. Cheaper units add little on their own (a point over +15% health) but together
+  with +20% health they reach the gate.
+- v33.1 against v32: 9 points under with sabotage (inside the spec's 10-point gate), 20 under without. The two modes
+  are level (37% and 38%); v32 had the game without sabotage 11 points kinder to the attacker, v33 3.
+- Against Hard, mean breach by round (sabotage on), v33 → v33.1: 13 → 21, 15 → 21, 3 → 13, 5 → 8, 4 → 7, 3 → 5,
+  3 → 2, 1 → 2. Attacker coins in play fall a little (1,223 → 1,150 a round): breaching more, it gets less of the pot.
+- Over 20 points against v33: Hard vs big tanks +100, mini-tanks +67, regen bruisers and slow fat regen +33; `counter`
+  vs big tanks +60, counter + bridges & towers and alternate + bridges & towers +30.
+- The computer attacker (sabotage on / off): Normal and Hard win every match; Easy 1/8 → 2/8 and 1/8 → 1/8 (v32 4/8
+  and 6/8). Its sappers land 58% → 65%.
+- Design scan (`--hp 6,9 --speed 1,4 --armor 0,3 --regen 0,3 --defenses basic,heavy,splash,mixed,chain,doctrine`, the
+  army's coins = the basic defense's cost, about 620): runs where the best defense lets more than 50% through, v33 0 of
+  26 (worst 45%), v33.1 4 of 28 (designs too dear for the budget at v33's prices fit now): 900 HP at 0.9 cells/s with
+  regen 3, bunched, 58% (v33 33%); the same without regen 56% (33%); 500 HP at 1.6 cells/s 55% (45%); with regen 3
+  55% (28%). Mean let through by defense: heavy 23% → 36%, doctrine 18% → 38%, chain 45% → 59%. At equal coins every
+  design gains, as a flat boost must; in matches the defender's extra towers absorb it.

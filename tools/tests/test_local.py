@@ -1520,6 +1520,7 @@ with sync_playwright() as p:
     # ---------- v22 Part B: toughness surcharge (every row of the spec's table, presets unchanged)
     ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page()
     page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+    page.evaluate('() => { window.siegeline.rules.unitPrice = 1; }')  # v33.1: the formula's own numbers (v33.1's 15% off is checked at the end)
     table = [((0, 4, 0, 0), 6), ((2, 6, 0, 0), 20), ((2, 5, 0, 0), 16), ((6, 1, 1, 0), 35), ((5, 5, 2, 0), 74), ((6, 4, 0, 3), 98), ((7, 5, 0, 0), 160),
              ((8, 4, 0, 0), 209), ((9, 3, 0, 0), 248), ((9, 0, 0, 3), 109), ((9, 7, 0, 0), 1204), ((9, 7, 3, 0), 2529)]
     price_all = '(rows) => rows.map(([h, s, a, r]) => window.siegeline.unitCost({ hp: h, speed: s, armor: a, regen: r, resist: "none" }))'
@@ -1949,6 +1950,7 @@ with sync_playwright() as p:
     page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + INTERNALS); page.wait_for_timeout(300)
+    page.evaluate('() => { const R = window.siegeline.rules; R.unitHp = 1; R.unitPrice = 1; }')  # v33.1: the hit-by-hit numbers below are on v33's units
     # the scaling pot: the spec's table for 8 waves, p = 1 after wave 3 of 4, and the "off" values give v20.4's payout to the bit
     # the spec's values (the game ships them, or the "off" values if the payout fails its sims gate; see CLAUDE.md)
     SPEC_PAY = '{ potGrowth: 0.6, swingStart: 0.15, swingEnd: 0.25 }'
@@ -2764,10 +2766,10 @@ with sync_playwright() as p:
             page.goto('file://' + HARNESS); page.wait_for_timeout(300); page.click('#info-go'); page.click('#mode-sabo [data-sabo="0"]')
         page.click('#mode-local'); hand(page); hints_off(page)
         page.click('#def-lock'); hand(page)
-        shown = page.evaluate("() => { const sl = window.siegeline, S = sl.state, d = S.designs.find(d => d.count) || S.designs[0]; return [sl.US.hp.steps[d.hp], d.hp]; }")
+        page.click('.step.plus[data-i="0"]'); page.click('.step.plus[data-i="1"]')
         page.click('#atk-lock')
         if not page.is_visible('#ov-hand'): page.click('#atk-lock')
-        hand(page); page.evaluate('() => window.siegeline.advance(2)')
+        hand(page); advance_until(page, 'S.units.some(u => !u.design.sap)', 30)
         u = page.evaluate('() => { const S = window.siegeline.state, u = S.units.find(u => !u.design.sap); return u ? [u.max, window.siegeline.US.hp.steps[u.design.hp]] : null; }')
         check(u and abs(u[0] - u[1] * mult) < 1e-6, f'v33.1: with sabotage {"on" if sabo else "off"} units march with ×{mult:.2f} their slider health ({u})')
     check(not errors, f'v33.1: no errors {errors[:3]}')
