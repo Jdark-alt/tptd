@@ -33,7 +33,7 @@ def start_server():
     return subprocess.Popen(['node', 'server.js'], cwd=SRV, env={**os.environ, 'PORT': str(PORT)}, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 def play_round(A, B, walls=()):
     wait(A, "S.phase==='defend'"); wait(B, "S.phase==='attack'")
-    A.evaluate("()=>{const b=document.querySelector('#def-steps [data-act=hints]'); if (b && b.getAttribute('aria-pressed')==='true') b.click();}")  # known cells: no hint sets
+    A.evaluate("()=>window.siegeline.setHints(false)")  # known cells: no hint sets
     for c in walls: cell(A, c)
     A.evaluate("()=>document.querySelector('#def-lock').click()")
     B.evaluate("()=>{const sl=window.siegeline,S=sl.state; S.designs[0].count=6; S.aFree-=6*sl.unitCost(S.designs[0]);}")

@@ -46,7 +46,7 @@ def advance_until(page, cond, most=40):
     return page.evaluate(f'() => {{ const sl = window.siegeline; for (let k = 0; k < {most * 2}; k++) {{ const S = sl.state; if ({cond}) return true; sl.advance(0.5); }} const S = sl.state; return !!({cond}); }}')
 def hints_off(page):
     """The fixed scenarios click known cells; with hints on, a glowing tile would place the hint's whole set."""
-    if page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true': page.click('#def-steps [data-act=hints]')
+    page.evaluate('() => window.siegeline.setHints(false)')  # v33.1: no switch on screen
 def route_len(page):
     import re
     return int(re.search(r'Path\s+(\d+)', page.inner_text('#d-route'), re.I).group(1))
@@ -70,15 +70,15 @@ with sync_playwright() as p:
     page.goto('file://' + HARNESS); page.wait_for_timeout(500); no_terrain(page)
     check(page.is_visible('#ov-info'), 'info overlay on load')
     page.click('#info-go'); page.click('#mode-local'); hand(page)
-    check(S(page, 'S.phase') == 'defend' and S(page, 'S.step') == 0 and ''.join(page.inner_text('#def-steps').lower().split()).startswith('build') and page.locator('#def-steps [data-step]').count() == 0
-          and page.is_visible('#def-lock') and page.inner_text('#def-lock').lower() == 'lock in', 'v21: the defender has one screen, Build, with Lock in in its footer (no Ready step)')
-    check(page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true' and page.is_visible('#def-steps [data-act=hints]'), 'Hints switch beside the panel title, on by default')
+    check(S(page, 'S.phase') == 'defend' and S(page, 'S.step') == 0 and page.locator('#def-steps').count() == 0
+          and page.is_visible('#def-lock') and page.inner_text('#def-lock').lower() == 'lock in', 'v21: the defender has one screen with Lock in in its footer (no Ready step); v33.1: no Build title over it')
+    check(page.locator('[data-act=hints]').count() == 0 and page.evaluate('() => window.siegeline.hints') is True, 'v33.1: no Hints switch; hints are always on')
     hints_off(page)
     check(S(page, 'S.terrain.every(v => !v) && S.grid.every(g => !g)'), 'terrain shares at 0: a map without rough ground or rock')
     tops = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow > *, #def-body .helprow > *')].map(b => (b.dataset.tool || b.dataset.act) + ':' + Math.round(b.getBoundingClientRect().top))")
     rows = [t.split(':')[1] for t in tops]
-    check([t.split(':')[0] for t in tops] == ['wall', 'tower', 'remove', 'shape', 'maze', 'tune', 'undo', 'weak'] and len(set(rows[:4])) == 1 and len(set(rows[4:])) == 1 and int(rows[4]) > int(rows[0]),
-          f'v21.1: the tool row (Wall, Tower, Remove, Shapes), and Auto-maze, Auto-tune, Undo (v33: and Weak walls, with sabotage) in a row of their own under it {tops}')
+    check([t.split(':')[0] for t in tops] == ['wall', 'tower', 'remove', 'shape', 'maze', 'tune', 'undo', 'weak'] and len(set(rows[:4])) == 1 and rows[4] == rows[5] and rows[6] == rows[7] and int(rows[6]) > int(rows[4]) > int(rows[0]),
+          f'v21.1: the tool row (Wall, Tower, Remove, Shapes), and under it the helpers; v33.1: two by two, Auto-maze and Auto-tune over Undo and Weak walls {tops}')
     check(route_len(page) == 15 and 'under fire' not in page.inner_text('#d-route').lower(), 'route length shown; time under fire hidden with hints off')
     for r in range(0, 10): click_cell(page, 7, r)
     g0 = S(page, 'S.dFree')
@@ -452,7 +452,7 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
     page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
-    page.tap('#def-steps [data-act=hints]')  # known cells below
+    page.evaluate('() => window.siegeline.setHints(false)')  # known cells below
     def tap_cell(c, r):
         x, y = page.evaluate(f'() => window.siegeline.cellToClient({idx(c,r)})'); page.touchscreen.tap(x, y)
     tap_cell(4, 4)
@@ -548,8 +548,8 @@ with sync_playwright() as p:
     for r in range(0, 9): click_cell(page, 5, r)
     for r in range(2, 11): click_cell(page, 10, r)
     page.click('.tool[data-tool=tower]'); click_cell(page, 7, 4); page.click('[data-act=close]')
-    page.click('.tool[data-tool=wall]'); page.click('#def-steps [data-act=hints]')
-    check(page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true', 'the Hints switch turns hints back on')
+    page.click('.tool[data-tool=wall]'); page.evaluate('() => window.siegeline.setHints(true)')
+    check(page.evaluate('() => window.siegeline.hints') is True, 'hints back on (the handle; v33.1 has no switch)')
     page.wait_for_function('() => Array.isArray(window.siegeline.hot)', timeout=5000)
     hot = page.evaluate('() => window.siegeline.hot')
     check(0 < len(hot) <= 3 and all(S(page, f'!S.grid[{i}]') for i in hot), f'hot tiles: up to 3 empty cells suggested ({[(i % COLS, i // COLS) for i in hot]})')
@@ -569,11 +569,11 @@ with sync_playwright() as p:
     len1 = route_len(page); t1 = page.evaluate(walk)
     check(all(S(page, f'S.grid[{i}] && S.grid[{i}].t') == 'wall' for i in hot) and S(page, 'S.dFree') == f0 - 5 * len(hot), f'one click on a glowing tile places the whole set as walls ({len(hot)} for {5 * len(hot)} coins)')
     check(len1 > len0 and abs((t1 - t0) * 1.6 - (len1 - len0)) < 0.05, f'the set lengthens the route units walk in a played wave: {len0} → {len1} steps, the unit took {t1 - t0:.2f}s longer at 1.6 cells/s')
-    page.click('#def-steps [data-act=hints]'); page.wait_for_timeout(60)
+    page.evaluate('() => window.siegeline.setHints(false)'); page.wait_for_timeout(60)
     check(page.evaluate('() => window.siegeline.hot') is None and 'under fire' not in page.inner_text('#d-route').lower(), 'Hints off: no glow, no time under fire (the path length stays)')
-    page.wait_for_timeout(400)  # let the switch's storage write settle before the page goes
     page.reload(); page.wait_for_timeout(300); no_terrain(page); page.click('#info-go'); page.click('#mode-local'); hand(page)
-    check(page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'false', 'the Hints choice is remembered on this device')
+    check(page.evaluate('() => window.siegeline.hints') is True and page.locator('[data-act=hints]').count() == 0, 'v33.1: hints are on again after a reload (no switch, nothing kept)')
+    hints_off(page)
     # shapes
     page.click('.tool[data-tool=shape]')
     check(page.is_visible('#d-shapes') and page.locator('#d-shapes [data-shape]').count() == 4, 'Shapes: four pieces to pick from')
@@ -930,15 +930,15 @@ with sync_playwright() as p:
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + HARNESS); page.wait_for_timeout(400); no_terrain(page)
     page.tap('#info-go'); page.wait_for_timeout(200); page.tap('#mode-local'); page.wait_for_timeout(500); page.tap('#ov-hand'); page.wait_for_timeout(300)
-    page.tap('#def-steps [data-act=hints]')
+    page.evaluate('() => window.siegeline.setHints(false)')
     xy = lambda c, r: page.evaluate(f'() => window.siegeline.cellToClient({idx(c, r)})')
     cdp = ctx.new_cdp_session(page)
     tools = page.evaluate("() => [...document.querySelectorAll('#def-body .toolrow .tool')].map(b => [Math.round(b.getBoundingClientRect().top), b.querySelector('.tcost').scrollWidth <= b.querySelector('.tcost').clientWidth])")
     check(len({t for t, _ in tools}) == 1 and all(fit for _, fit in tools), f'phone: the four tools in one row, "& inspect" not cut off ({tools})')
     page.tap('#def-body [data-act=maze]'); page.wait_for_function('() => !window.siegeline.mazing'); page.wait_for_timeout(50)
     row = page.evaluate("() => [...document.querySelectorAll('#def-body .helprow > button')].map(b => { const r = b.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.right)]; })")
-    check(S(page, 'S.grid.filter(g => g && g.t === "wall").length') > 0 and len({t for t, _ in row}) == 1 and max(r for _, r in row) <= 390 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
-          f'phone: Auto-maze builds, and its row fits 390 px ({row})')
+    check(S(page, 'S.grid.filter(g => g && g.t === "wall").length') > 0 and len(row) == 4 and row[0][0] == row[1][0] and row[2][0] == row[3][0] > row[0][0] and max(r for _, r in row) <= 390 and not page.evaluate('() => document.documentElement.scrollWidth > innerWidth'),
+          f'phone: Auto-maze builds, and its helpers sit two by two within 390 px ({row})')
     page.tap('.tool[data-tool=tower]'); x, y = xy(1, 1); page.touchscreen.tap(x, y); page.wait_for_timeout(100); page.touchscreen.tap(x, y); page.wait_for_timeout(150)
     if page.is_visible('#def-ctx [data-act=close]'): page.tap('#def-ctx [data-act=close]')
     page.tap('.tool[data-tool=remove]'); page.wait_for_timeout(100)

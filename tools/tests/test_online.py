@@ -66,7 +66,7 @@ def join_old(pg, role, code):
 def defend_round(pg, walls=(), towers=(), lock=True):
     wait(pg, "S.phase==='defend' && S.step===0")
     # known cells are clicked: with hints on, a glowing tile would place the hint's whole set
-    if pg.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true': pg.click('#def-steps [data-act=hints]')
+    pg.evaluate('() => window.siegeline.setHints(false)')  # v33.1: no switch on screen
     for c in walls: cell(pg, c)
     if towers: pg.click('.tool[data-tool=tower]')
     for c, cfg in towers:

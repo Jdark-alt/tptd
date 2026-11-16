@@ -61,7 +61,7 @@ def start(page, side, level, seed=None):
 
 def hints_off(page):
     """The fixed scenarios click known cells; with hints on, a glowing tile would place the hint's whole set."""
-    if page.get_attribute('#def-steps [data-act=hints]', 'aria-pressed') == 'true': page.click('#def-steps [data-act=hints]')
+    page.evaluate('() => window.siegeline.setHints(false)')  # v33.1: no switch on screen
 def build_maze(page, strong=False):
     """A 3-column serpentine clicked in like a player: a tower in the middle of each column (285 coins), or with
     strong=True three towers per column on 900 coins, a defense worth charging."""
