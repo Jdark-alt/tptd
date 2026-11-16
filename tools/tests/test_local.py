@@ -29,7 +29,8 @@ def no_terrain(page):
     """The fixed scenarios click known cells, so their matches start without rough ground or rock, and without the
     planning clock (it has checks of its own), so a slow machine never sends a plan early; and since v32 with the middle-row
     gates (fixedGates), where the scenarios were drawn."""
-    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.planSecs = 0; R.starterPresses = 0; R.fixedGates = true; if (window.siegeline.setGates) window.siegeline.setGates(); }')
+    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.planSecs = 0; R.starterPresses = 0; R.fixedGates = true; R.unitHp = 1; R.unitPrice = 1; if (window.siegeline.setGates) window.siegeline.setGates(); }')
+    # v33.1: and with v33's unit health and prices (unitHp, unitPrice), which the scenarios' numbers were worked out on
 def sure_sappers(page):
     """The fixed scenarios check what sappers do on arrival, so theirs get top health and always arrive."""
     page.evaluate('() => { window.siegeline.rules.sapper.hp = 9; }')
@@ -2741,6 +2742,35 @@ with sync_playwright() as p:
     check(E('S.sabo') is False and E('S.round') == 2 and not E('sl.weak.on') and page.locator('[data-act=weak]').count() == 0 and E('sl.weak.drawn') == 0,
           'v33 test 9: with sabotage off there is no Weak walls button and no dots')
     check(not errors, f'v33 Simple: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v33.1: units 15% cheaper and 20% tougher in both modes (the shipped values, not no_terrain's)
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+    E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
+    check(E('[sl.rules.unitHp, sl.rules.unitPrice]') == [1.2, 0.85] and E('sl.rules.noSabHp') == 1.15, 'v33.1: units have 20% more health and cost 15% less (sabotage off: ×1.15 more health on top)')
+    pre = "['Runner', 'Brute', 'Swarm', 'Ghost'].map(n => window.siegeline.unitCost({ ...{ Runner: { hp: 2, speed: 6, armor: 0 }, Brute: { hp: 6, speed: 1, armor: 1 }, Swarm: { hp: 0, speed: 4, armor: 0 }, Ghost: { hp: 2, speed: 5, armor: 0 } }[n], regen: 0, resist: 'none' }))"
+    now = page.evaluate('() => ' + pre)
+    old = page.evaluate('() => { const R = window.siegeline.rules; R.unitPrice = 1; const v = ' + pre + '; R.unitPrice = 0.85; return v; }')
+    big = page.evaluate('() => { const sl = window.siegeline, R = sl.rules, d = { hp: 9, speed: 7, armor: 3, regen: 0, resist: "none" }; const a = sl.unitCost(d); R.unitPrice = 1; const b = sl.unitCost(d); R.unitPrice = 0.85; return [a, b]; }')
+    check(old == [20, 35, 6, 16] and now == [17, 30, 5, 14] and abs(big[0] - big[1] * 0.85) <= 0.5, f'v33.1: Runner, Brute, Swarm, Ghost 20, 35, 6, 16 → {now}; the maxed armored unit {big[1]} → {big[0]} (one rounding, after the surcharges)')
+    page.click('#info-go')
+    ub = page.inner_text('#info-ubuff') if page.locator('#info-ubuff').count() else ''
+    check('20% more health' in ub and '15% less' in ub and 'sappers' in ub, f'v33.1: the rules sheet says so under the price formula ({ub})')
+    for sabo, mult in ((True, 1.2), (False, 1.2 * 1.15)):
+        if not sabo:
+            page.goto('file://' + HARNESS); page.wait_for_timeout(300); page.click('#info-go'); page.click('#mode-sabo [data-sabo="0"]')
+        page.click('#mode-local'); hand(page); hints_off(page)
+        page.click('#def-lock'); hand(page)
+        shown = page.evaluate("() => { const sl = window.siegeline, S = sl.state, d = S.designs.find(d => d.count) || S.designs[0]; return [sl.US.hp.steps[d.hp], d.hp]; }")
+        page.click('#atk-lock')
+        if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+        hand(page); page.evaluate('() => window.siegeline.advance(2)')
+        u = page.evaluate('() => { const S = window.siegeline.state, u = S.units.find(u => !u.design.sap); return u ? [u.max, window.siegeline.US.hp.steps[u.design.hp]] : null; }')
+        check(u and abs(u[0] - u[1] * mult) < 1e-6, f'v33.1: with sabotage {"on" if sabo else "off"} units march with ×{mult:.2f} their slider health ({u})')
+    check(not errors, f'v33.1: no errors {errors[:3]}')
     ctx.close()
     b.close()
 

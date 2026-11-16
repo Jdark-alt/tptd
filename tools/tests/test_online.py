@@ -44,7 +44,7 @@ def snap(pg):
 def no_terrain(*pgs):
     """Known cells are clicked, so no terrain and no starter maze; sappers get top health so the planned sabotage always
     arrives; and no planning clock (it has checks of its own), so a slow machine never sends a plan early."""
-    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.starterPresses=0; R.sapper.hp=9; R.planSecs=0; R.fixedGates=true;}')
+    for pg in pgs: pg.evaluate('()=>{const R=window.siegeline.rules; R.roughShare=0; R.rockShare=0; R.starterPresses=0; R.sapper.hp=9; R.planSecs=0; R.fixedGates=true; R.unitHp=1; R.unitPrice=1;}')  # v33.1: v33's units, as the scenarios were drawn
 def join(pg, role, code, waves=None):
     """v26: rooms. 'def' hosts the room with this code (the host sits as Defender); 'atk' joins it and sits in the free seat.
     The host starts the match with start()."""
