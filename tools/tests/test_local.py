@@ -2746,22 +2746,19 @@ with sync_playwright() as p:
     check(not errors, f'v33 Simple: no errors {errors[:3]}')
     ctx.close()
 
-    # ---------- v33.1: units 15% cheaper and 20% tougher in both modes (the shipped values, not no_terrain's)
+    # ---------- v33.2: units back to v33's health and prices (v33.1's +20% / −15% went), with sabotage on and off
     ctx = b.new_context(viewport={'width': 1366, 'height': 860})
     page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('file://' + HARNESS); page.wait_for_timeout(300)
     E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
-    check(E('[sl.rules.unitHp, sl.rules.unitPrice]') == [1.2, 0.85] and E('sl.rules.noSabHp') == 1.15, 'v33.1: units have 20% more health and cost 15% less (sabotage off: ×1.15 more health on top)')
-    pre = "['Runner', 'Brute', 'Swarm', 'Ghost'].map(n => window.siegeline.unitCost({ ...{ Runner: { hp: 2, speed: 6, armor: 0 }, Brute: { hp: 6, speed: 1, armor: 1 }, Swarm: { hp: 0, speed: 4, armor: 0 }, Ghost: { hp: 2, speed: 5, armor: 0 } }[n], regen: 0, resist: 'none' }))"
-    now = page.evaluate('() => ' + pre)
-    old = page.evaluate('() => { const R = window.siegeline.rules; R.unitPrice = 1; const v = ' + pre + '; R.unitPrice = 0.85; return v; }')
-    big = page.evaluate('() => { const sl = window.siegeline, R = sl.rules, d = { hp: 9, speed: 7, armor: 3, regen: 0, resist: "none" }; const a = sl.unitCost(d); R.unitPrice = 1; const b = sl.unitCost(d); R.unitPrice = 0.85; return [a, b]; }')
-    check(old == [20, 35, 6, 16] and now == [17, 30, 5, 14] and abs(big[0] - big[1] * 0.85) <= 0.5, f'v33.1: Runner, Brute, Swarm, Ghost 20, 35, 6, 16 → {now}; the maxed armored unit {big[1]} → {big[0]} (one rounding, after the surcharges)')
+    check(E('[sl.rules.unitHp, sl.rules.unitPrice, sl.rules.noSabHp]') == [1, 1, 1.15], 'v33.2: units have v33’s health and prices again (sabotage off: ×1.15 health)')
+    now = page.evaluate("() => ['Runner', 'Brute', 'Swarm', 'Ghost'].map(n => window.siegeline.unitCost({ ...{ Runner: { hp: 2, speed: 6, armor: 0 }, Brute: { hp: 6, speed: 1, armor: 1 }, Swarm: { hp: 0, speed: 4, armor: 0 }, Ghost: { hp: 2, speed: 5, armor: 0 } }[n], regen: 0, resist: 'none' }))")
+    check(now == [20, 35, 6, 16], f'v33.2: Runner, Brute, Swarm, Ghost cost 20, 35, 6, 16 again ({now})')
     page.click('#info-go')
     ub = page.inner_text('#info-ubuff') if page.locator('#info-ubuff').count() else ''
-    check('20% more health' in ub and '15% less' in ub and 'sappers' in ub, f'v33.1: the rules sheet says so under the price formula ({ub})')
-    for sabo, mult in ((True, 1.2), (False, 1.2 * 1.15)):
+    check(ub == '' and '× 0.85' not in page.inner_text('#ov-info'), f'v33.2: the rules sheet no longer mentions the unit boost ({ub!r})')
+    for sabo, mult in ((True, 1), (False, 1.15)):
         if not sabo:
             page.goto('file://' + HARNESS); page.wait_for_timeout(300); page.click('#info-go'); page.click('#mode-sabo [data-sabo="0"]')
         page.click('#mode-local'); hand(page); hints_off(page)
@@ -2771,8 +2768,8 @@ with sync_playwright() as p:
         if not page.is_visible('#ov-hand'): page.click('#atk-lock')
         hand(page); advance_until(page, 'S.units.some(u => !u.design.sap)', 30)
         u = page.evaluate('() => { const S = window.siegeline.state, u = S.units.find(u => !u.design.sap); return u ? [u.max, window.siegeline.US.hp.steps[u.design.hp]] : null; }')
-        check(u and abs(u[0] - u[1] * mult) < 1e-6, f'v33.1: with sabotage {"on" if sabo else "off"} units march with ×{mult:.2f} their slider health ({u})')
-    check(not errors, f'v33.1: no errors {errors[:3]}')
+        check(u and abs(u[0] - u[1] * mult) < 1e-6, f'v33.2: with sabotage {"on" if sabo else "off"} units march with ×{mult:.2f} their slider health ({u})')
+    check(not errors, f'v33.2: no errors {errors[:3]}')
     ctx.close()
     b.close()
 

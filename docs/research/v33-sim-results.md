@@ -297,3 +297,19 @@ seeds and maps as v33's runs (`all_*`); the shipped one also the computer attack
   regen 3, bunched, 58% (v33 33%); the same without regen 56% (33%); 500 HP at 1.6 cells/s 55% (45%); with regen 3
   55% (28%). Mean let through by defense: heavy 23% → 36%, doctrine 18% → 38%, chain 45% → 59%. At equal coins every
   design gains, as a flat boost must; in matches the defender's extra towers absorb it.
+
+## 12. v33.2: the boost reverted
+
+The user then defended three Sabotage matches against Auto-army (both sides theirs) and lost all three easily, the
+attacker never sabotaging. One cheap check: Auto-army (`scan.py --hp 0 --speed 4 --armor 0 --regen 0 --bots auto`)
+against the six fixed defenses (about 620 coins, the army as much), best defense and the mean over the six:
+
+| `unitHp` / `unitPrice` | Best defense lets through | Mean |
+|---|---|---|
+| 1 / 1 (v33, v33.2) | 23% | 40% |
+| 1.2 / 0.85 (v33.1) | 37% | 52% |
+| 1.1 / 0.9 | 31% | 45% |
+| 1.05 / 0.95 | 31% | 44% |
+
+The bots' defenders absorbed v33.1's boost (+10 points of wins); against what a human builds it decided the match.
+Even the smallest step tried gave back most of the jump in this check, so v33.2 goes back to 1 / 1.

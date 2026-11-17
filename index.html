@@ -1410,7 +1410,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v33.1</p>
+        <p class="tagline">Two Player Tower Defence · v33.2</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1481,7 +1481,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
       <section id="info-army">
         <h2>Army</h2>
         <p>Up to four permanent designs; units that die come back next wave. Tap a design to open it in place: its sliders, resists, name and colour. − and + sell or buy one unit; Max buys as many as your coins allow, 0 sells them all. Health, speed, armor, regeneration and resistance multiply the price; above <span data-rule="bigUnit">60</span> coins a surcharge applies, so one giant unit costs more than its parts. Tough units cost more too: above a toughness of <span data-rule="toughT0">2.5</span> (health × speed), each point adds <span data-rule="toughK%">25</span>% to the price.</p>
-        <div class="callout"><p><code>15 × health × speed × armor × regen × each resist</code>, past 60 coins <code>60 × (price ÷ 60)^1.5</code>, then <code>× (1 + 0.25 × max(0, toughness − 2.5)) × <span data-rule="unitPrice">0.85</span></code></p><p>Toughness = (HP ÷ 150) × (speed ÷ 1.3), on the slider’s base health. A Brute is 1.7, a 500 HP unit at 1.9 cells/s is 4.9. <span id="info-ubuff"></span></p></div>
+        <div class="callout"><p><code>15 × health × speed × armor × regen × each resist</code>, past 60 coins <code>60 × (price ÷ 60)^1.5</code>, then <code>× (1 + 0.25 × max(0, toughness − 2.5))</code></p><p>Toughness = (HP ÷ 150) × (speed ÷ 1.3), on the slider’s base health. A Brute is 1.7, a 500 HP unit at 1.9 cells/s is 4.9. <span id="info-ubuff"></span></p></div>
         <ul>
           <li><strong>Health</strong>: price grows in line with it. <strong>Speed</strong>: fast units spend less time in range, so price grows with it too.</li>
           <li><strong>Armor</strong>: every hit loses 3, 6 or 10, but at least 20% still lands. Beats rapid fire, weak to heavy shots; chain jumps ignore it.</li>
@@ -1556,7 +1556,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
               <tr><td class="d">Accuracy</td><td class="n">80% → 100%</td><td>Slider ×1.15 / ×1.35 / ×1.6; fire rate shifts each shot, <span id="acc-span"></span></td></tr>
               <tr><td class="d">Frost</td><td class="n">×1.35</td><td>Slows <span data-rule="frostSlow%">50</span>% for <span data-rule="frostSecs">2.5</span> s; slowed units take <span data-rule="brittle%">20</span>% more</td></tr>
               <tr><td class="d">Chain</td><td class="n">×1.2 / ×1.35 / ×1.5</td><td>1, 2 or <span data-rule="chainJumps">3</span> jumps of <span data-rule="chainReach">2.5</span> cells, 70 / 50 / 35%, through armor; not with Splash</td></tr>
-              <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Traits multiply; surcharge above 60; +25% per point of toughness above 2.5; × <span data-rule="unitPrice">0.85</span></td></tr>
+              <tr><td class="a">Unit</td><td class="n">15 ×</td><td>Traits multiply; surcharge above 60; +25% per point of toughness above 2.5</td></tr>
               <tr><td class="a">Sapper</td><td class="n"><span id="info-saphp2">112</span> HP · armor <span id="info-saparm2">3</span></td><td>Shot down: <span data-rule="sapKillShare%">50</span>% of its price to the defender. Missed (target moved): its coins are spent</td></tr>
               <tr><td class="a">Bridge</td><td class="n"><span data-rule="bridgeBase">25</span> × (1 + <span data-rule="bridgeRise%">25</span>% × b)</td><td>b: your bridges in earlier waves. At most <span data-rule="bridgesPerWave">1</span> a wave, touching the route or a bridge</td></tr>
               <tr><td class="a">Knock-out</td><td class="n">(<span data-rule="towerOffBase">15</span> + <span data-rule="towerOffShare%">20</span>% × C) × (1 + <span data-rule="towerOffRise%">25</span>% × t)</td><td>C: the tower’s slider price; t: your earlier knock-outs. For the rest of the wave; targets up to <span data-rule="towerCapShare%">50</span>% of the C seen</td></tr>
@@ -1565,7 +1565,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v33.1</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v33.2</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1762,7 +1762,10 @@ const RULES = {
   // (both modes, the 18 strategies against the counter bot and the computer's Hard defender): +15% health +6 / +3
   // points, +20% +6 / +6, +30% +9 / +10, 10% cheaper with +15% +7 / +3, 15% cheaper with +20% +10 / +7 (shipped: 9
   // points under v32 with sabotage, the two modes level again). See CLAUDE.md, "Measured on v33.1".
-  unitHp: 1.2, unitPrice: 0.85,
+  // v33.2: back to 1 and 1 (v33's units). The user, defending in three Sabotage matches against Auto-army: "won without
+  // any difficulty, and without using sabotage". Auto-army against the best of six fixed defenses at equal coins lets
+  // 23% through at 1 / 1, 37% at v33.1's 1.2 / 0.85, 31% at 1.1 / 0.9 and at 1.05 / 0.95.
+  unitHp: 1, unitPrice: 1,
   bridgeBase: 25, bridgeRise: 0.25, bridgesPerWave: 1, towerOffBase: 15, towerOffShare: 0.2, towerOffRise: 0.25, towerCapShare: 0.5,
   // terrain, new each match: shares of the board that are rough ground (units cross it, nothing can be built on
   // it) and rock (blocks like a wall that can't be removed, built on or bridged)
@@ -4249,7 +4252,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 23; // 23: v33.1 (units have 20% more health and cost 15% less, so both devices must agree on them); 22: v33 (the crowding fee replaced the build fee, so the grid sends no fee; prices, the starter maze and the 30 s release window differ); 21: v32 (the gates' rows come from the map seed, so a v31 device would play another board); 20: v31 (Chain is a jump count, 0-3, sent as a number in the grid); 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 24; // 24: v33.2 (units back to v33's health and prices); 23: v33.1 (units have 20% more health and cost 15% less, so both devices must agree on them); 22: v33 (the crowding fee replaced the build fee, so the grid sends no fee; prices, the starter maze and the 30 s release window differ); 21: v32 (the gates' rows come from the map seed, so a v31 device would play another board); 20: v31 (Chain is a jump count, 0-3, sent as a number in the grid); 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
