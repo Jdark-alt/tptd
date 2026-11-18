@@ -29,7 +29,7 @@ def no_terrain(page):
     """The fixed scenarios click known cells, so their matches start without rough ground or rock, and without the
     planning clock (it has checks of its own), so a slow machine never sends a plan early; and since v32 with the middle-row
     gates (fixedGates), where the scenarios were drawn."""
-    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.planSecs = 0; R.starterPresses = 0; R.fixedGates = true; R.unitHp = 1; R.unitPrice = 1; if (window.siegeline.setGates) window.siegeline.setGates(); }')
+    page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.planSecs = 0; R.starterPresses = 0; R.crystalSites = 0; R.fixedGates = true; R.unitHp = 1; R.unitPrice = 1; if (window.siegeline.setGates) window.siegeline.setGates(); }')
     # v33.1: and with v33's unit health and prices (unitHp, unitPrice), which the scenarios' numbers were worked out on
 def sure_sappers(page):
     """The fixed scenarios check what sappers do on arrival, so theirs get top health and always arrive."""
@@ -175,7 +175,7 @@ with sync_playwright() as p:
     # v19 (spec test 9): no dodge anywhere: no Dodge row in the designer, no dodge field in a design or an encoded army
     check(page.locator('#ue-dodge').count() == 0 and 'dodge' not in page.inner_text('#roster').lower(), 'the designer has no Dodge slider')
     enc = page.evaluate('() => window.siegeline.encodeArmy(window.siegeline.state.designs)')
-    check(all(len(a) == 11 for a in enc) and S(page, 'S.designs.every(d => !("dodge" in d))'), f'an encoded army has no dodge slot (11 fields: {enc[0]})')
+    check(all(len(a) == 12 for a in enc) and S(page, 'S.designs.every(d => !("dodge" in d))'), f'an encoded army has no dodge slot (12 fields since v34, the Prospector flag last: {enc[0]})')
     for k, v in (('hp', 2), ('speed', 5), ('armor', 0)): set_slider(page, f'#ue-{k}', v)
     check(S(page, '[S.designs[1].hp, S.designs[1].speed, S.designs[1].armor, S.designs[1].regen, S.designs[1].resist].join()') == '2,5,0,0,none' and page.inner_text('#ue-price') == '16',
           f'the Ghost, Health 112 and Speed 1.9 and nothing else, costs 16 ({page.inner_text("#ue-price")})')
@@ -2492,7 +2492,7 @@ with sync_playwright() as p:
     # the clock's last 30 seconds: it grows and turns red, and the last 10 count down over the board too
     ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
     page.on('pageerror', lambda e: errors.append(str(e)))
-    page.goto('file://' + HARNESS); page.wait_for_timeout(400); page.evaluate('() => { const r = window.siegeline.rules; r.roughShare = 0; r.rockShare = 0; r.starterPresses = 0; r.planSecsFirst = 33; r.fixedGates = true; }')
+    page.goto('file://' + HARNESS); page.wait_for_timeout(400); page.evaluate('() => { const r = window.siegeline.rules; r.roughShare = 0; r.rockShare = 0; r.starterPresses = 0; r.crystalSites = 0; r.planSecsFirst = 33; r.fixedGates = true; }')
     page.click('#info-go'); page.click('#mode-local'); page.wait_for_timeout(500); hand(page)
     fs0 = page.evaluate("() => parseFloat(getComputedStyle(document.querySelector('#t-clock')).fontSize)")
     check('low' not in (page.get_attribute('#clockbox', 'class') or '') and page.is_hidden('#clockbig'), 'with 33 s left the clock is its usual size')
@@ -2770,6 +2770,140 @@ with sync_playwright() as p:
         u = page.evaluate('() => { const S = window.siegeline.state, u = S.units.find(u => !u.design.sap); return u ? [u.max, window.siegeline.US.hp.steps[u.design.hp]] : null; }')
         check(u and abs(u[0] - u[1] * mult) < 1e-6, f'v33.2: with sabotage {"on" if sabo else "off"} units march with ×{mult:.2f} their slider health ({u})')
     check(not errors, f'v33.2: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v34: the economy (Advanced mode): modes, crystal sites, Mines, Prospectors, interest, the Bet
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+    E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
+    page.click('#info-go')
+    labels = page.locator('#mode-sabo button').all_inner_texts()
+    check(labels == ['Simple', 'Advanced'] and 'Mode' in page.inner_text('.st-set'), f'v34 test 1: the start screen offers Mode: Simple or Advanced ({labels})')
+    # test 2: sites, on a map with terrain, the starter maze and moving gates
+    page.evaluate('() => { const R = window.siegeline.rules; R.planSecs = 0; }')
+    page.click('#mode-local'); hand(page); hints_off(page)
+    sites = E('sl.eco.sites()')
+    gates = E('[S.gates[0] * 16, S.gates[1] * 16 + 15]')
+    cheb = lambda a, b: max(abs(a % 16 - b % 16), abs(a // 16 - b // 16))
+    check(E('sl.eco.on()') and len(sites) == 5 and all(min(cheb(i, g) for g in gates) >= 2 for i in sites) and all(cheb(a, b2) >= 3 for a in sites for b2 in sites if a != b2),
+          f'v34 test 2: Advanced: 5 crystal sites, 2+ cells from the gates and 3+ from each other ({sites})')
+    seed = E('S.mapSeed')
+    check(E(f'JSON.stringify(sl.eco.placeSites({seed}).cells) === JSON.stringify(sl.eco.placeSites({seed}).cells)'), 'v34 test 2: the same seed places the same sites')
+    check(E('sl.eco.sites().every(i => !S.grid[i])'), 'v34 test 2: the starter maze never walls a crystal site')
+    ok_off = all(E(f'(() => {{ const p = sl.eco.placeSites({k * 7919}); return p.n; }})()') >= 3 for k in range(1, 20))
+    check(ok_off, 'v34 test 2: 20 more seeds each place their sites')
+    ctx.close()
+
+    # fixed scenario: no terrain, no starter, the middle row, two sites placed by hand
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    A, B = idx(6, 4), idx(9, 4)  # A: above the straight route on row 5 (1 side); B: a site the tower tool is refused on
+    E(f'(() => {{ S.terrain[{A}] = 3; S.terrain[{B}] = 3; sl.refresh && sl.refresh(); return 0; }})()')
+    page.click('[data-tool=tower]'); click_cell(page, 9, 4); page.wait_for_timeout(80)
+    check(E(f'!S.grid[{B}]') and 'Crystal site' in toast(page), f'v34 test 2: a tower is refused on a crystal site ({toast(page)!r})')
+    page.click('[data-tool=wall]'); d0 = E('S.dFree'); click_cell(page, 6, 4); page.wait_for_timeout(60)
+    check(E(f'sl.eco.isMine({A})') and d0 - E('S.dFree') == 45, f'v34 test 4: a wall on a site is a Mine for 5 + 40 ({d0 - E("S.dFree")})')
+    check(E(f'sl.eco.wallBack({A})') == 45, 'v34 test 5: removed the round it was built, a Mine refunds everything (45)')
+    # test 3: exposure 0-4 gives 0, 5, 10, 15, 20 (the route set by hand round a free cell)
+    X = idx(3, 8)
+    exp = E(f'(() => {{ const was = S.path, nb = [{X} - 1, {X} + 1, {X} - 16, {X} + 16], out = []; for (let k = 0; k <= 4; k++) {{ S.path = nb.slice(0, k); out.push(sl.eco.exposure({X}) * sl.rules.mineIncome); }} S.path = was; return out; }})()')
+    check(exp == [0, 5, 10, 15, 20], f'v34 test 3: 0-4 sides on the route earn 0, 5, 10, 15, 20 ({exp})')
+    # round 1: the attacker sends Prospector Runners; the new Mine earns nothing yet
+    page.click('#def-lock'); hand(page)
+    page.click('.urow[data-i="0"]'); page.wait_for_timeout(80)
+    page.click('#ue [data-prosp]'); page.wait_for_timeout(40)
+    pc = E('sl.eco.unitCost(S.designs[0])')
+    check(E('S.designs[0].prosp') and pc == round(20 * 1.3), f'v34 test 5 (Prospector): the toggle prices ×1.3 ({pc})')
+    for _ in range(4): page.click('.step.plus[data-i="0"]')
+    page.click('#atk-lock')
+    if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+    hand(page)
+    check(E('sl.eco.mines().length') == 0, 'v34 test 4: a Mine built this round earns nothing in this wave')
+    page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    L = E('S.last')
+    check(abs(L['X'] - 4 * pc * 0.5) < 1e-9 and abs(L['Y'] - L['X']) < 1e-6, f'v34 test 8: Prospectors count half in army strength and deal half keep damage (X {L["X"]}, Y {L["Y"]})')
+    check(L['dInt'] == min(100, int(0.15 * L['dLeft'])) and L['aInt'] == min(100, int(0.15 * L['aLeft'])), f'v34 test 10: Advanced pays interest, 15% up to 100 ({L["dInt"]}, {L["aInt"]})')
+    check(L['aProsp'] == round(L['trickle']) and L['trickle'] > 0, f'v34: the Prospectors earned their trickle ({L["trickle"]:.1f})')
+    page.click('#sum-next'); hand(page)
+    check(E(f'sl.eco.wallBack({A})') == 5, 'v34 test 5: from the next round a Mine refunds only its wall')
+    page.click('#def-lock'); hand(page); page.click('#atk-lock')
+    if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+    hand(page)
+    m = E('sl.eco.mines()')
+    check(len(m) == 1 and m[0]['inc'] == 5, f'v34 test 4: the next wave it holds 5 a side touching the route ({m})')
+    page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    L = E('S.last')
+    check(abs(L['loot'] - 5) < 1e-9 and L['dMine'] == 0 and L['aProsp'] == round(L['trickle'] + L['loot']), f'v34 test 6: the first Prospector loots the Mine (20% of {pc} = {0.2 * pc:.1f}, capped at the 5 it holds; dMine {L["dMine"]})')
+    # test 6: the doc's worked example and scraping, on a Mine set up by hand
+    seq = E(f'(() => {{ S.wave.mines = new Map([[{X}, {{ exp: 3, inc: 15, store: 15, loot: 0, scrape: 0, gone: false }}]]); const d = {{ hp: 2, speed: 6, armor: 0, regen: 0, resist: "none", prosp: true }}; return [sl.eco.touch(d, {X} + 1, 50), sl.eco.touch(d, {X} + 1, 50), sl.eco.touch(d, {X} + 1, 50)]; }})()')
+    check(seq == [10, 5, 0], f'v34 test 6: a 15-coin Mine and 50-coin Prospectors: 10, 5, 0 ({seq})')
+    once = E(f'(() => {{ S.wave.mines = new Map([[{X}, {{ exp: 3, inc: 15, store: 15, loot: 0, scrape: 0, gone: false }}]]); return sl.eco.touch({{ hp: 2, speed: 6, armor: 0, regen: 0, resist: "none", prosp: true }}, {X} + 1, 50, 3); }})()')
+    scr = E(f'(() => {{ S.wave.mines = new Map([[{X}, {{ exp: 3, inc: 15, store: 15, loot: 0, scrape: 0, gone: false }}]]); S.wave.scrape = 0; return [sl.eco.touch({{ hp: 2, speed: 6, armor: 0, regen: 0, resist: "none" }}, {X} + 1, 50, 3), S.wave.mines.get({X}).store]; }})()')
+    check(once == 10 and abs(scr[0] - 0.5) < 1e-9 and abs(scr[1] - 14.5) < 1e-9, f'v34 test 6: once per unit per Mine a wave (Prospector {once}); an ordinary unit scrapes 1% ({scr})')
+    tr = E('(() => { const d = { hp: 2, speed: 6, armor: 0, regen: 0, resist: "none", prosp: true }; return [sl.eco.trickleAt(d, 3, 100), sl.eco.trickleAt(d, 20, 100)]; })()')
+    check(abs(tr[0] - 6) < 1e-9 and abs(tr[1] - 30) < 1e-9, f'v34 test 7: a Prospector worth 100 earns 6 alive 3 s (2% a second) and the 30% cap alive 20 s ({tr})')
+    # test 11: the Bet's arithmetic
+    inc = E('[sl.eco.income({ bds: 20, bdk: 0, bas: 30, bak: 2 }, 0.05), sl.eco.income({ bds: 20, bdk: 0, bas: 30, bak: 2 }, 0.5), sl.eco.income({ bds: 20, bdk: 1, bas: 0, bak: -1 }, 0.25)].map(x => [x.dBetNet, x.aBetNet, x.dBet, x.aBet])')
+    check(inc == [[20, -30, 40, 0], [-20, 30, 0, 60], [20, 0, 40, 0]], f'v34 test 11: a right bet wins its stake, a wrong one loses it ({inc})')
+    ctx.close()
+
+    # the Bet panel: the cap follows what's committed, the panel at 390 px, hidden from the other side
+    for vw in (1366, 390):
+        ctx = b.new_context(viewport={'width': vw, 'height': 860 if vw > 400 else 844})
+        page = ctx.new_page(); errors = []
+        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+        E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
+        page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+        for r in range(0, 10): click_cell(page, 7, r)
+        head = page.inner_text('#def-bet')
+        check('Bet on this wave' in head and page.locator('#def-bet .bet-picks').count() == 0, f'v34 test 14 ({vw}px): the Bet panel starts as one line ({head!r})')
+        page.click('#def-bet [data-bet=toggle]')
+        txt = page.inner_text('#def-bet')
+        check(all(t in txt for t in ['Low', 'Medium', 'High', 'Under 10% gets through', '10–40% gets through', 'Over 40% gets through', 'Up to 5 (10% of your defense)', 'hidden from your opponent']),
+              f'v34 test 14 ({vw}px): the panel shows the three bands from RULES and the cap (10% of the 50 coins of walls)')
+        page.click('#def-bet [data-k="2"]'); page.click('#def-bet [data-bet=max]')
+        check('Right: +5 · Wrong: −5' in page.inner_text('#def-bet'), f'v34 test 14 ({vw}px): the outcome line follows the pick and stake')
+        fit = page.evaluate("() => { const b = document.querySelector('#def-bet'); return b.scrollWidth <= b.clientWidth + 1 && b.getBoundingClientRect().right <= innerWidth + 1; }")
+        check(fit, f'v34 test 14 ({vw}px): the panel fits without sideways scroll')
+        page.click('#def-lock'); hand(page)
+        check('High' not in page.inner_text('#atk-bet') and 'Bet on this wave' in page.inner_text('#atk-bet'), f'v34 test 11 ({vw}px): the attacker never sees the defender’s bet')
+        if vw > 400:
+            for _ in range(5): page.click('.step.plus[data-i="0"]')
+            cap = E('sl.eco.betCap("a")'); page.click('.step.zero[data-i="0"]'); cap2 = E('sl.eco.betCap("a")')
+            check(cap == 10 and cap2 == 0, f'v34 test 11: the attacker’s cap is 10% of the army it sends; selling it lowers the cap ({cap} → {cap2})')
+            for _ in range(5): page.click('.step.plus[data-i="0"]')
+            page.click('#atk-lock')
+            if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+            hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+            L = E('S.last')
+            right = L['breach'] >= 0.4
+            check(L['bds'] == 5 and L['dBetNet'] == (5 if right else -5) and ('Bet High' in page.inner_text('#ov-sum')), f'v34 test 11: the defender’s High bet settles and shows in the summary ({L["breach"]:.2f} through, {L["dBetNet"]})')
+        check(not errors, f'v34 Bet panel ({vw}px): no errors {errors[:3]}')
+        ctx.close()
+
+    # Simple: no sites, no interest, units +15% health
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860})
+    page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+    E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
+    page.evaluate('() => { window.siegeline.rules.planSecs = 0; }')
+    page.click('#info-go'); page.click('#mode-sabo [data-sabo="0"]'); page.click('#mode-local'); hand(page); hints_off(page)
+    check(not E('sl.eco.on()') and E('sl.eco.sites().length') == 0 and page.locator('#def-bet').is_hidden(), 'v34 test 1: Simple has no economy: no sites, no Bet')
+    page.click('#def-lock'); hand(page)
+    check(page.locator('#ue [data-prosp]').count() == 0, 'v34 test 1: Simple has no Prospector toggle')
+    page.click('#atk-lock')
+    if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+    hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
+    check(E('S.last.dInt') == 0 and E('S.last.aInt') == 0 and E('S.wave.dLeft') > 0, 'v34 test 10: Simple pays no interest')
+    check(not errors, f'v34 Simple: no errors {errors[:3]}')
     ctx.close()
     b.close()
 

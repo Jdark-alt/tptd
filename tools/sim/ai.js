@@ -91,7 +91,7 @@
       const r = I.brainPlan('def', opt.game, seed), p = r.plan;
       S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; if (p.mt != null) S.totals.moveTries = p.mt; S.mvFee = p.mf || 0; I.recompute(); // v23: the fees go to the attacker
       if ([...S.bridges].some(i => S.grid[i])) throw new Error('game defender built on a bridge');
-      if (p.g.w.concat(p.g.f, p.g.t.map(a => a[0])).some(i => S.terrain[i])) throw new Error('game defender built on rough ground or rock');
+      if (p.g.w.concat(p.g.f).some(i => S.terrain[i] && S.terrain[i] !== I.SITE) || p.g.t.some(a => S.terrain[a[0]])) throw new Error('game defender built on rough ground, rock or (a tower) a crystal site'); // v34: walls on sites are Mines
       if (!S.path) throw new Error('game defender blocked the path');
       return r.info ? r.info.response : '';
     }
@@ -99,6 +99,8 @@
     // are (v33: crowding included; v32 and earlier: the offline towers keep the smallest build fees, sellOff)
     const sold = I.keepFees ? I.sellOff(S.grid) : null, before = layoutCost(S.grid); // keepFees: a build from before v33
     let worth = S.dFree + (sold ? sold.back : 0);
+    // v34: Mines it keeps (built in an earlier round) cost only their wall again when it rebuilds them
+    const oldMines = new Set(); for (let i = 0; i < N; i++) if (S.grid[i] && S.grid[i].t === 'wall' && S.terrain[i] === I.SITE && S.seenGrid[i] && S.seenGrid[i].t === 'wall') oldMines.add(i);
     for (let i = 0; i < N; i++) {
       const g = S.grid[i]; if (!g || g.t === 'rock') continue;
       if (g.t === 'tower' && g.off > 0) continue;
@@ -144,7 +146,7 @@
         cells.forEach(addWall);
       } else if (kind === 'block') {
         // holes in its columns: bridges and rough ground (rock in a column already blocks)
-        const holes = new Set([...S.bridges, ...WCOLS.flatMap((c, k) => colCells(k)).filter(i => S.terrain[i] === I.ROUGH)]);
+        const holes = new Set([...S.bridges, ...WCOLS.flatMap((c, k) => colCells(k)).filter(i => S.terrain[i] === I.ROUGH || S.terrain[i] === I.SITE)]); // v34: sites too
         if (opt.style === 'counter' && holes.size) for (const i of I.blockBridges(S.grid, holes, S.bridges)) { const w = worth; addWall(i); if (worth < w && S.bridges.size) blocked++; }
       } else {
         if (placed >= 4) while (upgradeStep(S, () => worth, v => { worth -= v; }, towers)) { /* upgrade first */ }
@@ -153,6 +155,17 @@
         if (ok === 'skip') continue;
         if (!ok) break;
         placed++;
+      }
+    }
+    // v34, opt.miner: a Mine on every crystal site beside its route (off the route), while it can pay
+    if (opt.miner && I.ecoOn(S.sabo) && S.round < S.rounds) {
+      I.recompute(); const on = new Set(S.path || []);
+      for (let i = 0; i < N; i++) {
+        if (S.terrain[i] !== I.SITE || S.grid[i] || on.has(i)) continue;
+        const e = [i - 1, i + 1, i - COLS, i + COLS].filter(j => j >= 0 && j < N && Math.abs((j % COLS) - (i % COLS)) <= 1 && on.has(j)).length;
+        const cost = I.RULES.wall + (oldMines.has(i) ? 0 : I.RULES.mineCost);
+        if (!e || worth < cost) continue;
+        S.grid[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= cost;
       }
     }
     while (upgradeStep(S, () => worth, v => { worth -= v; }, towers, true)) { /* spend the rest */ }
@@ -246,8 +259,9 @@
     const key = pickArmy(S, opt);
     const spec = key === 'custom' ? opt.armySpec : ARMIES[key];
     if (!spec) throw new Error('unknown army ' + key);
-    S.designs = spec.map(([p, , s, e], k) => { const d = makeDesign(p, k); d.tl = { s, e, pos: null }; return d; });
+    S.designs = spec.map(([p, , s, e], k) => { const d = makeDesign(p, k); d.tl = { s, e, pos: null }; if (opt.prosp && I.ecoOn(S.sabo)) d.prosp = true; return d; }); // v34: opt.prosp
     let left = worth;
+    if (opt.bank && S.round <= opt.bank) { S.designs.forEach(d => { d.count = 0; }); S.aFree = worth; S.charges = new Map(); return key + ' (banked)'; } // v34: no units for the first opt.bank waves
     S.designs.forEach((d, k) => { d.count = Math.floor(worth * spec[k][1] / I.unitCost(d)); left -= d.count * I.unitCost(d); });
     const last = S.designs[S.designs.length - 1]; // spend leftovers on the last design so coins aren't wasted
     if (last && spec.length > 1) { const extra = Math.floor(left / I.unitCost(last)); last.count += extra; left -= extra * I.unitCost(last); }
@@ -276,14 +290,17 @@
       window.siegeline.advance(900);
       const W = S.wave, saps = { sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed, mf: W.mf || 0, dLeft: W.dLeft || 0, aLeft: W.aLeft || 0, cuts: W.cuts || [] }; // cuts (v33): each landed bridge's share of the route skipped
       // v23: what the wave paid besides the pot (S.last has it once the wave ended without the keep falling)
-      if (S.last && S.last.dTot != null && !(S.over && S.winner === 'attacker')) Object.assign(saps, { aMove: S.last.aMove, dKill: S.last.dKill, dInt: S.last.dInt, aInt: S.last.aInt, dGain: S.last.dGain, aGain: S.last.aGain });
+      if (S.last && S.last.dTot != null && !(S.over && S.winner === 'attacker')) Object.assign(saps, { aMove: S.last.aMove, dKill: S.last.dKill, dInt: S.last.dInt, aInt: S.last.aInt, dGain: S.last.dGain, aGain: S.last.aGain,
+        dMine: S.last.dMine, dBounty: S.last.dBounty, aProsp: S.last.aProsp, aScrape: S.last.aScrape, dBetNet: S.last.dBetNet, aBetNet: S.last.aBetNet, dTot: S.last.dTot, aTot: S.last.aTot });
+      // v34: the economy's raw tallies (also when the keep fell)
+      Object.assign(saps, { mineN: W.mineN || 0, mineInc: W.mineInc || 0, loot: W.loot || 0, scrape: W.scrape || 0, trickle: W.trickle || 0, bounty: W.bounty || 0, prospN: W.prospN || 0, prospDied: W.prospDied || 0, bdk: W.bdk, bds: W.bds || 0, bak: W.bak, bas: W.bas || 0, sites: S.terrain.reduce((n, v) => n + (v === I.SITE ? 1 : 0), 0) });
       // the towers of this wave's defense and their effects, for "how often did towers take Frost, Chain, Splash"
       saps.spread = spread(S);
       const TW = S.grid.filter(g => g && g.t === 'tower'); saps.fx = { towers: TW.length, slow: TW.filter(g => g.cfg.slow).length, chain: TW.filter(g => g.cfg.chain).length, splash: TW.filter(g => g.cfg.splash > 0).length, poison: TW.filter(g => g.cfg.poison).length };
       if (S.over && S.winner === 'attacker') { log.push({ r: S.round, army, X: W.x, Y: Math.round(W.y), keep: 0, bridges: W.bridges, jammed: W.jammed, ...saps, response }); return { winner: 'attacker', round: S.round, keep: 0, log, starter }; }
       const L = S.last;
       log.push({ r: S.round, army, X: L.X, Y: Math.round(L.Y), breach: Math.round(L.breach * 100), keep: Math.round(S.keep),
-        defWorth: Math.round(S.dFree + wallsOf(S.grid) * I.RULES.wall + layoutCost(S.grid)),
+        defWorth: Math.round(S.dFree + wallsOf(S.grid) * I.RULES.wall + layoutCost(S.grid) + S.grid.reduce((n, g, i) => n + (g && g.t === 'wall' && S.terrain[i] === I.SITE ? I.RULES.mineCost : 0), 0)),
         atkWorth: S.aFree + S.designs.reduce((v, d) => v + d.count * I.unitCost(d), 0), charges: L.charges, bridges: L.bridges, missed: L.missed, jammed: L.jammed,
         onMap: S.bridges.size, ...saps, response });
       if (S.over) return { winner: S.winner, round: S.round, keep: Math.round(S.keep), log, starter };

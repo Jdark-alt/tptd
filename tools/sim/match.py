@@ -38,10 +38,14 @@ ATTACKERS = {  # name -> attacker options for ai.js
     'alternate + bridges & towers': {'army': 'alternate', 'charges': 'both', 'chargeShare': 0.3},
     # always lays a bridge when one shortens the route (counter-picks above is the same army that never does)
     'always bridge': {'army': 'counter', 'charges': 'bridges', 'chargeShare': 1},
+    # v34: the economy (Advanced): Prospectors on every design, no units for the first two waves, both
+    'prospect': {'army': 'counter', 'prosp': True},
+    'bank': {'army': 'counter', 'bank': 2},
+    'bank+prospect': {'army': 'counter', 'bank': 2, 'prosp': True},
     # the game's own computer attacker (Versus computer), not run unless named: --attackers computer
     'computer easy': {'game': 'easy'}, 'computer normal': {'game': 'normal'}, 'computer hard': {'game': 'hard'},
 }
-DEFENDERS = {'counter': {'style': 'counter'}, 'basic': {'style': 'basic'},
+DEFENDERS = {'counter': {'style': 'counter'}, 'miner': {'style': 'counter', 'miner': True}, 'basic': {'style': 'basic'},
              'game:easy': {'game': 'easy'}, 'game:normal': {'game': 'normal'}, 'game:hard': {'game': 'hard'}}
 # The game's current charge rules, applied to every attacker unless --opts overrides them.
 GAME_RULES_OPTS = {'cap': True, 'noLastCharges': True}

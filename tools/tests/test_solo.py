@@ -35,8 +35,8 @@ def text(page, sel): return page.evaluate(f'() => document.querySelector("{sel}"
 PLAN = 'JSON.stringify(SOLO.plan)'
 LIVE = 'JSON.stringify([S.grid.map(g => g && [g.t, g.cfg, g.off, g.fresh]), S.designs, S.dFree, S.aFree, S.charges.size, S.path && S.path.length, S.keep, S.round, S.phase])'
 # v33: the towers are worth their layout cost (their prices and the crowding between them)
-DWORTH = 'S.dFree + S.grid.reduce((v, g) => v + (g && g.t === "wall" ? 5 : 0), 0) + window.siegeline.crowd.layout()'
-AWORTH = 'S.aFree + S.designs.reduce((v, d) => v + d.count * window.siegeline.unitCost(d), 0) + [...S.charges.values()].reduce((v, c) => v + c.cost, 0)'
+DWORTH = 'S.dFree + S.grid.reduce((v, g, i) => v + (g && g.t === "wall" ? window.siegeline.eco.wallPrice(i) : 0), 0) + window.siegeline.crowd.layout() + (S.wave && S.wave.bds || 0)'  # v34: Mines at their price, a Bet's stake (taken when the wave starts)
+AWORTH = 'S.aFree + S.designs.reduce((v, d) => v + d.count * window.siegeline.unitCost(d), 0) + [...S.charges.values()].reduce((v, c) => v + c.cost, 0) + (S.wave && S.wave.bas || 0)'
 # sabotage on the live wave: all on cells the attacker saw (bridges on walls, knock-outs on towers), within the bridge
 # cap and the tower value cap (one tower always fits), each sapper leaving within the wave and each bridge with its tile
 CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].t === (c.kind === "bridge" ? "wall" : c.kind))
@@ -48,7 +48,7 @@ CHARGES_OK = '''[...S.charges].every(([i, c]) => S.seenGrid[i] && S.seenGrid[i].
 TERRAIN_OK = 'S.grid.every((g, i) => S.terrain[i] === 2 ? !!(g && g.t === "rock") : S.terrain[i] === 1 ? !g : !(g && g.t === "rock"))'
 def terrain(page, on):
     """Terrain and the starter maze (v21) together: the fixed scenarios click known cells on an empty board."""
-    page.evaluate(f'() => {{ const R = window.siegeline.rules; R.roughShare = R.rockShare = {0.05 if on else 0}; R.starterPresses = {3 if on else 0}; R.fixedGates = {'false' if on else 'true'}; }}')
+    page.evaluate(f'() => {{ const R = window.siegeline.rules; R.roughShare = R.rockShare = {0.05 if on else 0}; R.starterPresses = {3 if on else 0}; R.crystalSites = {5 if on else 0}; R.fixedGates = {'false' if on else 'true'}; }}')
 def details(page, ov='#ov-sum'):
     """Open the summary's Details (closed by default since v21): the computer's note is in there."""
     t = page.locator(f'{ov} [data-act=details]')

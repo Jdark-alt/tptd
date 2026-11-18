@@ -249,6 +249,21 @@ img.art{-webkit-user-drag:none;user-select:none;pointer-events:none}
 .legend img{width:42px;height:42px}
 .legend figcaption{font:500 9.5px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--soft);text-align:center}
 .callout2.locked{background:var(--slate);border-color:var(--line);border-left-color:var(--line-2)}
+.betbox{margin:0 0 8px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.015)}
+.bet-head{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;background:none;border:0;color:var(--muted);font:500 12px/1.2 var(--f-body);cursor:pointer;text-align:left}
+.bet-head i{font-style:normal;opacity:.7}
+.bet-body{padding:0 10px 8px;display:flex;flex-direction:column;gap:6px}
+.bet-body p{margin:0;font:400 12px/1.35 var(--f-body);color:var(--muted)}
+.bet-note{display:flex;gap:6px;align-items:center;color:#ffe6a8!important}.bet-note button{background:none;border:0;color:inherit;cursor:pointer;font-size:14px;padding:0 4px}
+.bet-picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.bet-picks button{display:flex;flex-direction:column;gap:2px;padding:6px 6px;border-radius:5px;border:1px solid #2f3945;background:#17202a;color:var(--text,#dfe7ee);cursor:pointer;text-align:left;min-width:0}
+.bet-picks b{font:600 12px/1.1 var(--f-body)}.bet-picks small{font:400 10.5px/1.2 var(--f-body);color:var(--muted)}
+.bet-picks button[aria-pressed="true"]{border-color:var(--side);box-shadow:inset 0 0 0 1px var(--side)}
+.bet-stake{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bet-stake button{min-width:28px;height:26px;border-radius:5px;border:1px solid #2f3945;background:#17202a;color:var(--text,#dfe7ee);cursor:pointer;font:500 12px/1 var(--f-body)}
+.bet-stake b{min-width:34px;text-align:center;font:600 14px/1 var(--f-ui)}.bet-stake span{font:400 11px/1.2 var(--f-body);color:var(--muted)}
+.bet-out{color:#ffe6a8!important}
+.btext .bank{color:var(--muted);text-transform:none;letter-spacing:0}
 .sabo-lead{margin:0;font:400 13px/1.45 var(--f-body);color:var(--muted)}
 .sabo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .sopt{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);cursor:pointer;text-align:left;min-width:0;transition:border-color .15s,background .15s}
@@ -1356,23 +1371,25 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 
     <aside id="panel">
       <section class="pane" id="pane-def" hidden>
-        <div class="budget" id="d-budget"><span class="bfree" id="d-fbox"><b id="d-free">300</b></span><div class="bright"><span class="btext">Coins left</span><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div></div>
+        <div class="budget" id="d-budget"><span class="bfree" id="d-fbox"><b id="d-free">300</b></span><div class="bright"><span class="btext">Coins left<span class="bank" id="d-bank" hidden></span></span><div class="bbar"><i class="s0" id="d-s0"></i><i class="s1" id="d-s1"></i><i class="s2" id="d-s2"></i></div></div></div>
         <div class="testcard" id="d-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="def-body"></div>
           <div class="ctx" id="def-ctx"></div>
         </div>
+        <div class="betbox" id="def-bet" hidden></div>
         <div class="navrow"><button class="back" id="def-test" hidden data-tip="Play last wave’s army against this build at high speed. Nothing in the match changes.">Test</button><button class="ready def" id="def-lock">Lock in</button></div>
       </section>
 
       <section class="pane" id="pane-atk" hidden>
         <nav class="steps" id="atk-steps" aria-label="Attacker steps"></nav>
-        <div class="budget" id="a-budget"><span class="bfree" id="a-fbox"><b id="a-free">300</b></span><div class="bright"><span class="btext">Coins left</span><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div></div>
+        <div class="budget" id="a-budget"><span class="bfree" id="a-fbox"><b id="a-free">300</b></span><div class="bright"><span class="btext">Coins left<span class="bank" id="a-bank" hidden></span></span><div class="bbar"><i class="s0" id="a-s0"></i><i class="s1" id="a-s1"></i><i class="s2" id="a-s2"></i></div></div></div>
         <div class="testcard" id="a-test" role="status" hidden></div>
         <div class="scroll">
           <div class="browse" id="atk-body"></div>
           <div class="ctx" id="atk-ctx"></div>
         </div>
+        <div class="betbox" id="atk-bet" hidden></div>
         <div class="navrow"><button class="back" id="atk-test" hidden data-tip="Play your wave, sappers included, against the defense as you last saw it. Nothing in the match changes.">Test</button><button class="back" id="atk-lock">Lock in</button><button class="ready atk" id="atk-next">Next</button></div>
       </section>
 
@@ -1410,7 +1427,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v33.2</p>
+        <p class="tagline">Two Player Tower Defence · v34</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1437,9 +1454,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
           <li><strong>Defender, in secret.</strong> Every match starts with a free <strong>starter maze</strong>: ordinary walls you can keep, change or sell for 5 each. Walls bend the route, towers shoot it. Tap a tower to tune it. From round 2, <strong>Test</strong> plays last wave’s army against your build. <strong>Lock in.</strong></li>
           <li><strong>Attacker, in secret.</strong> Army: pick units. Sabotage, from round 2: walls to bridge and towers to knock out, each carried by a sapper. Wave: time units and sappers, with a forecast of the wave against the defense you saw. <strong>Lock in</strong> from any step.</li>
           <li><strong>The wave.</strong> Everything is revealed and plays out; the pot meter in the bar shows how the pot would split if the wave ended now. Tap a unit or tower to inspect it, and replay the wave from the summary.</li>
-          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> Both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, at most <span data-rule="interestMax">150</span> a wave (reached with <span id="info-intmax">1,000</span> saved). The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
+          <li><strong>The split.</strong> Each round adds a pot, and the side that got the worse of the wave gets the bigger share: the more gets through, the more the defender takes. <span id="info-pay"></span> In <strong>Advanced</strong> mode both sides also earn <strong>interest</strong>: <span data-rule="interestRate%">15</span>% of the coins left unspent when the wave starts, at most <span data-rule="interestMax">150</span> a wave (reached with <span id="info-intmax">1,000</span> saved). The attacker gets the defender’s move fees, and the defender the price of every sapper it shoots down.</li>
         </ol>
-        <p>Pick how many waves the match lasts, whether there’s <strong>sabotage</strong>, and whether rounds are timed on the start screen (online, the host’s picks count). With sabotage off there are no bridges or knock-outs: the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price, and moving towers costs nothing. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
+        <p>Pick how many waves the match lasts, the <strong>mode</strong>, and whether rounds are timed on the start screen (online, the host’s picks count). <strong>Advanced</strong> has sabotage and the economy (crystal sites, Mines, Prospectors, interest and the Bet). <strong>Simple</strong> has neither: there are no bridges or knock-outs, no interest, the army has to break the defense on its own, so units get <span id="info-nosab">more health</span>, at the same price, and moving towers costs nothing. With <strong>timed rounds</strong> each side has <span data-rule="planSecs:min">5</span> minutes to plan each round, and when the clock runs out the plan goes as it stands; <strong>Untimed</strong> has no clock.</p>
         <p><strong>Online.</strong> One player hosts a room and shares its code (or the invite link); a friend joins and sits in the free seat, and the host starts the match. The host’s settings are the match’s. Anyone with the <strong>watch link</strong> can watch, before or during a match: up to 8 watchers. They see what the attacker sees between waves, and each wave once both sides have locked in, never a plan before. The eye in the top bar shows how many are watching and copies the link.</p>
       </section>
 
@@ -1534,7 +1551,16 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <p><strong>Bridge.</strong> Goes on a wall you’ve seen beside the route you saw, or beside one of your bridges. Its sapper lays it on reaching the marked tile beside the wall: the wall’s coins go back to the defender and the cell is open ground for the rest of the match; nobody can build there again. If the route no longer passes that tile, or a tower stands where the wall was, it misses. When it lands everyone, sappers included, takes the cheapest route counting only the towers firing then, so a tower you’ve already knocked out doesn’t keep units off it; if the route over it is still under more fire, units won’t take it, and the Sabotage step warns you. From <span data-rule="bridgeBase">25</span> coins, at most <span data-rule="bridgesPerWave">1</span> a wave.</p>
         <p><strong>Knock-out.</strong> Goes on a tower you’ve seen; tap it for its card, its price and the knock-out cap. Its sapper stops it shooting for the rest of the wave the moment it walks into the tower’s range; units keep their route (only a bridge landing changes it). It hits the spot: a tower moved away is safe. It costs <span data-rule="towerOffBase">15</span> plus <span data-rule="towerOffShare%">20</span>% of the tower’s slider price (its tuning, not its build fee), and the towers you target in one wave can add up to <span data-rule="towerCapShare%">50</span>% of the slider prices of all the towers you saw; one tower always fits.</p>
         <p>Each bridge costs <span data-rule="bridgeRise%">25</span>% of its base more for every bridge you sent in earlier waves, and each knock-out <span data-rule="towerOffRise%">25</span>% more for every earlier knock-out, landed or not. Targets in the same wave don’t raise each other’s price.</p>
-        <p>No sabotage in the first or the final wave. With <strong>Sabotage off</strong> on the start screen there is none at all: the attacker has no Sabotage step, and units get <span id="info-nosab2">more health</span> for the same price. There’s no move fee either: the defender moves towers free all match.</p>
+        <p>No sabotage in the first or the final wave. In <strong>Simple</strong> mode there is none at all: the attacker has no Sabotage step, and units get <span id="info-nosab2">more health</span> for the same price. There’s no move fee either: the defender moves towers free all match.</p>
+      </section>
+      <section id="info-economy">
+        <h2>Economy (Advanced)</h2>
+        <p>Both sides can earn, and both can take from the other’s earnings. All of it is decided while planning and paid when the wave ends, before the next round.</p>
+        <p><strong>Crystal sites.</strong> <span data-rule="crystalSites">5</span> gold tiles on every map, the same for both sides. Units walk over them. Only a wall can go on one, and it becomes a <strong>Mine</strong>; Auto-maze leaves them alone.</p>
+        <p><strong>Mines.</strong> A wall on a site, for <span data-rule="wall">5</span> + <span data-rule="mineCost">40</span> coins. Each wave it earns <span data-rule="mineIncome">5</span> for each side (up, down, left, right) touching the route, so 0–20, starting the wave after you build it (the attacker sees it first). Removed in the round it was built, it refunds everything; after that, only the wall. Every unit walking past a side scrapes <span data-rule="mineScrape%">1</span>% of its price from it; a Prospector steals <span data-rule="prospLoot%">20</span>%. You keep what’s left. A bridged Mine is gone, but what it held that wave is still yours.</p>
+        <p><strong>Prospectors.</strong> A toggle on a unit design: ×<span data-rule="prospMult">1.3</span> price and <span data-rule="prospKeep%">50</span>% keep damage (and they count half in the army’s strength). Each earns the attacker <span data-rule="prospTrickle%">2</span>% of its price a second on the board, at most <span data-rule="prospTrickleCap%">30</span>% a wave, and steals from every Mine it passes. Shot down, it pays the defender <span data-rule="prospBounty%">10</span>% of its price. It breaks even after about 5 seconds alive. Example: a Mine holding 15 and Prospectors worth 50: the first takes 10, the second 5, the third nothing.</p>
+        <p><strong>Interest.</strong> <span data-rule="interestRate%">15</span>% of the coins you left unspent when the wave started, at most <span data-rule="interestMax">100</span> a wave. Each side sees what the other banked beside its coins: a big bank can mean a big wave coming.</p>
+        <p><strong>The Bet.</strong> Optional, above Lock in. Guess how much of the army gets through: Low (under <span data-rule="betLow%">10</span>%), Medium, or High (<span data-rule="betHigh%">40</span>% or more), and stake up to <span data-rule="betCap%">10</span>% of what you’ve committed (the attacker’s army and sabotage, the defender’s towers, walls and Mines). Right: your stake back and as much again. Wrong: it’s lost. Bets stay hidden until the wave ends.</p>
       </section>
 
       <section>
@@ -1544,8 +1570,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             <thead><tr><th>Rule</th><th>Value</th><th>Note</th></tr></thead>
             <tbody>
               <tr><td>Starting coins</td><td class="n">300 each</td><td>Both sides start equal; the defender also gets the starter maze, free</td></tr>
-              <tr><td>Sabotage</td><td class="n">On / Off</td><td>Picked at the start (online, the host’s pick). Off: no bridges or knock-outs, units <span id="info-nosab3">tougher</span> at the same price, no move fee</td></tr>
-              <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>%, at most <span data-rule="interestMax">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends. It pays at most <span data-rule="interestMax">150</span> a wave, reached with <span id="info-intmax2">1,000</span> saved</td></tr>
+              <tr><td>Mode</td><td class="n">Simple / Advanced</td><td>Picked at the start (online, the host’s pick). Simple: no sabotage, no economy, no interest, units <span id="info-nosab3">tougher</span> at the same price, no move fee. Advanced: everything</td></tr>
+              <tr><td>Interest</td><td class="n"><span data-rule="interestRate%">15</span>%, at most <span data-rule="interestMax">150</span></td><td>Each side, every wave: of the coins it left unspent when the wave started, paid when it ends. It pays at most <span data-rule="interestMax">150</span> a wave, reached with <span id="info-intmax2">1,000</span> saved. Advanced only</td></tr>
               <tr><td>Pot per round</td><td class="n"><span id="info-pot"></span></td><td><span id="info-pot-note"></span></td></tr>
               <tr><td>Keep</td><td class="n"><span data-rule="keepPerRound">125</span> × waves</td><td>Plus <span data-rule="keepShort">25</span> for every wave under <span data-rule="keepShortOf">8</span>. Loses the strength that gets through</td></tr>
               <tr><td>Waves</td><td class="n"><span data-rule="roundChoices:range">4–12</span></td><td>Picked at the start, <span data-rule="rounds">8</span> by default. The defender wins by surviving them</td></tr>
@@ -1565,7 +1591,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v33.2</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v34</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -1611,7 +1637,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <section class="st-set" aria-label="Match settings">
       <div class="sset"><span class="mlbl">Waves</span><span class="mkeep" id="mode-keep"></span><div class="pick waves" id="mode-waves" role="group" aria-label="Waves in the match"></div></div>
       <div class="sset"><span class="mlbl">Clock</span><span class="mkeep" id="mode-clockv"></span><div class="pick clock" id="mode-clock" role="group" aria-label="Planning time per round"><button data-timed="1" aria-pressed="true">Timed</button><button data-timed="0" aria-pressed="false">Untimed</button></div></div>
-      <div class="sset"><span class="mlbl">Sabotage</span><span class="mkeep" id="mode-sabov"></span><div class="pick clock" id="mode-sabo" role="group" aria-label="Sabotage in the match"><button data-sabo="1" aria-pressed="true">On</button><button data-sabo="0" aria-pressed="false">Off</button></div></div>
+      <div class="sset"><span class="mlbl">Mode</span><span class="mkeep" id="mode-sabov"></span><div class="pick clock" id="mode-sabo" role="group" aria-label="Mode: Simple or Advanced"><button data-sabo="0" aria-pressed="false">Simple</button><button data-sabo="1" aria-pressed="true">Advanced</button></div></div>
     </section>
     <div class="st-cards modes" id="mode-cards">
       <article class="mcard" aria-labelledby="mc-solo">
@@ -1667,6 +1693,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   <div class="waitcard">
     <h2 id="wait-title">Locked in</h2>
     <p id="wait-sub" class="dots">Waiting for the attacker</p>
+    <p id="wait-bet" class="bet-out" hidden></p>
     <p class="fine" id="wait-net"></p>
     <button class="ready ghost" id="wait-back">Keep planning</button>
   </div>
@@ -1789,7 +1816,8 @@ const RULES = {
   // what it pays, not the coins it counts (the user: "the 150 should be the cap on the interest amount"), so 1,000 saved
   // earns the most, 150 a wave; v23-v26 counted at most 150 coins (interestCap 150, interestMax 0: at most 22 a wave).
   // 0 means no cap for either (a number, not Infinity, so the rules survive a JSON copy).
-  interestRate: 0.15, interestCap: 0, interestMax: 150,
+  // v34: interest is part of the economy (Advanced only), and pays at most 100 a wave (reached with about 670 banked)
+  interestRate: 0.15, interestCap: 0, interestMax: 100,
   // Tower prices (v23): range is priced by (range ÷ 2.5)^rangePow and damage by (damage ÷ 18)^dpsPow, so the defaults
   // (2.5 cells, 18 a second) stay ×1. v13-v22.2 were 2 and 1.15: low range discounted the whole tower by its square, and
   // stacking damage on one tower cost about as much as spreading it.
@@ -1829,6 +1857,27 @@ const RULES = {
   // corner hairpin in about 7 starter mazes in 10 and a wall passed on both sides along 3-6 cells in 9 in 10, with the
   // starter's route as long as v31's (see CLAUDE.md, "What v32 changed")
   mazeTwin: 0.5, mazeHairpin: 5,
+  // ---- v34: the economy (Advanced mode; the user's "Economy mode" spec, docs/specs/v34-economy.md) ----
+  // The match's mode: Simple is no sabotage and no economy, Advanced both (S.sabo). The economy follows the mode through
+  // ecoAdvanced / ecoSimple, so the sims can run Sabotage-only ({ecoAdvanced: false}) and Economy-only ({sabotage: false,
+  // ecoSimple: true}) without a third mode on screen (ecoOn).
+  ecoAdvanced: true, ecoSimple: false,
+  // crystal sites: this many per map, from the map seed, on open buildable ground at least siteGate cells (Chebyshev) from
+  // either gate and siteGap from each other. Only a wall can stand on one, and it becomes a Mine.
+  crystalSites: 5, siteGate: 2, siteGap: 3,
+  // a Mine costs wall + mineCost and earns mineIncome per side (up, down, left, right) touching the route at wave start,
+  // from the wave after it was built (the attacker sees it first). Each passing unit that isn't a Prospector scrapes
+  // mineScrape of its price from it, once per Mine a wave; the defender keeps what's left when the wave ends.
+  mineCost: 40, mineIncome: 5, mineScrape: 0.01,
+  // a Prospector (a toggle on a design): × prospMult on the price, × prospKeep keep damage (and army strength), earns the
+  // attacker prospTrickle of its price a second on the board (at most prospTrickleCap a wave), loots prospLoot of its
+  // price from each Mine it passes (prospLootMax > 0 caps that in coins), and pays the defender prospBounty of its price
+  // when a tower kills it.
+  prospMult: 1.3, prospKeep: 0.5, prospTrickle: 0.02, prospTrickleCap: 0.3, prospLoot: 0.2, prospLootMax: 0, prospBounty: 0.1,
+  // the Bet: before each wave a side may stake up to betCap of what it has committed (the attacker's army and sabotage,
+  // the defender's towers, walls and Mines) on Low (breach under betLow), Medium, or High (betHigh or more). Right: the
+  // stake back and as much again; wrong: lost. bet: false switches it off.
+  bet: true, betLow: 0.1, betHigh: 0.4, betCap: 0.1,
 };
 // Shapes: pre-made pieces the defender drops into the maze. '#' a wall, 'T' a tower (defaultTower), '.' left open.
 // 5×5 so a U-turn fits with walls on both sides; each leaves openings for the route. Placed pieces are ordinary
@@ -2001,6 +2050,7 @@ function unitParts(d) {
   ];
   for (const k of ['armor', 'regen']) if (d[k]) p.push({ label: k, m: US[k].mult(d[k]) });
   for (const k of resList(d.resist)) p.push({ label: RESIST[k].name.toLowerCase() + ' resist', m: RESIST[k].mult });
+  if (d.prosp && !d.sap) p.push({ label: 'prospector', m: RULES.prospMult }); // v34
   return p;
 }
 // Toughness: what makes a unit hard to kill, its health and how little time it spends in range (v22). Above
@@ -2109,7 +2159,7 @@ const real = () => (replay ? replay.live : S);
 // for the summary's MVP group
 // v23: mf the defender's net move fees this round, sapKillCost what the sappers shot down had cost, dLeft and aLeft each
 // side's free coins when the wave started (interest); all settled in endRound (waveIncome)
-const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, bridges: 0, bridgeRefund: 0, missed: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0, sappers: 0, sapOk: 0, sapLost: 0, sapMissed: 0, misses: 0, mf: 0, sapKillCost: 0, dLeft: 0, aLeft: 0, yBy: [], wBy: [], nBy: [] });
+const blankWave = () => ({ x: 0, y: 0, kills: 0, leaks: 0, bridges: 0, bridgeRefund: 0, missed: 0, charges: 0, chargeCoins: 0, jammed: 0, sent: 0, sappers: 0, sapOk: 0, sapLost: 0, sapMissed: 0, misses: 0, mf: 0, sapKillCost: 0, dLeft: 0, aLeft: 0, mineInc: 0, mineN: 0, loot: 0, scrape: 0, trickle: 0, bounty: 0, prospN: 0, prospDied: 0, bdk: -1, bds: 0, bak: -1, bas: 0, yBy: [], wBy: [], nBy: [] });
 const tally = (u, carried) => { const W = S.wave, i = u.di; W.wBy[i] = (W.wBy[i] || 0) + u.walked; W.nBy[i] = (W.nBy[i] || 0) + 1; if (carried) W.yBy[i] = (W.yBy[i] || 0) + carried; };
 // The keep for a match of n waves.
 const keepFor = n => RULES.keepPerRound * n + RULES.keepShort * Math.max(0, RULES.keepShortOf - n);
@@ -2150,6 +2200,8 @@ const towersValue = G => G.reduce((v, g) => v + (g && g.t === 'tower' ? towerCos
 function layoutDelta(changes, G = S.grid) { const H = G.slice(); for (const [i, v] of changes) H[i] = v; return towersValue(H) - towersValue(G); }
 const pricedTower = cfg => ({ t: 'tower', cfg }); // a tower for pricing (layoutDelta)
 const wallCount = G => G.reduce((n, g) => n + (g && g.t === 'wall' ? 1 : 0), 0);
+// v34: walls at their price, Mines with their part (what the defense is worth, the Bet's cap)
+const wallsValue = (G = S.grid) => G.reduce((n, g, i) => n + (g && g.t === 'wall' ? RULES.wall + (S.terrain[i] === SITE ? RULES.mineCost : 0) : 0), 0);
 const towerCount = G => G.reduce((n, g) => n + (g && g.t === 'tower' ? 1 : 0), 0);
 // What selling the tower on cell i gives back before any move fee (v33): its price plus the crowding it takes away.
 const sellValue = (G, i) => -layoutDelta([[i, null]], G);
@@ -2173,6 +2225,30 @@ const seenHome = (g, cell) => { const h = S.seenGrid[cell]; return S.round > 1 &
 // v23: no fee the round after a sabotage landed: on any tower after a bridge went down, else on the towers knocked out
 const feeFree = (g, F = S.freeMv) => !!(RULES.freeAfterSabotage && F && g && (F.all || (F.n || []).includes(g.n)));
 // v28: the fee only exists with sabotage on (or with RULES.noSabMoveFee); sabo is the match's (S.sabo, or the computer's K.sabo)
+// v34: whether this match has the economy (sites, Mines, Prospectors, interest, the Bet): it follows the mode (S.sabo, the
+// Advanced mode), through RULES so the sims can measure each half alone
+const ecoOn = (sabo = S && S.sabo) => (sabo !== false ? !!RULES.ecoAdvanced : !!RULES.ecoSimple);
+const betOn = (sabo = S && S.sabo) => ecoOn(sabo) && !!RULES.bet;
+// v34's words, every number from RULES (tooltips, the design card, the rules sheet)
+const pc = v => `${Math.round(v * 1000) / 10}%`;
+const keepWords = () => (RULES.prospKeep === 0.5 ? 'half keep damage' : `${pc(RULES.prospKeep)} keep damage`);
+const prospLine = () => `Earns ${pc(RULES.prospTrickle)} of its price a second alive (max ${pc(RULES.prospTrickleCap)}), loots Mines it passes, ${keepWords()}.`;
+const prospTip = () => `Prospector. ×${RULES.prospMult} price, ${keepWords()}. Earns ${pc(RULES.prospTrickle)} of its price each second alive (up to ${pc(RULES.prospTrickleCap)} a wave) and steals from Mines it passes. If shot down, the defender gets ${pc(RULES.prospBounty)} of its price.`;
+const betBands = () => [`Under ${pc(RULES.betLow)} gets through`, `${pc(RULES.betLow).replace('%', '')}–${pc(RULES.betHigh)} gets through`, `Over ${pc(RULES.betHigh)} gets through`];
+const BET_NAMES = ['Low', 'Medium', 'High'];
+// A Mine's exposure on a route (sides touching it) and what it earns a wave
+const mineExp = (i, path = S.path) => { const on = new Set(path || []); return nbrs(i).filter(j => on.has(j)).length; };
+// The board's words for a crystal site or a Mine under the pointer (side: 'def' or 'atk'), or ''
+function siteText(i, side, wallTool) {
+  if (!ecoOn() || S.terrain[i] !== SITE) return '';
+  const G = side === 'atk' ? S.seenGrid : S.grid, mine = G[i] && G[i].t === 'wall';
+  const path = side === 'atk' ? seenPath() : S.path, e = mineExp(i, path), inc = e * RULES.mineIncome;
+  if (!mine) return wallTool && side === 'def' ? `MINE HERE: ${wallPrice(i)} COINS · EARNS ${inc} A WAVE (${e} SIDE${e === 1 ? '' : 'S'} ON THE ROUTE)` : 'CRYSTAL SITE · A WALL HERE BECOMES A MINE';
+  if (side === 'atk') return `MINE · HOLDS ${inc} A WAVE · UNITS SCRAPE ${pc(RULES.mineScrape)}, PROSPECTORS STEAL ${pc(RULES.prospLoot)}`;
+  if (!seenAs(i, 'wall')) return 'NEW MINE · EARNS FROM NEXT WAVE · REMOVE THIS ROUND FOR A FULL REFUND';
+  const m = S.lastMines && S.lastMines.get(i), last = m ? ` · LAST WAVE KEPT ${Math.round(m.store)}, LOOTED ${Math.round(m.loot + m.scrape)}` : '';
+  return `MINE · ${inc} A WAVE (${RULES.mineIncome} PER SIDE ON THE ROUTE)${last}`;
+}
 const feeOn = (sabo = S.sabo) => sabo !== false || !!RULES.noSabMoveFee;
 const paysFee = (g, cell) => feeOn() && seenHome(g, cell) && !feeFree(g);
 const freeWhy = g => (!feeFree(g) ? '' : S.freeMv.all ? 'Moves free this round: a bridge went down' : 'Moves free this round: knocked out last wave');
@@ -2213,9 +2289,15 @@ function sellOff(G) {
 // crowding included (v33); without a cell, its price alone.
 const newTowerPrice = (cell = -1) => (cell < 0 ? towerCost(placeCfg()) : layoutDelta([[cell, pricedTower(placeCfg())]]));
 const armyValue = ds => ds.reduce((v, d) => v + d.count * unitCost(d), 0);
+// v34: the army's strength, what breach is measured against: Prospectors count at prospKeep, as they hit the keep
+const armyStrength = ds => ds.reduce((v, d) => v + d.count * unitCost(d) * (d.prosp ? RULES.prospKeep : 1), 0);
+// v34: the most a side may stake on the Bet: betCap of what it has committed (the attacker's army and sabotage, the
+// defender's towers, walls and Mines)
+const committedOf = sd => (sd === 'd' ? towersValue(S.grid) + wallsValue(S.grid) : armyValue(S.designs) + chargesValue());
+const betCapOf = sd => Math.max(0, Math.floor(RULES.betCap * committedOf(sd) + 1e-9));
 const armyCount = ds => ds.reduce((n, d) => n + d.count, 0);
 const chargesValue = () => { let v = 0; for (const c of S.charges.values()) v += c.cost; return v; };
-const defWorth = () => S.dFree + towersValue(S.grid) + wallCount(S.grid) * RULES.wall;
+const defWorth = () => S.dFree + towersValue(S.grid) + wallsValue(S.grid);
 const atkWorth = () => S.aFree + armyValue(S.designs) + chargesValue();
 /* The pot after wave r of a match of R waves: p runs from 0 after the first wave to 1 after the second-to-last (the
    last wave's coins are never spent, so it pays like the one before it). The pot grows with p, and so does the swing w:
@@ -2373,7 +2455,7 @@ function anchorOf(i, route, br) {
    only if a route exists and the computer's mazes still fit (MAP_ROOM of the longest route they force on an
    empty board); otherwise it rerolls, then tries half as many tiles, then none. Rock also sits in the grids as
    { t: 'rock' }, so every route check treats it as a wall; rough ground lives only in S.terrain. */
-const ROUGH = 1, ROCK = 2, MAP_TRIES = 12, MAP_ROOM = 0.8;
+const ROUGH = 1, ROCK = 2, SITE = 3, MAP_TRIES = 12, MAP_ROOM = 0.8;
 const ZONE_C = [0, 5, 11, 16], ZONE_R = [0, 4, 7, 11];
 const withRocks = (G, T = S.terrain) => { for (let i = 0; i < N; i++) if (T[i] === ROCK) G[i] = { t: 'rock', fresh: false }; else if (G[i] && G[i].t === 'rock') G[i] = null; return G; };
 const near8 = i => { const q = i % COLS, r = (i / COLS) | 0, out = []; for (let dr = -1; dr <= 1; dr++) for (let dq = -1; dq <= 1; dq++) { const qq = q + dq, r2 = r + dr; if ((dq || dr) && qq >= 0 && qq < COLS && r2 >= 0 && r2 < ROWS) out.push(r2 * COLS + qq); } return out; };
@@ -2440,7 +2522,7 @@ function mazeRoom(T) {
   let best = 0;
   for (const key of MAZE_KEYS) {
     const G = withRocks(new Array(N).fill(null), T), holes = new Set();
-    mazeCols(key).forEach((c, k) => { for (const i of mazeCells(c, k)) { if (T[i] === ROUGH) holes.add(i); else if (!G[i]) G[i] = { t: 'wall' }; } });
+    mazeCols(key).forEach((c, k) => { for (const i of mazeCells(c, k)) { if (T[i] === ROUGH || T[i] === SITE) holes.add(i); else if (!G[i]) G[i] = { t: 'wall' }; } });
     bfs(tmpA, i => !G[i]);
     if (tmpA[ENTRY] < 0) continue;
     for (const j of blockBridges(G, holes)) G[j] = { t: 'wall' };
@@ -2471,9 +2553,25 @@ function startMap(seed) {
   S.mapSeed = seed >>> 0;
   const m = makeTerrain(S.mapSeed);
   S.terrain = m.T; S.gates = m.gates; // the gates: makeTerrain set them
+  if (ecoOn()) placeSites(S.terrain, S.mapSeed); // v34: crystal sites, in Advanced only
   withRocks(S.grid); withRocks(S.seenGrid);
   S.gridVer++; S.seenVer++;
 }
+/* Crystal sites (v34): RULES.crystalSites per map, from the map seed after the terrain, so both online devices place the
+   same ones with nothing sent. On open ground (not rock or rough), at least siteGate cells (Chebyshev) from either gate and
+   siteGap from each other; as many as fit. They live in the terrain as SITE: units cross them like open ground, and only a
+   wall may stand on one (a Mine). Returns how many it placed. */
+function placeSites(T, seed) {
+  const want = Math.max(0, RULES.crystalSites | 0), rnd = mulberry32(seedFor('sites', seed >>> 0)), cells = [], placed = [];
+  if (!want) return 0;
+  const cd = (a, b) => Math.max(Math.abs(a % COLS - b % COLS), Math.abs(((a / COLS) | 0) - ((b / COLS) | 0)));
+  for (let i = 0; i < N; i++) if (!T[i] && cd(i, ENTRY) >= RULES.siteGate && cd(i, EXIT) >= RULES.siteGate) cells.push(i);
+  for (let k = cells.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [cells[k], cells[j]] = [cells[j], cells[k]]; }
+  for (const i of cells) { if (placed.length >= want) break; if (placed.every(j => cd(i, j) >= RULES.siteGap)) placed.push(i); }
+  for (const i of placed) T[i] = SITE;
+  return placed.length;
+}
+const isSite = (i, T = S.terrain) => T[i] === SITE;
 /* The starter maze: every match starts with the walls RULES.starterPresses presses of Auto-maze would build on the
    empty board, each with the first-wave budget (autoMazeFirst). Free, ordinary walls (a 5-coin refund each, bridgeable
    once seen), and seen by the attacker from round 1. A pure function of the map: Auto-maze's search run to its end in
@@ -2498,7 +2596,7 @@ function buildStarter() {
   S.starter = cells.length; S.gridVer++; S.seenVer++;
   recompute();
 }
-const terrainKey = T => { let k = ''; T.forEach((v, i) => { if (v) k += i + (v === ROCK ? 'k' : 'r'); }); return k; };
+const terrainKey = T => { let k = ''; T.forEach((v, i) => { if (v) k += i + (v === ROCK ? 'k' : v === SITE ? 's' : 'r'); }); return k; };
 const newMapSeed = () => (SOLO.on && SOLO.seed != null ? seedFor('map', SOLO.seed) : (Math.random() * 4294967296) >>> 0);
 let seenCache = { S: null, key: '', path: null };
 function seenPath() {
@@ -2547,16 +2645,22 @@ function siteBlock(cell) {
   if (S.terrain[cell] === ROUGH) return { ok: false, reason: 'Rough ground. Units can cross it, but nothing can be built on it.' };
   return null;
 }
+// v34: a wall on a crystal site is a Mine, at the wall's price plus mineCost; what removing one gives back: everything the
+// round it was built (the attacker hasn't seen it), the wall's price after that (the Mine's part is spent)
+const wallPrice = cell => RULES.wall + (isSite(cell) ? RULES.mineCost : 0);
+const isMine = (cell, G = S.grid, T = S.terrain) => !!(G[cell] && G[cell].t === 'wall' && T[cell] === SITE);
+const wallBack = cell => (isMine(cell) && !seenAs(cell, 'wall') ? wallPrice(cell) : RULES.wall);
 function canBuild(cell, kind) {
   if (cell < 0) return { ok: false, quiet: true };
   const site = siteBlock(cell);
   if (site) return site;
   // a tower on a wall replaces it: the wall's coins come back, and the cell stays blocked, so the route stays open
   const onWall = kind === 'tower' && S.grid[cell] && S.grid[cell].t === 'wall';
+  if (kind === 'tower' && isSite(cell)) return { ok: false, reason: 'Crystal site: build a wall here to make a Mine.' };
   if (S.grid[cell] && !onWall) return { ok: false, quiet: true };
   // v33: a tower's cost here is its price plus the crowding it adds (crowd), which depends on the cell
-  const cost = kind === 'wall' ? RULES.wall : newTowerPrice(cell), back = onWall ? RULES.wall : 0, crowd = kind === 'wall' ? 0 : cost - newTowerPrice();
-  const what = kind === 'wall' ? 'A wall costs ' + cost : crowd ? `This tower costs ${cost} here (${cost - crowd} + ${crowd} crowding)` : `A tower costs ${cost}`;
+  const cost = kind === 'wall' ? wallPrice(cell) : newTowerPrice(cell), back = onWall ? RULES.wall : 0, crowd = kind === 'wall' ? 0 : cost - newTowerPrice();
+  const what = kind === 'wall' ? (isSite(cell) ? 'A Mine costs ' : 'A wall costs ') + cost : crowd ? `This tower costs ${cost} here (${cost - crowd} + ${crowd} crowding)` : `A tower costs ${cost}`;
   if (S.dFree + back < cost) return { ok: false, reason: `Not enough coins. ${what} and you have ${S.dFree} free${back ? ` (${S.dFree + back} with the wall’s ${back} back)` : ''}.`, gold: true, cost, crowd };
   if (!onWall && !routeOpenWithout(cell)) return { ok: false, reason: 'Path must stay open', block: true, cost, crowd };
   return { ok: true, onWall, cost, crowd };
@@ -2566,9 +2670,9 @@ function tryBuild(cell, kind, loud) {
   if (!v.ok) { if (!v.quiet && (loud || v.block || v.gold)) explain(v, cell); return false; }
   const [x, y] = center(cell);
   if (kind === 'wall') {
-    S.dFree -= RULES.wall;
+    S.dFree -= v.cost;
     S.grid[cell] = { t: 'wall', fresh: !seenAs(cell, 'wall') };
-    puff(x, y, '#8fd3ef');
+    puff(x, y, isSite(cell) ? '#ffd27a' : '#8fd3ef');
   } else {
     const cfg = placeCfg();
     if (v.onWall) { S.dFree += RULES.wall; floatText(x, y - 0.35, '+' + RULES.wall, '#8fd3ef', 13); } // the wall it replaces
@@ -2589,7 +2693,7 @@ function removeAt(cell) {
   if (g.t === 'tower' && g.off > 0) { toast('This tower is offline. It can’t be removed until it comes back.', 'bad'); return; }
   const fee = g.t === 'tower' ? removeFee(cell) : 0; // a tower the attacker saw here: its refund loses the move fee
   if (fee) { S.totals.moveTries = (S.totals.moveTries || 0) + 1; S.mvFee = (S.mvFee || 0) + fee; }
-  const val = g.t === 'wall' ? RULES.wall : sellValue(S.grid, cell) - fee; // a tower: its price and the crowding it took away (v33)
+  const val = g.t === 'wall' ? wallBack(cell) : sellValue(S.grid, cell) - fee; // a tower: its price and the crowding it took away (v33)
   S.dFree += val;
   S.grid[cell] = null;
   S.gridVer++; recompute();
@@ -2612,6 +2716,7 @@ function canMove(from, to) {
   if (g.off > 0) return { ok: false, reason: 'This tower is offline. It can’t be moved until it comes back.' };
   if (h && h.t === 'tower' && h.off > 0) return { ok: false, reason: 'That tower is offline. It can’t be moved until it comes back.' };
   if (h && h.t === 'rock') return siteBlock(to);
+  if (S.terrain[to] === SITE) return { ok: false, reason: 'Crystal site: only a wall can stand here, and it becomes a Mine.' }; // v34
   const mp = movePlan(from, to), crowd = moveCrowd(from, to), cost = mp.coins + crowd; // v33: the fee and the crowding change
   if (cost > S.dFree) return { ok: false, reason: `Not enough coins. Moving this tower costs ${cost}${crowd && mp.coins ? ` (fee ${mp.coins}, crowding ${crowd > 0 ? '+' : '−'}${Math.abs(crowd)})` : ''} and you have ${S.dFree} free.`, gold: true, fee: mp.coins, crowd, cost };
   if (h) return { ok: true, swap: h.t, fee: mp.coins, crowd, cost }; // the same cells stay blocked, so the route stays open
@@ -2918,7 +3023,7 @@ function weakWalls(G, br, dz, path) {
    again after every wall. Stops at `limit`, or when no weak wall is left or none can be fixed. place(i) puts the wall
    (it may refuse: false, e.g. no coins). Yields between tries, so Auto-maze can slice it between frames. */
 function* thicken(G, limit, br, T, dz, place) {
-  const open = i => !G[i], hole = i => i === ENTRY || i === EXIT || br.has(i) || T[i] === ROUGH;
+  const open = i => !G[i], hole = i => i === ENTRY || i === EXIT || br.has(i) || T[i] === ROUGH || T[i] === SITE;
   const route = () => { flow(tmpA, open, dz, br); return tracePath(tmpA); };
   let n = 0;
   while (n < limit) {
@@ -2947,7 +3052,7 @@ function* thicken(G, limit, br, T, dz, place) {
   return n;
 }
 function* mazeSearch(G, walls, br, T) {
-  const dz = Int16Array.from(dangerField(G)), open = i => !G[i], hole = i => i === ENTRY || i === EXIT || br.has(i) || T[i] === ROUGH;
+  const dz = Int16Array.from(dangerField(G)), open = i => !G[i], hole = i => i === ENTRY || i === EXIT || br.has(i) || T[i] === ROUGH || T[i] === SITE;
   const route = () => { flow(tmpA, open, dz, br); return tracePath(tmpA); };
   const out = [];
   // solid cells (walls, towers, rock) joined to the board's edge through other solid cells, corners included: a run
@@ -3081,7 +3186,7 @@ function placeMaze(cells) {
 // (v33), with no discount; afterwards they're ordinary walls and towers.
 function cellsCost(cells) {
   const tw = cells.filter(([, k]) => k === 'tower').map(([i]) => [i, pricedTower(defaultTower())]);
-  return (cells.length - tw.length) * RULES.wall + (tw.length ? layoutDelta(tw) : 0);
+  return cells.reduce((v, [i, k]) => v + (k === 'tower' ? 0 : wallPrice(i)), 0) + (tw.length ? layoutDelta(tw) : 0); // v34: a wall on a site is a Mine
 }
 function checkCells(cells) {
   if (!cells.length) return { ok: false, reason: 'Nothing to build there: every cell is taken or can’t be built on.' };
@@ -3097,7 +3202,7 @@ function placeCells(cells) {
   if (!v.ok) { toast(v.reason, 'bad'); if (v.block) for (const [i] of cells) flashCell(i); return false; }
   for (const [i, k] of cells) {
     const [x, y] = center(i);
-    if (k === 'wall') { S.dFree -= RULES.wall; S.grid[i] = { t: 'wall', fresh: !seenAs(i, 'wall') }; puff(x, y, '#8fd3ef'); continue; }
+    if (k === 'wall') { S.dFree -= wallPrice(i); S.grid[i] = { t: 'wall', fresh: !seenAs(i, 'wall') }; puff(x, y, isSite(i) ? '#ffd27a' : '#8fd3ef'); continue; }
     const cfg = defaultTower(), cost = layoutDelta([[i, pricedTower(cfg)]]); // its price and the crowding it adds (v33)
     S.dFree -= cost;
     S.grid[i] = { t: 'tower', cfg, off: 0, fresh: !seenAs(i, 'tower'), n: ++S.towerSeq, cd: 0, ang: Math.PI, kick: 0, dealt: 0 };
@@ -3131,7 +3236,7 @@ function shapeCells(at) {
     if (q < 0 || q >= COLS || r < 0 || r >= ROWS) continue;
     const i = r * COLS + q, g = S.grid[i];
     const st = g && g.t !== 'rock' ? 'skip' : g ? (k === 'wall' ? 'skip' : 'hole')
-      : i === ENTRY || i === EXIT || S.terrain[i] === ROUGH || S.bridges.has(i) ? 'hole' : 'build';
+      : i === ENTRY || i === EXIT || S.terrain[i] === ROUGH || S.bridges.has(i) || (k === 'tower' && S.terrain[i] === SITE) ? 'hole' : 'build'; // v34: no tower on a crystal site
     out.push({ i, k, st });
   }
   return out;
@@ -3445,6 +3550,7 @@ function makeUnit(di, ox, oy, sd) {
     regen: US.regen.steps[d.regen] / 100, resist: d.resist, rs: resFlags(d.resist), value: unitCost(d),
     healed: 0, healCap: hp * US.regen.steps[d.regen] * RULES.regenCap / 100, lastHit: -99,
     slowT: 0, slowF: 0, poisonT: 0, poisonDps: 0, poisonSrc: null, flash: 0, dead: false, gone: false, carried: 0,
+    prosp: !d.sap && !!d.prosp, born: S.waveT || 0, mt: null, earned: 0, looted: 0, // v34: a Prospector, when it set out, the Mines it passed
   };
 }
 function remain(u) {
@@ -3463,6 +3569,7 @@ function moveUnit(u, dt) {
     if (dd <= rem) {
       u.x = tx; u.y = ty; rem -= dd; u.walked += dd;
       if (u.target === -2) { leak(u); return; }
+      if (S.wave.mines && S.wave.mines.size) mineTouch(u, u.target); // v34: standing beside a Mine: loot or scrape it
       if (u.sap && sapArrive(u)) return; // a bridge sapper at its tile lays the bridge and is used up
       if (u.target === EXIT) { u.target = -2; u.dir = 0; if (u.sap) sapCheck(u); continue; }
       const j = nextStep(u.target, dist, u.dir);
@@ -3547,14 +3654,42 @@ function chainFrom(u0, raw, g) {
 }
 function onKill(u) {
   if (u.sap) { if (u.sap.state === 'go') { u.sap.state = 'lost'; S.wave.sapLost++; S.wave.sapKillCost += u.sap.cost || 0; floatText(u.x + u.ox, u.y + u.oy - 0.3, 'SAPPER DOWN', '#ffd27a', 11); } }
-  else { S.wave.kills++; S.totals.kills++; tally(u, 0); }
+  else { S.wave.kills++; S.totals.kills++; tally(u, 0); if (u.prosp) { prospEnd(u); S.wave.bounty += RULES.prospBounty * u.value; S.wave.prospDied++; } }
   deathFx(u);
+}
+/* v34: the economy in a wave. Everything is tallied exactly here and rounded once per side in endRound (waveIncome), from
+   simulation time and positions only, so both devices and replays agree. */
+// A Prospector's trickle, paid when it leaves the board (shot down or at the keep): prospTrickle of its price a second
+// since it set out, at most prospTrickleCap of it a wave.
+function prospEnd(u) {
+  const t = Math.max(0, S.waveT - u.born), v = Math.min(RULES.prospTrickleCap, RULES.prospTrickle * t) * u.value;
+  u.earned += v; S.wave.trickle += v;
+}
+// A unit standing on route cell c beside a live Mine takes from its store, once per Mine a wave: a Prospector prospLoot of
+// its price (at most prospLootMax coins, if set), anyone else (sappers too, at their sabotage's price) mineScrape of it.
+function mineTouch(u, c) {
+  for (const j of nbrs(c)) {
+    const m = S.wave.mines.get(j);
+    if (!m || m.gone || m.store <= 0) continue;
+    if (!u.mt) u.mt = [];
+    if (u.mt.includes(j)) continue;
+    u.mt.push(j);
+    const price = u.value || (u.sap ? u.sap.cost || 0 : 0);
+    let take = u.prosp ? RULES.prospLoot * price : RULES.mineScrape * price;
+    if (u.prosp && RULES.prospLootMax > 0) take = Math.min(take, RULES.prospLootMax);
+    take = Math.min(take, m.store);
+    if (take <= 0) continue;
+    m.store -= take;
+    if (u.prosp) { m.loot += take; u.looted += take; S.wave.loot += take; if (take >= 0.5) { const [x, y] = center(j); floatText(x, y - 0.3, '+' + fmtNum(take), '#ffd27a', 12); } }
+    else { m.scrape += take; S.wave.scrape += take; }
+  }
 }
 function leak(u) {
   if (u.gone || u.dead) return;
   u.gone = true;
   if (u.sap) { if (u.sap.state === 'go') sapFail(u, 'SAPPER MISSED'); return; } // sappers do nothing at the keep
-  const carried = u.value * Math.max(0, u.hp) / u.max;
+  const carried = u.value * Math.max(0, u.hp) / u.max * (u.prosp ? RULES.prospKeep : 1); // v34: a Prospector deals prospKeep
+  if (u.prosp) prospEnd(u);
   u.carried = carried;
   S.wave.y += carried; S.wave.leaks++; S.totals.leaks++; S.totals.through += carried; tally(u, carried);
   S.keep = Math.max(0, S.keep - carried);
@@ -3710,6 +3845,7 @@ function layBridge(i) {
     return false;
   }
   if (g) { S.dFree += RULES.wall; S.wave.bridgeRefund += RULES.wall; }
+  if (S.wave.mines && S.wave.mines.has(i)) S.wave.mines.get(i).gone = true; // v34: a bridged Mine is gone; what it holds is still the defender's
   S.grid[i] = null; S.bridges.add(i);
   S.wave.bridges++; S.totals.bridges++;
   // The map changed, so everyone (sappers too) takes the cheapest route counting only the towers firing now (v22): a
@@ -3731,7 +3867,7 @@ function waveStep(dt) {
   while (S.spawnIdx < S.spawnList.length && S.spawnList[S.spawnIdx].t <= sc) {
     const e = S.spawnList[S.spawnIdx++];
     if (e.sk != null) S.units.push(makeSapper(e.sk, e.ox, e.oy));
-    else { const u = makeUnit(e.di, e.ox, e.oy); u.k = e.k; S.units.push(u); S.wave.sent++; }
+    else { const u = makeUnit(e.di, e.ox, e.oy); u.k = e.k; S.units.push(u); S.wave.sent++; if (u.prosp) S.wave.prospN++; }
   }
   for (const u of S.units) {
     if (u.dead || u.gone) continue;
@@ -3902,14 +4038,31 @@ function prepWave(seed) {
   srand = mulberry32(seed == null ? (Math.random() * 4294967296) >>> 0 : seed);
   S.sentArmy = S.designs.map(d => ({ ...d, tl: { ...d.tl, pos: d.tl.pos ? d.tl.pos.slice() : null } }));
   S.wave = blankWave();
-  S.wave.x = armyValue(S.designs);
+  S.wave.x = armyStrength(S.designs);
   S.wave.charges = S.charges.size; S.wave.chargeCoins = chargesValue(); S.totals.charges += S.charges.size;
   // every attempt counts toward the next one's price, landed or not
   S.totals.bridgeTries = (S.totals.bridgeTries || 0) + plannedBridges().length;
   S.totals.koTries = (S.totals.koTries || 0) + towerChargeCells().length;
   // one sapper per planned sabotage, in plan order: its target, its tile (bridges), when it leaves, and how it went
   S.sapList = [...S.charges].map(([cell, c]) => ({ cell, kind: c.kind, at: c.kind === 'bridge' && c.at != null ? c.at : -1, t: clamp(+c.t || 0, 0, 1), state: 'wait', cost: c.cost || 0 }));
+  // v34: the Bet: each side's stake leaves its free coins now (so it earns no interest), capped by what it has committed
+  if (betOn() && S.bet) for (const sd of ['d', 'a']) {
+    const b = S.bet[sd]; if (!b || !(b.s > 0) || !(b.k >= 0 && b.k <= 2)) continue;
+    const st = Math.min(Math.floor(b.s), betCapOf(sd), sd === 'd' ? S.dFree : S.aFree);
+    if (st <= 0) continue;
+    if (sd === 'd') { S.dFree -= st; S.wave.bdk = b.k; S.wave.bds = st; } else { S.aFree -= st; S.wave.bak = b.k; S.wave.bas = st; }
+  }
   S.wave.mf = S.mvFee || 0; S.wave.dLeft = S.dFree; S.wave.aLeft = S.aFree; // settled when the wave ends (v23)
+  // v34: each live Mine (one the attacker saw) holds mineIncome per side touching the route as it is now
+  S.wave.mines = new Map();
+  if (ecoOn()) {
+    const on = new Set(S.path || []);
+    for (let i = 0; i < N; i++) if (isMine(i) && seenAs(i, 'wall')) {
+      const e = nbrs(i).filter(j => on.has(j)).length, inc = e * RULES.mineIncome;
+      S.wave.mines.set(i, { exp: e, inc, store: inc, loot: 0, scrape: 0, gone: false });
+      S.wave.mineInc += inc; S.wave.mineN++;
+    }
+  }
   S.spawnList = buildSpawns(S.sentArmy, S.sapList); S.spawnIdx = 0;
   S.waveT = 0; S.endDelay = 0; S.units = []; S.shots = []; S.routeSkip = null;
   S.spawnStart = 0.35;
@@ -3925,16 +4078,31 @@ const interestOn = free => (RULES.interestMax > 0 ? Math.min(RULES.interestMax, 
 const intNote = left => (RULES.interestCap > 0 && (left || 0) > RULES.interestCap ? ` (counts up to ${RULES.interestCap})` : RULES.interestMax > 0 && interestRaw(left) > RULES.interestMax ? ` (at most ${RULES.interestMax} a wave)` : '');
 // the coins that earn the most interest a wave (1,000 at 15% and 150), for the rules sheet
 const intFull = () => (RULES.interestMax > 0 && RULES.interestRate > 0 ? Math.ceil(RULES.interestMax / RULES.interestRate - 1e-9) : 0);
-const waveIncome = W => ({ aMove: RULES.moveFeeToAtk ? Math.max(0, W.mf || 0) : 0, dKill: Math.floor(RULES.sapKillShare * (W.sapKillCost || 0) + 1e-9), dInt: interestOn(W.dLeft), aInt: interestOn(W.aLeft) });
+const waveIncome = (W, breach = 0) => {
+  const eco = ecoOn(), r = x => Math.round((x || 0) + 1e-9);
+  const pick = breach < RULES.betLow ? 0 : breach >= RULES.betHigh ? 2 : 1; // v34: the Bet's answer
+  return {
+    aMove: RULES.moveFeeToAtk ? Math.max(0, W.mf || 0) : 0, dKill: Math.floor(RULES.sapKillShare * (W.sapKillCost || 0) + 1e-9),
+    dInt: eco ? interestOn(W.dLeft) : 0, aInt: eco ? interestOn(W.aLeft) : 0, // v34: interest is Advanced only
+    // v34: what the Mines kept, the Prospectors' bounties; the Prospectors' trickle and loot plus every unit's scrape
+    dMine: r(W.mineInc - W.loot - W.scrape), dBounty: r(W.bounty), aProsp: r(W.trickle + W.loot), aScrape: r(W.scrape),
+    // the Bet: a right one returns its stake and as much again (the stake left the coins when the wave started)
+    dBet: W.bds > 0 ? (W.bdk === pick ? 2 * W.bds : 0) : 0, aBet: W.bas > 0 ? (W.bak === pick ? 2 * W.bas : 0) : 0,
+    dBetNet: W.bds > 0 ? (W.bdk === pick ? W.bds : -W.bds) : 0, aBetNet: W.bas > 0 ? (W.bak === pick ? W.bas : -W.bas) : 0, betPick: pick,
+  };
+};
 function endRound() {
   if (QUIET) { S.trialDone = true; return; } // a hidden test wave (checked first: one can run while a replay is open)
   if (replay && replay.test) { endTest(); return; }
   if (replay) { replay.done = true; refreshUI(); return; }
-  const X = S.wave.x, Y = S.wave.y, sp = splitFor(X, Y), { d: dGain, a: aGain } = potGains(sp), mvp = mvpOf(), ex = waveIncome(S.wave);
-  const dTot = dGain + ex.dKill + ex.dInt, aTot = aGain + ex.aMove + ex.aInt;
-  S.dFree += dTot; S.aFree += aTot;
+  const X = S.wave.x, Y = S.wave.y, sp = splitFor(X, Y), { d: dGain, a: aGain } = potGains(sp), mvp = mvpOf(), ex = waveIncome(S.wave, sp.breach);
+  // v34: a side's total is what it gained this round, the Bet's net included; its stake (taken when the wave started)
+  // comes back with it, so a right bet pays the stake twice and a wrong one nothing
+  const dTot = dGain + ex.dKill + ex.dInt + ex.dMine + ex.dBounty + ex.dBetNet, aTot = aGain + ex.aMove + ex.aInt + ex.aProsp + ex.aScrape + ex.aBetNet;
+  S.dFree += dTot + (S.wave.bds || 0); S.aFree += aTot + (S.wave.bas || 0);
   S.totals.dPot = (S.totals.dPot || 0) + dGain; S.totals.aPot = (S.totals.aPot || 0) + aGain;
-  for (const k of ['aMove', 'dKill', 'dInt', 'aInt']) S.totals[k] = (S.totals[k] || 0) + ex[k];
+  for (const k of ['aMove', 'dKill', 'dInt', 'aInt', 'dMine', 'dBounty', 'aProsp', 'aScrape', 'dBetNet', 'aBetNet']) S.totals[k] = (S.totals[k] || 0) + ex[k];
+  S.lastMines = S.wave.mines; S.bet = null; S.bank = { d: S.dFree, a: S.aFree }; // v34: what each Mine earned and lost, for its tooltip; bets last one wave
   S.mvFee = 0;
   // v23: a sabotage that landed makes the next round's moves free (a bridge: all of them; a knock-out: that tower's)
   const kos = S.sapList.filter(sp => sp.kind === 'tower' && sp.state === 'done').map(sp => S.grid[sp.cell] && S.grid[sp.cell].n).filter(n => n != null);
@@ -4064,7 +4232,7 @@ function skipTest() {
 function endTest() {
   if (!testing()) return;
   const T = replay.test, w = S.wave;
-  testResult = { S: replay.live, side: T.side, key: T.key, round: T.round, sent: armyCount(S.sentArmy), leaks: w.leaks, y: w.y, fire: T.fire, offs: T.offs,
+  testResult = { S: replay.live, side: T.side, key: T.key, round: T.round, sent: armyCount(S.sentArmy), leaks: w.leaks, y: w.y, x: w.x, fire: T.fire, offs: T.offs,
     sappers: S.sapList.length, sapOk: w.sapOk, sapLost: w.sapLost, sapMissed: w.sapMissed };
   exitReplay();
 }
@@ -4152,12 +4320,19 @@ function mvpHTML(M) {
   return out;
 }
 // v23: what the wave paid besides the pot, one short line under the three numbers (the ledger under Details has it all)
+const betWords = (k, net, pick) => `Bet ${BET_NAMES[k]} · ${net > 0 ? 'right' : 'wrong'} · ${net > 0 ? '+' : '−'}${Math.abs(net)} (${BET_NAMES[pick]})`;
 function extraHTML(L) {
   const d = [], a = [];
   if (L.dKill) d.push(`sappers shot down +${L.dKill}`);
   if (L.dInt) d.push(`interest +${L.dInt}`);
+  if (L.dMine) d.push(`Mines +${L.dMine}`);
+  if (L.dBounty) d.push(`Prospector bounties +${L.dBounty}`);
+  if (L.bds) d.push(betWords(L.bdk, L.dBetNet, L.betPick));
   if (L.aMove) a.push(`defender moved towers +${L.aMove}`);
   if (L.aInt) a.push(`interest +${L.aInt}`);
+  if (L.aProsp) a.push(`Prospectors +${L.aProsp}`);
+  if (L.aScrape) a.push(`scraped Mines +${L.aScrape}`);
+  if (L.bas) a.push(betWords(L.bak, L.aBetNet, L.betPick));
   const part = (who, l) => (l.length ? `<span class="${who === 'Defender' ? 'd' : 'a'}">${who}: pot +${who === 'Defender' ? L.dGain : L.aGain} · ${l.join(' · ')}</span>` : '');
   return d.length || a.length ? `<p class="sum-extra" id="sum-extra">${part('Defender', d)}${part('Attacker', a)}</p>` : '';
 }
@@ -4179,14 +4354,20 @@ function showSummary() {
       <div class="led d"><h3>Defender</h3><span class="big">+${L.dTot ?? L.dGain}</span>
         <ul><li><span>Pot share ${Math.round(L.share * 100)}%</span><span>+${L.dGain}</span></li>
         ${L.sapLost ? `<li id="led-dkill"><span>Sappers shot down (${L.sapLost})</span><span>+${L.dKill || 0}</span></li>` : ''}
-        ${RULES.interestRate > 0 ? `<li id="led-dint"><span>Interest on ${L.dLeft || 0} left${intNote(L.dLeft)}</span><span>+${L.dInt || 0}</span></li>` : ''}
+        ${RULES.interestRate > 0 && ecoOn() ? `<li id="led-dint"><span>Interest on ${L.dLeft || 0} left${intNote(L.dLeft)}</span><span>+${L.dInt || 0}</span></li>` : ''}
+        ${L.mineN ? `<li id="led-dmine"><span>Mines (${L.mineN}) earned ${L.mineInc}</span><span>+${L.dMine || 0}</span></li><li id="led-dloot"><span>Looted</span><span>−${Math.round((L.loot || 0) + (L.scrape || 0))}</span></li>` : ''}
+        ${L.dBounty ? `<li id="led-dbounty"><span>Prospector bounties (${L.prospDied})</span><span>+${L.dBounty}</span></li>` : ''}
+        ${L.bds ? `<li id="led-dbet"><span>${betWords(L.bdk, L.dBetNet, L.betPick)}, ${pct1(L.breach)} through</span><span>${L.dBetNet > 0 ? '+' : '−'}${Math.abs(L.dBetNet)}</span></li>` : ''}
         <li><span>Bridged walls refunded (${L.bridges})</span><span>${L.bridgeRefund ? '+' + L.bridgeRefund : '0'}</span></li>
         <li><span>Towers knocked out</span><span>${L.jammed}</span></li>
         <li><span>Worth now</span><span>${defWorth()}</span></li></ul></div>
       <div class="led a"><h3>Attacker</h3><span class="big">+${L.aTot ?? L.aGain}</span>
         <ul><li><span>Pot share ${100 - Math.round(L.share * 100)}%</span><span>+${L.aGain}</span></li>
         ${L.aMove ? `<li id="led-amove"><span>Defender moved towers</span><span>+${L.aMove}</span></li>` : ''}
-        ${RULES.interestRate > 0 ? `<li id="led-aint"><span>Interest on ${L.aLeft || 0} left${intNote(L.aLeft)}</span><span>+${L.aInt || 0}</span></li>` : ''}
+        ${RULES.interestRate > 0 && ecoOn() ? `<li id="led-aint"><span>Interest on ${L.aLeft || 0} left${intNote(L.aLeft)}</span><span>+${L.aInt || 0}</span></li>` : ''}
+        ${L.prospN ? `<li id="led-aprosp"><span>Prospectors (${L.prospN}): earned ${Math.round(L.trickle || 0)}, looted ${Math.round(L.loot || 0)}</span><span>+${L.aProsp || 0}</span></li>` : ''}
+        ${L.aScrape ? `<li id="led-ascrape"><span>Scraped from Mines</span><span>+${L.aScrape}</span></li>` : ''}
+        ${L.bas ? `<li id="led-abet"><span>${betWords(L.bak, L.aBetNet, L.betPick)}, ${pct1(L.breach)} through</span><span>${L.aBetNet > 0 ? '+' : '−'}${Math.abs(L.aBetNet)}</span></li>` : ''}
         <li><span>Sabotage (${L.charges})</span><span>${L.chargeCoins ? '−' + L.chargeCoins : '0'}</span></li>
         <li><span>Units through / killed</span><span>${L.leaks} / ${L.kills}</span></li>
         <li><span>Worth now</span><span>${atkWorth()}</span></li></ul></div>
@@ -4209,8 +4390,8 @@ function showEnd() {
     ${detailsHTML(`${d ? `<p class="fml">The keep held with ${Math.ceil(S.keep)} of ${S.keepMax} points left. The numbers above are the match’s totals: keep damage and pot coins.</p>` : '<p class="fml">The numbers above are the match’s totals: keep damage and pot coins.</p>'}
     ${S.last && d ? splitViz(S.last) : ''}
     <div class="ledger">
-      <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li>${t.dKill ? `<li><span>Sappers shot down</span><span>+${t.dKill}</span></li>` : ''}${t.dInt ? `<li><span>Interest</span><span>+${t.dInt}</span></li>` : ''}<li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
-      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li>${t.bridgeTries + t.koTries ? `<li><span>Sappers landed</span><span>${t.sapOk} / ${t.bridgeTries + t.koTries}</span></li>` : ''}${t.aMove ? `<li><span>Defender moved towers</span><span>+${t.aMove}</span></li>` : ''}${t.aInt ? `<li><span>Interest</span><span>+${t.aInt}</span></li>` : ''}<li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
+      <div class="led d"><h3>Defender</h3><span class="big">${t.kills}</span><ul><li><span>Kills</span><span>${t.kills}</span></li><li><span>Keep left</span><span>${Math.ceil(S.keep)}</span></li>${t.dKill ? `<li><span>Sappers shot down</span><span>+${t.dKill}</span></li>` : ''}${t.dInt ? `<li><span>Interest</span><span>+${t.dInt}</span></li>` : ''}${t.dMine ? `<li><span>Mines</span><span>+${t.dMine}</span></li>` : ''}${t.dBounty ? `<li><span>Prospector bounties</span><span>+${t.dBounty}</span></li>` : ''}${t.dBetNet ? `<li><span>Bets</span><span>${t.dBetNet > 0 ? '+' : '−'}${Math.abs(t.dBetNet)}</span></li>` : ''}<li><span>Worth</span><span>${defWorth()}</span></li></ul></div>
+      <div class="led a"><h3>Attacker</h3><span class="big">${fmtNum(t.through)}</span><ul><li><span>Strength through</span><span>${fmtNum(t.through)}</span></li><li><span>Bridges / knockouts</span><span>${t.bridges} / ${t.jammed}</span></li>${t.bridgeTries + t.koTries ? `<li><span>Sappers landed</span><span>${t.sapOk} / ${t.bridgeTries + t.koTries}</span></li>` : ''}${t.aMove ? `<li><span>Defender moved towers</span><span>+${t.aMove}</span></li>` : ''}${t.aInt ? `<li><span>Interest</span><span>+${t.aInt}</span></li>` : ''}${t.aProsp ? `<li><span>Prospectors</span><span>+${t.aProsp}</span></li>` : ''}${t.aScrape ? `<li><span>Scraped Mines</span><span>+${t.aScrape}</span></li>` : ''}${t.aBetNet ? `<li><span>Bets</span><span>${t.aBetNet > 0 ? '+' : '−'}${Math.abs(t.aBetNet)}</span></li>` : ''}<li><span>Worth</span><span>${atkWorth()}</span></li></ul></div>
     </div>`)}
     ${online() ? `<p class="fml">${NET.role === 'spec' ? 'If the players start another match, you’ll watch it here.' : 'Either player can start the next match for both.'}</p>` : ''}`;
   const spec = online() && NET.role === 'spec';
@@ -4252,7 +4433,7 @@ const paused = () => !el.ovInfo.hidden && !online();
    Transport: the claude.ai room when this page runs as a Claude artifact,
    otherwise PeerJS (WebRTC, free public broker) when hosted anywhere else.
    ===================================================================== */
-const PROTO = 24; // 24: v33.2 (units back to v33's health and prices); 23: v33.1 (units have 20% more health and cost 15% less, so both devices must agree on them); 22: v33 (the crowding fee replaced the build fee, so the grid sends no fee; prices, the starter maze and the 30 s release window differ); 21: v32 (the gates' rows come from the map seed, so a v31 device would play another board); 20: v31 (Chain is a jump count, 0-3, sent as a number in the grid); 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
+const PROTO = 25; // 25: v34 (the economy: crystal sites, Mines, Prospectors, the Bet, interest in Advanced only; plans carry a Bet and the army a Prospector flag); 24: v33.2 (units back to v33's health and prices); 23: v33.1 (units have 20% more health and cost 15% less, so both devices must agree on them); 22: v33 (the crowding fee replaced the build fee, so the grid sends no fee; prices, the starter maze and the 30 s release window differ); 21: v32 (the gates' rows come from the map seed, so a v31 device would play another board); 20: v31 (Chain is a jump count, 0-3, sent as a number in the grid); 19: v28 (no move fee with sabotage off; only the defender's device prices moves, but a v27 and a v28 device never play one match on two fee rules); 18: v27 (interest capped at what it pays, 150, not at the coins it counts; the move fee rises a point a relocation); 17: v26 (rooms: a host, seats, spectators; every presence in the room reaches every device); 16: v25 (the move fee rises half a point a relocation); 15: v24 (sabotage on or off per match, sent with the defender's plan; the whole shot-down sapper's price); 14: v23 (tower prices, sapper armor, move fees to the attacker, the shot-down sapper payout, interest); 13: v22 (a bridge landing re-routes on the towers firing, the toughness surcharge, the move fee); 12: v21.1 (a design takes several resists, sent as a bitmask); 11: v21 (the starter maze, the scaling pot, Frost's brittle, Chain's jumps, Shock); 2: bridges replace wall charges; 3: terrain; 4: selling a tower refunds the top fee; 5: one bridge a wave, touching the route; 6: dodge to 30%, tower charges dearer each time; 7: sappers carry the sabotage; 8: sabotage priced per kind, on slider price; 9: two different v19s (tower accuracy and no dodge on bridges; match length and knock-outs keeping the route on main); 10: both together (v20). Builds with a different number never see each other
 const roomName = code => `siege-p${PROTO}-${code.toLowerCase()}`;
 const NET = {
   on: false, role: null, code: '', ep: 1, st: 'lobby', id: Math.random().toString(36).slice(2, 10), n: 0, tm: 1, sb: 1, // n: waves in the match; tm: timed rounds (1) or untimed (0), v23; sb: sabotage on (1) or off (0), v24
@@ -4305,7 +4486,7 @@ const cleanName = s => String(s || '').replace(/[^\p{L}\p{N} '.-]/gu, '').trim()
 function encodeArmy(ds, withPos) {
   return ds.map(d => {
     const pos = withPos && d.tl.pos && d.tl.pos.length === d.count ? d.tl.pos.map(q36).join('') : '';
-    return [cleanName(d.name), Math.max(0, COLORS.indexOf(d.color)), d.hp, d.speed, d.armor, d.regen, resMask(d.resist), d.count, Math.round(d.tl.s * 1295), Math.round(d.tl.e * 1295), pos.length <= 1000 ? pos : ''];
+    return [cleanName(d.name), Math.max(0, COLORS.indexOf(d.color)), d.hp, d.speed, d.armor, d.regen, resMask(d.resist), d.count, Math.round(d.tl.s * 1295), Math.round(d.tl.e * 1295), pos.length <= 1000 ? pos : '', d.prosp ? 1 : 0]; // v34: Prospector last
   });
 }
 function decodeArmy(list) {
@@ -4318,7 +4499,7 @@ function decodeArmy(list) {
       name: cleanName(a[0]), color: COLORS[int(a[1], 0, COLORS.length - 1)],
       hp: int(a[2], 0, US.hp.steps.length - 1), speed: int(a[3], 0, US.speed.steps.length - 1), armor: int(a[4], 0, US.armor.steps.length - 1),
       regen: int(a[5], 0, US.regen.steps.length - 1), resist: resFromMask(int(a[6], 0, (1 << RES_ORDER.length) - 1)),
-      count, tl: { s, e, pos },
+      count, tl: { s, e, pos }, prosp: a[11] === 1 && ecoOn(), // v34: only in a match with the economy
     };
   });
 }
@@ -4348,9 +4529,12 @@ function decodeCharges(list) {
 const decodeBridges = list => new Set(Array.isArray(list) ? list.map(v => int(v, -1, N - 1, -1)).filter(i => i >= 0 && i !== ENTRY && i !== EXIT) : []);
 // Nothing stands on a bridge, whatever a plan says.
 const clearBridges = G => { for (const i of S.bridges) G[i] = null; return G; };
-const makeDefPlan = () => ({ r: S.round, ep: NET.ep, ms: S.mapSeed, n: S.rounds, sb: S.sabo ? 1 : 0, dFree: S.dFree, ts: S.towerSeq, mt: S.totals.moveTries || 0, mf: S.mvFee || 0, g: encodeGrid(S.grid) });
+// v34: a side's Bet travels in its plan as [pick 0-2, stake], revealed only once both are locked in
+const encodeBet = b => (b && b.s > 0 && b.k >= 0 ? [b.k | 0, Math.floor(b.s)] : null);
+const decodeBet = a => (Array.isArray(a) && betOn() ? { k: int(a[0], 0, 2), s: int(a[1], 0, 1e6) } : null);
+const makeDefPlan = () => ({ r: S.round, ep: NET.ep, ms: S.mapSeed, n: S.rounds, sb: S.sabo ? 1 : 0, dFree: S.dFree, ts: S.towerSeq, mt: S.totals.moveTries || 0, mf: S.mvFee || 0, g: encodeGrid(S.grid), bt: encodeBet(S.bet && S.bet.d) });
 const encodeCharges = M => [...M].map(([i, c]) => [i, c.kind === 'tower' ? 1 : 2, Math.round(clamp(+c.t || 0, 0, 1) * 1295), c.cost]);
-const makeAtkPlan = withPos => ({ r: S.round, ep: NET.ep, aFree: S.aFree, a: encodeArmy(S.designs, withPos), c: encodeCharges(S.charges) });
+const makeAtkPlan = withPos => ({ r: S.round, ep: NET.ep, aFree: S.aFree, a: encodeArmy(S.designs, withPos), c: encodeCharges(S.charges), bt: encodeBet(S.bet && S.bet.a) });
 function makeResult() {
   const L = S.last ? Object.fromEntries(Object.entries(S.last).filter(([, v]) => typeof v === 'number')) : null;
   return { r: S.round, ep: NET.ep, keep: S.keep, dFree: S.dFree, aFree: S.aFree, g: encodeGrid(S.grid), br: [...S.bridges].sort((a, b) => a - b), L, T: { ...S.totals }, over: S.over ? 1 : 0, win: S.winner || '' };
@@ -4378,7 +4562,7 @@ function lockIn() {
   if (bytes({ ...netState(), plan }) > 3900) { toast('This plan is too large to send. Remove a few walls or units.', 'bad'); return; }
   NET.myPlan = plan; NET.lk = S.round; drag = null;
   publish(); tickClock(false); sfx('lock');
-  show(ovWait);
+  showBetWait(); show(ovWait);
   netCheck();
 }
 function unlock() {
@@ -4429,6 +4613,7 @@ function loadPlans(dp, ap) {
   S.gridVer++; recompute();
   S.designs = decodeArmy(ap.a); S.aFree = int(ap.aFree, 0, 1e6);
   S.charges = decodeCharges(ap.c); S.chargeVer++;
+  S.bet = { d: decodeBet(dp.bt), a: decodeBet(ap.bt) }; // v34: both bets from the plans, on every device
 }
 // Called once the wave has played out (or the keep fell), before the summary shows.
 function netAfterWave() {
@@ -4480,7 +4665,7 @@ function startOnlineMatch(note) {
   startClock();
   const len = (!NET.host && NET.n !== chosenRounds() ? ` The host picked ${NET.n} waves.` : '')
     + (!NET.host && (NET.tm !== 0) !== pickTimed ? ` The host picked ${NET.tm !== 0 ? 'timed' : 'untimed'} rounds.` : '')
-    + (!NET.host && (NET.sb !== 0) !== pickSabo ? ` The host picked sabotage ${NET.sb !== 0 ? 'on' : 'off'}.` : '');
+    + (!NET.host && (NET.sb !== 0) !== pickSabo ? ` The host picked ${NET.sb !== 0 ? 'Advanced' : 'Simple'} mode.` : '');
   toast((note || `Match on. You are the ${roleName(NET.role)}.`) + len, NET.role);
 }
 // The attacker plays the defender's match length: it's set as the match starts, and this catches a pick that changed
@@ -4509,8 +4694,11 @@ function adoptSabo(sb) {
   NET.sb = sb;
   s.sabo = !!sb;
   if (!s.sabo) { s.aFree += [...s.charges.values()].reduce((v, c) => v + c.cost, 0); s.charges = new Map(); s.chargeVer++; }
+  // v34: the mode decides the economy too: Prospectors go (refunded) and, before any wave, the map's crystal sites follow
+  if (!ecoOn(s.sabo)) for (const d of s.designs) if (d.prosp) { const was = d.count * unitCost(d); d.prosp = false; s.aFree += was - d.count * unitCost(d); }
+  if (s === S && S.round === 1 && S.phase !== 'wave') { startMap(S.mapSeed); S.grid = withRocks(new Array(N).fill(null)); S.seenGrid = withRocks(new Array(N).fill(null)); buildStarter(); drawTerrain(); }
   publish(); refreshUI();
-  if (NET.role !== 'spec') toast(`The defender picked sabotage ${sb ? 'on' : 'off'}.`, '');
+  if (NET.role !== 'spec') toast(`The host picked ${sb ? 'Advanced' : 'Simple'} mode.`, '');
 }
 function rematchOnline(swap) {
   NET.ep = Math.max(NET.ep, NET.peer ? NET.peer.ep | 0 : 0) + 1;
@@ -4952,7 +5140,7 @@ function lobbyRender() {
   const up2 = Math.round((RULES.noSabHp - 1) * 100);
   $('#lobby-set').innerHTML = `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Waves</span><span class="mkeep" id="lobby-keep">Keep <b>${fmtK(keepFor(nW))}</b></span><div class="pick waves">${RULES.roundChoices.map(x => b('n', x, x === nW, x)).join('')}</div></div>`
     + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Clock</span><span class="mkeep">${tm ? `<b>${mmss(RULES.planSecs)}</b> a round` : 'No clock'}</span><div class="pick clock">${b('tm', 1, tm, 'Timed')}${b('tm', 0, !tm, 'Untimed')}</div></div>`
-    + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Sabotage</span><span class="mkeep">${sb ? 'Bridges, knock-outs' : up2 > 0 ? `Health <b>+${up2}%</b>, free moves` : 'Army only, free moves'}</span><div class="pick clock">${b('sb', 1, sb, 'On')}${b('sb', 0, !sb, 'Off')}</div></div>`;
+    + `<div class="sset${ro ? ' ro' : ''}"><span class="mlbl">Mode</span><span class="mkeep">${sb ? 'Sabotage, economy' : up2 > 0 ? `Health <b>+${up2}%</b>, free moves` : 'Army only, free moves'}</span><div class="pick clock">${b('sb', 0, !sb, 'Simple')}${b('sb', 1, sb, 'Advanced')}</div></div>`;
   const start = $('#lobby-start');
   start.hidden = !NET.host || live; start.disabled = !lobbyReady();
   if (NET.on && up && restartBtn.hidden && !modeStatus.classList.contains('bad')) {
@@ -5341,9 +5529,21 @@ const AI_TIMING = { bunched: 0.12, spread: 0.6 };
 const AI_OPENERS = ['swarm', 'rush', 'screen', 'plated', 'raid'];
 const BRIDGE_HOLD = { open: 0.35, blockable: 0.1 }; // share of a bridge's worth it expects to keep in each later wave
 // res: a resist every unit takes (shock against chain)
-function aiArmy(key, timing, budget, res) {
+// v34: what a coin the attacker earns is worth against a point of keep damage when the computer weighs Prospectors
+const ECO_W = 0.5;
+// v34: the computer's Bet, from its own forecast: the band it expects, half the cap, and none when the forecast sits within
+// 5 points of a band's edge
+function aiBet(sabo, br, committed, free) {
+  if (!betOn(sabo) || br == null || !isFinite(br)) return null;
+  if (Math.abs(br - RULES.betLow) < 0.05 || Math.abs(br - RULES.betHigh) < 0.05) return null;
+  const st = Math.min(free, Math.floor(0.5 * RULES.betCap * committed));
+  return st > 0 ? [br < RULES.betLow ? 0 : br >= RULES.betHigh ? 2 : 1, st] : null;
+}
+function aiArmy(key, timing, budget, res, prosp) {
   const parts = AI_ARMIES[key], win = AI_TIMING[timing];
   const designs = parts.map(([u, , delay], k) => ({ ...makeDesign('Runner', u, COLORS[k]), ...AI_UNITS[u], ...(res ? { resist: res } : {}), tl: { s: delay, e: Math.min(1, delay + win), pos: null } }));
+  // v34: Prospectors: every design but the toughest (it screens them), or the only one
+  if (prosp) { const top = designs.reduce((m, d, k) => (US.hp.steps[d.hp] > US.hp.steps[designs[m].hp] ? k : m), 0); designs.forEach((d, k) => { d.prosp = designs.length === 1 || k !== top; if (d.prosp && designs.length > 1) d.tl = { ...d.tl, s: Math.min(1, d.tl.s + 0.1), e: Math.min(1, d.tl.e + 0.1) }; }); }
   let left = budget;
   designs.forEach((d, k) => { d.count = Math.floor(budget * parts[k][1] / unitCost(d)); left -= d.count * unitCost(d); });
   const last = designs[designs.length - 1], extra = Math.floor(left / unitCost(last)); // leftovers go to the last unit
@@ -5359,9 +5559,10 @@ function* thinkAttack(K, L, rng) {
   const sabCost = ch => ch.reduce((v, [k, i]) => v + (k === 'b' ? bridgeCost(K.bridgeTries) : towerChargeCost(sabC(seen[i]), K.koTries)), 0);
   let tried = 0, W = [];
   const done = c => {
-    const { designs, left } = aiArmy(c.key, c.tm, worth - c.cost, c.res);
+    const { designs, left } = aiArmy(c.key, c.tm, worth - c.cost, c.res, c.prosp);
     const map = sapPlan(seen, BR, kinds(c.charges), sapT(designs, c.st || 'early'), K);
-    return { plan: { aFree: left, a: encodeArmy(designs, false), c: encodeCharges(map) }, note: attackNote(K, D, c, designs, tried, W) };
+    const bt = aiBet(K.sabo, c.br, armyValue(designs) + [...map.values()].reduce((v, x) => v + x.cost, 0), left);
+    return { plan: { aFree: left, a: encodeArmy(designs, false), c: encodeCharges(map), bt }, note: attackNote(K, D, c, designs, tried, W) + (c.prosp ? ' Some of them were Prospectors, to earn while they walk.' : '') };
   };
   if (K.round === 1 && !seen.some(g => g && g.t !== 'rock')) { // nothing seen yet (no starter maze): an opening, picked at random
     const c = { key: AI_OPENERS[Math.floor(rng() * AI_OPENERS.length)], tm: rng() < 0.5 ? 'bunched' : 'spread', cost: 0, charges: [] };
@@ -5377,7 +5578,7 @@ function* thinkAttack(K, L, rng) {
       const { designs } = aiArmy(key, tm, worth);
       if (!armyCount(designs)) continue;
       const r = run(seen, designs, [], 0); yield;
-      ideas.push({ key, tm, cost: 0, charges: [], base: r, Y: r.Y, score: r.Y });
+      ideas.push({ key, tm, cost: 0, charges: [], base: r, Y: r.Y, score: r.Y, eco: r.eco, br: r.breach });
     }
   if (!ideas.length) return fallback;
   ideas.sort((a, b) => b.score - a.score);
@@ -5389,12 +5590,21 @@ function* thinkAttack(K, L, rng) {
     ideas.push({ key: c.key, tm: c.tm, res: 'shock', cost: 0, charges: [], base: r, Y: r.Y, score: r.Y });
   }
   ideas.sort((a, b) => b.score - a.score);
+  // v34: Prospectors on the best ideas when the defender has Mines (or half the time otherwise); the trials decide, their
+  // coins counted at ECO_W of a point of keep damage
+  if (ecoOn(K.sabo) && (seen.some((g, i) => g && g.t === 'wall' && K.terrain[i] === SITE) || rng() < 0.5)) for (const c of ideas.slice(0, Math.min(2, L.finalists))) {
+    const { designs } = aiArmy(c.key, c.tm, worth, c.res, true);
+    if (!armyCount(designs)) continue;
+    const r = run(seen, designs, [], 0); yield;
+    ideas.push({ key: c.key, tm: c.tm, res: c.res, prosp: true, cost: 0, charges: [], base: r, Y: r.Y, score: r.Y + ECO_W * r.eco, eco: r.eco, br: r.breach, ecoIn: true });
+  }
+  ideas.sort((a, b) => b.score - a.score);
   const fin = ideas.slice(0, L.finalists), pool = [...fin];
   // 2. the best few against the likely counter
   if (L.foresight) for (const c of fin) {
-    const { designs } = aiArmy(c.key, c.tm, worth, c.res);
+    const { designs } = aiArmy(c.key, c.tm, worth, c.res, c.prosp);
     c.counterY = run(retuneAgainst(seen, designs), designs, [], 1).Y; yield;
-    c.score = judged(c.Y, c.counterY);
+    c.score = judged(c.Y, c.counterY); c.ecoIn = false;
   }
   // 3. with sappers, under the game's rules: none in round 1 or the final round, only on what it saw, knock-outs
   // within the value cap. Each is tested leaving early or halfway into the first group (Easy: early only).
@@ -5414,7 +5624,7 @@ function* thinkAttack(K, L, rng) {
       if (ch.length > L.maxCharges || performance.now() > K.deadline) continue;
       const bs = ch.filter(([k]) => k === 'b').map(([, i]) => i), cost = sabCost(ch);
       if (cost > worth / 2) continue; // most of the coins stay in the army
-      const { designs } = aiArmy(c.key, c.tm, worth - cost, c.res);
+      const { designs } = aiArmy(c.key, c.tm, worth - cost, c.res, c.prosp);
       const map = sapPlan(seen, BR, kinds(ch), sapT(designs, st), K);
       const Y = run(seen, designs, map, 0).Y; yield;
       const counterY = L.foresight ? run(retuneAgainst(seen, designs), designs, map, 1).Y : Y;
@@ -5430,13 +5640,17 @@ function* thinkAttack(K, L, rng) {
         if (bs.length === ch.length && bs.length === 1) c.bridgeEff = Math.max(c.bridgeEff || 0, eff);
         keep = eff * bs.reduce((v, i) => v + hold(i), 0) / bs.length;
       }
-      pool.push({ key: c.key, tm: c.tm, res: c.res, cost, charges: ch, st, base: c.base, Y, score: now - cost * br * later + keep * later });
+      pool.push({ key: c.key, tm: c.tm, res: c.res, prosp: c.prosp, eco: c.eco, br: c.br, cost, charges: ch, st, base: c.base, Y, score: now - cost * br * later + keep * later });
     }
   }
+  for (const c of pool) if (c.prosp && !c.ecoIn) c.score += ECO_W * (c.eco || 0); // v34: what Prospectors earn (once)
   for (const c of pool) if (c.Y >= K.keep) c.score += 1e6; // a plan that takes the keep this wave beats everything
   pool.sort((a, b) => b.score - a.score);
   const pick = choose(pool, L, rng);
   pick.best = pick === pool[0];
+  // v34: when nothing it tried gets through, it may bank the wave (interest, a bigger army next time), never late
+  if (ecoOn(K.sabo) && L.foresight && pool[0].Y <= 0 && K.round < K.rounds - 1 && rng() < 0.6)
+    return { plan: { aFree: worth, a: encodeArmy(K.designs.map(d => ({ ...d, count: 0 })), false), c: [] }, note: `I tried ${plural(tried, 'plan')} and none got through, so I banked my coins for a bigger wave.` };
   return done(pick);
 }
 function attackNote(K, D, c, designs, tried, W) {
@@ -5642,10 +5856,25 @@ function buildOnce(K, worth0, maze, mix, spend, guard, mode, avoid) {
     if (tmpA[ENTRY] < 0) { G[i] = null; continue; }
     G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= RULES.wall; thick++;
   }
+  // v34: Mines on the crystal sites beside its route (2+ sides touching it), while they'd pay back in the waves left;
+  // a Mine it already has costs only its wall again
+  let mines = 0;
+  if (ecoOn(K.sabo) && K.round < K.rounds) {
+    flow(tmpA, j => !G[j], dangerField(G), new Set(K.bridges));
+    const on = new Set(tracePath(tmpA) || []), left = K.rounds - K.round;
+    const cand = [];
+    K.terrain.forEach((v, i) => { if (v === SITE && !G[i] && !on.has(i)) { const e = nbrs(i).filter(j => on.has(j)).length; if (e >= 2 && left * e * RULES.mineIncome > RULES.mineCost) cand.push([e, i]); } });
+    cand.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+    for (const [, i] of cand) {
+      const old = K.grid[i] && K.grid[i].t === 'wall' && K.seenGrid[i] && K.seenGrid[i].t === 'wall', cost = RULES.wall + (old ? 0 : RULES.mineCost);
+      if (worth < cost) continue;
+      G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= cost; mines++;
+    }
+  }
   for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
   bfs(tmpA, i => !G[i]);
   if (tmpA[ENTRY] < 0) return null;
-  return { G, left: worth, seq, maze, mix, spend, guard, mode, hit: M.bridgeCut, holes: M.cut, rocks: M.rocks, rough: M.rough, cols, thick, towers: towerCount(G),
+  return { G, left: worth, seq, maze, mix, spend, guard, mode, hit: M.bridgeCut, holes: M.cut, rocks: M.rocks, rough: M.rough, cols, thick, mines, towers: towerCount(G),
     blocks: blocks.filter(j => G[j] && G[j].t === 'wall').length, kill: kill.filter(j => G[j] && G[j].t === 'tower').length,
     dodged: avoid.filter(j => !(G[j] && G[j].t === 'tower' && !G[j].fresh)).length }; // expected charge targets no longer holding a seen tower
 }
@@ -5684,7 +5913,7 @@ function threatsFor(K) {
 }
 function* thinkDefend(K, L, rng, mem) {
   K.bridgeSet = new Set(K.bridges);
-  K.holes = new Set(K.bridges); K.terrain.forEach((v, i) => { if (v === ROUGH) K.holes.add(i); });
+  K.holes = new Set(K.bridges); K.terrain.forEach((v, i) => { if (v === ROUGH || v === SITE) K.holes.add(i); }); // v34: crystal sites too (its Mines come after)
   // It sells all it can and builds again (sellOff: the towers' prices and their crowding, v33).
   const sold = sellOff(K.grid);
   K.worth = K.dFree + sold.back + wallCount(K.grid) * RULES.wall;
@@ -5764,7 +5993,8 @@ function* thinkDefend(K, L, rng, mem) {
     relocated: prevCut && best.maze !== prev, rocks: best.rocks, rough: best.rough, shifted: /[+-]/.test(best.maze), expected: targets.length, dodged: best.dodged };
   info.response = !info.bridges ? '' : info.relocated ? 'relocate' : best.mode === 'block' ? 'block' : best.mode === 'kill' ? 'kill' : best.hit ? 'around' : 'clear';
   mem.maze = best.maze; mem.info = info;
-  return { plan: { dFree: best.left, ts: best.seq, mt: best.mt == null ? K.moveTries : best.mt, mf: best.fees || 0, g: encodeGrid(best.G) }, note: defendNote(K, L, best, tried, info), info };
+  const bt = aiBet(K.sabo, threats[0] ? best.Y / Math.max(1, armyStrength(threats[0])) : null, towersValue(best.G) + wallsValue(best.G), best.left);
+  return { plan: { dFree: best.left, ts: best.seq, mt: best.mt == null ? K.moveTries : best.mt, mf: best.fees || 0, g: encodeGrid(best.G), bt }, note: defendNote(K, L, best, tried, info) + (best.mines ? ` I built ${plural(best.mines, 'Mine')} beside the route.` : ''), info };
 }
 function defendNote(K, L, b, tried, info) {
   const last = K.seenArmy && armyValue(K.seenArmy) > 0 ? K.seenArmy : null;
@@ -5821,7 +6051,7 @@ function trial(grid, designs, charges, seed, bridges = []) {
     prepWave(seed);
     for (let k = 0; k < 150 / STEP && !S.trialDone; k++) { waveStep(STEP); trim(); }
     const W = S.wave, dealt = S.grid.reduce((v, g) => v + (g && g.t === 'tower' ? g.dealt : 0), 0);
-    return { X: W.x, Y: W.y, breach: W.x ? W.y / W.x : 0, kills: W.kills, leaks: W.leaks, bridges: W.bridges, jammed: W.jammed, sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed, misses: W.misses, dealt, t: S.waveT };
+    return { X: W.x, Y: W.y, breach: W.x ? W.y / W.x : 0, eco: W.trickle + W.loot + W.scrape - W.bounty, kills: W.kills, leaks: W.leaks, bridges: W.bridges, jammed: W.jammed, sappers: W.sappers, sapOk: W.sapOk, sapLost: W.sapLost, sapMissed: W.sapMissed, misses: W.misses, dealt, t: S.waveT };
   });
 }
 
@@ -6215,12 +6445,13 @@ function soloReady() {
   $('#wait-sub').textContent = 'The computer is finishing its plan';
   $('#wait-net').textContent = '';
   $('#wait-back').hidden = clock.out;
-  show(ovWait);
+  showBetWait(); show(ovWait);
 }
 function soloBeginWave() {
   if (replay) exitReplay(); // the wave starts on the live match
   const p = SOLO.plan || SOLO.fallback;
   SOLO.plan = null; SOLO.note = SOLO.pending || '';
+  S.bet = S.bet || {}; S.bet[SOLO.side === 'def' ? 'a' : 'd'] = decodeBet(p.bt); // v34: the computer's Bet
   if (SOLO.side === 'def') {
     S.designs = decodeArmy(p.a); S.aFree = int(p.aFree, 0, 1e6);
     S.charges = decodeCharges(p.c); S.chargeVer++;
@@ -6304,7 +6535,7 @@ function syncRoundsUI() {
   // v24: with sabotage, or without (army against towers; units cost less)
   for (const b of document.querySelectorAll('#mode-sabo button')) b.setAttribute('aria-pressed', String((b.dataset.sabo === '1') === pickSabo));
   const up = Math.round((RULES.noSabHp - 1) * 100);
-  $('#mode-sabov').innerHTML = pickSabo ? 'Bridges, knock-outs' : up > 0 ? `Health <b>+${up}%</b>, free moves` : 'Army only, free moves';
+  $('#mode-sabov').innerHTML = pickSabo ? 'Sabotage, economy' : up > 0 ? `Health <b>+${up}%</b>, free moves` : 'Army only, free moves';
 }
 for (const b of document.querySelectorAll('#mode-sabo button')) b.addEventListener('click', () => {
   pickSabo = b.dataset.sabo === '1'; syncRoundsUI();
@@ -6384,6 +6615,8 @@ function setBudget(p, free, a, b, aLbl, bLbl) {
   if (fb.dataset.tip !== tip) fb.dataset.tip = tip;
   setStyle(s0, 'width', pc(free)); setStyle(s1, 'width', pc(a)); setStyle(s2, 'width', pc(b));
   s0.dataset.tip = `Free ${free}`; s1.dataset.tip = `${aLbl} ${a}`; s2.dataset.tip = `${bLbl} ${b}`;
+  // v34: in Advanced, the opponent's coins banked at the start of the round (a big bank can mean a big wave)
+  const bk = $(`#${p}-bank`); if (bk) { const n = ecoOn() && S.bank ? S.bank[p === 'd' ? 'a' : 'd'] : null; bk.hidden = n == null; putText(bk, n == null ? '' : ` · Opponent banked ${n}`); bk.dataset.tip = `Banked: ${n}. Coins your opponent didn’t spend last round. A big bank can mean a big wave coming.`; }
 }
 function stepsHTML(steps, cur, skip = -1) {
   let k = 0;
@@ -6456,6 +6689,7 @@ function buildPanels() {
       if (t.dataset.act === 'delete') { deleteDesign(i); return; }
       if (t.dataset.act === 'copy-design') { dupDesign(i); return; }
       if (t.dataset.resist) { setDesign(i, { resist: resToggle(S.designs[i].resist, t.dataset.resist) }); return; }
+      if (t.dataset.prosp && ecoOn()) { setDesign(i, { prosp: !S.designs[i].prosp }); return; } // v34
       if (t.dataset.color) { S.designs[i].color = t.dataset.color; refreshUI(); return; }
     }
     if (t.dataset.rm) { removeCharge(+t.dataset.rm); return; }
@@ -6687,8 +6921,51 @@ function intelHTML() {
   return `<div class="intel-top"><button class="intel-line" data-act="intel" aria-expanded="${intelOpen}" data-tip="The army seen in wave ${S.seenRound}. It may have changed since.">${A.map(d => `<span class="ichip"><span class="ico">${unitSVG(d)}</span>${esc(d.name)} ×${d.count}</span>`).join('<i class="sep">·</i>')}</button>${rp}</div>`
     + (intelOpen ? `<div class="intel-more">${A.map(d => `<div class="irow2"><span class="ico">${unitSVG(d)}</span><b>${esc(d.name)} ×${d.count}</b><span>${designStatsLine(d)} · ${unitCost(d)} each</span></div>`).join('')}</div>` : '');
 }
+/* v34: the Bet panel above Lock in, collapsed to one line until tapped. S.bet[sd] = { k: 0-2 (Low, Medium, High), s: stake };
+   it travels hidden in the plan and is settled when the wave ends (prepWave takes the stake, waveIncome pays). */
+const betUI = { open: { d: false, a: false }, seen: null };
+function showBetWait() { // v34: the wait card says what you bet
+  const sd = (S && S.phase === 'attack') ? 'a' : 'd', b = S && S.bet && S.bet[sd], w = $('#wait-bet'); if (!w) return;
+  const st = b ? Math.min(b.s, betCapOf(sd), sd === 'd' ? S.dFree : S.aFree) : 0;
+  w.hidden = !(betOn() && b && b.k >= 0 && st > 0); w.textContent = w.hidden ? '' : `Your bet: ${BET_NAMES[b.k]} · ${st}`;
+}
+function betHint(sd) {
+  if (sd === 'a') { const Z = wvState(), fc = Z && Z.fcKey === fcPlanKey() ? Z.fc : null; return fc && fc.breach != null ? `Your forecast: ${Math.round(fc.breach * 100)}% through` : ''; }
+  const r = freshTest(); return r && r.x > 0 ? `Your test: ${Math.round(r.y / r.x * 100)}% through` : '';
+}
+function renderBet(sd) {
+  const box = $(sd === 'd' ? '#def-bet' : '#atk-bet'); if (!box) return;
+  const on = betOn() && S && !replay && (sd === 'd' ? S.phase === 'defend' : S.phase === 'attack') && !(SOLO.on && SOLO.locked) && !(online() && NET.lk === S.round);
+  box.hidden = !on; if (!on) { if (box.dataset.k) { box.dataset.k = ''; box.innerHTML = ''; } return; }
+  const b = (S.bet && S.bet[sd]) || null, cap = Math.min(betCapOf(sd), sd === 'd' ? S.dFree : S.aFree), st = b ? Math.min(b.s, cap) : 0, k = b ? b.k : -1, open = betUI.open[sd];
+  const what = sd === 'a' ? 'of what you’re sending' : 'of your defense', hint = open ? betHint(sd) : '', first = open && betUI.seen !== S;
+  const key = [open, k, st, cap, hint, first].join('|');
+  if (box.dataset.k === key) return; box.dataset.k = key;
+  const head = st > 0 && k >= 0 ? `Your bet: ${BET_NAMES[k]} · ${st}` : 'Bet on this wave · optional';
+  box.innerHTML = `<button class="bet-head" data-bet="toggle" aria-expanded="${open}" data-tip="Bet. Optional. Guess how much of the army gets through and stake coins on it."><span>${head}</span><i>${open ? '▴' : '▾'}</i></button>`
+    + (open ? `<div class="bet-body"><p class="bet-lead">Guess how much of the army gets through. Right: win your stake. Wrong: lose it.</p>`
+      + (first ? `<p class="bet-note">Bets are hidden from your opponent until the wave ends. <button data-bet="seen" aria-label="Dismiss">×</button></p>` : '')
+      + `<div class="bet-picks">${betBands().map((t, j) => `<button data-bet="k" data-k="${j}" aria-pressed="${k === j}"><b>${BET_NAMES[j]}</b><small>${t}</small></button>`).join('')}</div>`
+      + `<div class="bet-stake"><button data-bet="-" aria-label="Less">−</button><b>${st}</b><button data-bet="+" aria-label="More">+</button><button data-bet="max">Max</button><span>Up to ${cap} (${pc(RULES.betCap)} ${what})</span></div>`
+      + `<p class="bet-out">${st > 0 && k >= 0 ? `Right: +${st} · Wrong: −${st}` : st > 0 ? 'Pick Low, Medium or High.' : 'No stake, no bet.'}</p>`
+      + (hint ? `<p class="bet-hint">${hint}</p>` : '') + '</div>' : '');
+}
+function betClick(t) {
+  const sd = t.closest('#def-bet') ? 'd' : 'a', a = t.dataset.bet;
+  if (a === 'toggle') { betUI.open[sd] = !betUI.open[sd]; renderBet(sd); return; }
+  if (a === 'seen') { betUI.seen = S; renderBet(sd); return; }
+  S.bet = S.bet || {}; const b = S.bet[sd] = S.bet[sd] || { k: -1, s: 0 }, cap = Math.min(betCapOf(sd), sd === 'd' ? S.dFree : S.aFree), step = Math.max(1, Math.round(cap / 10));
+  if (a === 'k') b.k = b.k === +t.dataset.k ? -1 : +t.dataset.k;
+  else if (a === '+') b.s = Math.min(cap, Math.min(b.s, cap) + step);
+  else if (a === '-') b.s = Math.max(0, Math.min(b.s, cap) - step);
+  else if (a === 'max') b.s = cap;
+  if (b.s > 0 && b.k < 0 && a !== 'k') b.k = 1;
+  renderBet(sd);
+}
+document.addEventListener('click', e => { const t = e.target.closest('[data-bet]'); if (t && (t.closest('#def-bet') || t.closest('#atk-bet'))) betClick(t); });
 function renderDef() {
-  setBudget('d', S.dFree, towersValue(S.grid), wallCount(S.grid) * RULES.wall, 'Towers', 'Walls');
+  renderBet('d');
+  setBudget('d', S.dFree, towersValue(S.grid), wallsValue(S.grid), 'Towers', 'Walls');
   if (bodyKey.def !== 'd') { bodyKey.def = 'd'; el.defBody.innerHTML = defBodyHTML(); }
   const B = brushNow();
   for (const b of el.defBody.querySelectorAll('.tool')) {
@@ -6839,7 +7116,7 @@ function atkBodyHTML(step) {
 }
 // A design's health, speed and armor as icon and number, never cut short ("112 · 2.3 · 6"), then regen and resist.
 const ustatsHTML = d => `<span class="us" title="Health"><i class="si">${ICON.hp}</i>${hpOf(d)}</span><span class="us" title="Speed, cells a second"><i class="si">${ICON.spd}</i>${US.speed.steps[d.speed]}</span><span class="us" title="Armor, blocked per hit"><i class="si">${ICON.arm}</i>${US.armor.steps[d.armor]}</span>`
-  + (d.regen ? `<span class="us xt" title="Regeneration">+${US.regen.steps[d.regen]}%/s</span>` : '') + (resList(d.resist).length ? `<span class="us rs" title="Resists ${resWords(d.resist)}">Res${resList(d.resist).map(k => `<i style="background:${RESIST[k].color}"></i>`).join('')}</span>` : '');
+  + (d.regen ? `<span class="us xt" title="Regeneration">+${US.regen.steps[d.regen]}%/s</span>` : '') + (resList(d.resist).length ? `<span class="us rs" title="Resists ${resWords(d.resist)}">Res${resList(d.resist).map(k => `<i style="background:${RESIST[k].color}"></i>`).join('')}</span>` : '') + (d.prosp ? '<span class="us xt" style="color:#ffd66e" title="Prospector">◆</span>' : '');
 // The army: a row per design (name, price, stats, the count), and the open one's editor in place under its row.
 function rosterHTML() {
   return S.designs.map((d, i) => {
@@ -6857,7 +7134,7 @@ function designerHTML(i) {
   return `<div class="ued" id="ue">
     <div class="uname"><input id="ue-name" maxlength="16" value="${esc(d.name)}" aria-label="Design name" autocomplete="off" spellcheck="false"><span class="swatches">${COLORS.map(c => `<button class="sw" data-color="${c}" style="--sw:${c}" aria-pressed="${c === d.color}" aria-label="Colour ${c}"></button>`).join('')}</span><span class="ed-price" id="ue-pbox"><b id="ue-price"></b><small>each</small></span></div>
     <div class="sliders">${UKEYS.map(k => sliderHTML('ue', k, US[k], d[k])).join('')}</div>
-    <div class="reschips" role="group" aria-label="Resists: pick any">${Object.keys(RESIST).map(k => `<button class="rchip" data-resist="${k}" aria-pressed="false" style="--rc:${RESIST[k].color || 'var(--side)'}">${RESIST[k].name}</button>`).join('')}</div>
+    <div class="reschips" role="group" aria-label="Resists: pick any">${Object.keys(RESIST).map(k => `<button class="rchip" data-resist="${k}" aria-pressed="false" style="--rc:${RESIST[k].color || 'var(--side)'}">${RESIST[k].name}</button>`).join('')}${ecoOn() ? '<button class="rchip prospchip" data-prosp="1" aria-pressed="false" style="--rc:#ffd66e">◆ Prospector</button>' : ''}</div>
     <div class="card-foot"><button class="ed-remove" data-act="delete">Delete design</button><button class="mini" data-act="copy-design">Copy design</button><button class="ed-done" data-act="close">Done</button></div>
   </div>`;
 }
@@ -6898,6 +7175,8 @@ function updateDesigner(i) {
     b.classList.toggle('poor', !on && k !== 'none' && st.poor);
     b.dataset.tip = k === 'none' ? (d.resist === 'none' ? 'No resists' : 'Clear every resist') : `${RESIST[k].name} resist: ${RESIST[k].text} (×${RESIST[k].mult.toFixed(2)}). Combine as many as you like; each multiplies the price.${on ? '' : ` ${st.text} coins`}`;
   }
+  const pb = root.querySelector('[data-prosp]');
+  if (pb) { const st = up({ prosp: !d.prosp }); pb.setAttribute('aria-pressed', !!d.prosp); pb.classList.toggle('poor', !d.prosp && st.poor); pb.dataset.tip = prospTip() + (d.prosp ? '' : ` ${st.text} coins`); }
 }
 // Copy design: the same stats, under a new name and colour, none in the army yet; it opens.
 function dupDesign(i) {
@@ -7843,6 +8122,7 @@ function chargeRows() {
   return rows.length ? `<div class="lhd"><span>Sappers · time them on the Wave step</span></div>${rows.join('')}` : '';
 }
 function renderAtk() {
+  renderBet('a');
   const sk = S.step + ':' + S.round + ':' + S.sabo;
   if (el.atkSteps.dataset.k !== sk) { el.atkSteps.dataset.k = sk; el.atkSteps.innerHTML = stepsHTML(ATK_STEPS, S.step, S.sabo ? -1 : A_SABO); }
   const av = armyValue(S.designs), cv = chargesValue();
@@ -9826,6 +10106,19 @@ function drawGround(c, px) {
     }
   };
   const t = 1 / TILE;
+  // v34: crystal sites: a warm plate with a pixel crystal (a diamond of tiles), lit from the top left; a wall on one is a Mine
+  const site = region(SITE, 0.08);
+  if (site.length) {
+    shape(site); c.fillStyle = 'rgba(242,195,91,0.10)'; c.fill();
+    for (const k of site) for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
+      const d = Math.abs(x - (TILE - 1) / 2) + Math.abs(y - (TILE - 1) / 2);
+      if (d > TILE / 2 - 0.5) continue;
+      const lit = 1 - (x + y) / (2 * TILE);
+      c.fillStyle = `rgba(${Math.round(200 + 55 * lit)},${Math.round(150 + 70 * lit)},${Math.round(60 + 60 * lit)},${0.35 + 0.35 * lit})`;
+      c.fillRect(k.q + x * t + 0.01, k.r + y * t + 0.01, t - 0.02, t - 0.02);
+    }
+    edges(site); c.lineWidth = px * 1.4; c.strokeStyle = 'rgba(242,195,91,0.6)'; c.stroke();
+  }
   const rough = region(ROUGH, 0.05);
   if (rough.length) {
     shape(rough); c.fillStyle = 'rgba(150,116,66,0.13)'; c.fill();
@@ -10279,6 +10572,20 @@ function drawWalls(c, t, G) {
   const px = 1 / view.cs; c.beginPath();
   for (let i = 0; i < N; i++) { const g = G[i]; if (!g || g.t !== 'wall' || !g.fresh) continue; const q = i % COLS, r = (i / COLS) | 0; c.rect(q + I, r + I, 1 - 2 * I - 0.045, 1 - 2 * I - 0.045); }
   c.lineWidth = px * 1.2; c.strokeStyle = `rgba(79,214,238,${0.45 + 0.25 * Math.sin(t * 3)})`; c.stroke();
+  // v34: Mines: a wall on a crystal site shows a gold crystal on its face (dim until it earns: the wave after it's built),
+  // and a short bar of light for each side touching the route
+  const on = S.path ? new Set(S.path) : null;
+  for (let i = 0; i < N; i++) {
+    if (!(G[i] && G[i].t === 'wall' && S.terrain[i] === SITE)) continue;
+    const q = i % COLS, r = (i / COLS) | 0, live = !!(S.seenGrid[i] && S.seenGrid[i].t === 'wall'), cx = q + 0.5, cy = r + 0.5, d = 0.2;
+    c.beginPath(); c.moveTo(cx, cy - d); c.lineTo(cx + d, cy); c.lineTo(cx, cy + d); c.lineTo(cx - d, cy); c.closePath();
+    c.fillStyle = live ? 'rgba(255,214,110,0.95)' : 'rgba(255,214,110,0.35)'; c.fill();
+    c.lineWidth = px * 1.2; c.strokeStyle = 'rgba(40,24,4,0.8)'; c.stroke();
+    if (on && G === S.grid) {
+      c.fillStyle = 'rgba(255,214,110,0.8)';
+      for (const j of nbrs(i)) if (on.has(j)) { const dq = j % COLS - q, dr = ((j / COLS) | 0) - r; c.fillRect(cx + dq * 0.36 - (dq ? 0.025 : 0.16), cy + dr * 0.36 - (dr ? 0.025 : 0.16), dq ? 0.05 : 0.32, dr ? 0.05 : 0.32); }
+    }
+  }
 }
 // Planned bridges stay a dashed outline; laid ones are plank decks that join their neighbours.
 function drawBridgeShape(c, i, planned, t = 0) {
@@ -10486,6 +10793,11 @@ function drawBars(c) {
     let v = uvis.get(u); if (!v) uvis.set(u, v = { trail: u.hp, t: now });
     const dt = Math.min(0.1, now - v.t); v.t = now;
     v.trail = u.hp >= v.trail ? u.hp : Math.max(u.hp, v.trail - Math.max(u.max * 0.6, (v.trail - u.hp) * 4) * dt);
+    if (u.prosp) { // v34: a Prospector's marker, a gold diamond at its top right, the same on every shape and size
+      const [qx, qy] = w2s(...uPos(u)), R0 = Math.max(5, u.r * view.cs), mx = qx + R0 * 0.85, my = qy - R0 * 0.85, k = 4.5;
+      c.beginPath(); c.moveTo(mx, my - k); c.lineTo(mx + k, my); c.lineTo(mx, my + k); c.lineTo(mx - k, my); c.closePath();
+      c.fillStyle = '#ffd66e'; c.fill(); c.lineWidth = 1.5; c.strokeStyle = 'rgba(30,16,2,0.9)'; c.stroke();
+    }
     if (u.hp >= u.max - 0.01 && v.trail >= u.max - 0.01) continue;
     const [sx, sy] = w2s(...uPos(u));
     const R = u.r * view.cs, w = Math.max(14, Math.round(R * 2.4)), h = 3;
@@ -10629,7 +10941,7 @@ function suggestCell() {
   let best = -1, bv = 0, bw = false, bn = 0;
   for (let i = 0; i < N; i++) {
     const g = S.grid[i], wall = !!(g && g.t === 'wall');
-    if ((g && !wall) || siteBlock(i) || (!g && on.has(i))) continue; // a wall (a tower replaces it) or a free cell off the route
+    if ((g && !wall) || siteBlock(i) || S.terrain[i] === SITE || (!g && on.has(i))) continue; // a wall (a tower replaces it) or a free cell off the route
     let n = 0; coverCells(i, cfg, j => { if (on.has(j)) n++; });
     if (n < 6) continue;
     // v33: route covered per coin, the crowding a tower there adds included, so open spots win over crowded ones
@@ -10784,7 +11096,7 @@ function drawInteraction(c, t, G) {
         const q = sc % COLS, r = (sc / COLS) | 0;
         c.beginPath(); rr(c, q + 0.03, r + 0.03, 0.94, 0.94, 0.15);
         c.lineWidth = 0.06; c.strokeStyle = 'rgba(255,93,93,0.95)'; c.stroke();
-        removeLabel = { cell: sc, val: S.grid[sc].t === 'wall' ? RULES.wall : refundOf(sc), delta: pv && pv.kind === 'inspect' ? pv.r.len - pathLen(S.path) : null, weak: weakOn() ? weakNow().get(sc) : null };
+        removeLabel = { cell: sc, val: S.grid[sc].t === 'wall' ? wallBack(sc) : refundOf(sc), delta: pv && pv.kind === 'inspect' ? pv.r.len - pathLen(S.path) : null, weak: weakOn() ? weakNow().get(sc) : null };
       }
     } else {
       const set = hotNow(), pv = buildPreview(), td = towerDrag();
@@ -10865,6 +11177,11 @@ function drawLabels(c, G) {
     const d = removeLabel.delta, tiles = d == null ? '' : d ? `${d < 0 ? '\u2212' : '+'}${Math.abs(d)} TILE${Math.abs(d) === 1 ? '' : 'S'} \u00b7 ` : 'SAME ROUTE \u00b7 ';
     pill(c, sx, sy, `${tiles}REMOVE +${removeLabel.val}`, '#ffb4b4', 'rgba(7,9,12,0.92)', 'center');
     if (removeLabel.weak != null) pill(c, sx, sy + view.cs * 1.32 + 10, `BRIDGE HERE SKIPS ${Math.round(removeLabel.weak * 100)}% OF THE ROUTE`, '#ffb4b4', 'rgba(40,8,8,0.92)', 'center');
+  }
+  { // v34: a crystal site or a Mine under the pointer (or a pending tap): its words, under the cell so they don't cover it
+    const side = S.phase === 'defend' ? 'def' : S.phase === 'attack' ? 'atk' : '', hc = hoverType === 'mouse' ? hover : pending;
+    const txt = side && hc >= 0 && !replay ? siteText(hc, side, side === 'def' && S.tool === 'wall') : '';
+    if (txt) { const [x, y] = center(hc), [sx, sy0] = w2s(x, y); pill(c, sx, sy0 + view.cs * 0.62 + 4, txt, '#ffe6a8', 'rgba(24,16,4,0.92)', 'center'); }
   }
   if (weakLabel) { // v33: a weak wall hovered with another tool
     const [x, y] = center(weakLabel.cell), [sx, sy0] = w2s(x, y);
@@ -11330,6 +11647,12 @@ window.siegeline = {
   get state() { return S; }, get net() { return NET; }, get solo() { return SOLO; }, trial, rules: RULES, TS, US, towerCost, towerValue, unitCost, splitFor, tlPositions,
   // v33: the crowding fee: the layout cost of the live grid (or any grid), its crowding (exact, in thousandths, and as
   // paid), a tower's share, what a change would cost (layoutDelta), and the ghost's price as the board label shows it
+  // v34: the economy, for the tests: the mode's flags, the sites, Mine prices and refunds, a wave's Mines, the Bet's cap
+  eco: { on: () => ecoOn(), bet: () => betOn(), sites: () => [...S.terrain.keys()].filter(i => S.terrain[i] === SITE), placeSites: (seed, n) => { const T = new Uint8Array(N); const was = RULES.crystalSites; if (n != null) RULES.crystalSites = n; const k = placeSites(T, seed); RULES.crystalSites = was; return { n: k, cells: [...T.keys()].filter(i => T[i] === SITE) }; },
+    wallPrice: i => wallPrice(i), wallBack: i => wallBack(i), isMine: i => isMine(i), exposure: i => mineExp(i), mines: () => (S.wave && S.wave.mines ? [...S.wave.mines].map(([i, m]) => ({ i, ...m })) : []), lastMines: () => (S.lastMines ? [...S.lastMines].map(([i, m]) => ({ i, ...m })) : []),
+    betCap: sd => betCapOf(sd), income: (W, br) => waveIncome(W, br), unitCost: d => unitCost(d), strength: ds => armyStrength(ds), siteText: (i, side, wt) => siteText(i, side, wt),
+    // a unit of design d (a full Prospector or not), standing at cell c beside the wave's Mines: what it takes (tests 6, 7)
+    touch: (d, c, v, n = 1) => { const u = makeUnit(-1, 0, 0, { ...d, color: '#fff', name: 'T' }); if (v != null) u.value = v; const w = S.wave.scrape; for (let k = 0; k < n; k++) mineTouch(u, c); return u.prosp ? u.looted : S.wave.scrape - w; }, trickleAt: (d, t, v) => { const u = makeUnit(-1, 0, 0, { ...d, color: '#fff', name: 'T' }); if (v != null) u.value = v; u.born = S.waveT - t; prospEnd(u); return u.earned; } },
   crowd: { layout: G => towersValue(G || S.grid), milli: G => crowdMilli(G || S.grid), coins: G => crowdCoins(G || S.grid), share: i => crowdShare(S.grid, i), delta: ch => layoutDelta(ch), get ghost() { return ghostPrice; } },
   seenCfg: g => seenCfg(g), moveFee: cell => removeFee(cell),
   weak: { get on() { return weakOn(); }, get drawn() { return weakDrawn; }, cells: () => [...weakNow()], all: G => weakWalls(G || S.grid, S.bridges, dangerField(G || S.grid), S.path), cut: w => bridgeCut(S.grid, w, S.bridges, dangerField(S.grid), pathLen(S.path)) }, // v33: the weak-wall overlay // v33: a seen tower's tuning as the attacker saw it, and the fee to move or remove the tower on cell
