@@ -1557,8 +1557,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <h2>Economy (Advanced)</h2>
         <p>Both sides can earn, and both can take from the other’s earnings. All of it is decided while planning and paid when the wave ends, before the next round.</p>
         <p><strong>Crystal sites.</strong> <span data-rule="crystalSites">5</span> gold tiles on every map, the same for both sides. Units walk over them. Only a wall can go on one, and it becomes a <strong>Mine</strong>; Auto-maze leaves them alone.</p>
-        <p><strong>Mines.</strong> A wall on a site, for <span data-rule="wall">5</span> + <span data-rule="mineCost">40</span> coins. Each wave it earns <span data-rule="mineIncome">5</span> for each side (up, down, left, right) touching the route, so 0–20, starting the wave after you build it (the attacker sees it first). Removed in the round it was built, it refunds everything; after that, only the wall. Every unit walking past a side scrapes <span data-rule="mineScrape%">1</span>% of its price from it; a Prospector steals <span data-rule="prospLoot%">20</span>%. You keep what’s left. A bridged Mine is gone, but what it held that wave is still yours.</p>
-        <p><strong>Prospectors.</strong> A toggle on a unit design: ×<span data-rule="prospMult">1.3</span> price and <span data-rule="prospKeep%">50</span>% keep damage (and they count half in the army’s strength). Each earns the attacker <span data-rule="prospTrickle%">2</span>% of its price a second on the board, at most <span data-rule="prospTrickleCap%">30</span>% a wave, and steals from every Mine it passes. Shot down, it pays the defender <span data-rule="prospBounty%">10</span>% of its price. It breaks even after about 5 seconds alive. Example: a Mine holding 15 and Prospectors worth 50: the first takes 10, the second 5, the third nothing.</p>
+        <p><strong>Mines.</strong> A wall on a site, for <span data-rule="wall">5</span> + <span data-rule="mineCost">40</span> coins. Each wave it earns <span data-rule="mineIncome">5</span> for each side (up, down, left, right) touching the route, starting the wave after you build it (the attacker sees it first). Removed in the round it was built, it refunds everything; after that, only the wall. Every unit walking past a side scrapes <span data-rule="mineScrape%">1</span>% of its price from it (scrape takes at most <span data-rule="mineScrapeMax%">25</span>% of a Mine's wave); a Prospector steals <span data-rule="prospLoot%">20</span>%. You keep what’s left. A bridged Mine is gone, but what it held that wave is still yours.</p>
+        <p><strong>Prospectors.</strong> A toggle on a unit design: ×<span data-rule="prospMult">1.3</span> price and <span data-rule="prospKeep%">50</span>% keep damage (and they count half in the army’s strength). Each earns the attacker <span data-rule="prospTrickle%">2</span>% of its price a second on the board, at most <span data-rule="prospTrickleCap%">30</span>% a wave, and steals from every Mine it passes. Shot down, it pays the defender <span data-rule="prospBounty%">10</span>% of its price. Example: a Mine holding 15 and Prospectors worth 50: the first takes 10, the second 5, the third nothing.</p>
         <p><strong>Interest.</strong> <span data-rule="interestRate%">15</span>% of the coins you left unspent when the wave started, at most <span data-rule="interestMax">100</span> a wave. Each side sees what the other banked beside its coins: a big bank can mean a big wave coming.</p>
         <p><strong>The Bet.</strong> Optional, above Lock in. Guess how much of the army gets through: Low (under <span data-rule="betLow%">10</span>%), Medium, or High (<span data-rule="betHigh%">40</span>% or more), and stake up to <span data-rule="betCap%">10</span>% of what you’ve committed (the attacker’s army and sabotage, the defender’s towers, walls and Mines). Right: your stake back and as much again. Wrong: it’s lost. Bets stay hidden until the wave ends.</p>
       </section>
@@ -1868,12 +1868,17 @@ const RULES = {
   // a Mine costs wall + mineCost and earns mineIncome per side (up, down, left, right) touching the route at wave start,
   // from the wave after it was built (the attacker sees it first). Each passing unit that isn't a Prospector scrapes
   // mineScrape of its price from it, once per Mine a wave; the defender keeps what's left when the wave ends.
-  mineCost: 40, mineIncome: 5, mineScrape: 0.01,
+  // v34 (after the sims, at the user's request "make adjustments to balance this out"): the spec's 40 / 5 / no scrape cap
+  // never paid back (28-37 waves); 20 / 10 with scrape at most a quarter of a Mine's wave pays back in about 3.6
+  mineCost: 20, mineIncome: 10, mineScrape: 0.01, mineScrapeMax: 0.25,
   // a Prospector (a toggle on a design): × prospMult on the price, × prospKeep keep damage (and army strength), earns the
   // attacker prospTrickle of its price a second on the board (at most prospTrickleCap a wave), loots prospLoot of its
   // price from each Mine it passes (prospLootMax > 0 caps that in coins), and pays the defender prospBounty of its price
   // when a tower kills it.
-  prospMult: 1.3, prospKeep: 0.5, prospTrickle: 0.02, prospTrickleCap: 0.3, prospLoot: 0.2, prospLootMax: 0, prospBounty: 0.1,
+  // v34 (after the sims): the spec's 2% a second up to 30% gave the attacker nearly 3× its coins over a match (the army
+  // comes back every wave, so the trickle is paid every wave); 1% up to 3% gives about +30%, and the bounty follows it
+  // (1.5%) so trickle and loot stay 2-3× the bounty
+  prospMult: 1.3, prospKeep: 0.5, prospTrickle: 0.01, prospTrickleCap: 0.03, prospLoot: 0.2, prospLootMax: 0, prospBounty: 0.015,
   // the Bet: before each wave a side may stake up to betCap of what it has committed (the attacker's army and sabotage,
   // the defender's towers, walls and Mines) on Low (breach under betLow), Medium, or High (betHigh or more). Right: the
   // stake back and as much again; wrong: lost. bet: false switches it off.
@@ -3677,6 +3682,7 @@ function mineTouch(u, c) {
     const price = u.value || (u.sap ? u.sap.cost || 0 : 0);
     let take = u.prosp ? RULES.prospLoot * price : RULES.mineScrape * price;
     if (u.prosp && RULES.prospLootMax > 0) take = Math.min(take, RULES.prospLootMax);
+    if (!u.prosp && RULES.mineScrapeMax > 0) take = Math.min(take, Math.max(0, RULES.mineScrapeMax * m.inc - m.scrape)); // scrape takes at most this share of a Mine's wave
     take = Math.min(take, m.store);
     if (take <= 0) continue;
     m.store -= take;

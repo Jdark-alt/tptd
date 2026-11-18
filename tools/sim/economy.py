@@ -6,6 +6,7 @@
 import json, sys, os
 from collections import defaultdict
 
+MINE_COST = 20  # RULES.mineCost when a run doesn't override it (v34's tuned value; the spec's was 40)
 PAIRS = [('prospect', 'counter-picks'), ('bank+prospect', 'bank')]  # an economy strategy and the same army without it
 
 def load(path):  # one match per defender, attacker and seed (overlapping --attackers runs write some twice)
@@ -55,7 +56,7 @@ def report(path):
     if MN:
         inc, lo, sc = (sum(r.get(k, 0) for r in R) for k in ('mineInc', 'loot', 'scrape'))
         kept = inc - lo - sc
-        print(f'  Mines: {MN} live Mine-waves, {inc / MN:.1f} held a wave, {kept / MN:.1f} kept; {100 * lo / inc:.0f}% looted, {100 * sc / inc:.0f}% scraped; payback {45 / max(kept / MN, 1e-9):.1f} waves')
+        print(f'  Mines: {MN} live Mine-waves, {inc / MN:.1f} held a wave, {kept / MN:.1f} kept; {100 * lo / inc:.0f}% looted, {100 * sc / inc:.0f}% scraped; payback {(5 + (ms[0].get('rules') or {}).get('mineCost', MINE_COST)) / max(kept / MN, 1e-9):.1f} waves')
     bets = [(r.get('bdk'), r.get('bds', 0), r.get('dBetNet') or 0, 'd') for r in R if r.get('bds')] + [(r.get('bak'), r.get('bas', 0), r.get('aBetNet') or 0, 'a') for r in R if r.get('bas')]
     if bets:
         for sd in 'da':

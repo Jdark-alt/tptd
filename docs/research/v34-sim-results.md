@@ -136,3 +136,19 @@ against its own defenders.
 
 - Thinking time: the Hard defender takes 3.2-3.4 s a round at 4× CPU throttling (rounds 1-4); the computer attacker's wasn't re-measured.
 - Bridged Mines: the online suite's round doesn't bridge one; the local suite checks the rule's parts.
+
+## Retune (after this report, at the user's request)
+
+The user: "if mines dont pay and prospectors get paid too much, make adjustments to balance this out". Shipped:
+`prospTrickle` 0.01, `prospTrickleCap` 0.03, `prospBounty` 0.015; `mineCost` 20, `mineIncome` 10, and a new
+`mineScrapeMax` 0.25 (scrape takes at most a quarter of what a Mine holds in a wave).
+
+| Run (3 seeds) | Prospect coins vs same army | Trickle + loot vs bounty | Mine payback | Attacker wins |
+|---|---|---|---|---|
+| Spec's numbers (all strategies, both bots) | +188% | 2.9× | 28-37 waves | 41-44% |
+| 1% up to 4%, bounty 2%; Mines 20 / 10 (7 strategies) | +40% | 2.5× | 3.6 | 29% |
+| 1% up to 6%, bounty 3%; Mines 25 / 8 (7 strategies) | +51% | 2.4× | 6.0 | 29% |
+| **Shipped: 1% up to 3%, bounty 1.5%; Mines 20 / 10 (all 21 strategies)** | **+35%** (`bank+prospect` +31%) | 2.5× | **3.2** | 38% (Sabotage-only 44%) |
+
+Mines keep 7.8 of 10 a wave (7% looted, 15% scraped); the `miner` bot ends a match 3% richer, since few sites sit beside
+a maze's route. The gate holds (−6 points against Sabotage-only). Not re-run against the computer's Hard defender.
