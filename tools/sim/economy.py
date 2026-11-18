@@ -8,8 +8,11 @@ from collections import defaultdict
 
 PAIRS = [('prospect', 'counter-picks'), ('bank+prospect', 'bank')]  # an economy strategy and the same army without it
 
-def load(path):
-    return [json.loads(l) for l in open(path) if l.strip()]
+def load(path):  # one match per defender, attacker and seed (overlapping --attackers runs write some twice)
+    out = {}
+    for l in open(path):
+        if l.strip(): m = json.loads(l); out[m['defender'], m['attacker'], m['seed'], json.dumps(m.get('rules'), sort_keys=True)] = m
+    return list(out.values())
 
 def income(m, side):
     k = 'dTot' if side == 'd' else 'aTot'

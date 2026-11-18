@@ -5529,8 +5529,8 @@ const AI_TIMING = { bunched: 0.12, spread: 0.6 };
 const AI_OPENERS = ['swarm', 'rush', 'screen', 'plated', 'raid'];
 const BRIDGE_HOLD = { open: 0.35, blockable: 0.1 }; // share of a bridge's worth it expects to keep in each later wave
 // res: a resist every unit takes (shock against chain)
-// v34: what a coin the attacker earns is worth against a point of keep damage when the computer weighs Prospectors
-const ECO_W = 0.5;
+// v34: what a coin the attacker earns is worth against a point of keep damage when the computer weighs Prospectors (0.5 never picked them against its own defenders)
+const ECO_W = 1;
 // v34: the computer's Bet, from its own forecast: the band it expects, half the cap, and none when the forecast sits within
 // 5 points of a band's edge
 function aiBet(sabo, br, committed, free) {
@@ -5860,14 +5860,24 @@ function buildOnce(K, worth0, maze, mix, spend, guard, mode, avoid) {
   // a Mine it already has costs only its wall again
   let mines = 0;
   if (ecoOn(K.sabo) && K.round < K.rounds) {
-    flow(tmpA, j => !G[j], dangerField(G), new Set(K.bridges));
-    const on = new Set(tracePath(tmpA) || []), left = K.rounds - K.round;
-    const cand = [];
-    K.terrain.forEach((v, i) => { if (v === SITE && !G[i] && !on.has(i)) { const e = nbrs(i).filter(j => on.has(j)).length; if (e >= 2 && left * e * RULES.mineIncome > RULES.mineCost) cand.push([e, i]); } });
-    cand.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
-    for (const [, i] of cand) {
-      const old = K.grid[i] && K.grid[i].t === 'wall' && K.seenGrid[i] && K.seenGrid[i].t === 'wall', cost = RULES.wall + (old ? 0 : RULES.mineCost);
-      if (worth < cost) continue;
+    // each site walled in turn (one its maze left as a gap in a column closes it): the route it then leaves, and how many
+    // of the Mine's sides touch it
+    const left = K.rounds - K.round, br = new Set(K.bridges);
+    for (let pass = 0; pass < 5; pass++) {
+      let best = null;
+      K.terrain.forEach((v, i) => {
+        if (v !== SITE || G[i]) return;
+        G[i] = WALL_MARK; bfs(tmpA, j => !G[j]);
+        if (tmpA[ENTRY] >= 0) {
+          flow(tmpA, j => !G[j], dangerField(G), br);
+          const on = new Set(tracePath(tmpA) || []), e = nbrs(i).filter(j => on.has(j)).length;
+          if (e >= 2 && left * e * RULES.mineIncome > RULES.mineCost && (!best || e > best[0])) best = [e, i];
+        }
+        G[i] = null;
+      });
+      if (!best) break;
+      const i = best[1], old = K.grid[i] && K.grid[i].t === 'wall' && K.seenGrid[i] && K.seenGrid[i].t === 'wall', cost = RULES.wall + (old ? 0 : RULES.mineCost);
+      if (worth < cost) break;
       G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= cost; mines++;
     }
   }

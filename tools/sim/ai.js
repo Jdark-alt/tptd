@@ -89,6 +89,7 @@
   function defend(S, opt, seed) {
     if (opt.game) {
       const r = I.brainPlan('def', opt.game, seed), p = r.plan;
+      S.bet = { ...(S.bet || {}), d: p.bt ? { k: p.bt[0], s: p.bt[1] } : null }; // v34: its Bet
       S.grid = I.decodeGrid(p.g); S.dFree = p.dFree; S.towerSeq = p.ts; if (p.mt != null) S.totals.moveTries = p.mt; S.mvFee = p.mf || 0; I.recompute(); // v23: the fees go to the attacker
       if ([...S.bridges].some(i => S.grid[i])) throw new Error('game defender built on a bridge');
       if (p.g.w.concat(p.g.f).some(i => S.terrain[i] && S.terrain[i] !== I.SITE) || p.g.t.some(a => S.terrain[a[0]])) throw new Error('game defender built on rough ground, rock or (a tower) a crystal site'); // v34: walls on sites are Mines
@@ -224,6 +225,7 @@
     if (opt.game) {
       const p = I.brainPlan('atk', opt.game, seed).plan;
       S.designs = I.decodeArmy(p.a); S.aFree = p.aFree; S.charges = I.decodeCharges(p.c);
+      S.bet = { ...(S.bet || {}), a: p.bt ? { k: p.bt[0], s: p.bt[1] } : null }; // v34: its Bet
       return 'game';
     }
     let worth = S.aFree;
