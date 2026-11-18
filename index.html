@@ -5832,8 +5832,35 @@ function buildOnce(K, worth0, maze, mix, spend, guard, mode, avoid) {
     if (k === gk) order.push(['tower', guard]);
     if (first[k] != null && !towerAt.has(first[k])) order.push(['tower', first[k]]);
   });
+  // v34: Mines on the crystal sites beside its route (2+ sides touching it), while they'd pay back in the waves left;
+  // a Mine it already has costs only its wall again
+  let mines = 0;
+  const minePass = () => { if (!ecoOn(K.sabo) || K.round >= K.rounds) return;
+    // each site walled in turn (one its maze left as a gap in a column closes it): the route it then leaves, and how many
+    // of the Mine's sides touch it
+    const left = K.rounds - K.round, br = new Set(K.bridges);
+    for (let pass = 0; pass < 5; pass++) {
+      let best = null;
+      K.terrain.forEach((v, i) => {
+        if (v !== SITE || G[i]) return;
+        G[i] = WALL_MARK; bfs(tmpA, j => !G[j]);
+        if (tmpA[ENTRY] >= 0) {
+          flow(tmpA, j => !G[j], dangerField(G), br);
+          const on = new Set(tracePath(tmpA) || []), e = nbrs(i).filter(j => on.has(j)).length;
+          if (e >= 2 && left * e * RULES.mineIncome > RULES.mineCost && (!best || e > best[0])) best = [e, i];
+        }
+        G[i] = null;
+      });
+      if (!best) break;
+      const i = best[1], old = K.grid[i] && K.grid[i].t === 'wall' && K.seenGrid[i] && K.seenGrid[i].t === 'wall', cost = RULES.wall + (old ? 0 : RULES.mineCost);
+      if (worth < cost) break;
+      G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= cost; mines++;
+    }
+  };
+  order.push(['mines']); // v34: after the columns and their first towers, before the rest and the upgrades
   for (const i of rest) if (!towerAt.has(i)) order.push(['tower', i]);
   for (const [kind, x] of order) {
+    if (kind === 'mines') { minePass(); continue; }
     if (kind === 'col') {
       const cells = mazeCells(C[x], x).filter(i => !holes.has(i) && !G[i]);
       if (worth < cells.length * RULES.wall) break;
@@ -5855,31 +5882,6 @@ function buildOnce(K, worth0, maze, mix, spend, guard, mode, avoid) {
     G[i] = WALL_MARK; bfs(tmpA, j => !G[j]);
     if (tmpA[ENTRY] < 0) { G[i] = null; continue; }
     G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= RULES.wall; thick++;
-  }
-  // v34: Mines on the crystal sites beside its route (2+ sides touching it), while they'd pay back in the waves left;
-  // a Mine it already has costs only its wall again
-  let mines = 0;
-  if (ecoOn(K.sabo) && K.round < K.rounds) {
-    // each site walled in turn (one its maze left as a gap in a column closes it): the route it then leaves, and how many
-    // of the Mine's sides touch it
-    const left = K.rounds - K.round, br = new Set(K.bridges);
-    for (let pass = 0; pass < 5; pass++) {
-      let best = null;
-      K.terrain.forEach((v, i) => {
-        if (v !== SITE || G[i]) return;
-        G[i] = WALL_MARK; bfs(tmpA, j => !G[j]);
-        if (tmpA[ENTRY] >= 0) {
-          flow(tmpA, j => !G[j], dangerField(G), br);
-          const on = new Set(tracePath(tmpA) || []), e = nbrs(i).filter(j => on.has(j)).length;
-          if (e >= 2 && left * e * RULES.mineIncome > RULES.mineCost && (!best || e > best[0])) best = [e, i];
-        }
-        G[i] = null;
-      });
-      if (!best) break;
-      const i = best[1], old = K.grid[i] && K.grid[i].t === 'wall' && K.seenGrid[i] && K.seenGrid[i].t === 'wall', cost = RULES.wall + (old ? 0 : RULES.mineCost);
-      if (worth < cost) break;
-      G[i] = { t: 'wall', fresh: !seen(i, 'wall') }; worth -= cost; mines++;
-    }
   }
   for (let d; (d = aiUpgrade(G, worth, true));) worth -= d; // spend the rest
   bfs(tmpA, i => !G[i]);
