@@ -234,12 +234,12 @@ try:
                 for pg in (A, B): pg.evaluate(f'()=>{{const S=window.siegeline.state; S.terrain[{mc}]=3; S.seenGrid[{mc}]={{t:"wall",fresh:false}}; S.seenVer++;}}')
                 A.evaluate(f'()=>{{const S=window.siegeline.state; S.grid[{mc}]={{t:"wall",fresh:false}}; S.gridVer++; window.siegeline.refresh();}}')
             A.evaluate('()=>{window.siegeline.state.bet={d:{k:1,s:5}};}')
-            B.evaluate('()=>{const sl=window.siegeline,S=sl.state; for (const d of S.designs) if (d.count) {const c=sl.unitCost(d); d.prosp=true; S.aFree=Math.max(0,S.aFree-d.count*(sl.unitCost(d)-c));} S.bet={a:{k:2,s:5}}; sl.refresh();}')
+            B.evaluate('()=>{const sl=window.siegeline,S=sl.state; for (const d of S.designs) if (d.count) {const c=sl.unitCost(d); d.prosp=true; S.aFree=Math.max(0,S.aFree-d.count*(sl.unitCost(d)-c));} S.aFree+=5; S.bet={a:{k:2,s:5}}; sl.refresh();}')
             d_after = ev(A, 'S.dFree')
             A.evaluate("()=>document.querySelector('#def-lock').click()"); B.evaluate("()=>document.querySelector('#atk-lock').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
-            check('v22 Part C test 7: both devices have the same coins and relocation count after the fee', ev(A, '[S.dFree, S.totals.moveTries]') == ev(B, '[S.dFree, S.totals.moveTries]') == [d_after, 1],
+            check('v22 Part C test 7: both devices have the same coins and relocation count after the fee', ev(A, '[S.dFree, S.totals.moveTries]') == ev(B, '[S.dFree, S.totals.moveTries]') == [d_after - 5, 1],  # v34: less the bet's stake, taken when the wave starts
                   f"{ev(A, '[S.dFree, S.totals.moveTries]')} / {ev(B, '[S.dFree, S.totals.moveTries]')}")
             LC = '[S.dFree, window.siegeline.crowd.coins(), window.siegeline.crowd.layout()]'
             check('v33 test 7: both devices agree on the crowded layout’s cost and the coins after crowded builds, a move and a retune', crowd_a > 0 and ev(A, LC)[1] > 0 and ev(A, LC) == ev(B, LC), f'{ev(A, LC)} / {ev(B, LC)} (crowding before the move {crowd_a})')
@@ -261,7 +261,7 @@ try:
             ea, eb = ev(A, ECO), ev(B, ECO)
             check('v34 test 12: both devices agree on the economy after a wave with a live Mine, Prospectors and two bets', ea == eb and ea[0] == 1 and ea[3] > 0 and ea[7] == 5 and ea[9] == 5, f'{ea} / {eb}')
             check('sync toast shown', 'Synced' in B.inner_text('#toast'), B.inner_text('#toast'))
-            L3 = ev(B, '[S.last.aGain, S.last.aMove, S.last.aInt, S.aFree]')
+            L3 = ev(B, '[S.last.aGain, S.last.aMove, S.last.aInt + S.last.aProsp + S.last.aScrape + S.last.aBetNet + S.last.bas, S.aFree]')  # v34: the economy's coins and the bet
             check('v23: the attacker’s coins match on both devices, the move fee credited (“Defender moved towers”)',
                   ev(A, '[S.last.aMove, S.aFree]') == [fee_want, L3[3]] and L3[1] == fee_want and L3[3] == a_left + L3[0] + L3[1] + L3[2] and ev(B, 'S.mvFee') == 0
                   and f'+{fee_want}' in B.inner_text('#sum-extra') and 'moved towers' in B.inner_text('#sum-extra').lower(), f"{ev(A, '[S.last.aMove, S.aFree]')} / {L3} from {a_left}")
