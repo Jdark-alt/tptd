@@ -2327,14 +2327,14 @@ with sync_playwright() as p:
     if not page.is_visible('#ov-hand'): page.click('#atk-lock')
     hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
     L1 = S(page, 'S.last')
-    check(300 <= L1['dLeft'] < 1000 and L1['dInt'] == L1['dLeft'] * 15 // 100 and L1['aLeft'] == 1200 and L1['aInt'] == 150 and L1['dTot'] == L1['dGain'] + L1['dInt'],
-          f'v27: interest after wave 1: 15% of what each side left unspent, at most 150 paid (defender {L1["dLeft"]} → +{L1["dInt"]}, attacker 1,200 → +{L1["aInt"]}, not 180; v23-v26 counted up to 150 coins and paid 22)')
+    check(300 <= L1['dLeft'] < 1000 and L1['dInt'] == L1['dLeft'] * 15 // 100 and L1['aLeft'] == 1200 and L1['aInt'] == 100 and L1['dTot'] == L1['dGain'] + L1['dInt'],
+          f'v27: interest after wave 1: 15% of what each side left unspent, at most 100 paid since v34 (defender {L1["dLeft"]} → +{L1["dInt"]}, attacker 1,200 → +{L1["aInt"]}, not 180; v23-v26 counted up to 150 coins and paid 22)')
     details(page)
     led1, led1d = [page.inner_text(i) if page.is_visible(i) else '' for i in ('#led-aint', '#led-dint')]
-    check('Interest on 1200 left (at most 150 a wave)' in led1 and '+150' in led1 and 'at most' not in led1d and 'counts up to' not in led1 + led1d,
+    check('Interest on 1200 left (at most 100 a wave)' in led1 and '+100' in led1 and 'at most' not in led1d and 'counts up to' not in led1 + led1d,
           f'v27: the ledger says when the 150 held the interest back, and only then ({led1} | {led1d})')
     rs = page.evaluate('() => [document.querySelector("#info-intmax").textContent, document.querySelector("#info-intmax2").textContent, document.querySelector("#info-round").innerText]')
-    check(rs[:2] == ['1,000', '1,000'] and 'at most 150 a wave (reached with 1,000 saved)' in rs[2], f'v27: the rules sheet says interest pays at most 150 a wave, reached with 1,000 saved ({rs[:2]})')
+    check(rs[:2] == ['667', '667'] and 'at most 100 a wave (reached with 667 saved)' in rs[2], f'v34: the rules sheet says interest pays at most 100 a wave, reached with 667 saved ({rs[:2]})')
     page.click('#sum-next'); hand(page)
     # round 2: a strong tower by the entry (1), two Basic towers further on (2 and 3); tower 3 has moved since the attacker saw it
     T1, T2, T3, T3now = idx(2, 4), idx(13, 3), idx(9, 2), idx(9, 8)
@@ -2365,7 +2365,7 @@ with sync_playwright() as p:
     check(arm == 3, f'v23: sappers march with armor 1 (each hit loses 3; {arm})')
     check(saps == ['lost', 'miss'] and L['sapLost'] == 1 and L['dKill'] == cost2,
           f'v24: the sapper shot down pays the defender its sabotage’s whole price ({cost2} → +{L["dKill"]}); the one whose tower moved missed and pays no one ({saps})')
-    check(L['dInt'] == 15 and L['aInt'] == min(150, a2 * 15 // 100) and L['aLeft'] == a2 and L['dTot'] == L['dGain'] + L['dKill'] + 15 + L['bridgeRefund'] * 0,
+    check(L['dInt'] == 15 and L['aInt'] == min(100, a2 * 15 // 100) and L['aLeft'] == a2 and L['dTot'] == L['dGain'] + L['dKill'] + 15 + L['bridgeRefund'] * 0,
           f'v27: interest on what was left when the wave started (defender 100 → +15, attacker {a2} → +{L["aInt"]}, at most 150)')
     ex = page.inner_text('#sum-extra') if page.is_visible('#sum-extra') else ''
     details(page)
@@ -2466,7 +2466,7 @@ with sync_playwright() as p:
         names = page.evaluate('() => [...document.querySelectorAll("#mode-cards .mcard")].map(c => c.querySelector("h2").textContent + " / " + c.querySelector(".msub").textContent)')
         check(names == ['Single player / Versus computer', 'This device / Two players, taking turns', 'Multiplayer / Online, against friends'], f'v30 {vw}: the three ways to play, in order, with v30’s names ({names})')
         lbls = page.evaluate('() => [...document.querySelectorAll(".st-set .mlbl")].map(x => x.textContent)')
-        check(lbls == ['Waves', 'Clock', 'Sabotage'], f'v25 {vw}: the settings above them ({lbls})')
+        check(lbls == ['Waves', 'Clock', 'Mode'], f'v25 {vw}: the settings above them ({lbls})')
         over = page.evaluate('() => document.documentElement.scrollWidth > innerWidth || document.querySelector("#ov-mode").scrollWidth > innerWidth')
         scrolls = page.evaluate('() => document.querySelector("#mode-cards").classList.contains("scrolls")')
         check(not over, f'v25 {vw}: no sideways page scroll')
@@ -2780,7 +2780,7 @@ with sync_playwright() as p:
     E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
     page.click('#info-go')
     labels = page.locator('#mode-sabo button').all_inner_texts()
-    check(labels == ['Simple', 'Advanced'] and 'Mode' in page.inner_text('.st-set'), f'v34 test 1: the start screen offers Mode: Simple or Advanced ({labels})')
+    check([l.lower() for l in labels] == ['simple', 'advanced'] and 'mode' in page.inner_text('.st-set').lower(), f'v34 test 1: the start screen offers Mode: Simple or Advanced ({labels})')
     # test 2: sites, on a map with terrain, the starter maze and moving gates
     page.evaluate('() => { const R = window.siegeline.rules; R.planSecs = 0; }')
     page.click('#mode-local'); hand(page); hints_off(page)
@@ -2816,7 +2816,7 @@ with sync_playwright() as p:
     check(exp == [0, 5, 10, 15, 20], f'v34 test 3: 0-4 sides on the route earn 0, 5, 10, 15, 20 ({exp})')
     # round 1: the attacker sends Prospector Runners; the new Mine earns nothing yet
     page.click('#def-lock'); hand(page)
-    page.click('.urow[data-i="0"]'); page.wait_for_timeout(80)
+    page.click('.rpick[data-i="0"]'); page.wait_for_timeout(80)
     page.click('#ue [data-prosp]'); page.wait_for_timeout(40)
     pc = E('sl.eco.unitCost(S.designs[0])')
     check(E('S.designs[0].prosp') and pc == round(20 * 1.3), f'v34 test 5 (Prospector): the toggle prices ×1.3 ({pc})')

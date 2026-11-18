@@ -8215,7 +8215,8 @@ function unitLiveHTML(u) {
     <dl class="kv">
       <dt>Health</dt><dd>${Math.ceil(u.hp)} / ${u.max}</dd>
       <dt>Status</dt><dd>${status.length ? status.join(' · ') : 'Marching'}</dd>
-      <dt>If it gets through</dt><dd>${u.value} × ${Math.round(f * 100)}% = ${fmtNum(u.value * f)} damage to the keep</dd>
+      <dt>If it gets through</dt><dd>${u.value} × ${Math.round(f * 100)}%${u.prosp ? ` × ${RULES.prospKeep}` : ''} = ${fmtNum(u.value * f * (u.prosp ? RULES.prospKeep : 1))} damage to the keep</dd>
+      ${u.prosp ? `<dt>Prospector</dt><dd>earned ${fmtNum(Math.min(RULES.prospTrickleCap, RULES.prospTrickle * Math.max(0, S.waveT - u.born)) * u.value)}, looted ${fmtNum(u.looted)} this wave; shot down, the defender gets +${fmtNum(RULES.prospBounty * u.value)}</dd>` : ''}
     </dl>`;
 }
 function unitCardHTML(u) {
