@@ -1930,7 +1930,7 @@ with sync_playwright() as p:
     page.click('#atk-lock'); hand(page)
     page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_selector('#ov-end', state='visible', timeout=5000)
     page.click('#end-again')
-    check(S(page, '[...S.terrain].join("")') != live and S(page, 'S.terrain.filter(v => v).length') == len(rough) + len(rock), 'a rematch gets a new map')
+    check(S(page, '[...S.terrain].join("")') != live and S(page, 'S.terrain.filter(v => v === 1 || v === 2).length') == len(rough) + len(rock), 'a rematch gets a new map')
     check(not errors, f'terrain: no errors {errors[:3]}')
     ctx.close()
 

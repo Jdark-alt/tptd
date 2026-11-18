@@ -108,7 +108,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 #pane-atk.drill .browse{display:none}
 /* v22.2: the defender's tower card opens under the tools, which stay in reach (no Done needed to pick Wall or Remove);
    while it's open the lines that only explain things step aside so the card fits */
-#pane-def.drill #d-intel,#pane-def.drill #d-help,#pane-def.drill #d-line{display:none}
+#pane-def.drill #d-intel,#pane-def.drill #d-help,#pane-def.drill #d-line,#pane-def.drill #def-bet{display:none}
 .ctx:empty{display:none}
 .note{margin:0;font:400 13px/1.5 var(--f-body);color:var(--muted)}
 .note b{color:var(--soft);font-weight:500}
@@ -11672,7 +11672,7 @@ window.siegeline = {
   get suggestion() { return { cell: TSUG.vis ?? -1, gone: TSUG.gone, best: S.phase === 'defend' ? suggestCell() : -1 }; }, // v32: the tower suggestion on the board now (-1: none)
   get gates() { return [ENTRY_R, EXIT_R]; }, setGates: (er, xr) => { setGates(er, xr); recompute(); }, gatesFor, // v32: this match's gate rows (entry, keep); the rows a map seed gets
   potFor, refresh: () => refreshUI(), get tag() { const t = boardTag(); return t ? t[0] : ''; }, // since v21: a round's pot, a redraw of the panels, the board's corner label
-  starterAt: (seed, presses = RULES.starterPresses) => { const g = [ENTRY_R, EXIT_R]; try { const T = makeTerrain(seed >>> 0).T; return starterWalls(withRocks(new Array(N).fill(null), T), T, presses).sort((a, b) => a - b); } finally { setGates(...g); } }, // the starter maze for a map seed (on that map's gates; the match's are put back)
+  starterAt: (seed, presses = RULES.starterPresses) => { const g = [ENTRY_R, EXIT_R]; try { const T = makeTerrain(seed >>> 0).T; if (ecoOn()) placeSites(T, seed >>> 0); return starterWalls(withRocks(new Array(N).fill(null), T), T, presses).sort((a, b) => a - b); } finally { setGates(...g); } }, // the starter maze for a map seed (on that map's gates; the match's are put back)
   shotAcc, encodeArmy: ds => encodeArmy(ds, true), // one shot's chance to hit for a tower's sliders (%); an army as a plan carries it
   streamId() { if (!srand.__id) srand.__id = ++streamIds; return srand.__id; }, // which random stream the match draws from now (v22: the forecast must leave it alone)
   worldToClient(x, y) { const [sx, sy] = w2s(x, y), r = canvas.getBoundingClientRect(); return [r.left + sx, r.top + sy]; },

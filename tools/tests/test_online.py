@@ -227,6 +227,15 @@ try:
             A.mouse.up(); A.wait_for_timeout(100)
             check('v22 Part C: dragging a seen tower costs the defender the move fee (v33: and the crowding change)', ev(A, 'S.dFree') == d_before - fee_want - crowd_mv and ev(A, 'S.totals.moveTries') == 1, f"{d_before} → {ev(A, 'S.dFree')} (fee {fee_want}, crowding {crowd_mv})")
             d_after = ev(A, 'S.dFree')
+            # v34 test 12: a live Mine beside the route (a site both devices share, as the map's sites are; walled last round),
+            # Prospectors in the army and a bet on each side: both devices must agree on every coin after the wave
+            mc = A.evaluate('()=>{const S=window.siegeline.state, on=new Set(S.path); for (const i of S.path) for (const j of [i-1,i+1,i-16,i+16]) if (j>=0&&j<176&&Math.abs(j%16-i%16)<=1&&!on.has(j)&&!S.grid[j]&&!S.seenGrid[j]&&!S.bridges.has(j)&&j%16>0&&j%16<15) return j; return -1;}')
+            if mc >= 0:
+                for pg in (A, B): pg.evaluate(f'()=>{{const S=window.siegeline.state; S.terrain[{mc}]=3; S.seenGrid[{mc}]={{t:"wall",fresh:false}}; S.seenVer++;}}')
+                A.evaluate(f'()=>{{const S=window.siegeline.state; S.grid[{mc}]={{t:"wall",fresh:false}}; S.gridVer++; window.siegeline.refresh();}}')
+            A.evaluate('()=>{window.siegeline.state.bet={d:{k:1,s:5}};}')
+            B.evaluate('()=>{const sl=window.siegeline,S=sl.state; for (const d of S.designs) if (d.count) {const c=sl.unitCost(d); d.prosp=true; S.aFree=Math.max(0,S.aFree-d.count*(sl.unitCost(d)-c));} S.bet={a:{k:2,s:5}}; sl.refresh();}')
+            d_after = ev(A, 'S.dFree')
             A.evaluate("()=>document.querySelector('#def-lock').click()"); B.evaluate("()=>document.querySelector('#atk-lock').click()")
             wait(A, "S.phase==='wave'"); wait(B, "S.phase==='wave'")
             check('simultaneous lock-in starts the wave on both', True)
@@ -248,6 +257,9 @@ try:
             wait(A, "S.phase==='summary'"); wait(B, "S.phase==='summary'")
             B.wait_for_timeout(300)
             same(A, B, 'attacker adopts the defender result after a desync')
+            ECO = '[S.last.mineN, S.last.mineInc, S.last.dMine, S.last.prospN, S.last.aProsp, S.last.aScrape, S.last.dBounty, S.last.bds, S.last.dBetNet, S.last.bas, S.last.aBetNet, S.dFree, S.aFree]'
+            ea, eb = ev(A, ECO), ev(B, ECO)
+            check('v34 test 12: both devices agree on the economy after a wave with a live Mine, Prospectors and two bets', ea == eb and ea[0] == 1 and ea[3] > 0 and ea[7] == 5 and ea[9] == 5, f'{ea} / {eb}')
             check('sync toast shown', 'Synced' in B.inner_text('#toast'), B.inner_text('#toast'))
             L3 = ev(B, '[S.last.aGain, S.last.aMove, S.last.aInt, S.aFree]')
             check('v23: the attacker’s coins match on both devices, the move fee credited (“Defender moved towers”)',
@@ -395,7 +407,7 @@ try:
             # v24: the defender picked sabotage off too: both devices play without it and price units alike
             price = '[S.sabo, window.siegeline.unitCost(S.designs[1])]'
             check("v24: sabotage off (the defender's pick) on both devices, units priced alike", ev(C, price) == ev(D, price) and ev(C, 'S.sabo') is False and ev(D, 'N.sb') == 0
-                  and 'sabotage off' in D.inner_text('#toast').lower(), f"{ev(C, price)} / {ev(D, price)} · {D.inner_text('#toast')}")
+                  and 'simple mode' in D.inner_text('#toast').lower(), f"{ev(C, price)} / {ev(D, price)} · {D.inner_text('#toast')}")
             for pg in (C, D): pg.close()
             # ---------- v26: spectators. One by watch link before the start, one who joins the running match later; every
             # device plays every wave alike, and nothing secret reaches a spectator before both sides lock in. Terrain and the
