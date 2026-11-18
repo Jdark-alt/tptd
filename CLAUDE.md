@@ -373,6 +373,7 @@ The mode screen has a third card, **Versus computer**. The player picks a side a
 - **Snowball:** the side ahead in worth after wave 3 wins 58-63% in all four modes; the economy doesn't make leads stick.
 - **Bet:** the Hard defender bets Low 98% of the time, right 90%, +30 a match; the computer Normal attacker bets High mostly, right 17%, −46 a match (its forecast is against the defense it saw, which the computer rebuilds).
 - **Sites:** 5 on all 1,000 maps checked. Starter maze with sites reserved: route median 68 (none: 70), shortest 37 (39); 18 of 300 maps where the computer's mazes keep under 80% of the empty board's room (none without).
+- **Thinking time** (4× CPU throttling, headless Chromium, Advanced on a map with terrain and sites): the Hard defender 3.2-3.4 s a round over rounds 1-4, its Mine step included (`THINK_MS` caps the search at 3 s). The computer attacker's (with its Prospector trials) wasn't re-measured; the script's round flow broke on the player-defender side.
 - The user's levers if playtests agree: `prospTrickleCap` (about 0.03-0.04 reaches the target), `mineIncome` up or `mineCost` down, scrape capped per Mine.
 
 **Measured on v33.1 (`match.py` and `compare.py`, the 18 strategies against the `counter` bot (10 seeds) and the computer's Hard defender (3 seeds), and the computer attacker at every level against both (4 seeds), both modes, the same bots and seeds as v33's runs; `scan.py` on high-health designs; bots, not humans; details in [docs/research/v33-sim-results.md](docs/research/v33-sim-results.md), section 11):**

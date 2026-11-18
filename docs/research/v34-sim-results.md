@@ -134,5 +134,5 @@ against its own defenders.
 
 ## Not measured
 
-- Thinking time at 4× throttling: see CLAUDE.md ("Measured on v34").
+- Thinking time: the Hard defender takes 3.2-3.4 s a round at 4× CPU throttling (rounds 1-4); the computer attacker's wasn't re-measured.
 - Bridged Mines: the online suite's round doesn't bridge one; the local suite checks the rule's parts.
