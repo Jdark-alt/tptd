@@ -1005,7 +1005,10 @@ with sync_playwright() as p:
     # spec test 4: at 100% (the top slider at 1/s or slower) a wave plays exactly as it did in v18, for the same seed
     sure = [[T1, {'accuracy': 3, 'rate': 3, 'dps': 4}], [idx(12, 4), {'accuracy': 3, 'rate': 4, 'splash': 2, 'poison': True}], [idx(3, 6), {'accuracy': 3, 'rate': 5, 'chain': True, 'slow': True}]]
     army = [[5, 3, 6, 0.2], [2, 6, 10, 0.1]]
+    # v34.1: on v18's 20 s release window (v33 made it 30 s, and the army's spreads are shares of the window)
+    wl = page.evaluate('() => window.siegeline.rules.waveLen'); page.evaluate('() => { window.siegeline.rules.waveLen = 20; }')
     now = page.evaluate(run, [maze, sure, army, 11])
+    page.evaluate(f'() => {{ window.siegeline.rules.waveLen = {wl}; }}')
     try: v18 = subprocess.run(['git', 'show', '52d977a:index.html'], cwd=ROOT, capture_output=True, text=True).stdout
     except Exception: v18 = ''
     if 'const PROTO = 8' in v18:

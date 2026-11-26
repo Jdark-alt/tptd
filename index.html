@@ -969,12 +969,14 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 .toolrow .tcost{font-size:9px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .toolrow .tool{position:relative}
 /* short screens with a tower card open: the tools go to one line each (icon and name) so the card fits under them */
-@media (min-width:721px) and (orientation:landscape) and (max-height:830px){
+@media (min-width:721px) and (orientation:landscape) and (max-height:880px){ /* v34.1: to 880 px (was 830), with the Bet under the card */
   #pane-def.drill .toolrow .tool{flex-direction:row;gap:6px;min-height:36px;padding:3px 2px}
   #pane-def.drill .toolrow .tcost{display:none}
   #pane-def.drill .helprow .hbtn{height:30px}
   #pane-def.drill #def-ctx .srow.c{height:31px}
   #pane-def.drill #def-ctx .card{gap:5px}
+  #pane-def.drill .routebar{padding:6px 10px}
+  #pane-def.drill #def-bet{margin-bottom:4px} #pane-def.drill #def-bet .bet-head{padding:4px 10px}
 }
 .tool .bx{position:absolute;top:2px;right:2px;width:16px;height:16px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line-2);background:var(--slate-2);color:var(--paper);font:500 12px/1 var(--f-ui);cursor:pointer;z-index:2}
 .tool .bx:hover{border-color:var(--paper)}
@@ -1231,6 +1233,9 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .keepbox{padding:0 10px;gap:9px}
   .keepbox .kico{display:none}
   .knum{font-size:20px} .knum small{display:none} .ktop{gap:6px} .klbl{letter-spacing:.1em}
+  /* v34.1: Max income on a line of its own, so a preview never changes the readout's height (the board above would move
+     between a touch's two taps) */
+  .routebar .inc{flex-basis:100%}
   #btn-info,#btn-sound{width:44px}
   .key{grid-template-columns:1fr;gap:5px}
   .key div{padding:9px 12px;border-top:1px solid var(--line);border-left:2px solid var(--k)}
