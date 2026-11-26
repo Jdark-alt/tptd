@@ -83,9 +83,13 @@ def play_out(page, side, label, ready):
     for _ in range(8):
         rounds += 1
         before = S(page, AWORTH if side == 'def' else DWORTH)
+        # v34.1: the Mines the attacker saw, whose 20 coins over the wall a computer defender loses if it drops one (v34's rule)
+        seen_mines = [] if side == 'def' else S(page, '[...window.siegeline.eco.sites()].filter(i => S.seenGrid[i] && S.seenGrid[i].t === "wall" && S.grid[i] && S.grid[i].t === "wall")')
         ready(); hand(page)
         # v22: a computer defender's worth goes down by exactly the move fees it paid for the seen towers it didn't rebuild in place
-        worth_ok &= before - (0 if side == 'def' else S(page, 'SOLO.fees || 0')) == S(page, AWORTH if side == 'def' else DWORTH)
+        # (and, since v34, by mineCost for every seen Mine it didn't keep: only the wall's coins come back)
+        lost = 0 if side == 'def' else S(page, f'({seen_mines}).filter(i => !(S.grid[i] && S.grid[i].t === "wall")).length * window.siegeline.rules.mineCost')
+        worth_ok &= before - (0 if side == 'def' else S(page, 'SOLO.fees || 0')) - lost == S(page, AWORTH if side == 'def' else DWORTH)
         if side != 'def': f = S(page, 'SOLO.fees || 0'); fees += f; fee_rounds += f > 0
         coins_ok &= S(page, 'S.aFree >= 0 && S.dFree >= 0 && S.path !== null')
         n = S(page, 'S.charges.size'); charges += n; most = max(most, n)
