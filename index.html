@@ -48,6 +48,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .roundchip .lbl,.klbl{font:500 10px/1 var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
 .roundchip .val{font:900 22px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
 .roundchip .val small{font:500 11px/1 var(--f-ui);color:var(--muted);margin-left:5px;letter-spacing:.06em}
+#v-round{display:inline-block;text-align:right} /* v34.1: room for the match's last round, so 9 → 10 moves nothing */
 .keepbox{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:var(--r2);background:var(--slate);border:1px solid var(--line);position:relative;transition:border-color .3s}
 .keepbox .kico{flex:none;width:16px;height:16px;color:var(--keep)}
 .keepbox .kico svg{width:100%;height:100%;display:block}
@@ -108,7 +109,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 #pane-atk.drill .browse{display:none}
 /* v22.2: the defender's tower card opens under the tools, which stay in reach (no Done needed to pick Wall or Remove);
    while it's open the lines that only explain things step aside so the card fits */
-#pane-def.drill #d-intel,#pane-def.drill #d-help,#pane-def.drill #d-line,#pane-def.drill #def-bet{display:none}
+#pane-def.drill #d-intel,#pane-def.drill #d-help,#pane-def.drill #d-line{display:none}
 .ctx:empty{display:none}
 .note{margin:0;font:400 13px/1.5 var(--f-body);color:var(--muted)}
 .note b{color:var(--soft);font-weight:500}
@@ -157,7 +158,7 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--paper);outline-
 .routebar span{white-space:nowrap}
 .routebar b{font:600 13px/1 var(--f-ui);letter-spacing:.02em;color:var(--paper)}
 .routebar i{font-style:normal;letter-spacing:.02em}
-.routebar .up{color:var(--cool)} .routebar .dn{color:#ffb4b4}
+.routebar .up{color:var(--cool)} .routebar .dn{color:#ffb4b4} .routebar .nx{color:var(--muted)}
 /* helpers: auto-maze, auto-tune and undo, then what the last helper press did */
 .tunerow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:28px}
 .tunemsg{flex:1 0 100%;min-width:0;font:500 10.5px/1.3 var(--f-ui);letter-spacing:.04em;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -249,20 +250,24 @@ img.art{-webkit-user-drag:none;user-select:none;pointer-events:none}
 .legend img{width:42px;height:42px}
 .legend figcaption{font:500 9.5px/1.2 var(--f-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--soft);text-align:center}
 .callout2.locked{background:var(--slate);border-color:var(--line);border-left-color:var(--line-2)}
-.betbox{margin:0 0 8px;border:1px solid var(--line);border-radius:6px;background:rgba(255,255,255,.015)}
-.bet-head{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;background:none;border:0;color:var(--muted);font:500 12px/1.2 var(--f-body);cursor:pointer;text-align:left}
-.bet-head i{font-style:normal;opacity:.7}
-.bet-body{padding:0 10px 8px;display:flex;flex-direction:column;gap:6px}
-.bet-body p{margin:0;font:400 12px/1.35 var(--f-body);color:var(--muted)}
-.bet-note{display:flex;gap:6px;align-items:center;color:#ffe6a8!important}.bet-note button{background:none;border:0;color:inherit;cursor:pointer;font-size:14px;padding:0 4px}
-.bet-picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-.bet-picks button{display:flex;flex-direction:column;gap:2px;padding:6px 6px;border-radius:5px;border:1px solid #2f3945;background:#17202a;color:var(--text,#dfe7ee);cursor:pointer;text-align:left;min-width:0}
-.bet-picks b{font:600 12px/1.1 var(--f-body)}.bet-picks small{font:400 10.5px/1.2 var(--f-body);color:var(--muted)}
+/* v34.1: the Bet, quieter and tighter: a hairline box with one muted line until tapped, then the bands, the stake and one
+   line for the outcome and the forecast; it sits above Lock in on every planning screen, a tower card open or not */
+.betbox{margin:0 0 6px;border:1px solid var(--line);border-radius:5px;background:none}
+.bet-head{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;background:none;border:0;color:var(--soft);font:500 12px/1.2 var(--f-body);cursor:pointer;text-align:left}
+.bet-head:hover{color:var(--paper)} .bet-head small{font:inherit;color:var(--muted);margin-left:2px} .bet-head b{font-weight:600;color:var(--paper)}
+.bet-head i{font-style:normal;font-size:10px;color:var(--muted)}
+.bet-body{padding:8px 10px 9px;display:flex;flex-direction:column;gap:7px;border-top:1px solid var(--line)}
+.bet-body p{margin:0;font:400 11.5px/1.4 var(--f-body);color:var(--muted)}
+.bet-picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.bet-picks button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:5px 8px;border-radius:4px;border:1px solid #2f3945;background:#17202a;color:var(--paper);cursor:pointer;text-align:left;min-width:0}
+.bet-picks b{font:600 12px/1.1 var(--f-body)}.bet-picks small{font:400 10.5px/1.15 var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .bet-picks button[aria-pressed="true"]{border-color:var(--side);box-shadow:inset 0 0 0 1px var(--side)}
-.bet-stake{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.bet-stake button{min-width:28px;height:26px;border-radius:5px;border:1px solid #2f3945;background:#17202a;color:var(--text,#dfe7ee);cursor:pointer;font:500 12px/1 var(--f-body)}
-.bet-stake b{min-width:34px;text-align:center;font:600 14px/1 var(--f-ui)}.bet-stake span{font:400 11px/1.2 var(--f-body);color:var(--muted)}
-.bet-out{color:#ffe6a8!important}
+.bet-stake{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.bet-stake button{min-width:26px;height:24px;padding:0 7px;border-radius:4px;border:1px solid #2f3945;background:#17202a;color:var(--paper);cursor:pointer;font:500 12px/1 var(--f-body)}
+.bet-stake b{min-width:30px;text-align:center;font:600 13px/1 var(--f-ui);font-variant-numeric:tabular-nums}
+.bet-stake span{margin-left:auto;font:400 11px/1.2 var(--f-body);color:var(--muted)}
+.bet-foot{display:flex;justify-content:space-between;gap:4px 10px;flex-wrap:wrap;font:400 11.5px/1.3 var(--f-body);color:var(--muted)}
+.bet-foot .bet-out.on{color:var(--soft)}
 .btext .bank{color:var(--muted);text-transform:none;letter-spacing:0}
 .sabo-lead{margin:0;font:400 13px/1.45 var(--f-body);color:var(--muted)}
 .sabo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
@@ -913,16 +918,26 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
 #clockbig.beat{animation:bigbeat 1s ease-out}
 @keyframes bigbeat{0%{transform:translateX(-50%) scale(1.12)}35%{transform:translateX(-50%) scale(1)}}
 @media (prefers-reduced-motion:reduce){.clockbox.low,#clockbig.beat{animation:none}}
-.wavebox{flex-direction:row;align-items:center;gap:14px}
+.wavebox{flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
 .wavebox .wcol{display:flex;flex-direction:column;gap:6px}
-.wavebox b{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wavebox b{font:900 18px/1 var(--f-display);font-variant-numeric:tabular-nums;white-space:nowrap}
 .wavebox small{font:500 11px/1 var(--f-ui);color:var(--muted);margin-left:3px}
 .wavebox .kd{color:var(--keep)}
-.potbox{flex-direction:row;align-items:baseline;gap:8px;align-content:center;flex-wrap:nowrap;align-items:center}
+.potbox{flex-direction:row;align-items:baseline;gap:8px;align-content:center;flex-wrap:nowrap;align-items:center;width:206px}
+/* v34.1: the boxes beside the keep keep one width whatever the phase, so the keep's bar never changes length (it read as
+   the keep healing when the clock went away after a wave): the clock (planning) and the wave's numbers (in a wave) share one
+   fixed slot, empty between them; the pot is as wide idle as its live meter; the online pill and the watch button are fixed */
+.hslot{flex:none;width:156px;display:flex;min-width:0}
+.hslot > .hbox{flex:1 1 auto;min-width:0}
+.hslot .clockbox,.hslot .clockbox.low{min-width:0}
+.idlebox .cval{color:var(--muted)} .idlebox .lbl{opacity:.7}
+@media (min-width:561px){.hslot > .wavebox:not([hidden]) ~ .idlebox{display:none}}
+.hud-row .netpill{width:150px;text-align:center;overflow:hidden;text-overflow:ellipsis}
+#btn-watch{width:60px;min-width:0}
 .potbox .pval{font:900 20px/1 var(--f-display);font-variant-numeric:tabular-nums}
 .potbox .prange{font:500 11px/1 var(--f-ui);color:var(--muted);white-space:nowrap}
 .potbox.live .ptag,.potbox.live .pval,.potbox.live .prange{display:none}
-.pmeter{display:flex;flex-direction:column;gap:6px;width:180px}
+.pmeter{display:flex;flex-direction:column;gap:6px;width:100%}
 .pm-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font:600 12.5px/1 var(--f-ui);font-variant-numeric:tabular-nums;white-space:nowrap}
 .pm-d{color:var(--cool)} .pm-a{color:var(--warm)}
 .pm-top .lbl b{color:var(--paper);font-weight:600;letter-spacing:.04em}
@@ -1172,13 +1187,14 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   /* the HUD bar wraps: round, keep and the clock (or the wave's numbers) on top, coins and the pot below */
   .hud-row{flex-wrap:wrap;row-gap:6px}
   .hud-row > *{min-height:44px}
-  .roundchip{order:1} .keepbox{order:2;flex:1 1 0} .clockbox,.wavebox{order:3} #btn-sound,#btn-info{order:4}
+  .roundchip{order:1} .keepbox{order:2;flex:1 1 0} #btn-sound,#btn-info{order:4}
+  /* v34.1: the top row keeps the clock's spot whether it shows or not; the wave's numbers go to the second row, by the pot */
+  .hslot{display:contents} .hslot > .clockbox{order:3;flex:none;width:74px} .hslot > .wavebox{order:6;flex:none}
   .hud-row > .hbreak{display:block;order:5;flex-basis:100%;height:0;min-height:0} /* coins and the pot always start row 2 */
-  .potbox{order:7;flex:0 1 auto;padding:0 10px} .hud-row .netpill{order:8;min-height:0}
-  .potbox.live{flex:1 1 auto}
+  .potbox{order:7;flex:1 1 auto;width:auto;padding:0 10px} .hud-row .netpill{order:8;min-height:0;width:auto}
   .potbox .ptag,.pm-top .lbl{display:none} /* the POT label goes before the numbers shrink */
   .pmeter{width:auto;min-width:120px;flex:1}
-  .clockbox{min-width:0;padding:0 9px} .clockbox .cval{font-size:20px}
+  .clockbox{min-width:0;padding:0 9px} .clockbox .cval{font-size:20px} .clockbox.low .cval{font-size:24px}
   .wavebox{gap:10px;padding:0 9px} .wavebox b{font-size:17px}
   .hbox .lbl{font-size:9.5px;letter-spacing:.12em}
   .sb b{font-size:25px} .sb{padding:10px}
@@ -1205,7 +1221,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .spec-last{padding:7px 8px 7px 10px;font-size:11.5px} #pane-spec .spec-note{display:none}
   .lb-seats{gap:8px} .seat{min-height:122px;padding:14px 12px 12px} .seat .swho{font-size:21px}
   .lb-watch{padding:10px 12px}
-  #btn-watch{order:9;min-height:0;min-width:0;padding:0 10px}
+  #btn-watch{order:9;min-height:0;min-width:0;width:auto;padding:0 10px}
   .netpill{font-size:9.5px;padding:4px 6px;letter-spacing:.08em}
   .netpill .lg{display:none} .netpill .sm{display:inline}
   .brand{display:none}
@@ -1214,7 +1230,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
   .roundchip .val{font-size:20px}
   .keepbox{padding:0 10px;gap:9px}
   .keepbox .kico{display:none}
-  .knum{font-size:20px} .knum small{display:none}
+  .knum{font-size:20px} .knum small{display:none} .ktop{gap:6px} .klbl{letter-spacing:.1em}
   #btn-info,#btn-sound{width:44px}
   .key{grid-template-columns:1fr;gap:5px}
   .key div{padding:9px 12px;border-top:1px solid var(--line);border-left:2px solid var(--k)}
@@ -1340,8 +1356,8 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
           <div class="kbar"><i id="v-keepbar" style="width:100%"></i></div>
         </div>
       </div>
-      <div class="hbox clockbox" id="clockbox" hidden data-tip="Planning time left this round. When it runs out, your plan goes as it stands."><span class="lbl">Time</span><b class="cval" id="t-clock">3:00</b></div>
-      <div class="hbox wavebox" id="wavebox" hidden><span class="wcol" data-tip="Units that reached the keep, of all the army sent"><span class="lbl">Leaked</span><b><span id="h-leak">0</span><small id="h-sent">/ 0</small></b></span><span class="wcol" data-tip="Damage to the keep this wave"><span class="lbl">Keep</span><b class="kd" id="h-kdmg">−0</b></span></div>
+      <div class="hslot" id="hslot"><div class="hbox clockbox" id="clockbox" hidden data-tip="Planning time left this round. When it runs out, your plan goes as it stands."><span class="lbl">Time</span><b class="cval" id="t-clock">3:00</b></div>
+      <div class="hbox wavebox" id="wavebox" hidden><span class="wcol" data-tip="Units that reached the keep, of all the army sent"><span class="lbl">Leaked</span><b><span id="h-leak">0</span><small id="h-sent">/ 0</small></b></span><span class="wcol" data-tip="Damage to the keep this wave"><span class="lbl">Keep</span><b class="kd" id="h-kdmg">−0</b></span></div><div class="hbox clockbox idlebox" id="idlebox" data-tip="The planning clock shows here while a side plans, in a timed match."><span class="lbl">Time</span><b class="cval">—</b></div></div>
       <div class="hbox potbox" id="potbox" data-tip="This round's pot: the more of the army gets through, the bigger the defender's share. It grows round by round, and so does the swing between the shares.">
         <span class="lbl ptag">Pot</span><b class="pval" id="pot-v">200</b><small class="prange" id="pot-r">35–65</small>
         <span class="pmeter" id="pot-meter" hidden><span class="pm-top"><span class="pm-d" id="pm-d">+100</span><span class="lbl ptag2">Pot <b id="pm-pot">200</b></span><span class="pm-a" id="pm-a">+100</span></span><span class="pm-bar"><i class="d" id="pm-sd" style="width:50%"></i><i class="a" id="pm-sa" style="width:50%"></i></span></span>
@@ -1427,7 +1443,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
     <header class="sheet-head">
       <div>
         <h1 class="logo" id="info-title"><i class="mark"></i>TPTD</h1>
-        <p class="tagline">Two Player Tower Defence · v34</p>
+        <p class="tagline">Two Player Tower Defence · v34.1</p>
       </div>
       <button class="x" id="info-x" aria-label="Close">×</button>
     </header>
@@ -1559,7 +1575,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
         <p><strong>Crystal sites.</strong> <span data-rule="crystalSites">5</span> gold tiles on every map, the same for both sides. Units walk over them. Only a wall can go on one, and it becomes a <strong>Mine</strong>; Auto-maze leaves them alone.</p>
         <p><strong>Mines.</strong> A wall on a site, for <span data-rule="wall">5</span> + <span data-rule="mineCost">40</span> coins. Each wave it earns <span data-rule="mineIncome">5</span> for each side (up, down, left, right) touching the route, starting the wave after you build it (the attacker sees it first). Removed in the round it was built, it refunds everything; after that, only the wall. Every unit walking past a side scrapes <span data-rule="mineScrape%">1</span>% of its price from it (scrape takes at most <span data-rule="mineScrapeMax%">25</span>% of a Mine's wave); a Prospector steals <span data-rule="prospLoot%">20</span>%. You keep what’s left. A bridged Mine is gone, but what it held that wave is still yours.</p>
         <p><strong>Prospectors.</strong> A toggle on a unit design: ×<span data-rule="prospMult">1.3</span> price and <span data-rule="prospKeep%">50</span>% keep damage (and they count half in the army’s strength). Each earns the attacker <span data-rule="prospTrickle%">2</span>% of its price a second on the board, at most <span data-rule="prospTrickleCap%">30</span>% a wave, and steals from every Mine it passes. Shot down, it pays the defender <span data-rule="prospBounty%">10</span>% of its price. Example: a Mine holding 15 and Prospectors worth 50: the first takes 10, the second 5, the third nothing.</p>
-        <p><strong>Interest.</strong> <span data-rule="interestRate%">15</span>% of the coins you left unspent when the wave started, at most <span data-rule="interestMax">100</span> a wave. Each side sees what the other banked beside its coins: a big bank can mean a big wave coming.</p>
+        <p><strong>Interest.</strong> <span data-rule="interestRate%">15</span>% of the coins you left unspent when the wave started, at most <span data-rule="interestMax">100</span> a wave. Each side sees what the other banked beside its coins: a big bank can mean a big wave coming. The defender’s <strong>Max income</strong>, under the tools, adds up the most its Mines and interest can pay a wave, and shows what a wall or tower under the pointer would change.</p>
         <p><strong>The Bet.</strong> Optional, above Lock in. Guess how much of the army gets through: Low (under <span data-rule="betLow%">10</span>%), Medium, or High (<span data-rule="betHigh%">40</span>% or more), and stake up to <span data-rule="betCap%">10</span>% of what you’ve committed (the attacker’s army and sabotage, the defender’s towers, walls and Mines). Right: your stake back and as much again. Wrong: it’s lost. Bets stay hidden until the wave ends.</p>
       </section>
 
@@ -1591,7 +1607,7 @@ body.wvmode #a-budget{display:none} /* nothing to spend on the Wave step: its ro
             </tbody>
           </table>
         </div>
-        <p class="colophon">TPTD · Two Player Tower Defence · v34</p>
+        <p class="colophon">TPTD · Two Player Tower Defence · v34.1</p>
       </section>
     </div>
     <footer class="sheet-foot"><button class="ready neutral" id="info-go">Start playing</button></footer>
@@ -2239,7 +2255,7 @@ const pc = v => `${Math.round(v * 1000) / 10}%`;
 const keepWords = () => (RULES.prospKeep === 0.5 ? 'half keep damage' : `${pc(RULES.prospKeep)} keep damage`);
 const prospLine = () => `Earns ${pc(RULES.prospTrickle)} of its price a second alive (max ${pc(RULES.prospTrickleCap)}), loots Mines it passes, ${keepWords()}.`;
 const prospTip = () => `Prospector. ×${RULES.prospMult} price, ${keepWords()}. Earns ${pc(RULES.prospTrickle)} of its price each second alive (up to ${pc(RULES.prospTrickleCap)} a wave) and steals from Mines it passes. If shot down, the defender gets ${pc(RULES.prospBounty)} of its price.`;
-const betBands = () => [`Under ${pc(RULES.betLow)} gets through`, `${pc(RULES.betLow).replace('%', '')}–${pc(RULES.betHigh)} gets through`, `Over ${pc(RULES.betHigh)} gets through`];
+const betBands = () => [`Under ${pc(RULES.betLow)}`, `${pc(RULES.betLow).replace('%', '')}–${pc(RULES.betHigh)}`, `Over ${pc(RULES.betHigh)}`]; // of the army through (v34.1: the lead says it once)
 const BET_NAMES = ['Low', 'Medium', 'High'];
 // A Mine's exposure on a route (sides touching it) and what it earns a wave
 const mineExp = (i, path = S.path) => { const on = new Set(path || []); return nbrs(i).filter(j => on.has(j)).length; };
@@ -6914,12 +6930,36 @@ function turnShape(op) {
   S.tool = 'shape'; refreshUI();
 }
 // Path length always; time under fire when hints are on; and the change the hovered build would make.
+/* v34.1: the most the defender's economy pays a wave (Advanced): every Mine mineIncome per side on the route (a new one, not
+   yet seen by the attacker, from the wave after), and interest on the coins left after the Bet's stake (at most interestMax).
+   add: cells a preview would wall (on a site they're Mines), on the preview's route and coins. */
+function defIncome(add = null, path = S.path, free = S.dFree) {
+  if (!ecoOn() || !S.terrain) return null;
+  const on = new Set(path || []), put = new Set(add || []);
+  let mines = 0, fresh = 0, n = 0;
+  for (let i = 0; i < N; i++) {
+    if (!isMine(i) && !(put.has(i) && S.terrain[i] === SITE)) continue;
+    const v = nbrs(i).filter(j => on.has(j)).length * RULES.mineIncome;
+    mines += v; n++; if (!seenAs(i, 'wall')) fresh += v;
+  }
+  const b = S.bet && S.bet.d, stake = b && b.k >= 0 && b.s > 0 ? Math.min(Math.floor(b.s), betCapOf('d'), Math.max(0, free)) : 0;
+  const left = Math.max(0, free - stake), int = interestOn(left);
+  return { mines, fresh, n, int, left, total: mines + int };
+}
+const incTip = x => `The most your Mines and interest pay when the wave ends. Mines ${x.mines}: ${RULES.mineIncome} for each side on the route${x.n ? ', less what passing units scrape or Prospectors steal' : ' (a wall on a crystal site is a Mine)'}${x.fresh ? `; ${x.fresh} of it from new Mines, which earn from the next wave` : ''}. Interest ${x.int}: ${pc(RULES.interestRate)} of the ${x.left} coins you leave unspent${RULES.interestMax > 0 ? `, at most ${RULES.interestMax}` : ''}.`;
 function routeBarHTML() {
   const b = baseRoute(), pv = buildPreview(), r = pv && pv.r;
   const dl = (a, z, f, unit) => (Math.abs(z - a) < 0.05 ? '' : ` <i class="${z > a ? 'up' : 'dn'}">(${z > a ? '+' : '−'}${f(Math.abs(z - a))}${unit})</i>`);
   const path = r && r.len !== b.len ? `<span>Path <b>${b.len} → ${r.len}</b>${dl(b.len, r.len, v => v, '')}</span>` : `<span>Path <b>${b.len}</b></span>`;
   const fire = !hintsOn ? '' : r && secs(r.fire) !== secs(b.fire) ? `<span>Under fire <b>${secs(b.fire)} → ${secs(r.fire)}</b>${dl(b.fire, r.fire, v => v.toFixed(1), 's')}</span>` : `<span>Under fire <b>${secs(b.fire)}</b></span>`;
-  return path + fire;
+  // v34.1: the income readout, with what the build under the pointer would change (a Mine on a site, the coins it spends)
+  const inc = defIncome();
+  if (!inc) return path + fire;
+  if (r && pv.cells && pv.inc === undefined) pv.inc = defIncome(pv.cells.filter(([, k]) => k === 'wall').map(([i]) => i), r.path, S.dFree - cellsCost(pv.cells));
+  const z = r && pv.inc && pv.inc.total !== inc.total ? pv.inc : null;
+  const income = z ? `<span class="inc" data-tip="${incTip(z)}">Max income <b>+${inc.total} → +${z.total}</b>${dl(inc.total, z.total, v => v, '')}</span>`
+    : `<span class="inc" data-tip="${incTip(inc)}">Max income <b>+${inc.total}</b>${inc.fresh ? ` <i class="nx">· ${inc.fresh} starts next wave</i>` : ''}</span>`;
+  return path + fire + income;
 }
 // The tower strip: one chip per tower, its price and effect dots; a tap opens its card.
 function towerStripHTML() {
@@ -6940,8 +6980,10 @@ function intelHTML() {
     + (intelOpen ? `<div class="intel-more">${A.map(d => `<div class="irow2"><span class="ico">${unitSVG(d)}</span><b>${esc(d.name)} ×${d.count}</b><span>${designStatsLine(d)} · ${unitCost(d)} each</span></div>`).join('')}</div>` : '');
 }
 /* v34: the Bet panel above Lock in, collapsed to one line until tapped. S.bet[sd] = { k: 0-2 (Low, Medium, High), s: stake };
-   it travels hidden in the plan and is settled when the wave ends (prepWave takes the stake, waveIncome pays). */
-const betUI = { open: { d: false, a: false }, seen: null };
+   it travels hidden in the plan and is settled when the wave ends (prepWave takes the stake, waveIncome pays).
+   v34.1: tidier (one lead line with the hidden note in it, slim bands, the outcome and the hint on one line), and it stays
+   above Lock in while a tower card is open. */
+const betUI = { open: { d: false, a: false } };
 function showBetWait() { // v34: the wait card says what you bet
   const sd = (S && S.phase === 'attack') ? 'a' : 'd', b = S && S.bet && S.bet[sd], w = $('#wait-bet'); if (!w) return;
   const st = b ? Math.min(b.s, betCapOf(sd), sd === 'd' ? S.dFree : S.aFree) : 0;
@@ -6956,22 +6998,20 @@ function renderBet(sd) {
   const on = betOn() && S && !replay && (sd === 'd' ? S.phase === 'defend' : S.phase === 'attack') && !(SOLO.on && SOLO.locked) && !(online() && NET.lk === S.round);
   box.hidden = !on; if (!on) { if (box.dataset.k) { box.dataset.k = ''; box.innerHTML = ''; } return; }
   const b = (S.bet && S.bet[sd]) || null, cap = Math.min(betCapOf(sd), sd === 'd' ? S.dFree : S.aFree), st = b ? Math.min(b.s, cap) : 0, k = b ? b.k : -1, open = betUI.open[sd];
-  const what = sd === 'a' ? 'of what you’re sending' : 'of your defense', hint = open ? betHint(sd) : '', first = open && betUI.seen !== S;
-  const key = [open, k, st, cap, hint, first].join('|');
+  const what = sd === 'a' ? 'of what you’re sending' : 'of your defense', hint = open ? betHint(sd) : '';
+  const key = [open, k, st, cap, hint].join('|');
   if (box.dataset.k === key) return; box.dataset.k = key;
-  const head = st > 0 && k >= 0 ? `Your bet: ${BET_NAMES[k]} · ${st}` : 'Bet on this wave · optional';
-  box.innerHTML = `<button class="bet-head" data-bet="toggle" aria-expanded="${open}" data-tip="Bet. Optional. Guess how much of the army gets through and stake coins on it."><span>${head}</span><i>${open ? '▴' : '▾'}</i></button>`
-    + (open ? `<div class="bet-body"><p class="bet-lead">Guess how much of the army gets through. Right: win your stake. Wrong: lose it.</p>`
-      + (first ? `<p class="bet-note">Bets are hidden from your opponent until the wave ends. <button data-bet="seen" aria-label="Dismiss">×</button></p>` : '')
-      + `<div class="bet-picks">${betBands().map((t, j) => `<button data-bet="k" data-k="${j}" aria-pressed="${k === j}"><b>${BET_NAMES[j]}</b><small>${t}</small></button>`).join('')}</div>`
+  const head = st > 0 && k >= 0 ? `<span>Your bet: <b>${BET_NAMES[k]} · ${st}</b></span>` : '<span>Bet on this wave <small>· optional</small></span>';
+  const out = st > 0 && k >= 0 ? `Right: +${st} · Wrong: −${st}` : st > 0 ? 'Pick Low, Medium or High.' : 'No stake, no bet.';
+  box.innerHTML = `<button class="bet-head" data-bet="toggle" aria-expanded="${open}" data-tip="Bet. Optional. Guess how much of the army gets through and stake coins on it.">${head}<i>${open ? '▴' : '▾'}</i></button>`
+    + (open ? `<div class="bet-body"><p class="bet-lead">Guess how much of the army gets through. Right: win your stake. Wrong: lose it. Hidden from your opponent until the wave ends.</p>`
+      + `<div class="bet-picks">${betBands().map((t, j) => `<button data-bet="k" data-k="${j}" aria-pressed="${k === j}" data-tip="${t} of the army gets through"><b>${BET_NAMES[j]}</b><small>${t}</small></button>`).join('')}</div>`
       + `<div class="bet-stake"><button data-bet="-" aria-label="Less">−</button><b>${st}</b><button data-bet="+" aria-label="More">+</button><button data-bet="max">Max</button><span>Up to ${cap} (${pc(RULES.betCap)} ${what})</span></div>`
-      + `<p class="bet-out">${st > 0 && k >= 0 ? `Right: +${st} · Wrong: −${st}` : st > 0 ? 'Pick Low, Medium or High.' : 'No stake, no bet.'}</p>`
-      + (hint ? `<p class="bet-hint">${hint}</p>` : '') + '</div>' : '');
+      + `<div class="bet-foot"><span class="bet-out${st > 0 && k >= 0 ? ' on' : ''}">${out}</span>${hint ? `<span class="bet-hint">${hint}</span>` : ''}</div></div>` : '');
 }
 function betClick(t) {
   const sd = t.closest('#def-bet') ? 'd' : 'a', a = t.dataset.bet;
   if (a === 'toggle') { betUI.open[sd] = !betUI.open[sd]; renderBet(sd); return; }
-  if (a === 'seen') { betUI.seen = S; renderBet(sd); return; }
   S.bet = S.bet || {}; const b = S.bet[sd] = S.bet[sd] || { k: -1, s: 0 }, cap = Math.min(betCapOf(sd), sd === 'd' ? S.dFree : S.aFree), step = Math.max(1, Math.round(cap / 10));
   if (a === 'k') b.k = b.k === +t.dataset.k ? -1 : +t.dataset.k;
   else if (a === '+') b.s = Math.min(cap, Math.min(b.s, cap) + step);
@@ -7019,6 +7059,7 @@ function renderDef() {
     el.defCtx.scrollTop = 0;
   }
   el.paneDef.classList.toggle('drill', !!key);
+  if (opened && betUI.open.d) { betUI.open.d = false; renderBet('d'); } // v34.1: the Bet stays below the card, folded to its line
   // a card that opens below the fold is scrolled into view, as little as it takes (a phone's bottom sheet needs none)
   if (opened && getComputedStyle(el.defCtx).position !== 'fixed') el.defCtx.scrollIntoView({ block: 'nearest' });
   el.paneDef.classList.toggle('shaping', S.tool === 'shape');
@@ -8293,7 +8334,7 @@ function updateHUD(dt) {
   if (testing()) S = replay.live; // a test run plays on a scratch copy: the HUD keeps showing the real match
   try {
     setText(el.round, 'r', String(S.round));
-    setText(el.rounds, 'rn', 'of ' + S.rounds);
+    setText(el.rounds, 'rn', 'of ' + S.rounds); setStyle(el.round, 'minWidth', String(S.rounds).length + 'ch');
     setText(el.keep, 'k', String(Math.ceil(S.keep)));
     setText(el.keepMax, 'km', '/ ' + S.keepMax);
     setStyle(el.keepbar, 'width', (S.keep / S.keepMax * 100) + '%');
@@ -8301,7 +8342,8 @@ function updateHUD(dt) {
   } finally { S = T; }
   // the wave's live numbers, and the pot
   const wave = S.phase === 'wave', settled = S.phase === 'summary' || S.phase === 'over';
-  $('#wavebox').hidden = !wave;
+  $('#wavebox').hidden = !(wave || (settled && S.wave)); // v34.1: the wave's numbers stay up through its summary
+  $('#idlebox').hidden = !el.clockbox.hidden; // and the slot is never empty (desktop hides it under the wave's numbers)
   if (wave) {
     setText($('#h-leak'), 'hl', String(S.wave.leaks)); setText($('#h-sent'), 'hs', '/ ' + armyCount(S.sentArmy || []));
     setText($('#h-kdmg'), 'hk', '−' + fmtNum(S.wave.y));

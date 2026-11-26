@@ -2866,8 +2866,8 @@ with sync_playwright() as p:
         check('Bet on this wave' in head and page.locator('#def-bet .bet-picks').count() == 0, f'v34 test 14 ({vw}px): the Bet panel starts as one line ({head!r})')
         page.click('#def-bet [data-bet=toggle]')
         txt = page.inner_text('#def-bet')
-        check(all(t in txt for t in ['Low', 'Medium', 'High', 'Under 10% gets through', '10–40% gets through', 'Over 40% gets through', 'Up to 5 (10% of your defense)', 'hidden from your opponent']),
-              f'v34 test 14 ({vw}px): the panel shows the three bands from RULES and the cap (10% of the 50 coins of walls)')
+        check(all(t in txt for t in ['gets through', 'Low', 'Medium', 'High', 'Under 10%', '10–40%', 'Over 40%', 'Up to 5 (10% of your defense)', 'Hidden from your opponent']),
+              f'v34 test 14 ({vw}px): the panel shows the three bands from RULES and the cap (10% of the 50 coins of walls; v34.1: the bands short, the lead says what they count)')
         page.click('#def-bet [data-k="2"]'); page.click('#def-bet [data-bet=max]')
         check('Right: +5 · Wrong: −5' in page.inner_text('#def-bet'), f'v34 test 14 ({vw}px): the outcome line follows the pick and stake')
         fit = page.evaluate("() => { const b = document.querySelector('#def-bet'); return b.scrollWidth <= b.clientWidth + 1 && b.getBoundingClientRect().right <= innerWidth + 1; }")
@@ -2903,7 +2903,72 @@ with sync_playwright() as p:
     if not page.is_visible('#ov-hand'): page.click('#atk-lock')
     hand(page); page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(60)
     check(E('S.last.dInt') == 0 and E('S.last.aInt') == 0 and E('S.wave.dLeft') > 0, 'v34 test 10: Simple pays no interest')
+    check('Max income' not in page.inner_text('#d-route') if page.is_visible('#d-route') else True, 'v34.1: Simple has no income readout')
     check(not errors, f'v34 Simple: no errors {errors[:3]}')
+    ctx.close()
+
+    # ---------- v34.1: the top bar keeps its layout, the Bet tidier and under the tower card, the defender's Max income
+    KW = "() => Math.round(document.querySelector('#keepbox').getBoundingClientRect().width)"
+    for vw, vh in ((1366, 860), (390, 844)):
+        ctx = b.new_context(viewport={'width': vw, 'height': vh}); page = ctx.new_page(); errors = []
+        page.on('pageerror', lambda e: errors.append(str(e)))
+        page.goto('file://' + HARNESS); page.wait_for_timeout(300)
+        page.evaluate('() => { const R = window.siegeline.rules; R.roughShare = 0; R.rockShare = 0; R.starterPresses = 0; R.crystalSites = 0; R.fixedGates = true; if (window.siegeline.setGates) window.siegeline.setGates(); }')  # timed (5:00)
+        page.click('#info-go'); page.click('#mode-local'); hand(page)
+        w = {'plan': page.evaluate(KW)}
+        check(page.is_visible('#t-clock'), f'v34.1 ({vw}px): the clock shows while planning')
+        page.click('#def-lock'); hand(page)
+        page.evaluate('() => { const S = window.siegeline.state; S.designs[0].count = 30; window.siegeline.refresh(); }')
+        page.click('#atk-lock')
+        if not page.is_visible('#ov-hand'): page.click('#atk-lock')
+        hand(page); page.evaluate('() => window.siegeline.advance(4)'); page.wait_for_timeout(100)
+        w['wave'] = page.evaluate(KW)
+        page.evaluate("() => { document.querySelector('#h-leak').textContent = '120'; document.querySelector('#h-sent').textContent = '/ 120'; document.querySelector('#h-kdmg').textContent = '−1500'; }"); page.wait_for_timeout(30)
+        w['big numbers'] = page.evaluate(KW)
+        over = page.evaluate("() => [...document.querySelectorAll('.hud-row > *, .hslot > *, .keepbox .ktop')].filter(e => e.offsetParent && e.scrollWidth > e.clientWidth + 1).map(e => e.id || e.className)")
+        page.evaluate('() => window.siegeline.advance(200)'); page.wait_for_timeout(100)
+        w['summary'] = page.evaluate(KW)
+        page.click('#sum-next'); hand(page); w['round 2'] = page.evaluate(KW)
+        check(len(set(w.values())) == 1, f'v34.1 ({vw}px): the keep box keeps one width through planning, the wave and the summary ({w})')
+        check(not over, f'v34.1 ({vw}px): nothing in the top bar is cut off, even with a big wave’s numbers ({over})')
+        check(not errors, f'v34.1 top bar ({vw}px): no errors {errors[:3]}')
+        ctx.close()
+
+    ctx = b.new_context(viewport={'width': 1366, 'height': 860}); page = ctx.new_page(); errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.goto('file://' + HARNESS); page.wait_for_timeout(300); no_terrain(page)
+    E = lambda e: page.evaluate('() => { const sl = window.siegeline, S = sl.state; return ' + e + '; }')
+    page.evaluate('() => { const R = window.siegeline.rules; R.crystalSites = 5; }')
+    page.click('#info-go'); page.click('#mode-local'); hand(page); hints_off(page)
+    check(page.is_visible('#idlebox') and page.inner_text('#idlebox').replace('\n', ' ').startswith('TIME'), 'v34.1: untimed, the clock’s slot holds a quiet “Time —”')
+    rt = lambda: page.inner_text('#d-route').replace('\n', ' ')
+    check(f"Max income +{E('Math.min(100, Math.floor(S.dFree * 0.15 + 1e-9))')}" in rt().replace('MAX INCOME', 'Max income'), f'v34.1: with no Mines, Max income is the interest on the coins left ({rt()})')
+    # a Mine on a site beside the route: the readout says what it adds before the click, then counts it
+    built = None
+    for i in E('sl.eco.sites().filter(i => !S.grid[i] && sl.eco.exposure(i) > 0)'):
+        x, y = page.evaluate(f'() => window.siegeline.cellToClient({i})'); page.mouse.move(x, y); page.wait_for_timeout(150)
+        hov = rt(); page.mouse.click(x, y); page.wait_for_timeout(150)
+        if E(f'!!S.grid[{i}]'): built = (i, hov); break
+    check(built is not None, 'v34.1: a Mine goes up on a crystal site beside the route')
+    if built:
+        page.mouse.move(5, 5); page.wait_for_timeout(150)
+        inc = E('(() => { const on = new Set(S.path); let m = 0; for (const i of sl.eco.sites()) if (sl.eco.isMine(i)) m += [i - 1, i + 1, i - 16, i + 16].filter(j => j >= 0 && j < 176 && Math.abs((j % 16) - (i % 16)) <= 1 && on.has(j)).length * 10; return { m, int: Math.min(100, Math.floor(S.dFree * 0.15 + 1e-9)) }; })()')
+        txt = rt().replace('MAX INCOME', 'Max income').replace('STARTS NEXT WAVE', 'starts next wave')
+        check('→' in built[1].replace('MAX INCOME', 'Max income').split('Max income')[-1], f'v34.1: hovering the site previews the change ({built[1]})')
+        check(f"Max income +{inc['m'] + inc['int']}" in txt and (inc['m'] == 0 or f"{inc['m']} starts next wave" in txt),
+              f'v34.1: the readout counts the new Mine ({inc["m"]}) and the interest on the coins left ({inc["int"]}), and says the Mine starts next wave ({txt})')
+    # the Bet stays at the bottom with a tower card open, folded to its line
+    page.click('#def-bet [data-bet=toggle]')
+    page.click('.tool[data-tool=tower]'); cell = E('(() => { for (let i = 0; i < S.grid.length; i++) if (!S.grid[i] && !S.terrain[i] && !S.path.includes(i)) return i; })()')
+    x, y = page.evaluate(f'() => window.siegeline.cellToClient({cell})'); page.mouse.click(x, y); page.wait_for_timeout(150)
+    if page.is_hidden('#def-ctx'): page.mouse.click(x, y); page.wait_for_timeout(150)
+    lk = page.evaluate("() => document.querySelector('#def-lock').getBoundingClientRect().top")
+    bt = page.evaluate("() => { const r = document.querySelector('#def-bet').getBoundingClientRect(); return [r.top, r.bottom, r.height]; }")
+    check(page.is_visible('#def-ctx') and page.is_visible('#def-bet') and page.locator('#def-bet .bet-picks').count() == 0 and bt[1] <= lk and bt[2] < 40,
+          f'v34.1: with a tower card open the Bet stays above Lock in, folded to one line ({bt[2]:.0f} px)')
+    check(page.is_visible('.tool[data-tool=wall]') and page.evaluate("() => { const r = document.querySelector('#def-ctx [data-act=close]') || document.querySelector('#def-ctx .ready'); return !r || r.getBoundingClientRect().bottom <= innerHeight; }"),
+          'v34.1: the tools and the card’s Done still fit with the Bet there')
+    check(not errors, f'v34.1 Bet and income: no errors {errors[:3]}')
     ctx.close()
     b.close()
 
